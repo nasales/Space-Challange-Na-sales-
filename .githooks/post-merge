@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Runs automatically after every `git pull` / merge (enable with: git config core.hooksPath .githooks)
+echo
+echo "Repo updated. Running team check..."
+./scripts/check.sh
+echo
+echo "Reminder: ask your agent to run the SYNC CHECK (Claude Code: /sync-check <area>)."
+exit 0
