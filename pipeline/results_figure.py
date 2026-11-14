@@ -31,6 +31,12 @@ PANELS = [
     ("T2M", "Temperature"),
     ("PRECTOTCORR", "Precipitation"),
     ("GWETTOP", "Soil moisture"),
+    # Common ids written by build_cases --source case_export (units in the x label).
+    ("PRECIP", "Precipitation"),
+    ("SOILM", "Soil moisture"),
+    ("NDVI", "Vegetation (NDVI)"),
+    ("LST", "Land surface temperature"),
+    ("SNOW", "Snow cover"),
 ]
 STRONG = "#c0392b"
 GREY = "#a6a6a6"
