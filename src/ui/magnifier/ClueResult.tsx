@@ -16,10 +16,12 @@ import {
   fmtP,
   fmtSigned,
   mean,
+  monthLabel,
   periodYears,
   seasonalComparison,
   testPeriod,
   totalChange,
+  validMonths,
   trendLine,
   yearOf,
   type Period,
@@ -90,7 +92,6 @@ export default function ClueResult({ variable, title, place, distanceKm, onBack 
         <h3 id="clue-result-title" className="clue-result__title">
           {title} <span className="clue-result__unit">({data.units})</span>
         </h3>
-        <p className="clue-result__def">{variable.definition}</p>
       </header>
 
       <Verdict variable={variable} title={title} place={place} period={period} />
@@ -167,10 +168,7 @@ export default function ClueResult({ variable, title, place, distanceKm, onBack 
         </section>
       </div>
 
-      <p className="clue-result__meta">
-        {distanceKm > 20 && `Nearest land cell ${distanceKm.toFixed(0)} km away · `}Data: NASA{' '}
-        {data.dataset.replace(/^NASA /, '')}
-      </p>
+      <HowWeKnow variable={variable} period={period} distanceKm={distanceKm} />
 
       <button ref={back} type="button" className="clue-result__btn" onClick={onBack}>
         ← Back to the clues <kbd>Esc</kbd>
@@ -263,5 +261,89 @@ function Verdict({
         less than 5 % of the time (p below 0.05).
       </p>
     </div>
+  )
+}
+
+/** Name of the significance test in plain words (CaseData.test is a machine id). */
+function testInWords(test: string): string {
+  const id = test.toLowerCase()
+  if (id.includes('prewhitening') || id.includes('pre-whitening')) {
+    return 'Mann-Kendall trend test, corrected for the memory between one month and the next (pre-whitening, Yue & Wang 2002)'
+  }
+  if (id.includes('mann-kendall') || id.includes('mann_kendall')) return 'Mann-Kendall trend test'
+  return test
+}
+
+/** The method in four plain steps, and the facts needed to check or repeat the analysis. */
+function HowWeKnow({
+  variable,
+  period,
+  distanceKm,
+}: {
+  variable: PointVariable
+  period: Period | null
+  distanceKm: number
+}) {
+  const data = variable.data
+  if (!data) return null
+  const dataset = data.dataset.replace(/^NASA /, '')
+  return (
+    <section className="clue-result__how" aria-labelledby="clue-how-h">
+      <h4 id="clue-how-h" className="clue-result__h">
+        How do we know?
+      </h4>
+      <ol className="clue-result__steps">
+        <li>
+          <b>Collect.</b> One value per month for this place, from NASA data.
+        </li>
+        <li>
+          <b>Remove the seasons.</b> From each month we subtract the average of that calendar month. What is left
+          shows how unusual each month was.
+        </li>
+        <li>
+          <b>Measure the rate.</b> The Sen slope: the middle value of the slopes between every pair of months, so a
+          few odd months cannot bend it. The 95 % range says how sure we are of that rate.
+        </li>
+        <li>
+          <b>Check against chance.</b> A test asks how often noise alone would give a trend this strong. That is the
+          p-value: below 0.05 we call the trend significant.
+        </li>
+      </ol>
+      <dl className="clue-result__facts">
+        {period && (
+          <>
+            <div>
+              <dt>Months used</dt>
+              <dd>{validMonths(data.values, period)} (the test needs at least 120)</dd>
+            </div>
+            <div>
+              <dt>Period</dt>
+              <dd>
+                {monthLabel(data.dates[period.start])} to {monthLabel(data.dates[period.end])}
+              </dd>
+            </div>
+          </>
+        )}
+        <div>
+          <dt>Test</dt>
+          <dd>{testInWords(data.test)}</dd>
+        </div>
+        <div>
+          <dt>Dataset</dt>
+          <dd>{dataset}</dd>
+        </div>
+        {distanceKm > 20 && (
+          <div>
+            <dt>Nearest data cell</dt>
+            <dd>{distanceKm.toFixed(0)} km from here</dd>
+          </div>
+        )}
+        <div>
+          <dt>What is measured</dt>
+          <dd>{variable.definition}</dd>
+        </div>
+      </dl>
+      <p className="clue-result__credit">Data: NASA {dataset}</p>
+    </section>
   )
 }
