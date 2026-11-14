@@ -1,0 +1,285 @@
+{
+  "case_id": "dana_valencia",
+  "title": "Valencia DANA",
+  "place": "Valencia",
+  "intro": {
+    "headline": "29 October 2024: a storm that changed Valencia",
+    "paragraphs": [
+      "On 29 October 2024 a DANA hit the region of Valencia, in eastern Spain. In a few hours it dropped more rain than some places usually get in months. Flash floods swept through towns, streets and roads, and more than 220 people died.",
+      "DANA is a Spanish name for a pocket of cold air that breaks away high up in the atmosphere (a \"cut-off low\"). In autumn, when the Mediterranean Sea is still warm, it can feed storms that stay over the same area for hours.",
+      "After a disaster like this, many people ask: is this climate change? Is it raining more and more? A good detective does not guess. In this case file you will read NASA data for Valencia step by step, and then decide for yourself."
+    ],
+    "question": "After the 2024 DANA floods, is it raining more and more in Valencia, or is something else changing?"
+  },
+  "steps": [
+    {
+      "id": "monthly_series",
+      "title": "One point per month",
+      "text": "This line is a time series: one point for every month from January 1998 to September 2025. Each point is the average rain per day in that month, in millimetres per day (mm/day), over the square of land that contains Valencia. Time runs from left to right. The marked point is October 2024, the month of the DANA. Data: NASA GPM IMERG.",
+      "chart": {
+        "variable": "PRECIP",
+        "view": "monthly",
+        "highlights": [
+          { "kind": "point", "date": "2024-10", "label": "October 2024 (DANA)" }
+        ]
+      },
+      "question": {
+        "prompt": "What does one point on this line show?",
+        "options": [
+          {
+            "text": "The average rain per day during one month",
+            "correct": true,
+            "feedback": "Right: one point, one month."
+          },
+          {
+            "text": "The total rain of one whole year",
+            "correct": false,
+            "feedback": "Count the points between two years on the time axis: there are many of them, not just one. Read the text again: what does each point stand for?"
+          },
+          {
+            "text": "The rain of one single day",
+            "correct": false,
+            "feedback": "The line covers almost 28 years. One point per day would be more than 10,000 points. Look at the units and the text: each point is an average over a longer period."
+          }
+        ]
+      },
+      "takeaway": "A time series is a story told one point at a time: here, one point per month."
+    },
+    {
+      "id": "seasons",
+      "title": "The same cycle every year",
+      "text": "Rain in Valencia follows the seasons. This chart averages all Januaries together, all Februaries together, and so on, to show a normal year. This is called the climatology. Because the cycle repeats every year, a detective always compares like with like: an October with other Octobers, never an October with a July.",
+      "chart": {
+        "variable": "PRECIP",
+        "view": "climatology"
+      },
+      "question": {
+        "prompt": "Which part of the year is usually the driest in Valencia?",
+        "options": [
+          {
+            "text": "Summer (June to August)",
+            "correct": true,
+            "feedback": "Yes: July is the lowest point of the normal year."
+          },
+          {
+            "text": "Autumn (September to November)",
+            "correct": false,
+            "feedback": "Find September, October and November on the chart. Are they near the bottom or near the top of the line?"
+          },
+          {
+            "text": "Winter (December to February)",
+            "correct": false,
+            "feedback": "Winter months are not the lowest here. Follow the line across the whole year and find where it dips the most."
+          }
+        ]
+      },
+      "takeaway": "Seasons repeat every year, so compare each month with the same month in other years."
+    },
+    {
+      "id": "anomalies",
+      "title": "Removing the seasons",
+      "text": "Now each month has the normal value for that month subtracted. What is left is called an anomaly: how much wetter or drier a month was than usual for that time of year. Zero means a normal month. Points above zero were wetter than normal, points below zero were drier. The seasonal cycle is gone, so unusual months stand out.",
+      "chart": {
+        "variable": "PRECIP",
+        "view": "anomaly",
+        "highlights": [
+          { "kind": "point", "date": "2024-10", "label": "October 2024" }
+        ]
+      },
+      "question": {
+        "prompt": "A point at +2 on this chart means that month had...",
+        "options": [
+          {
+            "text": "2 mm/day more rain than is normal for that month",
+            "correct": true,
+            "feedback": "Exactly: an anomaly is the difference from normal."
+          },
+          {
+            "text": "2 mm/day of rain in total",
+            "correct": false,
+            "feedback": "Look at the zero line: it is not \"no rain\", it is \"normal rain\". So what does a value above zero measure?"
+          },
+          {
+            "text": "2 rainy days in the month",
+            "correct": false,
+            "feedback": "Check the units on the axis: they are still mm/day, not days. The chart shows an amount of rain compared with normal."
+          }
+        ]
+      },
+      "takeaway": "An anomaly tells you how unusual a month was, after removing the seasons."
+    },
+    {
+      "id": "october_2024",
+      "title": "One terrible month",
+      "text": "In October 2024 this square got about 3.6 mm/day on average, more than a normal October (about 2.3). But it is not the highest point: the wettest month in this record is October 2000. How? A storm of a few hours is averaged over a whole month and over a square of about 10 km, and much of the heaviest rain fell inland, west of the city.",
+      "chart": {
+        "variable": "PRECIP",
+        "view": "monthly",
+        "highlight_max": true,
+        "highlights": [
+          { "kind": "point", "date": "2024-10", "label": "October 2024 (DANA)" }
+        ]
+      },
+      "question": {
+        "prompt": "Is October 2024 the highest point in this rain record?",
+        "options": [
+          {
+            "text": "No, several months are higher, such as October 2000",
+            "correct": true,
+            "feedback": "Correct: the deadliest storm is not the tallest point here."
+          },
+          {
+            "text": "Yes, it is the highest point",
+            "correct": false,
+            "feedback": "Compare the October 2024 point with the labelled maximum. Which one is taller?"
+          },
+          {
+            "text": "No, it is the lowest point",
+            "correct": false,
+            "feedback": "Look again: October 2024 is above most months. It is high, just not the highest."
+          }
+        ]
+      },
+      "takeaway": "One extreme event is a single point; it cannot tell you, by itself, where the series is going."
+    },
+    {
+      "id": "trend_noise",
+      "title": "Trend line and noise",
+      "text": "The straight line is the trend: the best single slope through all the months. It goes up by only about 0.02 mm/day every 10 years. The up-and-down jumps around it are called noise: normal weather that changes from month to month. In Valencia the noise is huge, with jumps of several mm/day, while the trend is almost flat.",
+      "chart": {
+        "variable": "PRECIP",
+        "view": "anomaly",
+        "show_trend": true
+      },
+      "question": {
+        "prompt": "Compared with the jumps from month to month, how big is the change along the trend line?",
+        "options": [
+          {
+            "text": "Tiny: the line is almost flat",
+            "correct": true,
+            "feedback": "Yes: the noise is much bigger than the trend."
+          },
+          {
+            "text": "Bigger than the jumps",
+            "correct": false,
+            "feedback": "Compare the height of the tallest spikes with how much the straight line rises from left to right. Which is larger?"
+          },
+          {
+            "text": "It falls steeply",
+            "correct": false,
+            "feedback": "Follow the straight line from the left edge to the right edge. Does it drop a lot, or does it stay close to zero?"
+          }
+        ]
+      },
+      "takeaway": "A trend summarises decades; single points, however extreme, are mostly noise."
+    },
+    {
+      "id": "significance",
+      "title": "Could it be chance?",
+      "text": "Rain goes up and down by chance, so even with no real change a line can tilt a little. The p-value is the chance of getting a slope this big if nothing were really changing. For rain here, p = 0.67: 67 in 100, so it could easily be chance. The 95% confidence range, -0.014 to +0.018 mm/day per year, includes zero.",
+      "chart": {
+        "variable": "PRECIP",
+        "view": "annual",
+        "show_trend": true
+      },
+      "question": {
+        "prompt": "With p = 0.67, what can the detective say about rain in Valencia?",
+        "options": [
+          {
+            "text": "The data show no clear trend: a slope this small could easily come from chance",
+            "correct": true,
+            "feedback": "Well done: no significant trend is a real answer."
+          },
+          {
+            "text": "Rain is clearly increasing",
+            "correct": false,
+            "feedback": "The line tilts up a little, but a trend is called significant only when p is below 0.05 (5 in 100). Is 0.67 below 0.05?"
+          },
+          {
+            "text": "This proves rain in Valencia never changes",
+            "correct": false,
+            "feedback": "Look at the confidence range: it goes from a small fall to a small rise. Not finding a clear change is not the same as proving there is none."
+          }
+        ]
+      },
+      "takeaway": "Not significant means \"no clear evidence of change\", not \"proof that nothing changes\"."
+    },
+    {
+      "id": "temperature",
+      "title": "Now look at the air",
+      "text": "Same steps, another clue: the yearly average air temperature in Valencia from 1980. Data: NASA MERRA-2. The trend is about +0.3 °C every 10 years, about 1.5 °C over the whole period. Here p < 0.001: less than 1 in 1,000, so very unlikely to be chance. The confidence range, +0.022 to +0.041 °C per year, is all above zero.",
+      "chart": {
+        "variable": "T2M",
+        "view": "annual",
+        "show_trend": true
+      },
+      "question": {
+        "prompt": "How do the most recent years compare with the 1980s?",
+        "options": [
+          {
+            "text": "They are warmer",
+            "correct": true,
+            "feedback": "Yes: the recent years sit well above the 1980s."
+          },
+          {
+            "text": "About the same",
+            "correct": false,
+            "feedback": "Compare the points on the far left with the points on the far right. Are they at the same height?"
+          },
+          {
+            "text": "They are colder",
+            "correct": false,
+            "feedback": "Follow the trend line from left to right. Does it go down or up?"
+          }
+        ]
+      },
+      "takeaway": "Temperature in Valencia shows a clear, significant rise."
+    },
+    {
+      "id": "compare",
+      "title": "Two clues side by side",
+      "text": "This is the temperature anomaly: each month compared with its normal value, like you did for rain. The trend line climbs steadily through the noise. So the two clues tell different stories: rain jumps a lot with no clear trend, while temperature keeps rising. A detective reports both, and keeps them apart.",
+      "chart": {
+        "variable": "T2M",
+        "view": "anomaly",
+        "show_trend": true,
+        "highlights": [
+          { "kind": "point", "date": "2024-10", "label": "October 2024" }
+        ]
+      },
+      "question": {
+        "prompt": "Which variable shows a clear, significant trend in Valencia?",
+        "options": [
+          {
+            "text": "Temperature only",
+            "correct": true,
+            "feedback": "Correct: temperature rises clearly; rain has no clear trend."
+          },
+          {
+            "text": "Rain only",
+            "correct": false,
+            "feedback": "Remember the rain p-value from before (0.67), and compare it with the temperature p-value (below 0.001). Which one is below 0.05?"
+          },
+          {
+            "text": "Both rain and temperature",
+            "correct": false,
+            "feedback": "Think back to the rain trend line: was it significant? Only one of the two p-values is below 0.05."
+          }
+        ]
+      },
+      "takeaway": "Different variables can tell different stories about the same place."
+    }
+  ],
+  "conclusion": {
+    "prompt": "After the 2024 DANA floods, is it raining more and more in Valencia, or is something else changing? Write your conclusion using what the charts showed you.",
+    "variable": "PRECIP",
+    "placeholder": "Looking at the rain data for Valencia from 1998 to 2025, I think..."
+  },
+  "reveal": {
+    "by_variable": {
+      "PRECIP": "Rain in Valencia (January 1998 to September 2025) shows no significant trend: the slope is about +0.02 mm/day per decade, p = 0.67, and the 95% confidence range (-0.014 to +0.018 mm/day per year) includes zero. October 2024 was wetter than a normal October, but it is one event, not a trend.",
+      "T2M": "Air temperature in Valencia (January 1980 to September 2026) rises clearly: about +0.31 °C per decade (95% range +0.22 to +0.41 °C per decade), p < 0.001, about 1.5 °C over the whole period."
+    },
+    "lesson": "An extreme event, even a deadly one, is not a trend. A non-significant trend is a valid result: the rain data show no clear change, which is not proof that nothing changes. What is changing clearly here is temperature. Scientists know that warmer air can hold more water vapour, which is one reason they study whether heavy downpours are getting stronger; this monthly rain record cannot answer that on its own."
+  }
+}
