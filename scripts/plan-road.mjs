@@ -1,5 +1,7 @@
-// Plans ONE closed road that loops through mainland Spain, offline, from the map data already in
-// the repo (no download), and saves it as public/maps/countries/<ID>/roads.json.
+// Plans a simple road network for mainland Spain, offline, from the map data already in the repo
+// (no download), and saves it as public/maps/countries/<ID>/roads.json: ONE closed road that loops
+// through the interior plus a few open roads between big cities (NET_ROADS) that cross the loop
+// and each other at clean, near right-angle junctions away from rivers.
 //
 //   node scripts/plan-road.mjs        (defaults to ESP)
 //
@@ -16,9 +18,15 @@
 //      (the neighbours are joined instead); each leg makes the cells of the previous legs
 //      expensive, so the loop never runs over or along itself;
 //   4. the path is simplified, smoothed (Chaikin) and given a gentle low-frequency meander where
-//      the ground is easy, then checked again against the cost map.
-// Output (same format as before): { "source", "roads": [ { "name", "rank": 2, "lines": [loop] } ] }
-// The single line is closed: its last point equals its first.
+//      the ground is easy, then checked again against the cost map;
+//   5. the open roads: same cost map and A* between loose waypoints near cities (an end inside a
+//      monument area snaps to its edge). Every road already laid leaves a band of extra cost:
+//      cheap to cross straight over, expensive to run along, and dearer near rivers, so crossings
+//      are near right angles and far from bridges. No meander near another road.
+// Output (same format as before): { "source", "roads": [ { "name", "rank": 2, "lines": [line] } ] }
+// The first road is the loop (closed: its last point equals its first); the others are open.
+// Deterministic: re-run it after changing landmarks.json or the other inputs; it prints every
+// junction with its angle and distance to the nearest river ("<-- check" flags a doubtful one).
 
 import { readFileSync, writeFileSync } from 'node:fs'
 
@@ -577,16 +585,292 @@ let selfKm = Infinity
   }
 }
 
+// ---------- Network: open roads between big cities that cross the loop and each other ----------
+// Same cost map and A* as the loop. Every road already laid (the loop first, then each new road)
+// leaves a band of extra cost around it: cheap to cross straight over (a junction), expensive to
+// run along. Waypoints are loose: each snaps to the easiest open cell near it (an end that falls
+// inside a monument area snaps to the nearest open cell, i.e. the edge of that area).
+const NET_USED_KM = 8 // band around the roads already laid
+const NET_USED = 25
+const NET_LEG_RATIO_MAX = 20 // a leg costing more than this per straight km drops its waypoint
+const NET_SNAP_KM = 25 // search radius of a waypoint (ends: up to END_SNAP_KM)
+const END_SNAP_KM = 70
+const NET_RIVER_KM = 5 // crossing a road this close to a river costs NET_RIVER times more (no junction by a bridge)
+const NET_RIVER = 4
+const JUNCTION_KM = 10 // inside this distance of a junction the roads run straight (no meander)
+// [lon, lat] waypoints in order; the first and last are the ends of the road
+const NET_ROADS = [
+  {
+    name: 'North-South Road', // Burgos, east of Guadalajara, Tarancón, Ciudad Real, Jaén
+    rank: 2,
+    via: [[-3.7, 42.34], [-3.05, 40.75], [-3.0, 40.0], [-3.93, 38.99], [-3.79, 37.77]],
+  },
+  {
+    name: 'East-West Road', // Valencia, Cuenca, south of Aranjuez, Talavera, Trujillo, Mérida, Badajoz
+    rank: 2,
+    via: [[-0.6, 39.45], [-2.13, 40.07], [-3.55, 39.9], [-4.83, 39.96], [-5.88, 39.46], [-6.34, 38.92], [-6.97, 38.88]],
+  },
+  {
+    name: 'Castile Road', // León, Palencia, Valladolid, the Duero, Soria, Zaragoza
+    rank: 2,
+    via: [[-5.57, 42.6], [-4.52, 42.01], [-4.72, 41.66], [-3.5, 41.6], [-2.47, 41.76], [-0.88, 41.66]],
+  },
+  {
+    name: 'Andalusian Road', // Córdoba, Bailén, Úbeda, Baza, Lorca, Murcia
+    rank: 2,
+    via: [[-4.77, 37.89], [-3.78, 38.1], [-3.37, 38.01], [-2.75, 37.6], [-1.7, 37.67], [-1.13, 37.99]],
+  },
+  {
+    name: 'Silver Road', // Zamora, Salamanca, Plasencia, Cáceres, Zafra, Sevilla
+    rank: 2,
+    via: [[-5.74, 41.51], [-5.66, 40.97], [-6.09, 40.03], [-6.37, 39.48], [-6.42, 38.42], [-5.99, 37.38]],
+  },
+]
+
+/** Raises the extra cost (a cone of radius km) around one cell. */
+function markDisc(r0, c0, km, value, into = used) {
+  const rr = Math.ceil(km / cellKmY), cr = Math.ceil(km / cellKmX)
+  for (let r = r0 - rr; r <= r0 + rr; r++) {
+    for (let c = c0 - cr; c <= c0 + cr; c++) {
+      if (r < 0 || c < 0 || r >= h || c >= w) continue
+      const d = Math.hypot((c - c0) * cellKmX, (r - r0) * cellKmY)
+      if (d > km) continue
+      const j = r * w + c
+      into[j] = Math.max(into[j], value * (1 - d / km) * (into === used && riverKm[j] < NET_RIVER_KM ? NET_RIVER : 1))
+    }
+  }
+}
+/** Raises the band of extra cost around a [lon, lat] polyline (used by the next roads). */
+function markLine(line, km, value, into = used) {
+  const seen = new Uint8Array(N)
+  for (let s = 0; s < line.length - 1; s++) {
+    const [a, b] = [line[s], line[s + 1]]
+    const steps = Math.ceil(Math.hypot((b[0] - a[0]) * KX, (b[1] - a[1]) * KY) / (cellKmX * 0.5)) + 1
+    for (let t = 0; t <= steps; t++) {
+      const c0 = Math.round(colOf(a[0] + ((b[0] - a[0]) * t) / steps)), r0 = Math.round(rowOf(a[1] + ((b[1] - a[1]) * t) / steps))
+      if (r0 < 0 || c0 < 0 || r0 >= h || c0 >= w || seen[r0 * w + c0]) continue
+      seen[r0 * w + c0] = 1
+      markDisc(r0, c0, km, value, into)
+    }
+  }
+}
+
+/** Easiest open cell near a waypoint, away from rivers and from the roads already laid. */
+function snap(lon, lat, isEnd) {
+  const r0 = rowOf(lat), c0 = colOf(lon)
+  for (const R of isEnd ? [END_SNAP_KM, END_SNAP_KM * 1.6] : [NET_SNAP_KM, NET_SNAP_KM * 2]) {
+    let best = -1, bestScore = Infinity
+    for (let r = Math.floor(r0 - R / cellKmY); r <= Math.ceil(r0 + R / cellKmY); r++) {
+      for (let c = Math.floor(c0 - R / cellKmX); c <= Math.ceil(c0 + R / cellKmX); c++) {
+        if (r < 0 || c < 0 || r >= h || c >= w) continue
+        const d = Math.hypot((c - c0) * cellKmX, (r - r0) * cellKmY)
+        if (d > R) continue
+        const i = r * w + c
+        if (!Number.isFinite(cellCost[i]) || riverRank[i] || riverKm[i] < RIVER_BAND_KM || used[i] > 0) continue
+        // ends: as close to the city (or the monument edge) as possible; waypoints: easy ground first
+        const score = isEnd ? d + cellCost[i] * 4 + roughness(i) * 0.1 : cellCost[i] * 10 + roughness(i) * 0.4 + d * 0.05
+        if (score < bestScore) {
+          bestScore = score
+          best = i
+        }
+      }
+    }
+    if (best >= 0) return best
+  }
+  return -1
+}
+
+function chaikinOpen(line, iterations) {
+  let p = line
+  for (let k2 = 0; k2 < iterations; k2++) {
+    const next = [p[0]]
+    for (let i = 0; i < p.length - 1; i++) {
+      const a = p[i], b = p[i + 1]
+      next.push([a[0] * 0.75 + b[0] * 0.25, a[1] * 0.75 + b[1] * 0.25], [a[0] * 0.25 + b[0] * 0.75, a[1] * 0.25 + b[1] * 0.75])
+    }
+    next.push(p[p.length - 1])
+    p = next
+  }
+  return p
+}
+/** Douglas-Peucker on an open line (both ends kept). */
+function simplifyOpen(a, tol) {
+  if (a.length <= 2) return a
+  const keep = new Uint8Array(a.length)
+  keep[0] = keep[a.length - 1] = 1
+  const stack = [[0, a.length - 1]]
+  while (stack.length) {
+    const [s, e] = stack.pop()
+    let md = -1, mi = -1
+    const [ax, ay] = a[s], [bx, by] = a[e]
+    const len = Math.hypot(bx - ax, by - ay) || 1e-9
+    for (let i = s + 1; i < e; i++) {
+      const d = Math.abs((bx - ax) * (ay - a[i][1]) - (ax - a[i][0]) * (by - ay)) / len
+      if (d > md) {
+        md = d
+        mi = i
+      }
+    }
+    if (md > tol) {
+      keep[mi] = 1
+      stack.push([s, mi], [mi, e])
+    }
+  }
+  return a.filter((_, i) => keep[i])
+}
+
+const network = []
+const netLog = []
+used.fill(0)
+markLine(loop, NET_USED_KM, NET_USED)
+const nearRoads = new Float32Array(N) // > 0 within JUNCTION_KM of a road already laid
+markLine(loop, JUNCTION_KM, 1, nearRoads)
+for (const road of NET_ROADS) {
+  const cellsVia = []
+  road.via.forEach(([lon, lat], k) => {
+    const c = snap(lon, lat, k === 0 || k === road.via.length - 1)
+    if (c >= 0) cellsVia.push(c)
+    else netLog.push(`${road.name}: waypoint ${k} dropped (no open cell)`)
+  })
+  // Legs; a too costly leg drops its far waypoint
+  const path = cellsVia.length ? [cellsVia[0]] : []
+  for (let k = 1; k < cellsVia.length; k++) {
+    const from = path[path.length - 1]
+    // the road's own previous legs count as laid (no going back the same way), except near `from`
+    const saved = used.slice()
+    const fr = Math.floor(from / w), fc = from % w
+    for (const i of path) {
+      if (Math.hypot(((i % w) - fc) * cellKmX, (Math.floor(i / w) - fr) * cellKmY) > NET_USED_KM + 4) markDisc(Math.floor(i / w), i % w, NET_USED_KM, NET_USED)
+    }
+    const leg = astar(from, cellsVia[k])
+    used.set(saved)
+    const ratio = leg ? leg.cost / Math.max(1, straightKm(from, cellsVia[k])) : Infinity
+    if (!leg || ratio > NET_LEG_RATIO_MAX) {
+      netLog.push(`${road.name}: waypoint ${k} dropped (leg ${ratio.toFixed(1)} per km)`)
+      continue
+    }
+    path.push(...leg.path.slice(1))
+  }
+  if (path.length < 10) {
+    netLog.push(`${road.name}: dropped (no route)`)
+    continue
+  }
+  let p = path.map((i) => [lonOf(i % w) * KX, latOf(Math.floor(i / w)) * KY])
+  p = chaikinOpen(simplifyOpen(p, 1.2), 3)
+  // Gentle meander (as the loop), switched off near the roads already laid (straight junctions)
+  {
+    const n = p.length
+    const along = [0]
+    for (let i = 1; i < n; i++) along.push(along[i - 1] + Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1]))
+    const near = (q) => {
+      const c = Math.round(colOf(q[0] / KX)), r = Math.round(rowOf(q[1] / KY))
+      return r < 0 || c < 0 || r >= h || c >= w || nearRoads[r * w + c] > 0
+    }
+    const normal = (i) => {
+      const a = p[Math.max(0, i - 1)], b = p[Math.min(n - 1, i + 1)]
+      const tl = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1
+      return [-(b[1] - a[1]) / tl, (b[0] - a[0]) / tl]
+    }
+    const offs = p.map((q, i) => {
+      if (i === 0 || i === n - 1 || near(q)) return 0
+      const s = along[i]
+      const wave = 0.62 * Math.sin((2 * Math.PI * s) / 41 + 2.1) + 0.38 * Math.sin((2 * Math.PI * s) / 14.7 + 0.7)
+      const [nx, ny] = normal(i)
+      for (const amp of [1.3, 0.7, 0]) {
+        const o = [q[0] + nx * wave * amp, q[1] + ny * wave * amp]
+        if (amp === 0 || (costAtKm(o) < 2.5 && costAtKm(q) < 2.5)) return wave * amp
+      }
+      return 0
+    })
+    const sm = offs.map((_, i) => {
+      if (i === 0 || i === n - 1) return 0
+      let s = 0
+      for (let d = -6; d <= 6; d++) s += offs[Math.min(n - 1, Math.max(0, i + d))]
+      return s / 13
+    })
+    p = p.map((q, i) => {
+      const [nx, ny] = normal(i)
+      return [q[0] + nx * sm[i], q[1] + ny * sm[i]]
+    })
+  }
+  p = simplifyOpen(p, 0.12)
+  const line = p.map(([x, y]) => [+(x / KX).toFixed(4), +(y / KY).toFixed(4)])
+  network.push({ name: road.name, rank: road.rank, lines: [line] })
+  markLine(line, NET_USED_KM, NET_USED)
+  markLine(line, JUNCTION_KM, 1, nearRoads)
+}
+
+// ---------- Network validation: junctions (angle, rivers nearby, spacing) ----------
+const segHit = (p, q, a, b) => {
+  const rx = (q[0] - p[0]) * KX, ry = (q[1] - p[1]) * KY, sx = (b[0] - a[0]) * KX, sy = (b[1] - a[1]) * KY
+  const den = rx * sy - ry * sx
+  if (Math.abs(den) < 1e-12) return null
+  const ax = (a[0] - p[0]) * KX, ay = (a[1] - p[1]) * KY
+  const t = (ax * sy - ay * sx) / den
+  const u = (ax * ry - ay * rx) / den
+  if (t < 0 || t >= 1 || u < 0 || u >= 1) return null
+  return { t, sin: Math.abs(den) / (Math.hypot(rx, ry) * Math.hypot(sx, sy)) }
+}
+const allLines = [{ name: ROAD_NAME, line: loop }, ...network.map((r) => ({ name: r.name, line: r.lines[0] }))]
+const junctions = []
+let netSelfCross = 0
+for (let A = 0; A < allLines.length; A++) {
+  for (let Bi = A; Bi < allLines.length; Bi++) {
+    const la = allLines[A].line, lb = allLines[Bi].line
+    for (let i = 1; i < la.length; i++) {
+      for (let j = Bi === A ? i + 2 : 1; j < lb.length; j++) {
+        if (Bi === A && (A === 0 || i === 1) && j === la.length - 1) continue
+        const hit = segHit(la[i - 1], la[i], lb[j - 1], lb[j])
+        if (!hit) continue
+        if (Bi === A) {
+          netSelfCross++
+          continue
+        }
+        const p = la[i - 1], q = la[i]
+        const lon = p[0] + (q[0] - p[0]) * hit.t, lat = p[1] + (q[1] - p[1]) * hit.t
+        junctions.push({ a: allLines[A].name, b: allLines[Bi].name, lon, lat, angle: (Math.asin(Math.min(1, hit.sin)) * 180) / Math.PI, riverKm: riverKm[cellOf(lon, lat)] })
+      }
+    }
+  }
+}
+for (const j of junctions) {
+  j.nextKm = Infinity
+  for (const o of junctions) if (o !== j) j.nextKm = Math.min(j.nextKm, Math.hypot((o.lon - j.lon) * KX, (o.lat - j.lat) * KY))
+}
+let netKm = 0
+const netCross = { 1: 0, 2: 0, 3: 0 }
+let netMonumentKm = Infinity, netOff = 0
+for (const r of network) {
+  const l = r.lines[0]
+  for (let i = 1; i < l.length; i++) {
+    netKm += Math.hypot((l[i][0] - l[i - 1][0]) * KX, (l[i][1] - l[i - 1][1]) * KY)
+    for (const s of riverSegs) if (segHit(l[i - 1], l[i], s.a, s.b)) netCross[s.rank]++
+  }
+  for (const [lon, lat] of l) {
+    for (const lm of landmarks) netMonumentKm = Math.min(netMonumentKm, Math.hypot((lon - lm.lon) * KX, (lat - lm.lat) * KY))
+    if (!mainland[cellOf(lon, lat)]) netOff++
+  }
+}
+
 writeFileSync(
   OUT_FILE,
   JSON.stringify({
     source: 'Planned offline by scripts/plan-road.mjs from the repo map data (relief, border, rivers, landmarks, places)',
-    roads: [{ name: ROAD_NAME, rank: 2, lines: [loop] }],
+    roads: [{ name: ROAD_NAME, rank: 2, lines: [loop] }, ...network],
   }),
 )
-console.log(`Saved ${OUT_FILE}: 1 road, ${loop.length} points, ${Math.round(lengthKm)} km`)
+console.log(`Saved ${OUT_FILE}: ${1 + network.length} roads (the loop + ${network.length} open roads)`)
+console.log(`Loop: ${loop.length} points, ${Math.round(lengthKm)} km`)
 console.log(`Anchors kept (${kept.length}): ${kept.map((a) => a.name).join(' -> ')}`)
 console.log(`Anchors dropped (${dropped.length}): ${dropped.join(', ') || 'none'}`)
 console.log(`River crossings: ${crossings[1] + crossings[2] + crossings[3]} (big ${crossings[1]}, medium ${crossings[2]}, small ${crossings[3]})`)
 console.log(`Closest monument: ${monumentKm.toFixed(1)} km; closest coast: ${coastMin.toFixed(1)} km; points off the mainland: ${offLand}`)
 console.log(`Closest approach of the loop to itself (parts > 30 km apart along it): ${selfKm.toFixed(1)} km; self-crossings: ${selfCross}`)
+console.log(`Open roads: ${network.map((r) => `${r.name} (${r.lines[0].length} pts)`).join(', ')}; ${Math.round(netKm)} km`)
+for (const m of netLog) console.log(`  ${m}`)
+console.log(`Open roads: river crossings ${netCross[1] + netCross[2] + netCross[3]} (big ${netCross[1]}, medium ${netCross[2]}, small ${netCross[3]}); closest monument ${netMonumentKm.toFixed(1)} km; points off the mainland ${netOff}; self-crossings ${netSelfCross}`)
+console.log(`Junctions: ${junctions.length}`)
+for (const j of junctions) {
+  const warn = j.angle < 35 || j.riverKm < 3 || j.nextKm < 12 ? '  <-- check' : ''
+  console.log(`  ${j.a} x ${j.b} at ${j.lon.toFixed(3)}, ${j.lat.toFixed(3)}: angle ${j.angle.toFixed(0)} deg, river ${j.riverKm.toFixed(1)} km, next junction ${j.nextKm.toFixed(1)} km${warn}`)
+}
