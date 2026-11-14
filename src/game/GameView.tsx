@@ -141,7 +141,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
         const houses = placeTowns(explored.places, {
           heightAt: (x, z) => terrainAt(x, z)?.heightAt(x, z) ?? 0,
           isLand: (x, z) => terrainAt(x, z)?.isExploredLand(x, z) ?? false,
-          landmarkDistance: landmarks.distance,
+          landmarkDistance: landmarks.spacing,
           nearRiver: (x, z, m) => terrainAt(x, z)?.nearRiver(x, z, m) ?? false,
           nearRoad,
         })
@@ -154,7 +154,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
           metersAt: (x, z) => terrainAt(x, z)?.metersAt(x, z) ?? 0,
           isLand: (x, z) => terrainAt(x, z)?.isExploredLand(x, z) ?? false,
           nearHouse: towns.blocks,
-          landmarkDistance: landmarks.distance,
+          landmarkDistance: landmarks.spacing,
           nearRiver: (x, z, m) => terrainAt(x, z)?.nearRiver(x, z, m) ?? false,
           nearRoad,
         })

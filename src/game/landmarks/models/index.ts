@@ -12,6 +12,7 @@ import { buildGuggenheim, buildGuggenheimBase } from './guggenheim'
 import { buildCiudadArtes, buildCiudadArtesBase } from './ciudadArtes'
 import { buildTorreHercules, buildTorreHerculesBase } from './torreHercules'
 import { buildMezquitaCordoba, buildMezquitaCordobaBase } from './mezquitaCordoba'
+import { buildCastilloPenafiel, buildCastilloPenafielBase } from './castilloPenafiel'
 
 export interface LandmarkModel {
   /** El monumento en sí (unidades del modelo, base en y = 0). */
@@ -36,4 +37,5 @@ export const LANDMARK_MODELS: Record<string, LandmarkModel> = {
   'ciudad-artes': { build: buildCiudadArtes, base: buildCiudadArtesBase, margin: 6 },
   'torre-hercules': { build: buildTorreHercules, base: buildTorreHerculesBase, margin: 9 },
   'mezquita-cordoba': { build: buildMezquitaCordoba, base: buildMezquitaCordobaBase, margin: 6 },
+  'castillo-penafiel': { build: buildCastilloPenafiel, base: buildCastilloPenafielBase, margin: 4 },
 }
