@@ -4,10 +4,15 @@
 // screen with diameter LENS_SCREEN_DIAMETER, and this component draws a clear glass of exactly
 // that size on top of it: the map stays visible through the glass, magnified and slightly bent.
 // Esc fades the clues, the lens "lets go", and the game flies back out (onOpenChange(false)).
-// The clues on the glass (ClueRing) are placeholders for now: visible and inviting, but inactive.
-import { useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react'
-import { LENS_SCREEN_DIAMETER, type LensFocusState } from '../../shared/events'
-import ClueRing from './ClueRing'
+// Opening the lens loads the detective's point (fetchPointAnalysis, one database request); clues with
+// data become active and picking one shows its evidence sheet (ClueResult) over the lens.
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react'
+import { LENS_SCREEN_DIAMETER, type LensFocusState, type LocationInfo } from '../../shared/events'
+import { fetchPointAnalysis, type PointAnalysis } from '../../shared/pointAnalysis'
+import { supabaseConfigured } from '../../shared/supabase'
+import { CLIMATE_VARIABLES } from '../../shared/variables'
+import ClueResult from './ClueResult'
+import ClueRing, { type ClueData } from './ClueRing'
 import './VariablePicker.css'
 
 /**
@@ -39,13 +44,50 @@ interface Props {
   lensState?: LensFocusState
   /** Asks the game to fly into the hand lens (true) or back out (false) */
   onOpenChange?: (open: boolean) => void
+  /** Where the detective is: the clues show the data of this point */
+  location?: LocationInfo | null
 }
 
 const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-export default function VariablePicker({ canOpen, lensState = 'out', onOpenChange }: Props) {
+export default function VariablePicker({ canOpen, lensState = 'out', onOpenChange, location = null }: Props) {
   const [mode, setMode] = useState<Mode>('closed')
   const dialog = useRef<HTMLDivElement>(null)
+  // Data of the point under the lens, and the clue being read (variable id)
+  const [data, setData] = useState<ClueData>({ state: 'loading' })
+  const [picked, setPicked] = useState<string | null>(null)
+  const [place, setPlace] = useState('')
+  const loadRef = useRef<AbortController | null>(null)
+  const locationRef = useRef(location)
+  useEffect(() => {
+    locationRef.current = location
+  })
+  useEffect(() => () => loadRef.current?.abort(), [])
+
+  // Called when Space opens the lens: loads the point where the detective stands
+  const load = useRef(() => {})
+  useEffect(() => {
+    load.current = () => {
+      loadRef.current?.abort()
+      setPicked(null)
+      const here = locationRef.current
+      if (!here || !supabaseConfigured) {
+        setData({ state: 'error' })
+        return
+      }
+      setPlace(here.place)
+      setData({ state: 'loading' })
+      const ctrl = new AbortController()
+      loadRef.current = ctrl
+      fetchPointAnalysis(here.lat, here.lon, here.place, ctrl.signal)
+        .then((analysis) => !ctrl.signal.aborted && setData(analysis ? { state: 'ready', analysis } : { state: 'empty' }))
+        .catch(() => !ctrl.signal.aborted && setData({ state: 'error' }))
+    }
+  }, [])
+  const closeSheet = useCallback(() => {
+    setPicked(null)
+    dialog.current?.focus()
+  }, [])
 
   // The game's report moves the picker on without an extra state change:
   // zooming + 'in' is open, releasing + 'out' is closed.
@@ -69,7 +111,10 @@ export default function VariablePicker({ canOpen, lensState = 'out', onOpenChang
         // Space opens only while stopped; while moving it does nothing here (the game handles keys)
         if (e.code === 'Space' && canOpen) {
           e.preventDefault()
-          if (!e.repeat) setMode('zooming')
+          if (!e.repeat) {
+            setMode('zooming')
+            load.current()
+          }
         }
         return
       }
@@ -147,8 +192,12 @@ export default function VariablePicker({ canOpen, lensState = 'out', onOpenChang
         <GlassSurface />
 
         {/* Clues, case question and hints (title/lead ids for the dialog live there) */}
-        <ClueRing phase={phase} />
+        <ClueRing phase={phase} data={data} onPick={setPicked} />
       </div>
+
+      {phase === 'open' && picked && data.state === 'ready' && (
+        <PickedSheet analysis={data.analysis} id={picked} place={place} onBack={closeSheet} />
+      )}
     </div>
   )
 }
@@ -349,5 +398,31 @@ function GlassSurface() {
       </svg>
       <div className="variable-picker__glint" />
     </div>
+  )
+}
+
+function PickedSheet({
+  analysis,
+  id,
+  place,
+  onBack,
+}: {
+  analysis: PointAnalysis
+  id: string
+  place: string
+  onBack: () => void
+}) {
+  const variable = analysis.variables.find((v) => v.id === id)
+  if (!variable?.data) return null
+  const title = CLIMATE_VARIABLES.find((v) => v.id === id)?.name ?? variable.name
+  return (
+    <ClueResult
+      key={id}
+      variable={variable}
+      title={title}
+      place={place}
+      distanceKm={analysis.cell.distanceKm}
+      onBack={onBack}
+    />
   )
 }

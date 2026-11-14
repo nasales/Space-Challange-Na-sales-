@@ -93,6 +93,24 @@ test('Space while stopped opens the magnifier with the six variables', async ({ 
   await page.keyboard.up('w')
   await expect(page.locator('.speedometer__value')).toHaveText('0')
 
+  // The clues load the data of this point. Without a database in this build they stay inactive.
+  await expect(lens.locator('.clue-ring__footer')).not.toContainText('Reading the evidence', { timeout: 20_000 })
+  const live = lens.locator('button.clue--live')
+  if ((await live.count()) > 0) {
+    await live.first().click()
+    const sheet = page.locator('.clue-result')
+    await expect(sheet.locator('svg.clue-result__chart path.clue-result__line')).toBeVisible()
+    // The chart comes first; the statistical result only when the player asks for it
+    await expect(sheet.locator('.clue-result__verdict')).toHaveCount(0)
+    await sheet.getByRole('button', { name: /show the result/ }).click()
+    await expect(sheet.locator('.clue-result__verdict')).toContainText(/p [=<]/)
+    await page.screenshot({ path: 'test-results/magnifier-result.png' })
+    // Esc goes back to the clues, the lens stays up
+    await page.keyboard.press('Escape')
+    await expect(sheet).toBeHidden()
+    await expect(lens).toBeVisible()
+  }
+
   await page.keyboard.press('Escape')
   await expect(lens).toBeHidden({ timeout: 5_000 })
   expect(errors, `Page errors:\n${errors.join('\n')}`).toEqual([])
