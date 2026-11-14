@@ -25,10 +25,16 @@ def test_parse_drops_annual_and_converts_dates():
     assert dates[11:13] == ["2000-12", "2001-01"]
     assert dates[-1] == "2001-12"
     assert 13.0 not in values  # annual values dropped
-    assert units == "C"
+    assert units == "°C"
 
 
 def test_parse_fill_value_becomes_none():
     dates, values, _ = parse(fake_power(values={"200003": -999.0}), "T2M")
     assert values[dates.index("2000-03")] is None
     assert values[dates.index("2000-04")] == 4.0
+
+
+def test_display_units():
+    assert parse(fake_power(param="GWETTOP", units="1"), "GWETTOP")[2] == "fraction (0-1)"
+    assert parse(fake_power(param="PRECTOTCORR", units="mm/day"), "PRECTOTCORR")[2] == "mm/day"
+    assert parse(fake_power(units="W/m^2"), "T2M")[2] == "W/m^2"  # unknown units kept

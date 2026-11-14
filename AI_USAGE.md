@@ -23,3 +23,4 @@ Every agent adds one line per task.
 | 2026-11-14 | Claude Code (Opus 5.5) | Data | compare_db.py: --recompute-db option (DB side recomputed with trend_stats() of etl_espana.py when the export has no trends), one new test |
 | 2026-11-14 | Claude Code (Opus 5.5) | Data | pipeline/README.md ownership: compare_db.py, test_compare_db.py and tests/stats/test_diego_cross.py to Ivan; AGENTS.md open request on featured case studies ownership |
 | 2026-11-14 | Claude Code (Opus 5.5) | Data | Featured case studies: pipeline/cases.py, pipeline/nasa_power.py (NASA POWER monthly download/parse), pipeline/build_cases.py (13 contract files in data/cache/, raw JSON in data/raw/power/), tests; explain() no longer repeats "NASA" in the credit |
+| 2026-11-14 | Claude Code (Opus 5.5) | Data | nasa_power.py: display units (°C, fraction (0-1)); regenerated data/cache/case_*.json; AGENTS.md open request to Diego and Yeipi about the featured cases |

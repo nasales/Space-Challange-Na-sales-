@@ -3,7 +3,7 @@
  "lat": 37.0,
  "lon": -6.45,
  "variable": "GWETTOP",
- "units": "1",
+ "units": "fraction (0-1)",
  "dataset": "NASA POWER (MERRA-2 based) GWETTOP",
  "dates": [
   "1981-01",

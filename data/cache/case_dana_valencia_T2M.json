@@ -3,7 +3,7 @@
  "lat": 39.47,
  "lon": -0.38,
  "variable": "T2M",
- "units": "C",
+ "units": "°C",
  "dataset": "NASA POWER (MERRA-2 based) T2M",
  "dates": [
   "1981-01",
