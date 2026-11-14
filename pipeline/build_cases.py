@@ -56,11 +56,31 @@ def case_file(case_id: str, param: str) -> str:
     return f"data/cache/case_{case_id}_{param}.json"
 
 
-def build_index(cases: list[dict] = CASES) -> list[dict]:
-    """One entry per case: id, title, place, lat, lon, question, context, files."""
+def load_case_file(path: str | Path) -> tuple[dict, Series]:
+    """Re-run analyze_trend on a committed contract file. Returns (full trend dict, series).
+
+    The contract file stores only slope / p_value / significant / test, so the CI and the other
+    trend keys are recomputed from its dates and values (deterministic, no download).
+    """
+    case = json.loads(Path(path).read_text(encoding="utf-8"))
+    series = Series(place=case["place"], lat=case["lat"], lon=case["lon"], variable=case["variable"],
+                    units=case["units"], dataset=case["dataset"], dates=case["dates"],
+                    values=case["values"]).validate()
+    return analyze_trend(series.dates, series.values), series
+
+
+def build_index(cases: list[dict] = CASES, root: Path = ROOT) -> list[dict]:
+    """One entry per case: id, title, place, lat, lon, question, context, files, facts.
+
+    `facts` maps each variable to the explain() text of its series (built from the case files).
+    """
     keys = ("id", "title", "place", "lat", "lon", "question", "context")
-    return [{**{k: c[k] for k in keys}, "files": [case_file(c["id"], v) for v in c["variables"]]}
-            for c in cases]
+    index = []
+    for c in cases:
+        files = [case_file(c["id"], v) for v in c["variables"]]
+        facts = {v: explain(*load_case_file(Path(root) / f)) for v, f in zip(c["variables"], files)}
+        index.append({**{k: c[k] for k in keys}, "files": files, "facts": facts})
+    return index
 
 
 def write_index(path: str | Path = INDEX_PATH, cases: list[dict] = CASES) -> None:
