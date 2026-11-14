@@ -62,4 +62,6 @@ export interface GameViewProps extends GameCallbacks {
    * While true, and until 'out' is reported, the game ignores keyboard input and the detective stays still.
    */
   focusLens?: boolean
+  /** true while the pause panel is open: the game ignores driving input (the detective coasts to a stop) */
+  paused?: boolean
 }

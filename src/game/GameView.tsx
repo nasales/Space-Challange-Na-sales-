@@ -48,12 +48,12 @@ function makeTexture(canvas: HTMLCanvasElement, renderer: THREE.WebGLRenderer) {
 }
 
 /** Only the 3D canvas. The HUD and status messages live in src/ui, fed through the callbacks. */
-export default function GameView({ onStatus, onHud, onLensFocus, focusLens = false }: GameViewProps) {
+export default function GameView({ onStatus, onHud, onLensFocus, focusLens = false, paused = false }: GameViewProps) {
   const container = useRef<HTMLDivElement>(null)
   // Latest callbacks (and pause flag), read from inside the animation loop without restarting the scene
-  const callbacks = useRef({ onStatus, onHud, onLensFocus, focusLens })
+  const callbacks = useRef({ onStatus, onHud, onLensFocus, focusLens, paused })
   useEffect(() => {
-    callbacks.current = { onStatus, onHud, onLensFocus, focusLens }
+    callbacks.current = { onStatus, onHud, onLensFocus, focusLens, paused }
   })
   const setStatus = (status: GameStatus) => callbacks.current.onStatus?.(status)
   const setHud = (hud: HudState) => callbacks.current.onHud?.(hud)
@@ -217,7 +217,8 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
           const wantLens = !!callbacks.current.focusLens
           if (wantLens) lensFlying = true
           else lensInReported = false
-          const input = lensFlying ? { throttle: 0, steer: 0, turbo: false } : keyboard.read()
+          // The pause panel also ignores the keyboard (the detective coasts to a stop behind it)
+          const input = lensFlying || callbacks.current.paused ? { throttle: 0, steer: 0, turbo: false } : keyboard.read()
           stepCar(carState, input, ground, dt)
           detective.setFocus(chase.stepFocus(wantLens, dt))
           detective.update(carState, dt)
@@ -283,6 +284,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
           clouds.dispose()
           ink.dispose()
           dispose()
+          if (import.meta.env.DEV) delete (window as { __game?: unknown }).__game
         }
       })
       .catch((err) => {

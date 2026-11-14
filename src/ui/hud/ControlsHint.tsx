@@ -6,6 +6,7 @@ const CONTROLS: [string[], string][] = [
   [['Shift'], 'Sprint'],
   [['Wheel'], 'Zoom out'],
   [['Space'], 'Investigate (when stopped)'],
+  [['Esc'], 'Pause'],
 ]
 
 export default function ControlsHint() {

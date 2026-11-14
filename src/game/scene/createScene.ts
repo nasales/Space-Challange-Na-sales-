@@ -37,6 +37,8 @@ export function createScene(container: HTMLElement) {
     observer.disconnect()
     renderer.setAnimationLoop(null)
     renderer.dispose()
+    // Free the WebGL context now (browsers cap live contexts), so Main menu -> Play never leaks one
+    renderer.forceContextLoss()
     renderer.domElement.remove()
   }
 
