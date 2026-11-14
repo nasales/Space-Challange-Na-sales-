@@ -1,6 +1,5 @@
 """Tests for pipeline.level_donana and the shared pipeline.level_data."""
 
-import hashlib
 import json
 
 import pytest
@@ -45,9 +44,15 @@ def test_committed_json_is_current(data):
 
 
 def test_filomena_json_unchanged_by_the_refactor():
-    """level_filomena now uses pipeline/level_data.py: its committed JSON must be byte-identical."""
+    """level_filomena now uses pipeline/level_data.py: its committed JSON must be unchanged.
+
+    Same text up to line endings (a Windows checkout with core.autocrlf=true writes CRLF), and the
+    same parsed data."""
     from pipeline.level_filomena import OUT_PATH as FILOMENA_JSON
     from pipeline.level_filomena import build as build_filomena
 
-    text = json.dumps(build_filomena(), separators=(",", ":")) + "\n"
-    assert hashlib.sha256(text.encode()).hexdigest() == hashlib.sha256(FILOMENA_JSON.read_bytes()).hexdigest()
+    built = build_filomena()
+    text = json.dumps(built, separators=(",", ":")) + "\n"
+    committed = FILOMENA_JSON.read_bytes().replace(b"\r\n", b"\n").decode("utf-8")
+    assert committed == text
+    assert json.loads(committed) == built

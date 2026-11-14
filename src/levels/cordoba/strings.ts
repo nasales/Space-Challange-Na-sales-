@@ -13,15 +13,17 @@ export const S = {
   phase1Title: 'Record hunters',
   phase1Help: (first: number) =>
     `A month is a record warm month when it is hotter than the same calendar month in every earlier year (a record cold month: colder than all of them). We count records from ${first} on; the 1980s only build the history.`,
-  q1: 'Which decade had the most warm records?',
+  q1: 'Which decade has the highest share of warm records (warm vs cold)?',
   partialNote: (label: string, last: string) => `The ${label} are a partial decade: data run only to ${last}.`,
   recordsShown: (warm: number, cold: number) => `On the chart: ${warm} record warm months (red) and ${cold} record cold months (blue).`,
   bars1: 'Warm and cold records per decade in Córdoba',
   warmLabel: 'Warm records',
   coldLabel: 'Cold records',
-  fb1Tie: (labels: string) => `It's a tie: ${labels} share the most warm records.`,
-  fb1Top: (label: string) => `The ${label} had the most warm records.`,
-  fb1Partial: (label: string, n: number) => `The ${label} got ${n} in less than seven years.`,
+  fb1Top: (label: string, warm: number, cold: number) =>
+    `The ${label}: ${warm} warm and ${cold} cold records, the highest share of warm records.`,
+  fb1Tie: (labels: string) => `It's a tie: ${labels} have the same, highest share of warm records.`,
+  fb1Shares: (parts: string) => `Share of warm records: ${parts}.`,
+  fb1Partial: (label: string) => `And the ${label} are not even complete.`,
   fb1Cold: (first: number, last: number) =>
     `Cold records almost vanished: ${first} in the 1990s, ${last} in the 2020s.`,
   next: 'Next',

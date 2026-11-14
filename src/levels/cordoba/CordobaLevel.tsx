@@ -53,11 +53,13 @@ export default function CordobaLevel({ caseId, onExit, onResult }: CaseLevelProp
   const [a2, setA2] = useState<A2 | null>(null)
   const [score, setScore] = useState(0)
 
-  const correct1 = a1 !== null && REC.most_warm_decades.includes(a1)
+  const correct1 = a1 !== null && REC.top_share_decades.includes(a1)
   const correct2 = a2 === (SIM.more_than_chance ? 'yes' : 'no')
-  const topLabels = DECADES.filter((d) => REC.most_warm_decades.includes(d.start)).map((d) => d.label)
+  const topIdx = DECADES.flatMap((d, i) => (REC.top_share_decades.includes(d.start) ? [i] : []))
+  const topLabels = topIdx.map((i) => DECADES[i].label)
+  const shareText = DECADES.map((d, i) => `${d.label} ${REC.warm[i]} of ${REC.warm[i] + REC.cold[i]}`).join(', ')
+  const topIsPartial = topIdx.some((i) => DECADES[i].partial)
   const partial = DECADES.find((d) => d.partial)
-  const partialIndex = partial ? DECADES.indexOf(partial) : -1
   const sharePct = (SIM.share_at_least_observed * 100).toFixed(1)
 
   function finish() {
@@ -115,8 +117,11 @@ export default function CordobaLevel({ caseId, onExit, onResult }: CaseLevelProp
               <div className="lvc__feedback" role="status" data-testid="phase1-feedback">
                 <p>
                   <strong>{correct1 ? S.right : S.wrong}</strong>{' '}
-                  {topLabels.length > 1 ? S.fb1Tie(listText(topLabels)) : S.fb1Top(topLabels[0])}{' '}
-                  {partial && partialIndex >= 0 && S.fb1Partial(partial.label, REC.warm[partialIndex])}{' '}
+                  {topLabels.length > 1
+                    ? S.fb1Tie(listText(topLabels))
+                    : S.fb1Top(topLabels[0], REC.warm[topIdx[0]], REC.cold[topIdx[0]])}{' '}
+                  {S.fb1Shares(shareText)}{' '}
+                  {partial && topIsPartial && S.fb1Partial(partial.label)}{' '}
                   {S.fb1Cold(REC.cold[0], REC.cold[REC.cold.length - 1])}
                 </p>
                 <button type="button" className="lvl-button" onClick={() => setPhase(2)}>

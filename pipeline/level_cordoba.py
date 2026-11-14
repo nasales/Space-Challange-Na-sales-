@@ -7,8 +7,9 @@ Reads data/cache/case_cordoba_heat_T2M.json and writes src/levels/cordoba/cordob
 - t2m: units, dataset and monthly anomalies (dates + values) for plotting;
 - full: full-record analyze_trend result (per decade);
 - decades: label, first and last year of the four decades (the 2020s are partial);
-- records: indices of the record warm and record cold months, their counts per decade and the
-  decade(s) with the most warm records (a tie gives several);
+- records: indices of the record warm and record cold months, their counts per decade, the share
+  of warm records (warm / (warm + cold)) per decade and the decade(s) with the highest share (the
+  phase 1 answer; a tie would give several, the real data give one);
 - simulation: expected record counts per decade in the same series without its trend, and the
   simulated distribution of the total number of warm records (see simulate_records).
 
@@ -102,6 +103,11 @@ def detrended_residuals(dates: list[str], values: list, slope: float) -> list[fl
     return [None if a is None else a - slope * _decimal_year(y, m) for (y, m), a in zip(months, anom)]
 
 
+def warm_shares(warm: list[int], cold: list[int]) -> list[float | None]:
+    """Share of warm records among all records, per decade (None when a decade has no records)."""
+    return [r4(w / (w + c)) if w + c else None for w, c in zip(warm, cold)]
+
+
 def simulate_records(dates: list[str], values: list, slope: float, n: int = N_RUNS, seed: int = SEED) -> dict:
     """Warm and cold record counts per decade (arrays n x decades) of n detrended, year-shuffled
     copies of the series (method in the module docstring)."""
@@ -144,7 +150,8 @@ def build(path: Path = T2M_PATH, n: int = N_RUNS, seed: int = SEED) -> dict:
     totals = sim["warm"].sum(axis=1)
     p95 = float(np.percentile(totals, PERCENTILE))
     observed = int(sum(warm_obs))
-    top = max(warm_obs)
+    shares = warm_shares(warm_obs, cold_obs)
+    top = max(s for s in shares if s is not None)
     return {
         "case_id": "cordoba_heat",
         "t2m": {"units": case["units"], "dataset": case["dataset"], "anomalies": anomalies(dates, values)},
@@ -156,8 +163,9 @@ def build(path: Path = T2M_PATH, n: int = N_RUNS, seed: int = SEED) -> dict:
             "cold_idx": rec["cold"],
             "warm": warm_obs,
             "cold": cold_obs,
-            # every decade tied for the most warm records (all of them count as a right answer)
-            "most_warm_decades": [dec for dec, c in zip(DECADES, warm_obs) if c == top],
+            "warm_share": shares,
+            # decade(s) with the highest share of warm records (the phase 1 answer)
+            "top_share_decades": [dec for dec, s in zip(DECADES, shares) if s == top],
         },
         "simulation": {
             "seed": seed,
@@ -187,7 +195,7 @@ def main() -> int:
     print("full", data["full"])
     r, s = data["records"], data["simulation"]
     print("decades", [d["label"] for d in data["decades"]])
-    print("observed warm", r["warm"], "cold", r["cold"], "most warm", r["most_warm_decades"])
+    print("observed warm", r["warm"], "cold", r["cold"], "warm share", r["warm_share"], "top", r["top_share_decades"])
     print("expected warm", s["expected_warm"], "cold", s["expected_cold"])
     print({k: v for k, v in s.items() if not k.startswith("expected")})
     return 0

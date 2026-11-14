@@ -55,8 +55,11 @@ def test_observed_records_follow_the_definition(data):
     assert rec["warm"] == per_decade(dates, rec["warm_idx"])
     assert rec["cold"] == per_decade(dates, rec["cold_idx"])
     assert sum(rec["warm"]) == len(rec["warm_idx"]) and sum(rec["cold"]) == len(rec["cold_idx"])
-    top = max(rec["warm"])
-    assert rec["most_warm_decades"] == [d for d, c in zip(DECADES, rec["warm"]) if c == top]
+    shares = [w / (w + c) for w, c in zip(rec["warm"], rec["cold"])]
+    assert rec["warm_share"] == pytest.approx(shares, abs=1e-4)
+    # a single right answer in phase 1: the 2020s, 8 warm and 0 cold records
+    assert rec["top_share_decades"] == [2020]
+    assert (rec["warm"][-1], rec["cold"][-1]) == (8, 0)
 
 
 def test_warming_gives_more_warm_than_cold_records(data):

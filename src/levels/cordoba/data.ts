@@ -26,8 +26,10 @@ export interface CordobaData {
     /** Counts per decade, same order as decades */
     warm: number[]
     cold: number[]
-    /** Start year of every decade tied for the most warm records */
-    most_warm_decades: number[]
+    /** Share of warm records among all records (warm / (warm + cold)) per decade */
+    warm_share: (number | null)[]
+    /** Start year of the decade(s) with the highest share of warm records (phase 1 answer) */
+    top_share_decades: number[]
   }
   simulation: {
     seed: number

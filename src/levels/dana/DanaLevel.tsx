@@ -81,11 +81,6 @@ function expected2(): A2 {
   return T2M.slope_decade > 0 ? 'yes' : 'no'
 }
 
-/** The facts text of data/cases_index.json has "Â°C" in places (double-encoded degree sign). */
-function cleanFacts(text: string): string {
-  return text.replace(/Â°/g, '°')
-}
-
 export default function DanaLevel({ caseId, onExit, onResult }: CaseLevelProps) {
   const [phase, setPhase] = useState<1 | 2 | 3>(1)
   const [pick, setPick] = useState<number | null>(null)
@@ -303,13 +298,13 @@ export default function DanaLevel({ caseId, onExit, onResult }: CaseLevelProps) 
           {entry?.facts?.PRECIP && (
             <details className="lvc__facts">
               <summary>{S.factsRain}</summary>
-              <pre>{cleanFacts(entry.facts.PRECIP)}</pre>
+              <pre>{entry.facts.PRECIP}</pre>
             </details>
           )}
           {entry?.facts?.T2M && (
             <details className="lvc__facts">
               <summary>{S.factsTemp}</summary>
-              <pre>{cleanFacts(entry.facts.T2M)}</pre>
+              <pre>{entry.facts.T2M}</pre>
             </details>
           )}
           <button type="button" className="lvl-button" onClick={onExit}>

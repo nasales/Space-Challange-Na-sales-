@@ -26,7 +26,13 @@ test.describe('Córdoba heat level', () => {
     await expect(page.getByTestId('bars-observed-warm-3')).toHaveAttribute('data-value', '8')
     await expect(page.getByTestId('bars-observed-cold-0')).toHaveAttribute('data-value', '11')
     await expect(page.getByTestId('phase1-feedback')).toContainText('Not quite.')
-    await expect(page.getByTestId('phase1-feedback')).toContainText("It's a tie: 1990s, 2010s and 2020s")
+    await expect(page.getByTestId('phase1-feedback')).toContainText(
+      'The 2020s: 8 warm and 0 cold records, the highest share of warm records.',
+    )
+    await expect(page.getByTestId('phase1-feedback')).toContainText(
+      'Share of warm records: 1990s 8 of 19, 2000s 4 of 5, 2010s 8 of 9, 2020s 8 of 8.',
+    )
+    await expect(page.getByTestId('phase1-feedback')).toContainText('And the 2020s are not even complete.')
   })
 
   test('full run scores 2 / 2', async ({ page }) => {
@@ -52,7 +58,7 @@ test.describe('Córdoba heat level', () => {
   })
 
   test('saying chance explains the records is wrong', async ({ page }) => {
-    await page.getByRole('button', { name: '1990s', exact: true }).click()
+    await page.getByRole('button', { name: '2020s*' }).click()
     await page.getByRole('button', { name: 'Next' }).click()
     await page.getByRole('button', { name: 'No, chance explains them' }).click()
     await expect(page.getByTestId('phase2-feedback')).toContainText('Not quite.')
