@@ -20,14 +20,18 @@ export default function PreviewApp() {
           ))}
         </select>
         <span className="lvl-preview__count">{CASES.length} cases</span>
-        {lastResult && <span className="lvl-preview__result">{lastResult}</span>}
+        {lastResult && (
+          <span className="lvl-preview__result" data-testid="last-result">
+            {lastResult}
+          </span>
+        )}
       </header>
 
       {caseId ? (
         <CaseLevel
           caseId={caseId}
           onExit={() => setCaseId('')}
-          onResult={(r) => setLastResult(`${r.caseId}: ${r.correct ? 'correct' : 'wrong'}`)}
+          onResult={(r) => setLastResult(`onResult ${r.caseId}: ${r.correct ? 'correct' : 'wrong'}, score ${r.score ?? '-'}`)}
         />
       ) : (
         <ul className="lvl-preview__list" data-testid="case-list">
