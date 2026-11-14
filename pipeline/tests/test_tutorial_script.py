@@ -1,4 +1,9 @@
-"""Every data/tutorials/*.json follows the TutorialScript shape in src/shared/tutorial.ts."""
+"""Every data/tutorials/*.json follows the TutorialScript shape in src/shared/tutorial.ts.
+
+Chart specs are checked against the chart data of the same case,
+data/tutorial_data/<case_id>.json (built by pipeline/tutorial_data.py): variables, months,
+seasons, thresholds, windows, highlight and range dates must all exist there.
+"""
 
 import json
 from pathlib import Path
@@ -7,8 +12,15 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 TUTORIALS = sorted((ROOT / "data" / "tutorials").glob("*.json"))
-VARIABLES = {"PRECIP", "T2M"}
-VIEWS = {"monthly", "climatology", "anomaly", "annual"}
+VARIABLES = {"PRECIP", "T2M", "SOILM"}
+MONTHLY_VIEWS = {"monthly", "climatology", "anomaly", "zscore_pair", "cumulative",
+                 "running_mean", "periods"}
+YEARLY_VIEWS = {"annual", "same_month", "season", "ranking", "threshold_count",
+                "season_scatter", "window_trends"}
+VIEWS = MONTHLY_VIEWS | YEARLY_VIEWS
+TREND_VIEWS = {"monthly", "anomaly", "annual", "same_month", "season", "threshold_count"}
+SEASONS = {"DJF", "MAM", "JJA", "SON", "JJAS"}
+WINDOWS = {12, 60}
 MAX_WORDS = 90  # docs say "at most ~80 words"; small margin
 
 
@@ -16,11 +28,85 @@ def load(path):
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def series_dates(case_id, variable):
-    path = ROOT / "data" / "cache" / f"case_{case_id}_{variable}.json"
-    assert path.exists(), f"missing {path}"
-    data = load(path)
-    return [d for d, v in zip(data["dates"], data["values"]) if v is not None]
+def tutorial_data(case_id):
+    path = ROOT / "data" / "tutorial_data" / f"{case_id}.json"
+    assert path.exists(), f"missing {path} (py -m pipeline.tutorial_data --case {case_id})"
+    return load(path)
+
+
+def check_chart(step_id, chart, data):
+    """Check one ChartSpec against TutorialData; returns the variables it uses."""
+    var, view = chart["variable"], chart["view"]
+    variables = data["variables"]
+    assert var in VARIABLES, f"step {step_id}: variable {var}"
+    assert var in variables, f"step {step_id}: variable {var} not in the data of this case"
+    assert view in VIEWS, f"step {step_id}: view {view}"
+    if chart.get("show_trend"):
+        assert view in TREND_VIEWS, f"step {step_id}: no trend line on view {view}"
+    s = variables[var]
+    ex = s.get("extras")
+    if view not in {"monthly", "climatology", "anomaly", "annual"}:
+        assert ex, f"step {step_id}: view {view} needs extras in the data file"
+    used = {var}
+
+    # view-specific fields (also checked when given on another view)
+    if view == "same_month" or "month" in chart:
+        m = chart.get("month")
+        assert isinstance(m, int) and 1 <= m <= 12, f"step {step_id}: month {m}"
+    if view in ("season", "season_scatter") or "season" in chart:
+        assert chart.get("season") in SEASONS, f"step {step_id}: season {chart.get('season')}"
+    if view in ("zscore_pair", "season_scatter") or "variables" in chart:
+        pair = chart.get("variables")
+        assert isinstance(pair, list) and len(pair) == 2 and pair[0] != pair[1], \
+            f"step {step_id}: variables must be two different ids"
+        assert pair[0] == var, f"step {step_id}: variables[0] must equal variable"
+        for v in pair:
+            assert v in VARIABLES and v in variables, f"step {step_id}: variable {v} not in data"
+        used |= set(pair)
+    if view == "threshold_count" or "threshold_id" in chart:
+        ids = [t["id"] for t in ex["threshold_counts"]]
+        assert chart.get("threshold_id") in ids, \
+            f"step {step_id}: threshold_id {chart.get('threshold_id')} not in {ids}"
+    if view == "running_mean" or "window" in chart:
+        assert chart.get("window") in WINDOWS, f"step {step_id}: window {chart.get('window')}"
+    for key in ("top_n", "recent_years"):
+        if key in chart:
+            assert isinstance(chart[key], int) and chart[key] >= 1, f"step {step_id}: {key}"
+
+    # dates allowed in highlights and range
+    if view in MONTHLY_VIEWS:
+        allowed = {d for d, v in zip(s["monthly"]["dates"], s["monthly"]["values"])
+                   if v is not None}
+    else:
+        if view == "annual":
+            years = s["annual"]["years"]
+        elif view == "same_month":
+            years = ex["same_month"][chart["month"] - 1]["years"]
+        elif view == "season":
+            years = ex["seasons"][chart["season"]]["years"]
+        elif view == "ranking":
+            years = (ex["seasons"][chart["season"]]["years"] if "season" in chart
+                     else s["annual"]["years"])
+        elif view == "threshold_count":
+            years = next(t for t in ex["threshold_counts"]
+                         if t["id"] == chart["threshold_id"])["years"]
+        elif view == "season_scatter":
+            a, b = chart["variables"]
+            years = (set(variables[a]["extras"]["seasons"][chart["season"]]["years"])
+                     & set(variables[b]["extras"]["seasons"][chart["season"]]["years"]))
+        else:  # window_trends
+            years = [w["start_year"] for w in ex["window_trends"]]
+        allowed = {str(y) for y in years}
+    kind = "YYYY-MM" if view in MONTHLY_VIEWS else "YYYY"
+    for h in chart.get("highlights", []):
+        assert h["kind"] in ("point", "band") and h["label"]
+        for d in ([h["date"]] if h["kind"] == "point" else [h["from"], h["to"]]):
+            assert d in allowed, f"step {step_id}: highlight date {d} ({kind}) not in data"
+    if "range" in chart:
+        assert len(chart["range"]) == 2
+        for d in chart["range"]:
+            assert d in allowed, f"step {step_id}: range {d} ({kind}) not in data"
+    return used
 
 
 def test_there_is_at_least_one_tutorial():
@@ -33,6 +119,7 @@ def test_tutorial_script(path):
     for key in ("case_id", "title", "place", "intro", "steps", "conclusion", "reveal"):
         assert key in s, f"missing key {key}"
     assert s["case_id"] == path.stem
+    data = tutorial_data(s["case_id"])
 
     intro = s["intro"]
     assert intro["headline"] and intro["question"]
@@ -47,24 +134,7 @@ def test_tutorial_script(path):
         for key in ("id", "title", "text", "chart", "takeaway"):
             assert step.get(key), f"step {step.get('id')}: missing {key}"
         assert len(step["text"].split()) <= MAX_WORDS, f"step {step['id']}: text too long"
-
-        chart = step["chart"]
-        var, view = chart["variable"], chart["view"]
-        assert var in VARIABLES, f"step {step['id']}: variable {var}"
-        assert view in VIEWS, f"step {step['id']}: view {view}"
-        if view == "climatology":
-            assert not chart.get("show_trend"), f"step {step['id']}: no trend on climatology"
-        used.add(var)
-
-        dates = series_dates(s["case_id"], var)
-        years = {d[:4] for d in dates}
-        for h in chart.get("highlights", []):
-            assert h["kind"] in ("point", "band") and h["label"]
-            for d in ([h["date"]] if h["kind"] == "point" else [h["from"], h["to"]]):
-                assert d in dates, f"step {step['id']}: highlight date {d} not in data"
-        if "range" in chart:
-            for d in chart["range"]:
-                assert d in (years if view == "annual" else dates), f"step {step['id']}: range {d}"
+        used |= check_chart(step["id"], step["chart"], data)
 
         q = step.get("question")
         if q:
@@ -76,8 +146,64 @@ def test_tutorial_script(path):
 
     c = s["conclusion"]
     assert c["prompt"] and c["variable"] in VARIABLES
+    assert c["variable"] in data["variables"], f"conclusion variable {c['variable']} not in data"
 
     r = s["reveal"]
     assert r["lesson"]
     assert set(r["by_variable"]) == used, "reveal needs one entry per variable used"
+    assert set(r["by_variable"]) <= set(data["variables"]), "reveal variable not in data"
     assert all(r["by_variable"].values())
+
+
+# --- the validator itself, on made-up charts against the real data --------------------------
+
+@pytest.fixture(scope="module")
+def aneto():
+    return tutorial_data("aneto_glacier")
+
+
+@pytest.mark.parametrize("chart", [
+    {"variable": "T2M", "view": "same_month", "month": 1, "show_trend": True,
+     "highlights": [{"kind": "point", "date": "2021", "label": "x"}]},
+    {"variable": "T2M", "view": "season", "season": "DJF", "range": ["1981", "2025"]},
+    {"variable": "T2M", "view": "ranking", "season": "JJA", "top_n": 10, "recent_years": 10},
+    {"variable": "T2M", "view": "ranking"},
+    {"variable": "T2M", "view": "threshold_count", "threshold_id": "below_0", "show_trend": True},
+    {"variable": "T2M", "view": "zscore_pair", "variables": ["T2M", "PRECIP"]},
+    {"variable": "PRECIP", "view": "cumulative",
+     "highlights": [{"kind": "band", "from": "2005-01", "to": "2008-12", "label": "x"}]},
+    {"variable": "T2M", "view": "running_mean", "window": 60},
+    {"variable": "T2M", "view": "periods"},
+    {"variable": "PRECIP", "view": "season_scatter", "season": "JJA",
+     "variables": ["PRECIP", "T2M"], "highlights": [{"kind": "point", "date": "2005", "label": "x"}]},
+    {"variable": "T2M", "view": "window_trends",
+     "highlights": [{"kind": "point", "date": "1990", "label": "x"}]},
+])
+def test_validator_accepts(chart, aneto):
+    check_chart("t", chart, aneto)
+
+
+@pytest.mark.parametrize("chart", [
+    {"variable": "SOILM", "view": "monthly"},                              # not in this case
+    {"variable": "T2M", "view": "same_month", "month": 13},
+    {"variable": "T2M", "view": "same_month"},
+    {"variable": "T2M", "view": "season", "season": "JJAS2"},
+    {"variable": "T2M", "view": "threshold_count", "threshold_id": "above_28"},
+    {"variable": "PRECIP", "view": "threshold_count", "threshold_id": "below_0"},
+    {"variable": "T2M", "view": "zscore_pair", "variables": ["T2M", "SOILM"]},
+    {"variable": "T2M", "view": "zscore_pair", "variables": ["PRECIP", "T2M"]},
+    {"variable": "T2M", "view": "running_mean", "window": 24},
+    {"variable": "T2M", "view": "window_trends", "show_trend": True},
+    {"variable": "T2M", "view": "season", "season": "DJF",
+     "highlights": [{"kind": "point", "date": "2021-01", "label": "x"}]},  # yearly view
+    {"variable": "T2M", "view": "season", "season": "DJF",
+     "highlights": [{"kind": "point", "date": "1980", "label": "x"}]},     # no DJF 1980
+    {"variable": "T2M", "view": "monthly",
+     "highlights": [{"kind": "point", "date": "2021", "label": "x"}]},     # monthly view
+    {"variable": "PRECIP", "view": "season_scatter", "season": "JJA",
+     "variables": ["PRECIP", "T2M"], "highlights": [{"kind": "point", "date": "1985", "label": "x"}]},
+    {"variable": "T2M", "view": "window_trends", "range": ["1980", "1992"]},
+])
+def test_validator_rejects(chart, aneto):
+    with pytest.raises(AssertionError):
+        check_chart("t", chart, aneto)
