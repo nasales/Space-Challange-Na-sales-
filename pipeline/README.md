@@ -88,10 +88,16 @@ Only the contract's required fields go into the JSON. Extra fields need approval
 
 ## Interface 4 — fill the `trends` table (Diego, `pipeline/fill_trends.py`)
 ```python
-def trend_to_db_row(trend: dict, cell_id: int, var_id: str) -> dict   # analyze_trend dict -> `trends` row (slope ×10)
-def fill_trends(export_dir: str, out_path: str) -> dict               # every cell × variable -> rows file + summary
+def trend_to_db_row(trend: dict, series: Series, cell_id: int, var_id: str) -> dict  # analyze_trend dict -> `trends` row (slope ×10)
+def fill_trends(export_dir, out_path, *, sql_path=None, update_export=False, var_ids=None) -> dict
 ```
-Reads the JSON export, runs Ivan's `analyze_trend` on every series with ≥ 120 valid months, writes the rows for upload to Supabase and reports how many were skipped and why. Refuses to run with the stub.
+Reads the JSON export, runs Ivan's `analyze_trend` on every series with ≥ 120 valid months, writes the rows and reports how many were skipped and why. A `ValueError` from `analyze_trend` skips that series; any other error stops the run. Refuses to run with the stub.
+```bash
+py -m pipeline.fill_trends --export-dir export --out trends_rows.json --sql trends_upsert.sql --update-export
+```
+- `trends_rows.json`: same shape as the ETL's `trends.json`.
+- `trends_upsert.sql`: idempotent upsert (`on conflict (cell_id, var_id) do update`) to paste in the Supabase SQL editor.
+- `--update-export`: writes each trend into `export/cells/<id>.json` and `export/trends.json` (plan B and featured cases).
 
 ## Work blocks (in order; each person works on their own branch and merges to `main` per block after QA passes)
 Before starting, ask the human which person they are (Ivan or Diego) and which block is next. Do only that block, only in that owner's files.
@@ -106,7 +112,7 @@ Before starting, ask the human which person they are (Ivan or Diego) and which b
 | 3 | Ivan + Diego (humans, cross) | — | Each human writes 2-3 tests of the other's code in `tests/stats/` (agents never edit this folder) | They pass, or a bug line goes to the owner |
 | 4 | Diego | `diego_dev` | ✅ (fake export; recheck with the real one) Adapter `pipeline/sources/supabase_export.py` (`cell_id_for`, `find_cell`, `load_series`, `load_trend`, `iter_series`): reads `export/cells/<cell_id>.json` + `variables.json` into `Series` + trend dict | Returns a valid `Series` for cell `753817` (Salamanca) |
 | 4 | Ivan | `ivan_dev` | `explain(trend, series) -> str` in `explain.py`: plain-English facts for the AI checker | Correct text for one significant and one non-significant case |
-| 5 | Diego | `diego_dev` | `fill_trends.py` (Interface 4): trends for all cells × variables, handed to Perry for upload | Rows file passes a schema check; skipped series listed with a reason |
+| 5 | Diego | `diego_dev` | ✅ (needs Ivan's `trend.py` to run for real) `fill_trends.py` (Interface 4): trends for all cells × variables, handed to Perry for upload | Rows file passes a schema check; skipped series listed with a reason |
 | 6 | Diego | `diego_dev` | Featured cases in `data/cache/`, at least one non-significant | `./scripts/check.sh` passes |
 | 6 | Ivan | `ivan_dev` | (a) Spot-check `analyze_trend` against `trend_stats()` on real cells (slope, p-value, significant). (b) Compare one featured case with Giovanni (direction and rough size) | Differences noted in the SYNC CHECK report; any mismatch in `significant` goes as a bug line |
 
