@@ -23,15 +23,13 @@ import { placeTowns } from './towns/placeTowns'
 import { createTowns } from './towns/createTowns'
 import { placeScenery, loadScenery } from './scenery/placeScenery'
 import { createScenery } from './scenery/createScenery'
-import { createCarState, stepCar, damp, TUNING, type Ground } from './car/carPhysics'
+import { createCarState, stepCar, TUNING, type Ground } from './car/carPhysics'
 import { createChaseCamera } from './camera/chaseCamera'
 import { createKeyboard } from './input/keyboard'
 import { nearestPlace } from './location/nearestPlace'
 import { createLandmarks, loadLandmarks } from './landmarks/createLandmarks'
 import { bendRiversAround } from './map/rivers'
 import { createRivers } from './scene/createRivers'
-import { createCaseMarkers, loadCaseMarkers } from './cases/caseMarkers'
-import { createCaseInput } from './cases/caseInput'
 import type { GameCallbacks, GameStatus, HudState } from '../shared/events'
 import './GameView.css'
 
@@ -40,10 +38,6 @@ const EXPLORED_COUNTRY = 'ESP'
 const HUD_INTERVAL = 0.1 // s
 /** Game speed → km/h shown in the HUD (made-up game scale; full turbo still reads ~308 km/h). */
 const KMH_PER_UNIT = (2.2 * 140) / TUNING.turboSpeed
-/** No driving input (paused, or braking after opening a case). */
-const NO_INPUT = { throttle: 0, steer: 0, turbo: false }
-/** How fast the car stops when a case is opened or the game is paused (1/s). */
-const STOP_RATE = 4
 
 function makeTexture(canvas: HTMLCanvasElement, renderer: THREE.WebGLRenderer) {
   const texture = new THREE.CanvasTexture(canvas)
@@ -53,15 +47,12 @@ function makeTexture(canvas: HTMLCanvasElement, renderer: THREE.WebGLRenderer) {
 }
 
 /** Only the 3D canvas. The HUD and status messages live in src/ui, fed through the callbacks. */
-export default function GameView({ onStatus, onHud, onCaseNear, onCaseOpen, paused = false }: GameCallbacks) {
+export default function GameView({ onStatus, onHud }: GameCallbacks) {
   const container = useRef<HTMLDivElement>(null)
-  // Latest callbacks and pause flag, read from inside the animation loop without restarting the scene
-  const callbacks = useRef({ onStatus, onHud, onCaseNear, onCaseOpen, paused })
-  /** When the game was last unpaused (performance.now): the key that closed an overlay must not reopen a case */
-  const resumedAt = useRef(0)
+  // Latest callbacks, read from inside the animation loop without restarting the scene
+  const callbacks = useRef({ onStatus, onHud })
   useEffect(() => {
-    if (callbacks.current.paused && !paused) resumedAt.current = performance.now()
-    callbacks.current = { onStatus, onHud, onCaseNear, onCaseOpen, paused }
+    callbacks.current = { onStatus, onHud }
   })
   const setStatus = (status: GameStatus) => callbacks.current.onStatus?.(status)
   const setHud = (hud: HudState) => callbacks.current.onHud?.(hud)
@@ -170,25 +161,8 @@ export default function GameView({ onStatus, onHud, onCaseNear, onCaseOpen, paus
         scene.add(dust.mesh, footprints.group, magnifier.group)
         const keyboard = createKeyboard()
         const chase = createChaseCamera(camera, renderer.domElement)
-
-        // Featured-case markers ("!") over the cases that have a tutorial
-        const cases = createCaseMarkers(loadCaseMarkers(), surfaceAt)
-        scene.add(cases.group)
-        let nearCase: string | null = null
-        let braking = false // true after opening a case, until the car has stopped
-        const caseInput = createCaseInput({
-          dom: renderer.domElement,
-          nearCase: () => nearCase,
-          pick: (x, y) => cases.pick(x, y, camera),
-          isPaused: () => callbacks.current.paused,
-          resumedAt: () => resumedAt.current,
-          open: (id) => {
-            braking = true
-            callbacks.current.onCaseOpen?.(id)
-          },
-        })
         // Solo en desarrollo: acceso desde la consola/Playwright para depurar
-        if (import.meta.env.DEV) Object.assign(window, { __game: { carState, camera, chase, ground, detective, renderer, scene, towns, houses, scenery, sceneryItems, landmarks, main, cases } })
+        if (import.meta.env.DEV) Object.assign(window, { __game: { carState, camera, chase, ground, detective, renderer, scene, towns, houses, scenery, sceneryItems, landmarks, main } })
 
         const fog = scene.fog as THREE.Fog
         const ink = createInkOutline(renderer) // contornos negros de cómic
@@ -218,16 +192,7 @@ export default function GameView({ onStatus, onHud, onCaseNear, onCaseOpen, paus
           // Acotado entre 0 y 0,1 s: si el juego se atasca un momento, no da un salto enorme
           const dt = lastTime === null ? 0 : Math.min(Math.max((time - lastTime) / 1000, 0), 0.1)
           lastTime = time
-          // Paused (UI overlay open) or just opened a case: no driving, the car rolls to a stop
-          const frozen = callbacks.current.paused || braking
-          const input = frozen ? NO_INPUT : keyboard.read()
-          if (frozen) {
-            carState.speed = damp(carState.speed, 0, STOP_RATE, dt)
-            if (Math.abs(carState.speed) < 0.3) {
-              carState.speed = 0
-              braking = false
-            }
-          }
+          const input = keyboard.read()
           stepCar(carState, input, ground, dt)
           detective.update(carState, dt)
           dust.update(carState, surfaceAt, detective.stridePhase, dt)
@@ -237,11 +202,6 @@ export default function GameView({ onStatus, onHud, onCaseNear, onCaseOpen, paus
           clouds.update(dt)
           for (const z of zones) z.water.update(dt)
           scenery.update(dt, carState.x, carState.z, camera.position, chase.distance)
-          const nowNear = cases.update(dt, carState.x, carState.z, camera, chase.distance)
-          if (nowNear !== nearCase) {
-            nearCase = nowNear
-            callbacks.current.onCaseNear?.(nowNear) // only on change
-          }
           // La niebla y el plano cercano de la cámara se adaptan a la distancia:
           // de cerca hay niebla para dar profundidad; de lejos se aparta para ver todo.
           // Subir "near" de lejos da más precisión de profundidad y evita parpadeos.
@@ -266,8 +226,6 @@ export default function GameView({ onStatus, onHud, onCaseNear, onCaseOpen, paus
 
         cleanup = () => {
           keyboard.dispose()
-          caseInput.dispose()
-          cases.dispose()
           chase.dispose()
           detective.dispose()
           dust.dispose()
