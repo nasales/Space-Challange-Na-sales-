@@ -1,5 +1,5 @@
-/* Filomena level. Only --lvl-* variables from ../theme.css. */
-.flm {
+/* Shared layout of the statistics levels (Filomena, Doñana...). Only --lvl-* variables from ../theme.css. */
+.lvc {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -8,22 +8,22 @@
   padding: 20px clamp(14px, 3vw, 28px);
 }
 
-.flm p {
+.lvc p {
   margin: 0;
 }
 
-.flm .lvl-kicker {
+.lvc .lvl-kicker {
   align-self: flex-start;
 }
 
-.flm__title {
+.lvc__title {
   margin: 0;
   font-size: clamp(1.4rem, 3vw, 1.9rem);
   font-weight: 900;
   color: var(--lvl-ink);
 }
 
-.flm__step {
+.lvc__step {
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -31,19 +31,19 @@
   color: var(--lvl-muted);
 }
 
-.flm__intro {
+.lvc__intro {
   font-size: 1.05rem;
   line-height: 1.45;
 }
 
-.flm__help {
+.lvc__help {
   font-size: 14px;
   line-height: 1.45;
   color: var(--lvl-text-soft);
 }
 
 /* ---- Chart ---- */
-.flm-chart {
+.lvc-chart {
   display: block;
   width: 100%;
   height: auto;
@@ -52,58 +52,58 @@
   border-radius: var(--lvl-radius-panel);
 }
 
-.flm-chart__window {
+.lvc-chart__window {
   fill: var(--lvl-gold);
   opacity: 0.35;
 }
 
-.flm-chart__grid {
+.lvc-chart__grid {
   stroke: var(--lvl-divider);
   stroke-width: 1;
   stroke-dasharray: 3 4;
 }
 
-.flm-chart__zero {
+.lvc-chart__zero {
   stroke: var(--lvl-dark);
   stroke-width: 1.2;
 }
 
-.flm-chart__tick {
+.lvc-chart__tick {
   font: 11px var(--lvl-font);
   fill: var(--lvl-text-soft);
 }
 
-.flm-chart__series {
+.lvc-chart__series {
   fill: none;
   stroke: var(--lvl-ink);
   stroke-width: 1.2;
   stroke-linejoin: round;
 }
 
-.flm-chart__series--out {
+.lvc-chart__series--out {
   stroke: var(--lvl-divider);
 }
 
-.flm-chart__sen {
+.lvc-chart__sen {
   stroke: var(--lvl-red);
   stroke-width: 4;
   stroke-linecap: round;
 }
 
-.flm-chart__flake circle {
+.lvc-chart__marker circle {
   fill: var(--lvl-sea-light);
   stroke: var(--lvl-dark);
   stroke-width: 2;
 }
 
-.flm-chart__flake-icon {
+.lvc-chart__marker-icon {
   font: 30px var(--lvl-font);
   fill: var(--lvl-sea-dark);
   stroke: var(--lvl-dark);
   stroke-width: 0.6;
 }
 
-.flm-chart__flake-label {
+.lvc-chart__marker-label {
   font: 700 12px var(--lvl-font);
   fill: var(--lvl-dark);
   paint-order: stroke;
@@ -112,24 +112,24 @@
 }
 
 /* Removed: the point stays as a dashed outline so the player sees it is gone */
-.flm-chart__flake--removed circle {
+.lvc-chart__marker--removed circle {
   fill: none;
   stroke: var(--lvl-red);
   stroke-dasharray: 3 3;
 }
 
-.flm-chart__flake--removed .flm-chart__flake-icon {
+.lvc-chart__marker--removed .lvc-chart__marker-icon {
   opacity: 0.35;
 }
 
 /* ---- Two-handle year slider ---- */
-.flm-range {
+.lvc-range {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.flm-range__label {
+.lvc-range__label {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
@@ -137,12 +137,12 @@
   font-size: 14px;
 }
 
-.flm-range__track {
+.lvc-range__track {
   position: relative;
   height: 28px;
 }
 
-.flm-range__track::before {
+.lvc-range__track::before {
   content: '';
   position: absolute;
   left: 0;
@@ -153,7 +153,7 @@
   background: var(--lvl-divider);
 }
 
-.flm-range__fill {
+.lvc-range__fill {
   position: absolute;
   top: 11px;
   height: 6px;
@@ -161,7 +161,7 @@
   background: var(--lvl-gold);
 }
 
-.flm-range__track input[type='range'] {
+.lvc-range__track input[type='range'] {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -172,7 +172,7 @@
   -webkit-appearance: none;
 }
 
-.flm-range__track input[type='range']::-webkit-slider-thumb {
+.lvc-range__track input[type='range']::-webkit-slider-thumb {
   width: 22px;
   height: 22px;
   border: var(--lvl-border-panel);
@@ -184,7 +184,7 @@
   -webkit-appearance: none;
 }
 
-.flm-range__track input[type='range']::-moz-range-thumb {
+.lvc-range__track input[type='range']::-moz-range-thumb {
   width: 22px;
   height: 22px;
   border: var(--lvl-border-panel);
@@ -195,36 +195,36 @@
   pointer-events: auto;
 }
 
-.flm-range__track input[type='range']:focus-visible {
+.lvc-range__track input[type='range']:focus-visible {
   outline: none;
 }
 
-.flm-range__track input[type='range']:focus-visible::-webkit-slider-thumb {
+.lvc-range__track input[type='range']:focus-visible::-webkit-slider-thumb {
   outline: 4px solid var(--lvl-red);
   outline-offset: 2px;
 }
 
-.flm-range__track input[type='range']:focus-visible::-moz-range-thumb {
+.lvc-range__track input[type='range']:focus-visible::-moz-range-thumb {
   outline: 4px solid var(--lvl-red);
   outline-offset: 2px;
 }
 
 /* ---- Numbers ---- */
-.flm-panel {
+.lvc-panel {
   padding: 10px 14px;
 }
 
-.flm-panel__title {
+.lvc-panel__title {
   font-weight: 800;
   margin-bottom: 6px !important;
 }
 
-.flm-panel__short {
+.lvc-panel__short {
   font-weight: 700;
   color: var(--lvl-red);
 }
 
-.flm-panel__numbers {
+.lvc-panel__numbers {
   display: grid;
   grid-template-columns: max-content 1fr;
   gap: 4px 14px;
@@ -232,17 +232,17 @@
   font-variant-numeric: tabular-nums;
 }
 
-.flm-panel__numbers dt {
+.lvc-panel__numbers dt {
   color: var(--lvl-muted);
   font-size: 14px;
 }
 
-.flm-panel__numbers dd {
+.lvc-panel__numbers dd {
   margin: 0;
   font-weight: 700;
 }
 
-.flm-badge {
+.lvc-badge {
   grid-column: 1 / -1;
   justify-self: start;
   padding: 2px 10px;
@@ -251,11 +251,11 @@
   background: var(--lvl-panel-bg);
 }
 
-.flm-badge--yes {
+.lvc-badge--yes {
   background: var(--lvl-gold);
 }
 
-.flm-visually-hidden {
+.lvc-visually-hidden {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -265,7 +265,7 @@
 }
 
 /* ---- Questions and feedback ---- */
-.flm__question {
+.lvc__question {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
@@ -274,24 +274,24 @@
   border: none;
 }
 
-.flm__question legend {
+.lvc__question legend {
   margin-bottom: 10px;
   font-size: 1.15rem;
   font-weight: 800;
 }
 
-.flm__choice:disabled {
+.lvc__choice:disabled {
   cursor: default;
   opacity: 0.55;
 }
 
-.flm__choice--picked:disabled {
+.lvc__choice--picked:disabled {
   opacity: 1;
   outline: 4px solid var(--lvl-ink);
   outline-offset: 3px;
 }
 
-.flm__feedback {
+.lvc__feedback {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -302,30 +302,30 @@
   line-height: 1.45;
 }
 
-.flm__actions {
+.lvc__actions {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
 }
 
-.flm__toggle {
+.lvc__toggle {
   align-self: flex-start;
 }
 
-.flm__compare {
+.lvc__compare {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 12px;
 }
 
-.flm__summary {
+.lvc__summary {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 18px;
 }
 
-.flm__keys {
+.lvc__keys {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -335,12 +335,12 @@
   line-height: 1.5;
 }
 
-.flm__score {
+.lvc__score {
   font-size: 1.3rem;
   font-weight: 900;
 }
 
-.flm__facts pre {
+.lvc__facts pre {
   margin: 8px 0 0;
   padding: 10px;
   white-space: pre-wrap;
@@ -349,13 +349,91 @@
   border-radius: var(--lvl-radius-panel);
 }
 
-.flm__credit {
+.lvc__credit {
   font-size: 12px;
   color: var(--lvl-muted);
 }
 
 @media (max-width: 560px) {
-  .flm__question .lvl-button {
+  .lvc__question .lvl-button {
     flex: 1 1 100%;
   }
+}
+
+/* ---- Confidence fan ---- */
+.lvc-chart__fan {
+  fill: var(--lvl-red);
+  opacity: 0.3;
+  stroke: var(--lvl-red);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+}
+
+/* ---- p-value meter ---- */
+.lvc-meter {
+  display: block;
+  width: 100%;
+  max-width: 520px;
+  height: auto;
+}
+
+.lvc-meter__sig {
+  fill: var(--lvl-gold);
+}
+
+.lvc-meter__bar {
+  fill: var(--lvl-divider);
+}
+
+.lvc-meter__threshold {
+  stroke: var(--lvl-red);
+  stroke-width: 3;
+}
+
+.lvc-meter__side,
+.lvc-meter__tick {
+  font: 11px var(--lvl-font);
+  fill: var(--lvl-text-soft);
+}
+
+.lvc-meter__needle {
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.lvc-meter__needle polygon {
+  fill: var(--lvl-dark);
+}
+
+.lvc-meter__needle line {
+  stroke: var(--lvl-dark);
+  stroke-width: 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lvc-meter__needle {
+    transition: none;
+  }
+}
+
+/* ---- Two small charts side by side ---- */
+.lvc__pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.lvc__pair figure {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+
+.lvc__pair figcaption {
+  font-weight: 800;
+}
+
+.lvc__counter {
+  font-size: 14px;
+  color: var(--lvl-text-soft);
 }

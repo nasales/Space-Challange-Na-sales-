@@ -6,13 +6,14 @@
 import { useMemo, useState } from 'react'
 import { getCaseEntry } from '../data'
 import type { CaseLevelProps } from '../types'
-import AnomalyChart from './AnomalyChart'
-import { decimalYear, FIRST_YEAR, fmtP, fmtSlope, LAST_YEAR, LEVEL, windowResult, type TrendResult } from './data'
-import { senLine } from './sen'
+import AnomalyChart from '../common/AnomalyChart'
+import { decimalYear, fmtP, fmtSlope, type TrendResult } from '../common/format'
+import { senLine } from '../common/sen'
+import TrendPanel from '../common/TrendPanel'
+import YearRange from '../common/YearRange'
+import { FIRST_YEAR, LAST_YEAR, LEVEL, windowResult } from './data'
 import { S } from './strings'
-import TrendPanel from './TrendPanel'
-import YearRange from './YearRange'
-import './filomena.css'
+import '../common/levels-common.css'
 
 type Answer = 'yes' | 'no' | 'cant'
 type Prediction = 'lot' | 'barely'
@@ -42,6 +43,7 @@ const T = LEVEL.anomalies.dates.map(decimalYear)
 const VALUES = LEVEL.anomalies.values
 const FILOMENA_INDEX = LEVEL.anomalies.dates.indexOf(LEVEL.filomena_month)
 const T_END = T[T.length - 1] + 1 / 12
+const UNIT = '°C'
 
 function sen(pick: (i: number) => boolean) {
   const t: number[] = []
@@ -109,26 +111,34 @@ export default function FilomenaLevel({ caseId, onExit, onResult }: CaseLevelPro
   const facts = getCaseEntry(caseId)?.facts?.T2M ?? ''
 
   return (
-    <section className="flm lvl-panel" data-testid="filomena-level">
+    <section className="lvc lvl-panel" data-testid="filomena-level">
       <p className="lvl-kicker">{S.kicker}</p>
 
       {phase === 1 && (
         <>
-          <h2 className="flm__title">{S.phase1Title}</h2>
-          <p className="flm__step">{S.phase1Kicker}</p>
-          <p className="flm__intro">{S.intro}</p>
-          <p className="flm__help">{S.phase1Help}</p>
-          <AnomalyChart t={T} values={VALUES} window={[start, end]} line={windowLine} lineRange={[Math.max(start, T[0]), Math.min(end + 1, T_END)]} />
+          <h2 className="lvc__title">{S.phase1Title}</h2>
+          <p className="lvc__step">{S.phase1Kicker}</p>
+          <p className="lvc__intro">{S.intro}</p>
+          <p className="lvc__help">{S.phase1Help}</p>
+          <AnomalyChart
+            t={T}
+            values={VALUES}
+            ariaLabel={S.chartLabel}
+            axisUnit={S.axisUnit}
+            window={[start, end]}
+            line={windowLine}
+            lineRange={[Math.max(start, T[0]), Math.min(end + 1, T_END)]}
+          />
           <YearRange min={FIRST_YEAR} max={LAST_YEAR} start={start} end={end} onChange={(s, e) => setRange([s, e])} />
-          <TrendPanel title={S.panelTitle} result={result} testId="window-panel" />
+          <TrendPanel title={S.panelTitle} result={result} unit={UNIT} testId="window-panel" />
 
-          <fieldset className="flm__question" disabled={!canAnswer}>
+          <fieldset className="lvc__question" disabled={!canAnswer}>
             <legend>{S.question}</legend>
             {(Object.keys(S.answers) as Answer[]).map((a) => (
               <button
                 key={a}
                 type="button"
-                className={!canAnswer && picked === a ? 'lvl-button flm__choice flm__choice--picked' : 'lvl-button flm__choice'}
+                className={!canAnswer && picked === a ? 'lvl-button lvc__choice lvc__choice--picked' : 'lvl-button lvc__choice'}
                 onClick={() => choose(a)}
               >
                 {S.answers[a]}
@@ -137,7 +147,7 @@ export default function FilomenaLevel({ caseId, onExit, onResult }: CaseLevelPro
           </fieldset>
 
           {answer && answerResult && (
-            <div className="flm__feedback" role="status" data-testid="phase1-feedback">
+            <div className="lvc__feedback" role="status" data-testid="phase1-feedback">
               <p>{S.answeredWith(`${answer.start}–${answer.end}`)}</p>
               <p>
                 {!phase1Correct && <strong>{S.fbWrong} </strong>}
@@ -159,7 +169,7 @@ export default function FilomenaLevel({ caseId, onExit, onResult }: CaseLevelPro
                   </p>
                 </div>
               )}
-              <div className="flm__actions">
+              <div className="lvc__actions">
                 {(start !== FIRST_YEAR || end !== LAST_YEAR) && !retry && (
                   <button type="button" className="lvl-button" onClick={showFull}>
                     {S.showFull}
@@ -176,25 +186,33 @@ export default function FilomenaLevel({ caseId, onExit, onResult }: CaseLevelPro
 
       {phase === 2 && (
         <>
-          <h2 className="flm__title">{S.phase2Title}</h2>
-          <p className="flm__step">{S.phase2Kicker}</p>
-          <p className="flm__help">{S.phase2Help(filomenaAnomaly === null ? '?' : fmtSlope(filomenaAnomaly))}</p>
+          <h2 className="lvc__title">{S.phase2Title}</h2>
+          <p className="lvc__step">{S.phase2Kicker}</p>
+          <p className="lvc__help">{S.phase2Help(filomenaAnomaly === null ? '?' : fmtSlope(filomenaAnomaly))}</p>
           <AnomalyChart
             t={T}
             values={VALUES}
             line={removed ? LINE_WITHOUT : LINE_WITH}
             lineRange={[T[0], T_END]}
-            filomenaIndex={FILOMENA_INDEX}
-            filomenaRemoved={removed}
+            ariaLabel={S.chartLabel}
+            axisUnit={S.axisUnit}
+            marker={{
+              index: FILOMENA_INDEX,
+              icon: '❄',
+              label: S.filomenaShort,
+              ariaLabel: S.filomenaLabel,
+              removed,
+              testId: 'filomena-marker',
+            }}
           />
 
-          <fieldset className="flm__question" disabled={!!prediction}>
+          <fieldset className="lvc__question" disabled={!!prediction}>
             <legend>{S.predict}</legend>
             {(Object.keys(S.predictions) as Prediction[]).map((p) => (
               <button
                 key={p}
                 type="button"
-                className={prediction === p ? 'lvl-button flm__choice flm__choice--picked' : 'lvl-button flm__choice'}
+                className={prediction === p ? 'lvl-button lvc__choice lvc__choice--picked' : 'lvl-button lvc__choice'}
                 onClick={() => setPrediction(p)}
               >
                 {S.predictions[p]}
@@ -206,7 +224,7 @@ export default function FilomenaLevel({ caseId, onExit, onResult }: CaseLevelPro
             <>
               <button
                 type="button"
-                className="lvl-button flm__toggle"
+                className="lvl-button lvc__toggle"
                 aria-pressed={removed}
                 data-testid="filomena-toggle"
                 onClick={() => {
@@ -218,11 +236,11 @@ export default function FilomenaLevel({ caseId, onExit, onResult }: CaseLevelPro
               </button>
               {toggled && (
                 <>
-                  <div className="flm__compare">
-                    <TrendPanel title={S.withF} result={fWith} testId="with-panel" />
-                    <TrendPanel title={S.withoutF} result={fWithout} testId="without-panel" />
+                  <div className="lvc__compare">
+                    <TrendPanel title={S.withF} result={fWith} unit={UNIT} testId="with-panel" />
+                    <TrendPanel title={S.withoutF} result={fWithout} unit={UNIT} testId="without-panel" />
                   </div>
-                  <div className="flm__feedback" role="status" data-testid="phase2-feedback">
+                  <div className="lvc__feedback" role="status" data-testid="phase2-feedback">
                     <p>
                       <strong>{phase2Correct ? S.fbPredictRight : S.fbPredictWrong}</strong>{' '}
                       {S.fbMedian(slopeOf(fWith), slopeOf(fWithout))}
@@ -239,18 +257,18 @@ export default function FilomenaLevel({ caseId, onExit, onResult }: CaseLevelPro
       )}
 
       {phase === 3 && (
-        <div className="flm__summary" data-testid="filomena-summary">
-          <p className="flm__step">{S.summaryKicker}</p>
-          <h2 className="flm__title">{S.summaryTitle}</h2>
-          <ul className="flm__keys">
+        <div className="lvc__summary" data-testid="filomena-summary">
+          <p className="lvc__step">{S.summaryKicker}</p>
+          <h2 className="lvc__title">{S.summaryTitle}</h2>
+          <ul className="lvc__keys">
             <li>{S.key1(slopeOf(fWith))}</li>
             <li>{S.key2}</li>
           </ul>
-          <p className="flm__score" data-testid="filomena-score">
+          <p className="lvc__score" data-testid="filomena-score">
             {S.score(score)}
           </p>
           {facts && (
-            <details className="flm__facts">
+            <details className="lvc__facts">
               <summary>{S.factsTitle}</summary>
               <pre>{facts}</pre>
             </details>
@@ -261,7 +279,7 @@ export default function FilomenaLevel({ caseId, onExit, onResult }: CaseLevelPro
         </div>
       )}
 
-      <p className="flm__credit">{S.credit(LEVEL.dataset)}</p>
+      <p className="lvc__credit">{S.credit(LEVEL.dataset)}</p>
     </section>
   )
 }

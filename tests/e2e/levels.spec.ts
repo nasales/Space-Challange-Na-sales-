@@ -135,3 +135,70 @@ test.describe('Filomena level', () => {
     await expect(page.getByTestId('case-list')).toBeVisible()
   })
 })
+
+test.describe('Doñana level', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/levels.html')
+    await page.getByTestId('case-select').selectOption('donana')
+  })
+
+  test('starts on the full record, significant by a hair', async ({ page }) => {
+    await expect(page.getByRole('heading', { name: 'On the edge' })).toBeVisible()
+    await expect(page.getByTestId('range-value')).toContainText('2000 – 2026')
+    await expect(page.getByTestId('window-panel-p')).toHaveText('0.0498')
+    await expect(page.getByTestId('window-panel')).toContainText('Significant')
+    await expect(page.getByTestId('p-meter')).toHaveAttribute('data-p', '0.0498')
+  })
+
+  test('moving the end one year flips the result and the counter shows it', async ({ page }) => {
+    const end = page.getByTestId('range-end')
+    await end.focus()
+    await end.press('ArrowLeft') // 2000-2025
+    await expect(page.getByTestId('range-value')).toContainText('2000 – 2025')
+    await expect(page.getByTestId('window-panel')).toContainText('Not significant')
+    await expect(page.getByTestId('p-meter')).not.toHaveAttribute('data-p', '0.0498')
+    await expect(page.getByTestId('flip-counter')).toContainText('2 windows: 1 significant, 1 not significant')
+    await expect(page.getByTestId('flip-counter')).toContainText('flipped 1 time.')
+  })
+
+  test('all three phases answered right score 3 and fire onResult', async ({ page }) => {
+    await page.getByRole('button', { name: 'Weak' }).click()
+    await expect(page.getByTestId('phase1-feedback')).toContainText('Right: weak.')
+    await page.getByRole('button', { name: 'Next' }).click()
+
+    await expect(page.getByRole('heading', { name: 'The confidence range' })).toBeVisible()
+    await expect(page.getByTestId('ci-fan')).toHaveCount(0) // revealed after the answer
+    await page.getByRole('button', { name: 'Yes', exact: true }).click()
+    await expect(page.getByTestId('ci-fan')).toBeVisible()
+    await expect(page.getByTestId('phase2-feedback')).toContainText('Right!')
+    await expect(page.getByTestId('phase2-feedback')).toContainText('it includes zero')
+    await expect(page.getByTestId('phase2-feedback')).toContainText('different tools')
+    await page.getByRole('button', { name: 'Next' }).click()
+
+    await expect(page.getByRole('heading', { name: 'Rain or something else?' })).toBeVisible()
+    await expect(page.getByTestId('rain-panel')).toContainText('Not significant')
+    await expect(page.getByTestId('soil-panel')).toContainText('Significant')
+    await page.getByRole('button', { name: 'Rain alone does not explain it' }).click()
+    await expect(page.getByTestId('phase3-feedback')).toContainText('Right!')
+    await page.getByRole('button', { name: 'See the summary' }).click()
+
+    await expect(page.getByTestId('donana-score')).toHaveText('Score: 3 / 3')
+    await expect(page.getByTestId('last-result')).toHaveText('onResult donana: correct, score 3')
+    await page.getByRole('button', { name: 'Back to the map' }).click()
+    await expect(page.getByTestId('case-list')).toBeVisible()
+  })
+
+  test('wrong answers score 0', async ({ page }) => {
+    await page.getByRole('button', { name: 'Strong' }).click()
+    await expect(page.getByTestId('phase1-feedback')).toContainText('Not quite.')
+    await page.getByRole('button', { name: 'Next' }).click()
+    await page.getByRole('button', { name: 'No', exact: true }).click()
+    await expect(page.getByTestId('phase2-feedback')).toContainText('Not quite.')
+    await page.getByRole('button', { name: 'Next' }).click()
+    await page.getByRole('button', { name: 'Yes, less rain' }).click()
+    await expect(page.getByTestId('phase3-feedback')).toContainText('Not quite.')
+    await page.getByRole('button', { name: 'See the summary' }).click()
+    await expect(page.getByTestId('donana-score')).toHaveText('Score: 0 / 3')
+    await expect(page.getByTestId('last-result')).toHaveText('onResult donana: wrong, score 0')
+  })
+})
