@@ -2,11 +2,12 @@
 // follows the lens circle, the case question in the centre, and the hints lettered along the rim.
 // Comic look of the game (ink outlines, Ben-Day halftone, print misregistration, motion on twos).
 //
-// The medallions are placeholders for now: they look and react like real clues (hover and
-// keyboard focus run the full sequence) but picking one does nothing yet. They use
-// aria-disabled instead of the `disabled` attribute on purpose: a disabled button gets no hover,
-// no focus and no Tab stop, so neither mouse nor keyboard players could look at the clues.
+// A medallion is live when the database has a trend for that variable at the detective's point
+// (data from VariablePicker); picking it calls onPick and the picker shows the evidence sheet.
+// Clues without data use aria-disabled instead of the `disabled` attribute on purpose: a disabled
+// button gets no hover, no focus and no Tab stop, so players could not even look at the clue.
 import { useId, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react'
+import type { PointAnalysis } from '../../shared/pointAnalysis'
 import { CLIMATE_VARIABLES, type ClimateVariable, type VariableIcon } from '../../shared/variables'
 import './ClueRing.css'
 
@@ -32,11 +33,32 @@ function slotPosition(index: number, count: number) {
   }
 }
 
+/** Data of the point under the lens, loaded by VariablePicker when the lens opens */
+export type ClueData =
+  | { state: 'loading' }
+  | { state: 'error' }
+  | { state: 'empty' }
+  | { state: 'ready'; analysis: PointAnalysis }
+
 interface Props {
   phase: ClueRingPhase
+  data: ClueData
+  /** A live clue was picked (variable id) */
+  onPick: (id: string) => void
 }
 
-export default function ClueRing({ phase }: Props) {
+/** Short status lettered on the rim and stamped on clues that cannot be opened */
+function dataStatus(data: ClueData): { rim: string; stamp: string } {
+  if (data.state === 'loading') return { rim: 'Reading the evidence…', stamp: 'Wait' }
+  if (data.state === 'empty') return { rim: 'No data here: try on land', stamp: 'No data' }
+  if (data.state === 'error') return { rim: 'Evidence archive offline', stamp: 'Offline' }
+  return { rim: 'Pick a clue to read it', stamp: 'No data' }
+}
+
+export default function ClueRing({ phase, data, onPick }: Props) {
+  const status = dataStatus(data)
+  const live = (id: string) =>
+    data.state === 'ready' && !!data.analysis.variables.find((v) => v.id === id)?.data
   const uid = useId()
   const buttons = useRef<(HTMLButtonElement | null)[]>([])
   const [hovered, setHovered] = useState<number | null>(null)
@@ -93,6 +115,7 @@ export default function ClueRing({ phase }: Props) {
         {CLIMATE_VARIABLES.map((v, i) => {
           const { x, y } = slotPosition(i, count)
           const descId = `${uid}-clue-${v.id}`
+          const isLive = live(v.id)
           return (
             <li
               key={v.id}
@@ -104,16 +127,16 @@ export default function ClueRing({ phase }: Props) {
                   buttons.current[i] = el
                 }}
                 type="button"
-                className="clue"
-                aria-disabled="true"
+                className={`clue${isLive ? ' clue--live' : ''}`}
+                aria-disabled={!isLive}
                 aria-label={`${v.name} (${v.unit})`}
                 aria-describedby={descId}
-                title="Coming soon"
+                title={isLive ? undefined : status.stamp}
                 onClick={(e) => {
-                  // Not wired yet: no action. A tap on a touch screen (no hover) shows the
-                  // clue's question in the centre instead.
                   e.preventDefault()
-                  if ((e.nativeEvent as PointerEvent).pointerType === 'touch') setFocused(i)
+                  if (isLive) onPick(v.id)
+                  // Without data a tap on a touch screen (no hover) shows the clue's question instead
+                  else if ((e.nativeEvent as PointerEvent).pointerType === 'touch') setFocused(i)
                 }}
                 onPointerEnter={(e) => e.pointerType !== 'touch' && setHovered(i)}
                 onPointerLeave={() => setHovered((h) => (h === i ? null : h))}
@@ -135,7 +158,7 @@ export default function ClueRing({ phase }: Props) {
                       <ClueIcon icon={v.icon} />
                     </span>
                   </span>
-                  <span className="clue__stamp">Soon</span>
+                  {!isLive && <span className="clue__stamp">{status.stamp}</span>}
                 </span>
                 <span className="clue__label" aria-hidden="true">
                   <span className="clue__name" data-text={v.shortName}>
@@ -147,7 +170,7 @@ export default function ClueRing({ phase }: Props) {
                   </svg>
                 </span>
                 <span id={descId} className="clue-ring__sr">
-                  {v.blurb} Coming soon.
+                  {v.blurb} {isLive ? '' : `${status.stamp}.`}
                 </span>
               </button>
             </li>
@@ -164,7 +187,7 @@ export default function ClueRing({ phase }: Props) {
         </defs>
         <text className="clue-ring__rim-text" style={{ '--i': count + 1 } as CSSProperties}>
           <textPath href={`#${uid}-rim-left`} startOffset="50%" textAnchor="middle">
-            New clues unlock soon
+            {status.rim}
           </textPath>
         </text>
         <text className="clue-ring__rim-text" style={{ '--i': count + 1 } as CSSProperties}>
@@ -176,7 +199,7 @@ export default function ClueRing({ phase }: Props) {
 
       {/* The same hints as plain text: read by screen readers, shown on narrow screens */}
       <div className="clue-ring__footer" style={{ '--i': count + 1 } as CSSProperties}>
-        <p className="clue-ring__soon">New clues unlock soon</p>
+        <p className="clue-ring__soon">{status.rim}</p>
         <p className="clue-ring__back">
           <kbd>Esc</kbd> Back to the map
         </p>

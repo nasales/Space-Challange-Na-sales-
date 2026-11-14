@@ -130,7 +130,12 @@ function Game() {
       />
       <Hud status={status} hud={hud} />
       {/* Outside case zones Space opens the magnifier picker, as before */}
-      <VariablePicker canOpen={status === 'ready' && !!hud?.stopped && !zoneCase && !openCase} lensState={lensState} onOpenChange={setFocusLens} />
+      <VariablePicker
+        canOpen={status === 'ready' && !!hud?.stopped && !zoneCase && !openCase}
+        lensState={lensState}
+        onOpenChange={setFocusLens}
+        location={hud?.location ?? null}
+      />
       {zoneCase && !openCase && (
         <div className="case-zone-hint" style={HINT_STYLE}>
           {hud?.stopped ? 'Press Space' : 'Stop and press Space'} to investigate {getCaseEntry(zoneCase)?.title ?? zoneCase}
