@@ -68,4 +68,6 @@ export interface GameViewProps extends GameCallbacks {
   focusLens?: boolean
   /** Detective clothes picked in the Wardrobe; changing it recolors him live (the map is not rebuilt). */
   outfit?: Outfit
+  /** true while the pause panel is open: the game ignores driving input (the detective coasts to a stop) */
+  paused?: boolean
 }

@@ -50,12 +50,12 @@ function makeTexture(canvas: HTMLCanvasElement, renderer: THREE.WebGLRenderer) {
 }
 
 /** Only the 3D canvas. The HUD and status messages live in src/ui, fed through the callbacks. */
-export default function GameView({ onStatus, onHud, onLensFocus, onProgress, focusLens = false, outfit }: GameViewProps) {
+export default function GameView({ onStatus, onHud, onLensFocus, onProgress, focusLens = false, outfit, paused = false }: GameViewProps) {
   const container = useRef<HTMLDivElement>(null)
   // Latest callbacks (and pause flag), read from inside the animation loop without restarting the scene
-  const callbacks = useRef({ onStatus, onHud, onLensFocus, onProgress, focusLens })
+  const callbacks = useRef({ onStatus, onHud, onLensFocus, onProgress, focusLens, paused })
   useEffect(() => {
-    callbacks.current = { onStatus, onHud, onLensFocus, onProgress, focusLens }
+    callbacks.current = { onStatus, onHud, onLensFocus, onProgress, focusLens, paused }
   })
   const setStatus = (status: GameStatus) => callbacks.current.onStatus?.(status)
   const setHud = (hud: HudState) => callbacks.current.onHud?.(hud)
@@ -267,9 +267,10 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
           const wantLens = !!callbacks.current.focusLens
           if (wantLens) lensFlying = true
           else lensInReported = false
-          // Intro swoop: no control (and no HUD) until the camera lands on the chase view
+          // Intro swoop: no control (and no HUD) until the camera lands on the chase view.
+          // The pause panel also ignores the keyboard (the detective coasts to a stop behind it)
           const introBefore = chase.introActive
-          const input = lensFlying || introBefore ? { throttle: 0, steer: 0, turbo: false } : keyboard.read()
+          const input = lensFlying || introBefore || callbacks.current.paused ? { throttle: 0, steer: 0, turbo: false } : keyboard.read()
           stepCar(carState, input, ground, dt)
           detective.setFocus(chase.stepFocus(wantLens, dt))
           detective.update(carState, dt)
@@ -342,6 +343,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
           clouds.dispose()
           ink.dispose()
           dispose()
+          if (import.meta.env.DEV) delete (window as { __game?: unknown }).__game
         }
       })
       .catch((err) => {

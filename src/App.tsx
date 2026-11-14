@@ -8,6 +8,7 @@ import Hud from './ui/hud/Hud'
 import MapLoader from './ui/loading/MapLoader'
 import MainMenu from './ui/menu/MainMenu'
 import VariablePicker from './ui/magnifier/VariablePicker'
+import PauseMenu from './ui/pause/PauseMenu'
 import Wardrobe from './ui/wardrobe/Wardrobe'
 import DbTest from './ui/dbtest/DbTest'
 import DbStatus from './ui/status/DbStatus'
@@ -45,6 +46,18 @@ function Game() {
   // meanwhile); the game reports when the flight has arrived (in) or is back (out)
   const [focusLens, setFocusLens] = useState(false)
   const [lensState, setLensState] = useState<LensFocusState>('out')
+  // Esc pause panel on the map (the game ignores driving input while it is open)
+  const [paused, setPaused] = useState(false)
+  const exitToMenu = () => {
+    // GameView unmounts and disposes its scene; reset the game state so Play starts fresh
+    setPaused(false)
+    setFocusLens(false)
+    setLensState('out')
+    setHud(null)
+    setStatus('loading')
+    setLoadProgress(0)
+    setScreen('menu')
+  }
 
   if (screen === 'menu') {
     return (
@@ -73,10 +86,12 @@ function Game() {
 
   return (
     <main className="app">
-      <GameView onStatus={setStatus} onHud={setHud} focusLens={focusLens} onLensFocus={setLensState} onProgress={setLoadProgress} outfit={outfit} />
+      <GameView onStatus={setStatus} onHud={setHud} focusLens={focusLens} onLensFocus={setLensState} onProgress={setLoadProgress} outfit={outfit} paused={paused} />
       <Hud status={status} hud={hud} />
       <MapLoader status={status} progress={loadProgress} outfit={outfit} />
-      <VariablePicker canOpen={status === 'ready' && !!hud?.stopped} lensState={lensState} onOpenChange={setFocusLens} />
+      <VariablePicker canOpen={status === 'ready' && !!hud?.stopped && !paused} lensState={lensState} onOpenChange={setFocusLens} />
+      {/* After the picker, so the picker's Esc handler runs first and wins */}
+      <PauseMenu open={paused} canOpen={status === 'ready' && !focusLens && lensState === 'out'} onOpenChange={setPaused} onMainMenu={exitToMenu} />
     </main>
   )
 }

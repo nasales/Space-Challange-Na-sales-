@@ -95,5 +95,48 @@ test('Space while stopped opens the magnifier with the six variables', async ({ 
 
   await page.keyboard.press('Escape')
   await expect(lens).toBeHidden({ timeout: 5_000 })
+  // Esc closed the lens only: it must not also open the pause panel
+  await expect(page.locator('.pause-menu')).toHaveCount(0)
+  expect(errors, `Page errors:\n${errors.join('\n')}`).toEqual([])
+})
+
+// Pause panel (src/ui/pause/): Esc -> pause (driving ignored) -> Esc resumes -> Esc -> Main menu -> Play again.
+test('Esc pauses the game and Main menu goes back to the menu', async ({ page }) => {
+  test.setTimeout(180_000)
+  const errors: string[] = []
+  page.on('pageerror', (err) => errors.push(err.message))
+
+  await startGame(page)
+  await expect(page.locator('.speedometer')).toBeVisible({ timeout: 30_000 })
+
+  const pause = page.getByRole('dialog', { name: 'Paused' })
+  await page.keyboard.press('Escape')
+  await expect(pause).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Resume' })).toBeFocused()
+  await page.screenshot({ path: 'test-results/pause-open.png' })
+
+  // While paused the detective does not move
+  await page.keyboard.down('w')
+  await page.waitForTimeout(500)
+  await page.keyboard.up('w')
+  await expect(page.locator('.speedometer__value')).toHaveText('0')
+
+  // Esc again resumes
+  await page.keyboard.press('Escape')
+  await expect(pause).toBeHidden()
+
+  // Arrow keys move between the buttons; Enter on "Main menu" leaves the game
+  await page.keyboard.press('Escape')
+  await expect(pause).toBeVisible()
+  await page.keyboard.press('ArrowDown')
+  await expect(page.getByRole('button', { name: 'Main menu' })).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect(page.getByRole('button', { name: 'Play' })).toBeVisible()
+  await expect(page.locator('.game-view__canvas')).toHaveCount(0)
+
+  // Play again builds a fresh map
+  await page.getByRole('button', { name: 'Play' }).click()
+  await expect(page.locator('.game-view__canvas canvas')).toHaveCount(1, { timeout: 30_000 })
+  await expect(page.locator('.speedometer')).toBeVisible({ timeout: 30_000 })
   expect(errors, `Page errors:\n${errors.join('\n')}`).toEqual([])
 })
