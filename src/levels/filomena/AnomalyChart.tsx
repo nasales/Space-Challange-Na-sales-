@@ -139,10 +139,18 @@ export default function AnomalyChart({
       )}
 
       {filomenaIndex !== undefined && fv !== null && (
-        <g className={filomenaRemoved ? 'flm-chart__flake flm-chart__flake--removed' : 'flm-chart__flake'}>
-          <circle cx={x(t[filomenaIndex])} cy={y(fv)} r={5} />
-          <text x={x(t[filomenaIndex])} y={y(fv) + 26} textAnchor="middle" aria-label={S.filomenaLabel}>
+        <g
+          className={filomenaRemoved ? 'flm-chart__flake flm-chart__flake--removed' : 'flm-chart__flake'}
+          data-testid="filomena-marker"
+          data-removed={filomenaRemoved}
+          aria-label={S.filomenaLabel}
+        >
+          <circle cx={x(t[filomenaIndex])} cy={y(fv)} r={7} />
+          <text className="flm-chart__flake-icon" x={x(t[filomenaIndex])} y={y(fv) + 36} textAnchor="middle">
             ❄
+          </text>
+          <text className="flm-chart__flake-label" x={x(t[filomenaIndex])} y={y(fv) + 52} textAnchor="middle">
+            {S.filomenaShort}
           </text>
         </g>
       )}

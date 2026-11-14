@@ -93,16 +93,33 @@
 .flm-chart__flake circle {
   fill: var(--lvl-sea-light);
   stroke: var(--lvl-dark);
-  stroke-width: 1.5;
+  stroke-width: 2;
 }
 
-.flm-chart__flake text {
-  font: 20px var(--lvl-font);
+.flm-chart__flake-icon {
+  font: 30px var(--lvl-font);
   fill: var(--lvl-sea-dark);
+  stroke: var(--lvl-dark);
+  stroke-width: 0.6;
 }
 
-.flm-chart__flake--removed {
-  opacity: 0.25;
+.flm-chart__flake-label {
+  font: 700 12px var(--lvl-font);
+  fill: var(--lvl-dark);
+  paint-order: stroke;
+  stroke: var(--lvl-paper);
+  stroke-width: 3;
+}
+
+/* Removed: the point stays as a dashed outline so the player sees it is gone */
+.flm-chart__flake--removed circle {
+  fill: none;
+  stroke: var(--lvl-red);
+  stroke-dasharray: 3 3;
+}
+
+.flm-chart__flake--removed .flm-chart__flake-icon {
+  opacity: 0.35;
 }
 
 /* ---- Two-handle year slider ---- */
@@ -301,7 +318,17 @@
   gap: 12px;
 }
 
+.flm__summary {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 18px;
+}
+
 .flm__keys {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   margin: 0;
   padding-left: 20px;
   font-size: 1.05rem;

@@ -66,6 +66,9 @@ export default function FilomenaLevel({ caseId, onExit, onResult }: CaseLevelPro
   const [phase, setPhase] = useState<1 | 2 | 3>(1)
   const [range, setRange] = useState<[number, number]>([2018, 2021])
   const [answer, setAnswer] = useState<{ value: Answer; start: number; end: number } | null>(null)
+  // After a wrong first answer, "Show 1980-2026" opens one second try worth half a point.
+  const [retryOpen, setRetryOpen] = useState(false)
+  const [retry, setRetry] = useState<{ value: Answer; start: number; end: number } | null>(null)
   const [prediction, setPrediction] = useState<Prediction | null>(null)
   const [removed, setRemoved] = useState(false)
   const [toggled, setToggled] = useState(false)
@@ -76,8 +79,23 @@ export default function FilomenaLevel({ caseId, onExit, onResult }: CaseLevelPro
 
   const answerResult = answer ? windowResult(answer.start, answer.end) : null
   const phase1Correct = !!answer && !!answerResult && answer.value === expectedAnswer(answerResult)
+  const retryResult = retry ? windowResult(retry.start, retry.end) : null
+  const retryCorrect = !!retry && !!retryResult && retry.value === expectedAnswer(retryResult)
   const phase2Correct = prediction === 'barely'
-  const score = Number(phase1Correct) + Number(phase2Correct)
+  const phase1Points = phase1Correct ? 1 : retryCorrect ? 0.5 : 0
+  const score = phase1Points + Number(phase2Correct)
+  const canAnswer = !answer || (retryOpen && !retry)
+  const picked = retry?.value ?? answer?.value
+
+  function choose(a: Answer) {
+    if (!answer) setAnswer({ value: a, start, end })
+    else setRetry({ value: a, start, end })
+  }
+
+  function showFull() {
+    setRange([FIRST_YEAR, LAST_YEAR])
+    if (!phase1Correct) setRetryOpen(true)
+  }
 
   const fWith = LEVEL.filomena.with
   const fWithout = LEVEL.filomena.without
@@ -104,14 +122,14 @@ export default function FilomenaLevel({ caseId, onExit, onResult }: CaseLevelPro
           <YearRange min={FIRST_YEAR} max={LAST_YEAR} start={start} end={end} onChange={(s, e) => setRange([s, e])} />
           <TrendPanel title={S.panelTitle} result={result} testId="window-panel" />
 
-          <fieldset className="flm__question" disabled={!!answer}>
+          <fieldset className="flm__question" disabled={!canAnswer}>
             <legend>{S.question}</legend>
             {(Object.keys(S.answers) as Answer[]).map((a) => (
               <button
                 key={a}
                 type="button"
-                className={answer?.value === a ? 'lvl-button flm__choice flm__choice--picked' : 'lvl-button flm__choice'}
-                onClick={() => setAnswer({ value: a, start, end })}
+                className={!canAnswer && picked === a ? 'lvl-button flm__choice flm__choice--picked' : 'lvl-button flm__choice'}
+                onClick={() => choose(a)}
               >
                 {S.answers[a]}
               </button>
@@ -125,9 +143,25 @@ export default function FilomenaLevel({ caseId, onExit, onResult }: CaseLevelPro
                 {!phase1Correct && <strong>{S.fbWrong} </strong>}
                 {phase1Feedback(answer.value, answerResult, answer.end - answer.start + 1)}
               </p>
+              {retryOpen && !retry && <p data-testid="retry-prompt">{S.retryPrompt}</p>}
+              {retry && retryResult && (
+                <div data-testid="retry-feedback">
+                  <p>{S.retryAnswered(`${retry.start}–${retry.end}`)}</p>
+                  <p>
+                    {retryCorrect ? (
+                      S.retryRight(retry.end - retry.start + 1)
+                    ) : (
+                      <>
+                        <strong>{S.fbWrong} </strong>
+                        {phase1Feedback(retry.value, retryResult, retry.end - retry.start + 1)}
+                      </>
+                    )}
+                  </p>
+                </div>
+              )}
               <div className="flm__actions">
-                {(start !== FIRST_YEAR || end !== LAST_YEAR) && (
-                  <button type="button" className="lvl-button" onClick={() => setRange([FIRST_YEAR, LAST_YEAR])}>
+                {(start !== FIRST_YEAR || end !== LAST_YEAR) && !retry && (
+                  <button type="button" className="lvl-button" onClick={showFull}>
                     {S.showFull}
                   </button>
                 )}
@@ -205,7 +239,7 @@ export default function FilomenaLevel({ caseId, onExit, onResult }: CaseLevelPro
       )}
 
       {phase === 3 && (
-        <div data-testid="filomena-summary">
+        <div className="flm__summary" data-testid="filomena-summary">
           <p className="flm__step">{S.summaryKicker}</p>
           <h2 className="flm__title">{S.summaryTitle}</h2>
           <ul className="flm__keys">

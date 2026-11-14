@@ -47,6 +47,9 @@ export const S = {
   fbMissedSigUp: 'Here the evidence is clear: the slope is positive and p < 0.05, so the data support "Yes".',
   fbMissedSigDown: 'Here the slope is negative and p < 0.05, so the data support "No".',
   showFull: 'Show 1980-2026',
+  retryPrompt: 'Second try (half a point): look at the full record and answer again.',
+  retryRight: (n: number) => `Now with ${n} years the evidence is clear.`,
+  retryAnswered: (years: string) => `Second try, looking at ${years}.`,
   next: 'Next',
 
   // Phase 2
@@ -55,6 +58,7 @@ export const S = {
   phase2Help: (anomaly: string) =>
     `The snowflake marks January 2021, the month of Filomena (${anomaly} °C compared with a normal January).`,
   filomenaLabel: 'Filomena, January 2021',
+  filomenaShort: 'Jan 2021',
   predict: 'If we remove Filomena, the trend will…',
   predictions: { lot: 'Change a lot', barely: 'Barely change' },
   remove: 'Remove Filomena',
@@ -76,5 +80,5 @@ export const S = {
   score: (n: number) => `Score: ${n} / 2`,
   factsTitle: 'The statistical facts',
   exit: 'Back to the map',
-  credit: (dataset: string) => `Data: ${dataset}`,
+  credit: (dataset: string) => `Data: NASA MERRA-2 (${dataset.replace(/^NASA /, '')}), monthly 2 m air temperature`,
 }

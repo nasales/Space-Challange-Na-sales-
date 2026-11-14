@@ -87,6 +87,29 @@ test.describe('Filomena level', () => {
     await expect(page.getByTestId('last-result')).toHaveText('onResult filomena_madrid: wrong, score 1')
   })
 
+  test('a wrong answer gets a half-point second try on the full record', async ({ page }) => {
+    await page.getByRole('button', { name: 'Yes', exact: true }).click() // 2018-2021 is too short: wrong
+    const feedback = page.getByTestId('phase1-feedback')
+    await expect(feedback).toContainText('Not quite.')
+    await feedback.getByRole('button', { name: 'Show 1980-2026' }).click()
+    await expect(page.getByTestId('range-value')).toContainText('1980 – 2026')
+    await expect(page.getByTestId('retry-prompt')).toBeVisible()
+
+    await page.getByRole('button', { name: 'Yes', exact: true }).click() // second try: right
+    await expect(page.getByTestId('retry-feedback')).toContainText('Now with 47 years the evidence is clear.')
+    await expect(page.getByRole('button', { name: 'Yes', exact: true })).toBeDisabled()
+
+    await feedback.getByRole('button', { name: 'Next' }).click()
+    await page.getByRole('button', { name: 'Barely change' }).click()
+    const marker = page.getByTestId('filomena-marker')
+    await expect(marker).toContainText('Jan 2021')
+    await page.getByTestId('filomena-toggle').click()
+    await expect(marker).toHaveAttribute('data-removed', 'true')
+    await page.getByRole('button', { name: 'See the summary' }).click()
+    await expect(page.getByTestId('filomena-score')).toHaveText('Score: 1.5 / 2')
+    await expect(page.getByTestId('last-result')).toHaveText('onResult filomena_madrid: wrong, score 1.5')
+  })
+
   test('phase 2 toggle moves the line and onResult fires at the end', async ({ page }) => {
     const start = page.getByTestId('range-start')
     await start.focus()
