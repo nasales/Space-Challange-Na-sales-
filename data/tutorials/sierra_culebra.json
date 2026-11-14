@@ -1,0 +1,259 @@
+{
+  "case_id": "sierra_culebra",
+  "title": "Sierra de la Culebra fire",
+  "place": "Sierra de la Culebra (Zamora)",
+  "intro": {
+    "headline": "June 2022: Sierra de la Culebra on fire",
+    "paragraphs": [
+      "In June 2022 a wildfire broke out in Sierra de la Culebra, a range of hills and forests in Zamora, in north-western Spain. In a few days about 25,000 hectares burned, making it one of the largest wildfires in Spain in recent decades.",
+      "The fire started during an early heat wave, when much of Spain was far hotter than usual for June. Heat and dry soil and plants make it much easier for a fire to spread.",
+      "After a fire like this, people ask: is this place getting hotter and drier? In this case file you will learn a new detective skill: checking whether the answer changes when you change the years you look at. Then you decide for yourself."
+    ],
+    "question": "After the huge 2022 wildfire, is Sierra de la Culebra getting hotter and drier?"
+  },
+  "steps": [
+    {
+      "id": "recap_monthly",
+      "title": "Quick recap: one point per month",
+      "text": "This is the air temperature over the square of land that contains Sierra de la Culebra, one point per month from January 1980 to September 2026. Data: NASA MERRA-2. The line climbs every summer and drops every winter: that is the seasonal cycle. June 2022, the month of the fire, was about 19.0 °C, around 1.5 °C warmer than a normal June. The labelled maximum is the hottest month in the whole record.",
+      "chart": {
+        "variable": "T2M",
+        "view": "monthly",
+        "highlight_max": true,
+        "highlights": [
+          { "kind": "point", "date": "2022-06", "label": "June 2022 (fire)" }
+        ]
+      },
+      "question": {
+        "prompt": "Which month is the hottest in this whole record?",
+        "options": [
+          {
+            "text": "July 2022, one month after the fire",
+            "correct": true,
+            "feedback": "Right: the labelled maximum is July 2022, at about 24.3 °C."
+          },
+          {
+            "text": "June 2022, the month of the fire",
+            "correct": false,
+            "feedback": "Compare the June 2022 point with the labelled maximum. Are they the same point, and which one is taller?"
+          },
+          {
+            "text": "A summer in the 1980s",
+            "correct": false,
+            "feedback": "Look at the label on the highest point of the line. Is it on the left side of the chart, or on the right?"
+          }
+        ]
+      },
+      "takeaway": "A monthly series shows the seasons and single events; to see a trend, we need to look across many years."
+    },
+    {
+      "id": "full_trend",
+      "title": "The trend over the whole record",
+      "text": "Each point is now the average temperature of one whole year, 1980 to 2025, so the seasons are gone. The straight line is the trend: about +0.26 °C every 10 years, about 1.2 °C over the whole period. The p-value is below 0.001, so a slope like this is very unlikely to come from chance. 2022, the year of the fire, is the warmest year in this record.",
+      "chart": {
+        "variable": "T2M",
+        "view": "annual",
+        "show_trend": true,
+        "highlights": [
+          { "kind": "point", "date": "2022", "label": "2022 (fire)" }
+        ]
+      },
+      "question": {
+        "prompt": "Where does 2022 sit compared with the other years?",
+        "options": [
+          {
+            "text": "It is the highest point: the warmest year in the record",
+            "correct": true,
+            "feedback": "Yes: 2022 is the warmest year here, at about 12.6 °C."
+          },
+          {
+            "text": "It is about average, close to the 1980s",
+            "correct": false,
+            "feedback": "Compare the 2022 point with the points on the far left. Is it at the same height, or well above them?"
+          },
+          {
+            "text": "It is below the trend line",
+            "correct": false,
+            "feedback": "Find the 2022 point and the straight line at that year. Is the point under the line or above it?"
+          }
+        ]
+      },
+      "takeaway": "Over 1980-2025 the air here warms clearly, and the fire year is the warmest of all."
+    },
+    {
+      "id": "temperature_windows",
+      "title": "Change the start year",
+      "text": "A trend is always measured over a period that someone chose. What if we start in 1990, or 2010, instead of 1980? Each bar is the trend from that start year to the end of the record, in °C per year (0.026 per year is 0.26 per decade). A filled bar means significant. From 1980 the slope is about +0.26 °C per decade; from 2010, about +1.05.",
+      "chart": {
+        "variable": "T2M",
+        "view": "window_trends"
+      },
+      "question": {
+        "prompt": "What happens to the temperature trend when you start later?",
+        "options": [
+          {
+            "text": "It stays positive and gets steeper",
+            "correct": true,
+            "feedback": "Correct: every bar is above zero, and the later bars are taller."
+          },
+          {
+            "text": "It turns negative",
+            "correct": false,
+            "feedback": "Look at where the bars are compared with the zero line. Does any bar go below it?"
+          },
+          {
+            "text": "It stays exactly the same",
+            "correct": false,
+            "feedback": "Compare the height of the 1980 bar with the 2010 bar. Are they equal?"
+          }
+        ]
+      },
+      "takeaway": "The temperature rise shows up whatever start year you choose: that is a robust finding."
+    },
+    {
+      "id": "whiskers",
+      "title": "Reading the whiskers",
+      "text": "The thin line on each bar is a whisker: the 95% confidence range. It shows where the true slope probably is. From 1980 it is narrow, +0.15 to +0.37 °C per decade. From 2010 it is wide, +0.59 to +1.49. Fewer years means fewer points and more room for chance, so the range grows. If a whisker stays fully above zero, a rise is supported; if it crosses zero, we cannot tell.",
+      "chart": {
+        "variable": "T2M",
+        "view": "window_trends",
+        "highlights": [
+          { "kind": "point", "date": "1980", "label": "About 47 years of data" },
+          { "kind": "point", "date": "2010", "label": "About 17 years of data" }
+        ]
+      },
+      "question": {
+        "prompt": "Why is the whisker from 2010 much longer than the one from 1980?",
+        "options": [
+          {
+            "text": "It uses fewer years, so the slope is less certain",
+            "correct": true,
+            "feedback": "Exactly: a short record gives a wide range."
+          },
+          {
+            "text": "Temperatures after 2010 were measured badly",
+            "correct": false,
+            "feedback": "Look at the labels: what is different between the two bars is how many years of data each one uses, not the quality of the data."
+          },
+          {
+            "text": "The trend from 2010 is not significant",
+            "correct": false,
+            "feedback": "Check the 2010 bar: is it filled, and does its whisker cross zero? A long whisker can still be fully above zero."
+          }
+        ]
+      },
+      "takeaway": "Short records give wide ranges: a steep recent slope is real here, but its exact size is uncertain."
+    },
+    {
+      "id": "soil_full_trend",
+      "title": "Now the soil: a borderline clue",
+      "text": "This is soil moisture: the water in the top 10 cm of soil, in kg/m² (1 kg/m² is 1 mm of water), as anomalies from January 2000 to July 2026. Data: NASA GLDAS. The trend is about -0.53 kg/m² per decade, with p = 0.026, just below the 0.05 line. But the 95% range, -1.07 to +0.01 per decade, just touches zero. The evidence of drying is weak.",
+      "chart": {
+        "variable": "SOILM",
+        "view": "anomaly",
+        "show_trend": true
+      },
+      "question": {
+        "prompt": "Compared with the month-to-month jumps, how clear is the drying along the trend line?",
+        "options": [
+          {
+            "text": "Small: the line tilts down a little, the jumps are much bigger",
+            "correct": true,
+            "feedback": "Yes: there is a slight downward tilt hidden in a lot of noise."
+          },
+          {
+            "text": "Huge: the line falls more than the biggest jumps",
+            "correct": false,
+            "feedback": "Compare how far the straight line drops from left to right with the height of the tallest spikes. Which is larger?"
+          },
+          {
+            "text": "The line goes up: the soil is getting wetter",
+            "correct": false,
+            "feedback": "Follow the straight line from the left edge to the right edge. Does it end higher or lower than it starts?"
+          }
+        ]
+      },
+      "takeaway": "A p-value just under 0.05 with a range that touches zero is weak evidence, not proof."
+    },
+    {
+      "id": "soil_windows",
+      "title": "The soil clue changes with the window",
+      "text": "Same test as for temperature: start the soil moisture trend in 2000, 2005 or 2010. From 2000 the slope is -0.53 per decade and just significant. From 2005 it is almost flat, -0.06, with p = 0.43. From 2010 it is -0.28, with p = 0.50. The whiskers from 2005 and 2010 go far below and far above zero: the data cannot say if the soil is drying or not.",
+      "chart": {
+        "variable": "SOILM",
+        "view": "window_trends",
+        "highlights": [
+          { "kind": "point", "date": "2000", "label": "From 2000" }
+        ]
+      },
+      "question": {
+        "prompt": "Which start year gives a significant soil drying trend?",
+        "options": [
+          {
+            "text": "Only 2000",
+            "correct": true,
+            "feedback": "Right: only the bar from 2000 is filled; the others cross zero."
+          },
+          {
+            "text": "All three start years",
+            "correct": false,
+            "feedback": "Look at which bars are filled. Do the whiskers from 2005 and 2010 stay on one side of zero?"
+          },
+          {
+            "text": "None of them",
+            "correct": false,
+            "feedback": "Look at the 2000 bar: is it filled? It is just significant, even if its whisker barely reaches zero."
+          }
+        ]
+      },
+      "takeaway": "A finding that disappears when you move the start year a little is fragile."
+    },
+    {
+      "id": "cherry_picking",
+      "title": "Beware of picking the start year",
+      "text": "Why does the soil answer change so much? Look at the yearly averages. The first years, 2000 to 2002, were among the wettest; 2005 was one of the driest. Start in a wet year and the line tilts down; start in a dry year and it flattens. Choosing the start year that gives the answer you want is called cherry-picking. A good detective checks several windows and reports what survives.",
+      "chart": {
+        "variable": "SOILM",
+        "view": "annual",
+        "show_trend": true,
+        "highlights": [
+          { "kind": "band", "from": "2000", "to": "2002", "label": "Wet start" },
+          { "kind": "point", "date": "2005", "label": "2005 (very dry)" }
+        ]
+      },
+      "question": {
+        "prompt": "Someone wants to show that the soil is NOT drying. Which start year would suit them best?",
+        "options": [
+          {
+            "text": "2005, a very dry year at the start",
+            "correct": true,
+            "feedback": "Yes: starting from a low point makes the later years look less dry. That is cherry-picking."
+          },
+          {
+            "text": "2000, at the wet start",
+            "correct": false,
+            "feedback": "Look at the wet band on the left. Starting from high values makes the line tilt down, which shows drying, not the opposite."
+          },
+          {
+            "text": "The start year makes no difference",
+            "correct": false,
+            "feedback": "Remember the last chart: from 2000 the trend was significant, from 2005 it was almost flat. The start year mattered a lot."
+          }
+        ]
+      },
+      "takeaway": "Robust evidence survives a change of window; if one start year makes or breaks the answer, say so."
+    }
+  ],
+  "conclusion": {
+    "prompt": "After the huge 2022 wildfire, is Sierra de la Culebra getting hotter and drier? Write your conclusion, and say how sure you are about each part, using what the charts showed you when you changed the start year.",
+    "variable": "SOILM",
+    "placeholder": "Looking at the soil moisture data for Sierra de la Culebra from 2000 to 2026, I think..."
+  },
+  "reveal": {
+    "by_variable": {
+      "T2M": "Air temperature (January 1980 to September 2026) rises clearly: about +0.26 °C per decade (95% range +0.15 to +0.37), p < 0.001, about 1.2 °C over the whole period. It stays significant from every start year from 1980 to 2010, and is steeper for recent windows (about +1.05 °C per decade from 2010), but with a much wider range (+0.59 to +1.49).",
+      "SOILM": "Soil moisture in the top 10 cm (January 2000 to July 2026) falls by about 0.53 kg/m² per decade, p = 0.026, but the 95% range (-1.07 to +0.01 per decade) touches zero: weak evidence. From 2005 (p = 0.43) or 2010 (p = 0.50) the trend is not significant, so the drying depends on the start year."
+    },
+    "lesson": "Every trend is measured over a chosen period. Temperature passes the test: it rises whatever start year you pick, so \"hotter\" is a robust finding. \"Drier\" is fragile: it appears only from 2000, right on the border of significance, and disappears from 2005 or 2010. A short record gives a wide confidence range, and picking the start year that suits you can mislead. One fire, however large, is a single event; it does not prove a trend on its own."
+  }
+}
