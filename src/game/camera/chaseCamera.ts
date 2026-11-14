@@ -36,6 +36,8 @@ const FREE_SAMPLES = 16
 /** Intro: zoom at the start (far and high, a wide view of Spain) and length of the swoop (s). */
 const INTRO_ZOOM = 75
 const INTRO_TIME = 3.2
+/** Intro: the camera holds on the whole map for this long (s) before the swoop starts. */
+const INTRO_HOLD = 2
 /** Intro skipped (key, click or wheel): the rest of the flight is squeezed into this time (s). */
 const INTRO_SKIP_TIME = 0.35
 /** Intro: the camera starts this far round the detective (rad) and spirals in behind him. */
@@ -100,6 +102,7 @@ export function createChaseCamera(camera: THREE.PerspectiveCamera, dom: HTMLElem
   // Intro: progress 0..1 while it plays, -1 when there is none (or it has landed)
   let introT = -1
   let introSkip = false
+  let introHold = 0
   const skipIntro = () => {
     introSkip = true
   }
@@ -144,6 +147,7 @@ export function createChaseCamera(camera: THREE.PerspectiveCamera, dom: HTMLElem
     if (reducedMotion?.matches) return
     introT = 0
     introSkip = false
+    introHold = INTRO_HOLD
     window.addEventListener('keydown', skipIntro)
     window.addEventListener('pointerdown', skipIntro)
   }
@@ -171,7 +175,9 @@ export function createChaseCamera(camera: THREE.PerspectiveCamera, dom: HTMLElem
     let viewZoom = zoom
     let spin = 0
     if (intro) {
-      introT = Math.min(1, introT + dt / (introSkip ? INTRO_SKIP_TIME : INTRO_TIME))
+      // First a still look at the whole map (a skip cuts it short), then the swoop
+      if (introHold > 0 && !introSkip) introHold -= dt
+      else introT = Math.min(1, introT + dt / (introSkip ? INTRO_SKIP_TIME : INTRO_TIME))
       const k = 1 - introEase(introT)
       viewZoom = zoom * Math.exp(Math.log(INTRO_ZOOM / zoom) * k)
       spin = INTRO_SPIN * k
