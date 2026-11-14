@@ -61,7 +61,12 @@ export const KIND_RADIUS: Record<SceneryKind, number> = {
   olive: 3, vine: 6, pine: 3, broadleaf: 4, holmoak: 5, palm: 2.5, windmill: 5,
 }
 /** Tamaño de las manchas de plantación (unidades del mundo). */
-const PATCH = 110
+const PATCH = 220 // was 110: patches keep their real size on the twice-as-big map
+/**
+ * Multiplies the spacing in scenery.json. The boxes are lat/lon, so on the twice-as-big map the
+ * same spacing gave 4x the trees (and 4x the start-up loop); this keeps the count reasonable.
+ */
+const SPACING_FACTOR = 1.6
 /** Diferencia de altura máxima bajo un elemento: más, y está en una pared de piso. */
 const MAX_SLOPE = 2
 /** Distancia mínima a un monumento. */
@@ -86,8 +91,9 @@ export function placeScenery(regions: SceneryRegion[], ground: SceneryGround): S
   for (const region of regions) {
     const rand = seeded(seedOf(region.id))
     const rows = region.layout === 'rows'
-    const along = rows ? (region.rowLength ?? region.spacing) : region.spacing // separación a lo largo de la fila
-    const across = region.spacing // separación entre filas
+    const spacing = region.spacing * SPACING_FACTOR
+    const along = rows ? (region.rowLength ?? region.spacing) * SPACING_FACTOR : spacing // separación a lo largo de la fila
+    const across = spacing // separación entre filas
     const angle = rand() * Math.PI // dirección de las filas de esta región
     const cos = Math.cos(angle), sin = Math.sin(angle)
     const cover = region.cover ?? 1
@@ -100,7 +106,7 @@ export function placeScenery(regions: SceneryRegion[], ground: SceneryGround): S
       const half = Math.hypot(se.x - nw.x, se.z - nw.z) / 2 // la rejilla girada tiene que cubrir toda la caja
       for (let u = -half; u <= half; u += along) {
         for (let v = -half; v <= half; v += across) {
-          const jitter = rows ? 1 : region.spacing * 0.8
+          const jitter = rows ? 1 : spacing * 0.8
           const lu = u + (rand() - 0.5) * jitter
           const lv = v + (rand() - 0.5) * jitter
           const x = cx + lu * cos - lv * sin

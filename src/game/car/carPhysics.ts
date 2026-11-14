@@ -33,16 +33,19 @@ export interface CarState {
 // Ajustes del manejo (unidades del mundo por segundo)
 export const TUNING = {
   maxSpeed: 48,
-  turboSpeed: 220, // was 140: the map is twice as big
+  turboSpeed: 260, // was 140: the map is twice as big
   reverseSpeed: 15,
   accel: 26,
-  turboAccel: 130,
+  turboAccel: 150,
   brake: 70,
   coastDrag: 3, // cuánto frena al soltar (una persona se para enseguida; el coche usaba 0.9)
   turnRate: 1.9, // rad/s a velocidad media
   steerResponse: 7, // rapidez del volante
   slopeFactor: 14, // cuánto frenan las cuestas
 }
+
+/** Longest move checked against the coast in one go (world units, about the old turbo step at 60 FPS). */
+const MAX_STEP = 4
 
 export function createCarState(x: number, z: number, heading: number, ground: Ground): CarState {
   return {
@@ -92,20 +95,27 @@ export function stepCar(s: CarState, input: DriveInput, ground: Ground, dt: numb
 
   // ---- Avanzar (sin meterse en el mar) ----
   const nfx = -Math.sin(s.heading), nfz = -Math.cos(s.heading)
-  const dx = nfx * s.speed * dt, dz = nfz * s.speed * dt
   const nose = (x: number, z: number) => // comprobamos el morro (o la cola si va marcha atrás)
     ground.isDrivable(x + nfx * Math.sign(s.speed || 1) * CAR.length * 0.5, z + nfz * Math.sign(s.speed || 1) * CAR.length * 0.5)
-  if (nose(s.x + dx, s.z + dz)) {
-    s.x += dx
-    s.z += dz
-  } else if (Math.abs(dx) > Math.abs(dz) * 0.25 && nose(s.x + dx, s.z)) {
-    s.x += dx // deslizarse a lo largo de la costa (solo si de verdad hay movimiento en ese eje)
-    s.speed *= 0.97
-  } else if (Math.abs(dz) > Math.abs(dx) * 0.25 && nose(s.x, s.z + dz)) {
-    s.z += dz
-    s.speed *= 0.97
-  } else {
-    s.speed = 0 // de frente contra la costa: se para
+  // Sub-steps of at most MAX_STEP units: at turbo speed one frame can cover more than a narrow
+  // inlet or river mouth, and checking only the end point would jump over the water
+  const travel = Math.abs(s.speed * dt)
+  const steps = Math.max(1, Math.ceil(travel / MAX_STEP))
+  const slide = 0.97 ** (1 / steps) // same friction along the coast per frame, whatever the sub-steps
+  for (let i = 0; i < steps && s.speed !== 0; i++) {
+    const dx = (nfx * s.speed * dt) / steps, dz = (nfz * s.speed * dt) / steps
+    if (nose(s.x + dx, s.z + dz)) {
+      s.x += dx
+      s.z += dz
+    } else if (Math.abs(dx) > Math.abs(dz) * 0.25 && nose(s.x + dx, s.z)) {
+      s.x += dx // deslizarse a lo largo de la costa (solo si de verdad hay movimiento en ese eje)
+      s.speed *= slide
+    } else if (Math.abs(dz) > Math.abs(dx) * 0.25 && nose(s.x, s.z + dz)) {
+      s.z += dz
+      s.speed *= slide
+    } else {
+      s.speed = 0 // de frente contra la costa: se para
+    }
   }
 
   // ---- Seguir el terreno: altura e inclinación a partir de las 4 esquinas ----

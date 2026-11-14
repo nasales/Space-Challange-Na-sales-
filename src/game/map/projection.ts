@@ -29,10 +29,10 @@ export function metersToY(meters: number, exaggeration: number) {
 }
 
 /**
- * Relief exaggeration of the explored countries. Lower than before (12 at 4 units/km) so that, on
- * the twice-as-big map, slopes are much gentler while keeping the toy-terrace look.
+ * Relief exaggeration of the explored countries (was 12 at 4 units/km). With the twice-as-big map
+ * this gives tall relief with long ramps (see terrace.ts) while keeping the toy-terrace look.
  */
-export const HEIGHT_EXAGGERATION = 5
+export const HEIGHT_EXAGGERATION = 8 // 5 looked too flat; the long land-only smoothing in terrace.ts keeps ramps walkable
 
 /** Nivel del mar de los países explorados (un poco hundido: la costa forma escalón). */
 export const SEA_Y = metersToY(-25, HEIGHT_EXAGGERATION)

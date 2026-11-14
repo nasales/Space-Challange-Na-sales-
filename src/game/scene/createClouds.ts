@@ -1,7 +1,7 @@
 // Nubes de dibujo: cada nube es un grupito de bolas low-poly blancas que se mueven con el viento.
 // Se usa un InstancedMesh: todas las bolas se dibujan de una vez (mucho más rápido que una a una).
 import * as THREE from 'three'
-import { UNITS_PER_KM } from '../map/projection'
+import { UNITS_PER_KM, metersToY, HEIGHT_EXAGGERATION } from '../map/projection'
 
 interface Cloud {
   x: number
@@ -20,7 +20,7 @@ export function createClouds(area: { minX: number; maxX: number; minZ: number; m
   const rand = (a: number, b: number) => a + Math.random() * (b - a)
   const clouds: Cloud[] = []
   for (let k = 0; k < CLOUD_COUNT; k++) {
-    const size = rand(10, 30) * UNITS_PER_KM // ancho de la nube
+    const size = rand(10, 30) * 4 // cloud width in world units (not km: it would bloat them on the bigger map)
     const n = Math.round(rand(4, 8))
     const puffs = Array.from({ length: n }, (_, j) => {
       const along = (j / (n - 1) - 0.5) * size // en fila, la del centro más grande
@@ -30,7 +30,7 @@ export function createClouds(area: { minX: number; maxX: number; minZ: number; m
     clouds.push({
       x: rand(area.minX, area.maxX),
       z: rand(area.minZ, area.maxZ),
-      y: rand(40, 55) * UNITS_PER_KM, // por encima de las montañas más altas
+      y: metersToY(rand(3300, 4600), HEIGHT_EXAGGERATION), // just above the highest peaks, at the same relief scale
       puffs,
     })
   }

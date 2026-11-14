@@ -34,8 +34,8 @@ import './GameView.css'
 const EXPLORED_COUNTRY = 'ESP'
 /** Cada cuánto se actualiza la interfaz (no hace falta hacerlo en cada fotograma). */
 const HUD_INTERVAL = 0.1 // s
-/** Velocidad del juego → km/h que se muestran (escala inventada, de juego). */
-const KMH_PER_UNIT = 2.2
+/** Game speed → km/h shown in the HUD (made-up game scale; full turbo still reads ~308 km/h). */
+const KMH_PER_UNIT = (2.2 * 140) / TUNING.turboSpeed
 
 function makeTexture(canvas: HTMLCanvasElement, renderer: THREE.WebGLRenderer) {
   const texture = new THREE.CanvasTexture(canvas)
@@ -195,8 +195,10 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
           // de cerca hay niebla para dar profundidad; de lejos se aparta para ver todo.
           // Subir "near" de lejos da más precisión de profundidad y evita parpadeos.
           const d = chase.distance
-          fog.near = 60 * UNITS_PER_KM + d * 1.5
-          fog.far = 300 * UNITS_PER_KM + d * 6
+          // Close-range terms in world units (not km): objects keep their size on the bigger map,
+          // so the near fog must not move away with it (tree pop-in, ink reaching too far)
+          fog.near = 240 + d * 1.5
+          fog.far = 1200 + d * 6
           camera.near = Math.max(0.05, d / 300)
           camera.far = d * 20 + 1000 * UNITS_PER_KM
           camera.updateProjectionMatrix()

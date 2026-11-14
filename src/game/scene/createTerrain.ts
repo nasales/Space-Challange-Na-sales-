@@ -8,6 +8,7 @@ import type { ZoneData } from '../map/mapData'
 import type { Country } from '../map/worldData'
 import { terraceHeight } from '../map/terrace'
 import { computeExploredRegion } from '../map/exploredRegion'
+import { riverCarveDepth } from '../map/rivers'
 import {
   lonLatToWorld,
   metersToY,
@@ -51,10 +52,14 @@ export function createTerrain(
   const cellsPerKm = gw / (width / UNITS_PER_KM)
   const { countryLand, region } = computeExploredRegion(country, bounds, heights, gw, gh, cellsPerKm)
 
+  // Shallow river beds: a small dip under the terraced surface, so water follows the terraces
+  const carve = riverCarveDepth(data.rivers, bounds, heights, gw, gh, cellsPerKm, countryLand)
+
   const cellY = (i: number) => {
     if (!region[i]) return HIDDEN_Y
     if (!countryLand[i]) return SEA_Y
-    return metersToY(terraceHeight(Math.max(heights[i], 1)), HEIGHT_EXAGGERATION)
+    const y = metersToY(terraceHeight(Math.max(heights[i], 1)), HEIGHT_EXAGGERATION)
+    return carve ? Math.max(y - carve[i], SEA_Y + 0.3) : y
   }
 
   // Esquina noroeste de la zona en el mundo

@@ -15,8 +15,8 @@ const INK = new THREE.Color('#1A1423')
 const EDGE_START = 0.012
 const EDGE_FULL = 0.04
 /** En el suelo hace falta un salto mayor para que haya línea, y la tinta es más clara. */
-const GROUND_EDGE_START = 0.07
-const GROUND_EDGE_FULL = 0.25
+const GROUND_EDGE_START = 0.04 // was 0.07 / 0.25: the terraces are softer on the bigger map
+const GROUND_EDGE_FULL = 0.15
 const GROUND_INK = 0.55
 /** Grosor de la línea, en píxeles. */
 const LINE_WIDTH = 1.6

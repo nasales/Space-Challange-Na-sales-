@@ -11,7 +11,9 @@ import { damp, TUNING, type CarState } from '../car/carPhysics'
 const BASE_DISTANCE = 22
 const BASE_HEIGHT = 9
 const MIN_ZOOM = 0.7
-const MAX_ZOOM = 30
+const MAX_ZOOM = 60 // was 30: the map is twice as big, the overview must still frame Spain
+/** Furthest the camera looks ahead of the detective (turbo is faster on the bigger map). */
+const MAX_AHEAD = 30
 /** Altura a la que mira la cámara sobre el suelo: el cuerpo del detective. */
 const LOOK_HEIGHT = 4.5
 /** How far a monument may rise above the sight line before the camera moves in front of it. */
@@ -105,7 +107,7 @@ export function createChaseCamera(camera: THREE.PerspectiveCamera, dom: HTMLElem
     }
 
     // Mira un poco por delante del coche (también como desplazamiento suavizado)
-    const ahead = 6 + Math.abs(car.speed) * 0.15 + inspect * 5 // investigando: mira a la zona de la lupa
+    const ahead = Math.min(MAX_AHEAD, 6 + Math.abs(car.speed) * 0.15) + inspect * 5 // investigando: mira a la zona de la lupa
     const aheadX = -Math.sin(car.heading) * ahead, aheadZ = -Math.cos(car.heading) * ahead
     if (first) Object.assign(aheadOff, { x: aheadX, y: car.y + LOOK_HEIGHT, z: aheadZ })
     first = false

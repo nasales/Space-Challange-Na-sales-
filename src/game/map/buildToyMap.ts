@@ -9,6 +9,7 @@ import { computeExploredRegion } from './exploredRegion'
 import { UNITS_PER_DEG_LON, UNITS_PER_KM } from './projection'
 import { SEA, SAND, LEVEL_COLORS, FIELD_TINT, UNEXPLORED, mix, scale, smooth, type RGB } from './palette'
 import { fractalNoise } from './valueNoise'
+import { rasterizeRivers, paintRiver, PAINT_REACH_KM } from './rivers'
 
 /** Tamaño de las manchas de campos, en píxeles de la textura. */
 const FIELD_SIZE = 28
@@ -73,6 +74,9 @@ export function buildToyMap(
   satCtx.drawImage(data.satellite, 0, 0, width, height)
   const sat = satCtx.getImageData(0, 0, width, height).data
 
+  // 3b) Rivers: distance of each pixel to the nearest water edge (rasterised once)
+  const rivers = data.rivers?.length ? rasterizeRivers(data.rivers, bounds, width, height, pxPerKm, PAINT_REACH_KM) : null
+
   // 4) Pintar
   const canvas = document.createElement('canvas')
   canvas.width = width
@@ -110,6 +114,7 @@ export function buildToyMap(
           c = scale(c, 1 + (fractalNoise(x / 160 + 50, y / 160) - 0.5) * BRIGHTNESS_NOISE)
         }
         if (lv === 0 && distToSea[i] < 5) c = SAND // beach
+        if (rivers) c = paintRiver(c, rivers.edge[i], rivers.halfWidth[i], pxPerKm)
         // (Ya no se pinta un borde oscuro entre pisos: los contornos de tinta marcan esos bordes)
       }
 
