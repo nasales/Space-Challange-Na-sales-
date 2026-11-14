@@ -3,6 +3,15 @@
 This file is the agreement between the two owners of `pipeline/`.
 Change it only after telling the other person. Code follows this file, not the other way round.
 
+> **v4 (2026-11-14, Perry): who does what, in one line each.**
+> - **Diego — generic analysis:** the player can stop anywhere on the map and analyze it. That is
+>   the `trends` table: `fill_trends.py` computes every cell × variable from Perry's export; Perry
+>   uploads the rows. Diego does **not** build featured cases.
+> - **Ivan — featured cases:** about 10 places of interest marked in the game, as
+>   `data/cache/case_*.json` (`pipeline/cases.py`, `pipeline/build_cases.py`), at least one
+>   non-significant.
+> - **Both:** merge `main` into your branch now so you work on this version.
+>
 > **v3 (2026-11-14, Diego):** after Perry's database files landed in `main`
 > (`archivos_preSupabase/`): the `trends` table is filled by us (statistics), with Ivan's
 > `analyze_trend` as the official method; new Diego block "fill trends"; `start_month` is a date
@@ -13,7 +22,7 @@ Reference files: `archivos_preSupabase/encargo_base_de_datos.md` (brief), `supab
 - Grid of ~1180 land cells of 0.25° over Spain (plus Portugal, Andorra, south of France, north of Morocco/Algeria). `cell_id = floor((lat+90)/0.25) * 1440 + floor((lon+180)/0.25)`. Salamanca = `753817` (centre 40.875, −5.625).
 - 6 variables, **monthly means**, `null` for gaps. Stored in Supabase (`variables`, `cells`, `series`, `trends`).
 - **The ETL leaves `trends` empty: statistics (Ivan + Diego) fills it.**
-- The game reads Supabase live with `get_cell(lat, lon)`. Featured cases must also work offline from `data/cache/*.json` (AGENTS.md rule 10), which Diego builds from the JSON export.
+- The game reads Supabase live with `get_cell(lat, lon)`. Featured cases must also work offline from `data/cache/case_*.json` (AGENTS.md rule 10), which Ivan builds (`pipeline/build_cases.py`).
 
 | id | Variable | Units | Source (product, version) | From | DOI |
 |---|---|---|---|---|---|
@@ -33,8 +42,8 @@ JSON export (`etl_espana.py --export-dir export`):
 ## Who owns what
 | File | Owner |
 |---|---|
-| `pipeline/__init__.py`, `pipeline/trend.py`, `pipeline/explain.py`, `pipeline/tests/test_trend.py`, `pipeline/tests/test_explain.py`, `data/cache/*.json` (featured cases, moved from Diego 2026-11-14) | Ivan |
-| `pipeline/series.py`, `pipeline/sources/*.py`, `pipeline/build_case.py`, `pipeline/fill_trends.py`, `pipeline/check_trends.py`, `pipeline/dry_run.py`, `pipeline/tests/test_series.py`, `pipeline/tests/test_build_case.py`, `pipeline/tests/test_sources.py`, `pipeline/tests/test_fill_trends.py`, `pipeline/tests/test_check_trends.py`, `pipeline/tests/test_dry_run.py`, `data/raw/` | Diego |
+| `pipeline/__init__.py`, `pipeline/trend.py`, `pipeline/explain.py`, `pipeline/tests/test_trend.py`, `pipeline/tests/test_explain.py`, `pipeline/compare_db.py`, `pipeline/tests/test_compare_db.py`, `tests/stats/test_diego_cross.py`, `pipeline/cases.py`, `pipeline/nasa_power.py`, `pipeline/build_cases.py`, `pipeline/tests/test_nasa_power.py`, `pipeline/tests/test_build_cases.py`, `data/raw/power/`, `data/cache/case_*.json` (featured case studies) | Ivan |
+| `pipeline/series.py`, `pipeline/sources/*.py`, `pipeline/build_case.py`, `pipeline/fill_trends.py`, `pipeline/check_trends.py`, `pipeline/dry_run.py`, `pipeline/tests/test_series.py`, `pipeline/tests/test_build_case.py`, `pipeline/tests/test_sources.py`, `pipeline/tests/test_fill_trends.py`, `pipeline/tests/test_check_trends.py`, `pipeline/tests/test_dry_run.py`, `data/raw/` (except `data/raw/power/`) | Diego |
 | `pipeline/requirements.txt`, `pipeline/tests/__init__.py`, `AI_USAGE.md`, `REFERENCES.md` | Shared: append lines at the end only |
 
 An agent working for one owner must not edit the other owner's files. Never edit `docs/contract.md`; edit `tests/stats/` only when the human asks and reviews (AGENTS.md rule 3).
@@ -134,17 +143,16 @@ Before starting, ask the human which person they are (Ivan or Diego) and which b
 | 4 | Diego | `diego_dev` | ✅ (fake export; recheck with the real one) Adapter `pipeline/sources/supabase_export.py` (`cell_id_for`, `find_cell`, `load_series`, `load_trend`, `iter_series`): reads `export/cells/<cell_id>.json` + `variables.json` into `Series` + trend dict | Returns a valid `Series` for cell `753817` (Salamanca) |
 | 4 | Ivan | `ivan_dev` | `explain(trend, series) -> str` in `explain.py`: plain-English facts for the AI checker | Correct text for one significant and one non-significant case |
 | 5 | Diego | `diego_dev` | ✅ (needs Ivan's `trend.py` to run for real) `fill_trends.py` (Interface 4): trends for all cells × variables, handed to Perry for upload | Rows file passes a schema check; skipped series listed with a reason |
-| 6 | Diego | `diego_dev` | ✅ `dry_run.py` + `check_trends.py` (Interface 5). Then, when Perry shares the real export: run `fill_trends` + `check_trends` and send Perry the result | `check_trends` exits 0 on the real rows |
-| 6 | Ivan | `ivan_dev` | Featured cases in `data/cache/`, at least one non-significant (moved from Diego, 2026-11-14) | `./scripts/check.sh` passes |
-| 6 | Ivan | `ivan_dev` | (a) Spot-check `analyze_trend` against `trend_stats()` on real cells (slope, p-value, significant). (b) Compare one featured case with Giovanni (direction and rough size) | Differences noted in the SYNC CHECK report; any mismatch in `significant` goes as a bug line |
+| 6 | Diego | `diego_dev` | Generic analysis: run `fill_trends.py` on Perry's real export (all cells × 6 variables), then `check_trends.py` on the rows, and report to Perry that it runs clean; Perry uploads the rows to `trends`. ✅ Prepared: `dry_run.py` + `check_trends.py` (Interface 5). No featured cases (they are Ivan's) | `check_trends` exits 0 on the real rows; skipped series listed with a reason |
+| 6 | Ivan | `ivan_dev` | Featured cases: about 10 places of interest marked in the game, in `data/cache/case_*.json`, at least one non-significant. Then (a) Spot-check `analyze_trend` against `trend_stats()` on real cells (slope, p-value, significant). (b) Compare one featured case with Giovanni (direction and rough size) | Cases pass `./scripts/check.sh`; differences noted in the SYNC CHECK report; any mismatch in `significant` goes as a bug line |
 
 ## Integration
 - Each person merges their own branch into `main`, always after the QA checks pass (`./scripts/check.sh`, QA report in `docs/agents/qa.md`).
 - ✅ After Ivan's block 1 is merged: the real `analyze_trend` replaces the stub automatically (`get_analyze_trend()`); checked end to end.
 - If Perry runs the ETL with `--with-trends` (for `compare_db.py`), those trends are only for comparison: `fill_trends` then upserts the official `analyze_trend` rows over them.
-- Featured cases (Ivan): JSON export -> `load_series` + `load_trend` -> `build_case` -> `write_case` into `data/cache/`, handed to Yeipi.
+- Featured cases (Ivan): NASA POWER point data -> `pipeline/build_cases.py` -> `data/cache/case_*.json`, handed to Yeipi.
 - After the real export: Diego runs `fill_trends` + `check_trends`; Perry uploads the rows only if `check_trends` exits 0; `get_cell` then returns real trends to the game.
-- Before Sunday 13:00 (freeze): `trends` filled, all featured cases in `data/cache/`, `check.sh` green, `AI_USAGE.md` and `REFERENCES.md` complete.
+- Before Sunday 13:00 (freeze): `trends` filled (Diego + Perry), all featured cases in `data/cache/` (Ivan), `check.sh` green, `AI_USAGE.md` and `REFERENCES.md` complete.
 
 ## Decisions
 Closed:

@@ -40,10 +40,10 @@ def explain(trend: dict, series) -> str:
     if variable is not None:
         line = f"Variable: {variable}" + (f" ({units})" if units else "")
         if dataset:
-            line += f". Data: NASA {dataset}"
+            line += f". {_credit(dataset)}"
         lines.append(line)
     elif dataset:
-        lines.append(f"Data: NASA {dataset}")
+        lines.append(_credit(dataset))
 
     if "start" in trend and "end" in trend:
         line = f"Period: {trend['start']} to {trend['end']}"
@@ -79,6 +79,11 @@ def explain(trend: dict, series) -> str:
         lines.append(CAVEAT)
 
     return "\n".join(lines)
+
+
+def _credit(dataset: str) -> str:
+    """'Data: NASA <dataset>', without repeating NASA when the dataset name already has it."""
+    return f"Data: {dataset}" if dataset.startswith("NASA") else f"Data: NASA {dataset}"
 
 
 def _num(x: float) -> str:
