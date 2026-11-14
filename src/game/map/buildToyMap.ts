@@ -57,6 +57,8 @@ export function buildToyMap(
   heights: Float32Array,
   country: Country,
   width = 4096,
+  /** The other countries of the world (see computeExploredRegion). */
+  neighbours: Country[] = [],
 ): HTMLCanvasElement {
   const { bounds, heightWidth: gw, heightHeight: gh } = data
   const height = Math.round((width * gh) / gw)
@@ -86,7 +88,7 @@ export function buildToyMap(
 
   // 2) Zona explorada y distancias a la costa
   const pxPerKm = width / (((bounds.east - bounds.west) * UNITS_PER_DEG_LON) / UNITS_PER_KM)
-  const { countryLand, region } = computeExploredRegion(country, bounds, elev, width, height, pxPerKm)
+  const { countryLand, region, shallowKm } = computeExploredRegion(country, bounds, elev, width, height, pxPerKm, neighbours)
   const land = new Uint8Array(n)
   const sea = new Uint8Array(n)
   for (let i = 0; i < n; i++) {
@@ -132,6 +134,8 @@ export function buildToyMap(
         const dl = distToLand[i]
         c = elev[i] > -150 ? SEA.shallow : SEA.deep
         if (dl < 8) c = SEA.coast
+        // Shallow sea (rowing boat): lighter water along the coast and up to the islands, with a soft edge
+        if (shallowKm[i] < 0.5) c = mix(SEA.ford, c, smooth(-1, 0.4, shallowKm[i]))
         if (dl < 2.6 || (dl > 12 && dl < 14.5)) c = SEA.foam
       } else {
         // ---- TIERRA: color plano según piso y zona ----
