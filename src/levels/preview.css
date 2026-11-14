@@ -1,0 +1,62 @@
+/* Dev preview page only (/levels.html). */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--lvl-sea);
+  color: var(--lvl-ink);
+  font-family: var(--lvl-font);
+}
+
+.lvl-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 16px;
+}
+
+.lvl-preview__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+}
+
+.lvl-preview__bar select {
+  font: inherit;
+  padding: 4px 8px;
+}
+
+.lvl-preview__count,
+.lvl-preview__result {
+  font-size: 13px;
+  color: var(--lvl-muted);
+}
+
+.lvl-preview__list {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px 16px 16px 36px;
+  background: var(--lvl-paper);
+  border: var(--lvl-border-panel);
+  border-radius: var(--lvl-radius-panel);
+  box-shadow: var(--lvl-shadow-panel);
+  line-height: 1.8;
+}
+
+.lvl-preview__link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--lvl-ink);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}

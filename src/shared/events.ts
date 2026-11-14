@@ -20,6 +20,8 @@ export interface HudState {
   turbo: boolean
   /** 0 to 1: intensity of the speed lines */
   rush: number
+  /** True while the detective stands still with the magnifier out (the "paused" moment) */
+  stopped: boolean
 }
 
 export type GameStatus = 'loading' | 'ready' | 'error'
@@ -31,6 +33,19 @@ export interface GameStop {
   lon: number
 }
 
+/**
+ * Camera flight into the detective's hand lens:
+ * - 'in': the camera has arrived. The lens glass is centred on screen and its diameter is
+ *   LENS_SCREEN_DIAMETER, so the UI glass drawn on top matches it exactly.
+ * - 'out': the camera is back on the normal chase view and the player can move again.
+ */
+export type LensFocusState = 'in' | 'out'
+
+/** On-screen diameter of the hand lens glass once the camera is in (CSS length; game and UI must agree). */
+export const LENS_SCREEN_DIAMETER = 'min(72vh, 72vw)'
+/** The same size as a fraction of min(viewport width, viewport height), for the 3D camera. */
+export const LENS_SCREEN_FRACTION = 0.72
+
 /** Callbacks the game view accepts from the app shell. */
 export interface GameCallbacks {
   onStatus?: (status: GameStatus) => void
@@ -40,6 +55,17 @@ export interface GameCallbacks {
   onCaseNear?: (caseId: string | null) => void
   /** The player opened a featured case (Enter near the marker, or click on it) */
   onCaseOpen?: (caseId: string) => void
-  /** true while a UI overlay is open: the game must ignore driving keys */
+  /** The camera flight into (or out of) the hand lens has finished */
+  onLensFocus?: (state: LensFocusState) => void
+}
+
+/** Props of the game view: the callbacks plus what the app shell tells the game. */
+export interface GameViewProps extends GameCallbacks {
+  /**
+   * true: fly the camera into the hand lens (the detective holds it up); false: fly back out.
+   * While true, and until 'out' is reported, the game ignores keyboard input and the detective stays still.
+   */
+  focusLens?: boolean
+  /** true while a featured-case file is open: the game must ignore driving keys */
   paused?: boolean
 }

@@ -18,7 +18,6 @@ import { createInkOutline } from './scene/createInkOutline'
 import { createDetective } from './detective/createDetective'
 import { createDust } from './effects/createDust'
 import { createFootprints } from './effects/createFootprints'
-import { createMagnifier } from './effects/createMagnifier'
 import { placeTowns } from './towns/placeTowns'
 import { createTowns } from './towns/createTowns'
 import { placeScenery, loadScenery } from './scenery/placeScenery'
@@ -28,9 +27,11 @@ import { createChaseCamera } from './camera/chaseCamera'
 import { createKeyboard } from './input/keyboard'
 import { nearestPlace } from './location/nearestPlace'
 import { createLandmarks, loadLandmarks } from './landmarks/createLandmarks'
-import { bendRiversAround } from './map/rivers'
+import { bendRiversAround, prepareRivers } from './map/rivers'
 import { createRivers } from './scene/createRivers'
-import type { GameCallbacks, GameStatus, HudState } from '../shared/events'
+import { loadRoads, roadsInBounds } from './roads/roadData'
+import { createRoads } from './roads/createRoads'
+import type { GameStatus, GameViewProps, HudState } from '../shared/events'
 import './GameView.css'
 
 const EXPLORED_COUNTRY = 'ESP'
@@ -47,12 +48,12 @@ function makeTexture(canvas: HTMLCanvasElement, renderer: THREE.WebGLRenderer) {
 }
 
 /** Only the 3D canvas. The HUD and status messages live in src/ui, fed through the callbacks. */
-export default function GameView({ onStatus, onHud }: GameCallbacks) {
+export default function GameView({ onStatus, onHud, onLensFocus, focusLens = false }: GameViewProps) {
   const container = useRef<HTMLDivElement>(null)
-  // Latest callbacks, read from inside the animation loop without restarting the scene
-  const callbacks = useRef({ onStatus, onHud })
+  // Latest callbacks (and pause flag), read from inside the animation loop without restarting the scene
+  const callbacks = useRef({ onStatus, onHud, onLensFocus, focusLens })
   useEffect(() => {
-    callbacks.current = { onStatus, onHud }
+    callbacks.current = { onStatus, onHud, onLensFocus, focusLens }
   })
   const setStatus = (status: GameStatus) => callbacks.current.onStatus?.(status)
   const setHud = (hud: HudState) => callbacks.current.onHud?.(hud)
@@ -62,8 +63,8 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
     let cancelled = false
     let cleanup = () => {}
 
-    Promise.all([loadCountryData(EXPLORED_COUNTRY), loadWorldData(), loadLandmarks(EXPLORED_COUNTRY), loadScenery(EXPLORED_COUNTRY)])
-      .then(([explored, world, landmarkList, sceneryRegions]) => {
+    Promise.all([loadCountryData(EXPLORED_COUNTRY), loadWorldData(), loadLandmarks(EXPLORED_COUNTRY), loadScenery(EXPLORED_COUNTRY), loadRoads(EXPLORED_COUNTRY)])
+      .then(([explored, world, landmarkList, sceneryRegions, roadList]) => {
         if (cancelled) return
         const country = world.countries.find((c) => c.id === EXPLORED_COUNTRY)!
         const { renderer, scene, camera, dispose } = createScene(el)
@@ -82,19 +83,33 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
         // Alturas suavizadas: las mismas para la textura y la malla, así encajan
         // Rivers bend around the monuments so no plaza or model stands in the water
         const clearings = landmarks.riverClearings(10)
+        // Roads bend around the monuments too (circles in world units)
+        const roadClearings = landmarks.riverClearings(8).map((c) => ({ ...lonLatToWorld(c.lon, c.lat), r: c.radiusKm * UNITS_PER_KM }))
         const zones = explored.zones.map((z) => {
-          const zone = z.rivers ? { ...z, rivers: bendRiversAround(z.rivers, clearings) } : z
+          // Rivers: gaps closed, ends labelled (spring / mouth / confluence), then bent around monuments
+          const zone = z.rivers ? { ...z, rivers: bendRiversAround(prepareRivers(z.rivers, z), clearings) } : z
           // Smoothed heights plus extra relief (slopes everywhere): same grid for texture and mesh
           const heights = addRelief(smoothHeights(zone.heights, zone.heightWidth, zone.heightHeight), zone.heightWidth, zone.heightHeight)
           landmarks.flattenTerrain(zone, heights) // explanadas bajo los monumentos
           const textureWidth = Math.min(4096, zone.heightWidth * 2)
           const texture = makeTexture(buildToyMap(zone, heights, country, textureWidth), renderer)
-          const terrain = createTerrain(zone, heights, country, texture)
+          const terrain = createTerrain(zone, heights, country, texture, clearings)
           scene.add(terrain.group)
           const water = createRivers(zone.rivers, terrain) // animated water inside the carved channels
           scene.add(water.mesh)
-          return { terrain, texture, water }
+          // Main roads: bridges over the rivers above, around the monuments, only on explored land
+          const roads = createRoads(roadsInBounds(roadList, zone.bounds), {
+            heightAt: terrain.heightAt,
+            isExploredLand: terrain.isExploredLand,
+            rivers: zone.rivers,
+            clearings: roadClearings,
+            landmarkDistance: landmarks.distance,
+          })
+          scene.add(roads.group)
+          return { terrain, texture, water, roads }
         })
+        const roadSurfaceAt = (x: number, z: number) => Math.max(...zones.map((zn) => zn.roads.surfaceAt(x, z)))
+        const nearRoad = (x: number, z: number, m: number) => zones.some((zn) => zn.roads.nearRoad(x, z, m))
         const main = zones[0].terrain // la zona principal
 
         // Ambiente: cielo con sol, luces con sombras y nubes moviéndose sobre España
@@ -122,6 +137,7 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
           isLand: (x, z) => terrainAt(x, z)?.isExploredLand(x, z) ?? false,
           landmarkDistance: landmarks.distance,
           nearRiver: (x, z, m) => terrainAt(x, z)?.nearRiver(x, z, m) ?? false,
+          nearRoad,
         })
         const towns = createTowns(houses)
         scene.add(towns.group)
@@ -134,6 +150,7 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
           nearHouse: towns.blocks,
           landmarkDistance: landmarks.distance,
           nearRiver: (x, z, m) => terrainAt(x, z)?.nearRiver(x, z, m) ?? false,
+          nearRoad,
         })
         const scenery = createScenery(sceneryItems)
         scene.add(scenery.group)
@@ -141,9 +158,9 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
         // El detective: empieza en Madrid, mirando hacia la Puerta de Alcalá
         // Ground under the detective: the terrain or, over a house or a monument, its roof.
         // So he climbs houses and monuments like mountain steps (no collisions)
-        const surfaceAt = (x: number, z: number) => Math.max(main.heightAt(x, z), towns.surfaceAt(x, z), landmarks.surfaceAt(x, z))
+        const surfaceAt = (x: number, z: number) => Math.max(main.heightAt(x, z), towns.surfaceAt(x, z), landmarks.surfaceAt(x, z), roadSurfaceAt(x, z))
         // For the camera: ground without monuments (it treats monuments as walls, see chaseCamera)
-        const groundNoLandmarks = (x: number, z: number) => Math.max(main.heightAt(x, z), towns.surfaceAt(x, z))
+        const groundNoLandmarks = (x: number, z: number) => Math.max(main.heightAt(x, z), towns.surfaceAt(x, z), roadSurfaceAt(x, z))
         const ground: Ground = {
           heightAt: surfaceAt,
           isDrivable: (x, z) => main.isExploredLand(x, z) && !scenery.blocks(x, z),
@@ -157,8 +174,7 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
         // Efectos al correr: nubecitas de polvo en cada pisada y huellas en el suelo
         const dust = createDust()
         const footprints = createFootprints()
-        const magnifier = createMagnifier() // círculo de lupa al pararse a investigar
-        scene.add(dust.mesh, footprints.group, magnifier.group)
+        scene.add(dust.mesh, footprints.group)
         const keyboard = createKeyboard()
         const chase = createChaseCamera(camera, renderer.domElement)
         // Solo en desarrollo: acceso desde la consola/Playwright para depurar
@@ -184,23 +200,43 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
             kmh: Math.round(speed * KMH_PER_UNIT),
             turbo,
             rush: Math.min(1, Math.max(0, (speed - TUNING.maxSpeed) / (TUNING.turboSpeed - TUNING.maxSpeed))),
+            stopped: detective.inspect > 0.5, // magnifier out: the player may open the variable picker
           })
         }
+        // Lens flight state: 'in' reported once per flight; a flight that has started must end with 'out'
+        let lensInReported = false
+        let lensFlying = false
         let lastTime: number | null = null
         renderer.setAnimationLoop((time) => {
           // Segundos desde el fotograma anterior, con la marca de tiempo que da el navegador.
           // Acotado entre 0 y 0,1 s: si el juego se atasca un momento, no da un salto enorme
           const dt = lastTime === null ? 0 : Math.min(Math.max((time - lastTime) / 1000, 0), 0.1)
           lastTime = time
-          const input = keyboard.read()
+          // Lens focus: the camera flies into the hand lens while the app asks for it. The keyboard
+          // stays ignored from the request until the flight back out has been reported
+          const wantLens = !!callbacks.current.focusLens
+          if (wantLens) lensFlying = true
+          else lensInReported = false
+          const input = lensFlying ? { throttle: 0, steer: 0, turbo: false } : keyboard.read()
           stepCar(carState, input, ground, dt)
+          detective.setFocus(chase.stepFocus(wantLens, dt))
           detective.update(carState, dt)
           dust.update(carState, surfaceAt, detective.stridePhase, dt)
           footprints.update(carState, surfaceAt, detective.stridePhase)
-          magnifier.update(detective.inspect, detective.lensPosition(), carState.heading, surfaceAt, dt)
-          chase.update(carState, groundNoLandmarks, dt, detective.inspect, towns.topAt, landmarks.surfaceAt)
+          const lens = chase.focus > 0 ? { center: detective.lensPosition(), normal: detective.lensNormal(), radius: detective.lensRadius() } : null
+          chase.update(carState, groundNoLandmarks, dt, detective.inspect, towns.topAt, landmarks.surfaceAt, lens)
+          if (wantLens && chase.focus === 1 && !lensInReported) {
+            lensInReported = true
+            callbacks.current.onLensFocus?.('in')
+          } else if (!wantLens && lensFlying && chase.focus === 0) {
+            lensFlying = false
+            callbacks.current.onLensFocus?.('out')
+          }
           clouds.update(dt)
-          for (const z of zones) z.water.update(dt)
+          for (const z of zones) {
+            z.water.update(dt)
+            z.roads.update(dt)
+          }
           scenery.update(dt, carState.x, carState.z, camera.position, chase.distance)
           // La niebla y el plano cercano de la cámara se adaptan a la distancia:
           // de cerca hay niebla para dar profundidad; de lejos se aparta para ver todo.
@@ -230,17 +266,17 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
           detective.dispose()
           dust.dispose()
           footprints.dispose()
-          magnifier.dispose()
           landmarks.dispose()
           towns.dispose()
           scenery.dispose()
           worldMesh.geometry.dispose()
           ;(worldMesh.material as THREE.Material).dispose()
           worldTexture.dispose()
-          for (const { terrain, texture, water } of zones) {
+          for (const { terrain, texture, water, roads } of zones) {
             terrain.dispose()
             texture.dispose()
             water.dispose()
+            roads.dispose()
           }
           sky.dispose()
           lighting.dispose()

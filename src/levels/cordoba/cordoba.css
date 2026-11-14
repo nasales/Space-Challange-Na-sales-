@@ -1,0 +1,97 @@
+/* Córdoba heat level: record chart and decade bars. Only --lvl-* variables from ../theme.css. */
+.lvh-chart__history {
+  fill: var(--lvl-divider);
+  opacity: 0.35;
+}
+
+.lvh-chart__series {
+  stroke-width: 1;
+  opacity: 0.8;
+}
+
+.lvh-dot {
+  stroke: var(--lvl-dark);
+  stroke-width: 1.5;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: lvh-pop 0.35s ease-out;
+}
+
+.lvh-dot--warm {
+  fill: var(--lvl-red);
+}
+
+.lvh-dot--cold {
+  fill: var(--lvl-sea-light);
+}
+
+.lvh-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+
+.lvh-bar {
+  stroke: var(--lvl-dark);
+  stroke-width: 1.5;
+}
+
+.lvh-bar--warm {
+  fill: var(--lvl-red);
+}
+
+.lvh-bar--cold {
+  fill: var(--lvl-sea-light);
+}
+
+.lvh-bar--warm-expected,
+.lvh-bar--cold-expected {
+  fill: var(--lvl-paper);
+  stroke-dasharray: 4 3;
+}
+
+.lvh-bar--warm-expected {
+  stroke: var(--lvl-red);
+}
+
+.lvh-bar--cold-expected {
+  stroke: var(--lvl-sea-dark);
+}
+
+.lvh-bar__value {
+  font: 700 12px var(--lvl-font);
+  fill: var(--lvl-dark);
+}
+
+.lvh-bar__group {
+  font: 700 14px var(--lvl-font);
+  fill: var(--lvl-ink);
+}
+
+.lvh-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  font-size: 14px;
+  color: var(--lvl-text-soft);
+}
+
+.lvh-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+@keyframes lvh-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lvh-dot {
+    animation: none;
+  }
+}

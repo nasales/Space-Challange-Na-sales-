@@ -43,3 +43,6 @@
 | h5netcdf / h5py | BSD-3-Clause | https://github.com/h5netcdf/h5netcdf | Reading NetCDF4/HDF5 files in the ETL |
 | psycopg 3.3.9 | LGPL-3.0 | https://www.psycopg.org | Uploading to Supabase (Postgres) in the ETL |
 | Supabase | Apache-2.0 (platform, hosted free plan) | https://supabase.com | Database for series and trends |
+| Big Shoulders Display font — Patric King / The Big Shoulders Project Authors (XO Type Co.) | SIL Open Font License 1.1 | https://github.com/xotypeco/big_shoulders (files from https://fonts.google.com/specimen/Big+Shoulders+Display) | Display type: titles, sheet labels, stamps (`src/ui/assets/fonts/`, self-hosted) |
+| Kalam font — Indian Type Foundry | SIL Open Font License 1.1 | https://github.com/itfoundry/kalam (files from https://fonts.google.com/specimen/Kalam) | Handwritten notes on pinned sheets (`src/ui/assets/fonts/`, self-hosted) |
+| Courier Prime font — Alan Dague-Greene for Quote-Unquote Apps / The Courier Prime Project Authors | SIL Open Font License 1.1 | https://github.com/quoteunquoteapps/CourierPrime (files from https://fonts.google.com/specimen/Courier+Prime) | Typewriter text in case files (`src/ui/assets/fonts/`, self-hosted) |

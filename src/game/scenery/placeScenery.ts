@@ -56,6 +56,8 @@ export interface SceneryGround {
   landmarkDistance: (x: number, z: number) => number
   /** true if (x, z) is in a river or within `margin` units of its water */
   nearRiver: (x: number, z: number, margin: number) => boolean
+  /** true if (x, z) is on a road or within `margin` units of its edge (optional: no roads) */
+  nearRoad?: (x: number, z: number, margin: number) => boolean
 }
 
 /** Radio de cada elemento (para pendientes y distancias a las casas). */
@@ -124,6 +126,7 @@ export function placeScenery(regions: SceneryRegion[], ground: SceneryGround): S
           if (region.maxMeters !== undefined && meters > region.maxMeters) continue
           if (ground.landmarkDistance(x, z) < LANDMARK_CLEARANCE) continue
           if (ground.nearRiver(x, z, r + 2)) continue // no trees in the water or on the bank
+          if (ground.nearRoad?.(x, z, r + (kind === 'windmill' ? 4 : 1.5))) continue // nor on a road
           if (ground.nearHouse(x, z, r + (kind === 'windmill' ? 8 : 3))) continue // los molinos, con un poco más de sitio
           const hs = [[0, 0], [r, 0], [-r, 0], [0, r], [0, -r]].map(([dx, dz]) => ground.heightAt(x + dx, z + dz))
           if (Math.max(...hs) - Math.min(...hs) > MAX_SLOPE) continue

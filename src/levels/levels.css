@@ -1,0 +1,78 @@
+/* Layout of the featured case levels; colors and shapes come from theme.css (--lvl-*). */
+.lvl-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 20px 24px;
+}
+
+.lvl-card p {
+  margin: 0;
+}
+
+.lvl-card__title {
+  margin: 4px 0 0;
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: var(--lvl-ink);
+}
+
+.lvl-card__place {
+  font-size: 14px;
+  color: var(--lvl-muted);
+}
+
+.lvl-card__question {
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.lvl-card__context {
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--lvl-text-soft);
+}
+
+.lvl-card__figure {
+  width: 100%;
+  margin: 6px 0;
+  padding-top: 8px;
+  border-top: 1.5px dashed var(--lvl-divider);
+}
+
+.lvl-card__figure figcaption {
+  font-size: 13px;
+  color: var(--lvl-text-soft);
+}
+
+.lvl-card__note {
+  font-size: 13px;
+  color: var(--lvl-muted);
+}
+
+.lvl-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.lvl-chart__axis {
+  stroke: var(--lvl-dark);
+  stroke-width: 1.5;
+}
+
+.lvl-chart__tick {
+  font: 11px var(--lvl-font);
+  fill: var(--lvl-text-soft);
+}
+
+.lvl-chart__line {
+  fill: none;
+  stroke: var(--lvl-red);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}

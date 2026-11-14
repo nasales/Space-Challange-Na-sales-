@@ -1,0 +1,142 @@
+/* Evidence sheet over the hand lens (ClueResult.tsx). Comic look of the lens:
+   paper #fff8e7, ink #1a1423 outlines, gold #f2c14e. Fonts from src/ui/theme/fonts.css. */
+.clue-result {
+  position: absolute;
+  z-index: 5;
+  width: min(600px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  padding: 16px 18px 14px;
+  border: 4px solid #1a1423;
+  border-radius: 6px;
+  background: #fff8e7;
+  color: #1a1423;
+  box-shadow: 8px 8px 0 #1a1423;
+  font: 15px/1.4 var(--font-type, 'Courier New', monospace);
+  animation: clue-result-in 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes clue-result-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) rotate(-1deg) scale(0.96);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clue-result {
+    animation: none;
+  }
+}
+
+.clue-result__kicker {
+  margin: 0;
+  font: 700 12px/1.2 var(--font-display, sans-serif);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #a2560f;
+}
+
+.clue-result__title {
+  margin: 2px 0 4px;
+  font: 800 26px/1 var(--font-display, sans-serif);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.clue-result__unit {
+  font-size: 18px;
+  text-transform: none;
+}
+
+.clue-result__def {
+  margin: 0 0 8px;
+  font: 400 18px/1.25 var(--font-hand, cursive);
+  color: #3b4a6b;
+}
+
+.clue-result__chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 2px solid #1a1423;
+  background: #fff;
+  font: 11px var(--font-type, monospace);
+  fill: #3b4a6b;
+}
+
+.clue-result__axis {
+  stroke: #b9b3a3;
+}
+
+.clue-result__line {
+  fill: none;
+  stroke: #2b5fb4;
+  stroke-width: 1.3;
+}
+
+.clue-result__meta {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #5d6782;
+}
+
+.clue-result__ask p,
+.clue-result__verdict p {
+  margin: 8px 0 0;
+}
+
+.clue-result__verdict {
+  margin-top: 10px;
+  padding: 8px 12px 10px;
+  border: 2px solid #1a1423;
+  background: #f6ead0;
+}
+
+.clue-result__stamp {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 3px solid #e5322d;
+  color: #e5322d;
+  font: 900 18px/1.1 var(--font-display, sans-serif);
+  text-transform: uppercase;
+  transform: rotate(-2deg);
+}
+
+.clue-result__note {
+  font-size: 13px;
+  color: #5d6782;
+}
+
+.clue-result__btn {
+  margin-top: 12px;
+  margin-right: 8px;
+  padding: 7px 12px;
+  border: 3px solid #1a1423;
+  border-radius: 4px;
+  background: #fff;
+  color: #1a1423;
+  font: 700 14px/1.2 var(--font-type, monospace);
+  cursor: pointer;
+  box-shadow: 3px 3px 0 #1a1423;
+}
+
+.clue-result__btn--gold {
+  background: #f2c14e;
+}
+
+.clue-result__btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 #1a1423;
+}
+
+.clue-result__btn:focus-visible {
+  outline: 3px solid #5ea8c2;
+  outline-offset: 2px;
+}
+
+.clue-result__btn kbd {
+  margin-left: 6px;
+  font-size: 11px;
+  opacity: 0.7;
+}
