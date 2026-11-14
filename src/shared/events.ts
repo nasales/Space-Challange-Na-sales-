@@ -1,3 +1,5 @@
+import type { LineMood } from './tutorial'
+
 // Bridge between the game (src/game) and the interface (src/ui).
 // The game never imports from src/ui and the UI never imports from src/game:
 // both only import these types. Changing this file needs agreement from both areas.
@@ -88,4 +90,6 @@ export interface GameViewProps extends GameCallbacks {
   dialogueCase?: string | null
   /** Who is speaking now (small talking animation), or null */
   speaking?: 'detective' | 'witness' | null
+  /** Mood of the line being spoken (talking pose / face of the speaker; listener reacts) */
+  speakingMood?: LineMood | null
 }
