@@ -53,6 +53,8 @@ interface Look {
   lift: [number, number, number]
   /** Star visibility, 0..1. */
   stars: number
+  /** Night factor, 0 by day and 1 at night: fades the little lights of houses and landmarks. */
+  night: number
 }
 
 const DAY: Look = {
@@ -61,7 +63,7 @@ const DAY: Look = {
   skyTop: 0x1a7dff, skyHorizon: 0x92d6ff, skyGlow: 0x000000, sunDisc: 0xffffff,
   cloud: 0xffffff, cloudShade: 0x9fb4c8,
   tint: [1, 1, 1], lift: [0, 0, 0],
-  stars: 0,
+  stars: 0, night: 0,
 }
 const GOLDEN_HOUR: Look = {
   light: 0xffc98c, lightStrength: 1,
@@ -69,7 +71,7 @@ const GOLDEN_HOUR: Look = {
   skyTop: 0x3c6fd6, skyHorizon: 0xffc994, skyGlow: 0xff8a3c, sunDisc: 0xffdca8,
   cloud: 0xffe0c2, cloudShade: 0xb48c9c,
   tint: [1, 0.93, 0.85], lift: [0, 0, 0],
-  stars: 0,
+  stars: 0, night: 0,
 }
 const SUNSET_LOOK: Look = {
   light: 0xff9a6a, lightStrength: 0.15,
@@ -77,7 +79,7 @@ const SUNSET_LOOK: Look = {
   skyTop: 0x2c3f9c, skyHorizon: 0xff9468, skyGlow: 0xff4a2c, sunDisc: 0xff9258,
   cloud: 0xffb4a4, cloudShade: 0x8c6294,
   tint: [0.86, 0.72, 0.8], lift: [0.004, 0.003, 0.012],
-  stars: 0.15,
+  stars: 0.15, night: 0.45,
 }
 const NIGHT: Look = {
   light: 0xbcccff, lightStrength: 1,
@@ -85,7 +87,7 @@ const NIGHT: Look = {
   skyTop: 0x0a0e36, skyHorizon: 0x2c2c72, skyGlow: 0x000000, sunDisc: 0xff9258,
   cloud: 0xd0d8ff, cloudShade: 0x6c72b4,
   tint: [0.26, 0.31, 0.58], lift: [0.01, 0.01, 0.032],
-  stars: 1,
+  stars: 1, night: 1,
 }
 const DAWN: Look = {
   light: 0xffa88a, lightStrength: 0.15,
@@ -93,7 +95,7 @@ const DAWN: Look = {
   skyTop: 0x3a4aaa, skyHorizon: 0xffb0a0, skyGlow: 0xff6a5c, sunDisc: 0xffa07c,
   cloud: 0xffc0c0, cloudShade: 0x9070a4,
   tint: [0.84, 0.74, 0.84], lift: [0.004, 0.003, 0.012],
-  stars: 0.15,
+  stars: 0.15, night: 0.45,
 }
 const MORNING: Look = {
   light: 0xffd6ac, lightStrength: 1,
@@ -101,7 +103,7 @@ const MORNING: Look = {
   skyTop: 0x4684e6, skyHorizon: 0xffdcc0, skyGlow: 0xffa87c, sunDisc: 0xffe8c8,
   cloud: 0xffecdc, cloudShade: 0xb09cb4,
   tint: [1, 0.96, 0.91], lift: [0, 0, 0],
-  stars: 0,
+  stars: 0, night: 0,
 }
 
 /** The day, in order (times 0..1, increasing). After the last one it blends back to the first. */
@@ -145,6 +147,8 @@ export interface DayPalette {
   /** Fog colour: the horizon colour with the screen tint undone, so far land still meets the sky. */
   fog: THREE.Color
   stars: number
+  /** 0 by day, 1 at night (house and landmark lights, see nightLights.ts). */
+  night: number
 }
 
 const COLOR_KEYS = ['lightColor', 'hemiSky', 'hemiGround', 'skyTop', 'skyHorizon', 'skyGlow', 'sunDisc', 'cloud', 'cloudShade', 'tint', 'lift'] as const
@@ -157,6 +161,7 @@ interface Compiled extends Pick<DayPalette, (typeof COLOR_KEYS)[number]> {
   lightIntensity: number
   hemiIntensity: number
   stars: number
+  night: number
 }
 
 const DAY_LIGHT_LUMA = luma(new THREE.Color(DAY.light))
@@ -182,6 +187,7 @@ function compile(time: number, look: Look): Compiled {
     tint: new THREE.Color(...look.tint),
     lift: new THREE.Color(...look.lift),
     stars: look.stars,
+    night: look.night,
   }
 }
 
@@ -212,6 +218,7 @@ export function createPalette(): DayPalette {
     hemiIntensity: 0,
     fog: new THREE.Color(),
     stars: 0,
+    night: 0,
   } as DayPalette
   for (const key of COLOR_KEYS) palette[key] = new THREE.Color()
   return palette
@@ -235,6 +242,7 @@ export function samplePalette(time: number, out: DayPalette): DayPalette {
   out.lightIntensity = lerp(a.lightIntensity, b.lightIntensity, u)
   out.hemiIntensity = lerp(a.hemiIntensity, b.hemiIntensity, u)
   out.stars = lerp(a.stars, b.stars, u)
+  out.night = lerp(a.night, b.night, u)
   out.fog.setRGB(
     Math.min(1, Math.max(0, (out.skyHorizon.r - out.lift.r) / out.tint.r)),
     Math.min(1, Math.max(0, (out.skyHorizon.g - out.lift.g) / out.tint.g)),

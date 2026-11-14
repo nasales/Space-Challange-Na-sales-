@@ -11,6 +11,7 @@ import type { ZoneData } from '../map/mapData'
 import { lonLatToWorld, UNITS_PER_KM } from '../map/projection'
 import type { RiverClearing } from '../map/rivers'
 import { createKit } from './kit'
+import { makeLightBatch, makeLightMesh } from '../scene/nightLights'
 import { LANDMARK_MODELS } from './models'
 
 export interface LandmarkData {
@@ -55,10 +56,14 @@ const DEFAULT_BLEND = 50
 const NEAR_DISTANCE = 250
 /** Free ring that towns keep around a monument (same value as LANDMARK_CLEARANCE in placeTowns). */
 const DEFAULT_CLEARANCE = 80
+/** Night lights of a monument switch on within this first part of the dusk (0..1), one after another. */
+const LIGHT_PHASE_SPREAD = 0.5
 
 interface Placed {
   data: LandmarkData
   holder: THREE.Group
+  /** Night lights of the monument (own group: they are drawn in the night-lights scene). */
+  lightHolder: THREE.Group
   x: number
   z: number
   cos: number
@@ -181,6 +186,9 @@ function closeGaps(src: Float32Array, cols: number, rows: number) {
 export function createLandmarks(list: LandmarkData[]) {
   const kit = createKit()
   const group = new THREE.Group()
+  /** Night lights of all the monuments (goes in the night-lights scene, not in the main one). */
+  const lights = new THREE.Group()
+  const lightGeometries: THREE.BufferGeometry[] = []
   const placed: Placed[] = []
 
   // 1) Construir los modelos y medir su planta
@@ -188,7 +196,9 @@ export function createLandmarks(list: LandmarkData[]) {
     const def = LANDMARK_MODELS[data.id]
     if (!def) continue // todavía sin modelo
     const s = LANDMARK_SCALE * (data.scale ?? 1)
-    const model = kit.merge(def.build(kit)) // cientos de piezas → una malla por color
+    const built = def.build(kit)
+    const markers = kit.lights(built) // night lights placed in the model (before merging drops them)
+    const model = kit.merge(built) // cientos de piezas → una malla por color
     model.scale.setScalar(s)
     const box = new THREE.Box3().setFromObject(model)
     const margin = def.margin !== undefined ? def.margin * s : PLINTH_MARGIN
@@ -213,9 +223,31 @@ export function createLandmarks(list: LandmarkData[]) {
     holder.rotation.y = angle
     holder.add(model)
     group.add(holder)
+    // Night lights: one mesh per monument, in the holder's frame (model scale and offset baked in)
+    const lightHolder = new THREE.Group()
+    lightHolder.rotation.y = angle
+    lights.add(lightHolder)
+    if (markers.length > 0) {
+      const toHolder = new THREE.Matrix4().makeScale(s, s, s).setPosition(model.position)
+      const matrix = new THREE.Matrix4()
+      const centre = new THREE.Vector3()
+      const batch = makeLightBatch()
+      markers.forEach((marker, i) => {
+        matrix.multiplyMatrices(toHolder, marker.matrix)
+        const phase = ((i * 0.618) % 1) * LIGHT_PHASE_SPREAD // they come on one after another, early in the dusk
+        if (marker.panel) batch.addPanel(matrix, marker.w, marker.h, phase, marker.intensity)
+        else {
+          centre.setFromMatrixPosition(matrix)
+          batch.addHalo(centre.x, centre.y, centre.z, marker.w * s, phase, marker.intensity)
+        }
+      })
+      const mesh = makeLightMesh(batch)!
+      lightGeometries.push(mesh.geometry)
+      lightHolder.add(mesh)
+    }
     const { x, z } = lonLatToWorld(data.lon, data.lat)
     const heights = bakeHeightMap(holder, halfW, halfD)
-    placed.push({ data, holder, x, z, cos: Math.cos(angle), sin: Math.sin(angle), halfW, halfD, heights })
+    placed.push({ data, holder, lightHolder, x, z, cos: Math.cos(angle), sin: Math.sin(angle), halfW, halfD, heights })
   }
 
   /** Coordenadas de (x, z) en el sistema del monumento (sin giro, centrado). */
@@ -231,6 +263,7 @@ export function createLandmarks(list: LandmarkData[]) {
 
   return {
     group,
+    lights,
 
     /** 2) Allana las alturas (m) de una zona debajo de cada monumento que caiga en ella. */
     flattenTerrain(zone: ZoneData, heights: Float32Array) {
@@ -276,7 +309,10 @@ export function createLandmarks(list: LandmarkData[]) {
 
     /** 3) Coloca cada monumento sobre su explanada. */
     place(heightAt: (x: number, z: number) => number) {
-      for (const p of placed) p.holder.position.set(p.x, heightAt(p.x, p.z), p.z)
+      for (const p of placed) {
+        p.holder.position.set(p.x, heightAt(p.x, p.z), p.z)
+        p.lightHolder.position.copy(p.holder.position)
+      }
     },
 
     /**
@@ -344,6 +380,9 @@ export function createLandmarks(list: LandmarkData[]) {
       return p ? { x: p.x, z: p.z } : null
     },
 
-    dispose: kit.dispose,
+    dispose: () => {
+      kit.dispose()
+      lightGeometries.forEach((g) => g.dispose())
+    },
   }
 }

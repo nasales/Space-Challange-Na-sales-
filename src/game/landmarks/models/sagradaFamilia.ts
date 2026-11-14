@@ -43,5 +43,16 @@ export function buildSagradaFamilia(kit: Kit): THREE.Group {
   const crossY = BODY_H + 42 * 1.24 + 2
   g.add(kit.box(0.6, 4, 0.6, 0xffffff, 0, crossY, 0))
   g.add(kit.box(2.6, 0.6, 0.6, 0xffffff, 0, crossY + 2.4, 0))
+
+  // ---- Night lights: tall lit windows between the facade towers and on the nave, and the
+  // glowing tips of the central towers (the Virgin's tower carries a lit star) ----
+  for (const side of [-1, 1]) {
+    const turn = side > 0 ? 0 : Math.PI
+    for (const x of [-4, 0, 4]) g.add(kit.lightPanel(1.4, 5, x * side, 4, side * 15.1, turn))
+    for (const x of [-10.5, 10.5]) g.add(kit.lightPanel(1.4, 4, x, 5, side * 7.1, turn))
+  }
+  g.add(kit.lightHalo(3.6, 0, BODY_H + 42 * 1.24, 0, 1))
+  g.add(kit.lightHalo(3, 13, BODY_H + 32 * 1.24, 0, 1))
+  for (const [x, z] of [[-5, -5], [5, -5], [-5, 5], [5, 5]]) g.add(kit.lightHalo(2, x, BODY_H + 30 * 1.24, z, 0.6))
   return g
 }

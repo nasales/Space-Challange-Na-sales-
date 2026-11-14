@@ -16,6 +16,7 @@ import { createLighting } from './scene/createLighting'
 import { createClouds } from './scene/createClouds'
 import { createInkOutline } from './scene/createInkOutline'
 import { createDayCycle, readDayParams } from './scene/dayCycle'
+import { createNightLights } from './scene/nightLights'
 import { createDetective } from './detective/createDetective'
 import { createDust } from './effects/createDust'
 import { createFootprints } from './effects/createFootprints'
@@ -150,6 +151,9 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
         })
         const towns = createTowns(houses)
         scene.add(towns.group)
+        // Night lights of houses and landmarks: their own scene, drawn after the ink pass
+        const nightLights = createNightLights()
+        nightLights.scene.add(towns.lights, landmarks.lights)
 
         // Paisaje por regiones: olivares, viñedos, bosques, dehesa, palmeras y molinos (scenery.json)
         const sceneryItems = placeScenery(sceneryRegions, {
@@ -187,7 +191,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
         const keyboard = createKeyboard()
         const chase = createChaseCamera(camera, renderer.domElement)
         // Solo en desarrollo: acceso desde la consola/Playwright para depurar
-        if (import.meta.env.DEV) Object.assign(window, { __game: { carState, camera, chase, ground, detective, renderer, scene, day, towns, houses, scenery, sceneryItems, landmarks, caseMarkers, main } })
+        if (import.meta.env.DEV) Object.assign(window, { __game: { carState, camera, chase, ground, detective, renderer, scene, day, nightLights, towns, houses, scenery, sceneryItems, landmarks, caseMarkers, main } })
 
         const fog = scene.fog as THREE.Fog
         const ink = createInkOutline(renderer) // contornos negros de cómic
@@ -272,7 +276,8 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
           fog.color.copy(palette.fog)
           sky.update(camera, palette)
           lighting.update(detective.root.position, Math.max(40, Math.min(d * 1.6, 3000 * UNITS_PER_KM)), palette)
-          ink.render(scene, camera, fog.near, fog.near + (fog.far - fog.near) * 0.5, palette)
+          nightLights.update(palette.night, fog.near, fog.far)
+          ink.render(scene, camera, fog.near, fog.near + (fog.far - fog.near) * 0.5, palette, nightLights.scene)
           hudClock += dt
           if (hudClock >= HUD_INTERVAL) {
             hudClock = 0
@@ -289,6 +294,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
           footprints.dispose()
           landmarks.dispose()
           towns.dispose()
+          nightLights.dispose()
           scenery.dispose()
           worldMesh.geometry.dispose()
           ;(worldMesh.material as THREE.Material).dispose()

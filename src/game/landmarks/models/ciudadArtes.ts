@@ -521,6 +521,13 @@ export function buildCiudadArtes(kit: Kit): THREE.Group {
     p.position.set(x, 0, 19.5)
     g.add(p)
   }
+
+  // ---- Night lights: the glass museum glows from inside, the eye of the Hemisfèric is lit,
+  // and soft floodlights wash the white shells and the garden walk ----
+  for (const dx of [-21, -7, 7, 21]) g.add(kit.lightHalo(7, 31 + dx, 8, -1, 0.45))
+  g.add(kit.lightHalo(9, -22, POOL_Y + 4, 2, 0.7))
+  for (const z of [-11, 11]) g.add(kit.lightHalo(9, -70, 6, z, 0.4), kit.lightHalo(7, 84, 7, z * 0.7, 0.4))
+  for (const x of [6, 28, 50]) g.add(kit.lightHalo(5, x, 4, 24, 0.3))
   return g
 }
 
