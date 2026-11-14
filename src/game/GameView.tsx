@@ -39,6 +39,8 @@ const EXPLORED_COUNTRY = 'ESP'
 const HUD_INTERVAL = 0.1 // s
 /** Game speed → km/h shown in the HUD (made-up game scale; full turbo still reads ~308 km/h). */
 const KMH_PER_UNIT = (2.2 * 140) / TUNING.turboSpeed
+/** Thrown by the loading steps when the view was closed while the map was still being built. */
+const CANCELLED = Symbol('cancelled')
 
 function makeTexture(canvas: HTMLCanvasElement, renderer: THREE.WebGLRenderer) {
   const texture = new THREE.CanvasTexture(canvas)
@@ -48,12 +50,12 @@ function makeTexture(canvas: HTMLCanvasElement, renderer: THREE.WebGLRenderer) {
 }
 
 /** Only the 3D canvas. The HUD and status messages live in src/ui, fed through the callbacks. */
-export default function GameView({ onStatus, onHud, onLensFocus, focusLens = false }: GameViewProps) {
+export default function GameView({ onStatus, onHud, onLensFocus, onProgress, focusLens = false }: GameViewProps) {
   const container = useRef<HTMLDivElement>(null)
   // Latest callbacks (and pause flag), read from inside the animation loop without restarting the scene
-  const callbacks = useRef({ onStatus, onHud, onLensFocus, focusLens })
+  const callbacks = useRef({ onStatus, onHud, onLensFocus, onProgress, focusLens })
   useEffect(() => {
-    callbacks.current = { onStatus, onHud, onLensFocus, focusLens }
+    callbacks.current = { onStatus, onHud, onLensFocus, onProgress, focusLens }
   })
   const setStatus = (status: GameStatus) => callbacks.current.onStatus?.(status)
   const setHud = (hud: HudState) => callbacks.current.onHud?.(hud)
@@ -62,12 +64,38 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
     const el = container.current!
     let cancelled = false
     let cleanup = () => {}
+    // Loading bar: report progress (0..1), then give the browser a frame to paint it before the
+    // next heavy (synchronous) build step. Stops the build if the view was closed meanwhile.
+    let disposePartial = () => {}
+    const progress = async (p: number) => {
+      callbacks.current.onProgress?.(p)
+      await new Promise<void>((resolve) => {
+        const fallback = setTimeout(resolve, 60) // hidden tab: no animation frames
+        requestAnimationFrame(() => {
+          clearTimeout(fallback)
+          setTimeout(resolve, 0)
+        })
+      })
+      if (cancelled) throw CANCELLED
+    }
+    // Data files: the first 35 % of the bar, one slice per file as it arrives
+    const FILES = 5
+    let filesDone = 0
+    const fetched = <T,>(promise: Promise<T>) =>
+      promise.then((value) => {
+        filesDone++
+        if (!cancelled) callbacks.current.onProgress?.((0.35 * filesDone) / FILES)
+        return value
+      })
+    callbacks.current.onProgress?.(0)
 
-    Promise.all([loadCountryData(EXPLORED_COUNTRY), loadWorldData(), loadLandmarks(EXPLORED_COUNTRY), loadScenery(EXPLORED_COUNTRY), loadRoads(EXPLORED_COUNTRY)])
-      .then(([explored, world, landmarkList, sceneryRegions, roadList]) => {
+    Promise.all([fetched(loadCountryData(EXPLORED_COUNTRY)), fetched(loadWorldData()), fetched(loadLandmarks(EXPLORED_COUNTRY)), fetched(loadScenery(EXPLORED_COUNTRY)), fetched(loadRoads(EXPLORED_COUNTRY))])
+      .then(async ([explored, world, landmarkList, sceneryRegions, roadList]) => {
         if (cancelled) return
+        await progress(0.36)
         const country = world.countries.find((c) => c.id === EXPLORED_COUNTRY)!
         const { renderer, scene, camera, dispose } = createScene(el)
+        disposePartial = dispose
 
         // Mundo gris sin explorar
         const worldTexture = makeTexture(buildWorldTexture(world), renderer)
@@ -78,6 +106,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
         // Monumentos: se construyen ya para poder allanar el terreno debajo de ellos
         const landmarks = createLandmarks(landmarkList)
         scene.add(landmarks.group)
+        await progress(0.4)
 
         // País explorado: una maqueta por zona (p. ej. Península y Canarias).
         // Alturas suavizadas: las mismas para la textura y la malla, así encajan
@@ -85,7 +114,14 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
         const clearings = landmarks.riverClearings(10)
         // Roads bend around the monuments too (circles in world units)
         const roadClearings = landmarks.riverClearings(8).map((c) => ({ ...lonLatToWorld(c.lon, c.lat), r: c.radiusKm * UNITS_PER_KM }))
-        const zones = explored.zones.map((z) => {
+        const zones: {
+          terrain: ReturnType<typeof createTerrain>
+          texture: THREE.CanvasTexture
+          water: ReturnType<typeof createRivers>
+          roads: ReturnType<typeof createRoads>
+        }[] = []
+        for (const [i, z] of explored.zones.entries()) {
+          const zoneProgress = (part: number) => progress(0.4 + (0.35 * (i + part)) / explored.zones.length)
           // Rivers: gaps closed, ends labelled (spring / mouth / confluence), then bent around monuments
           const zone = z.rivers ? { ...z, rivers: bendRiversAround(prepareRivers(z.rivers, z), clearings) } : z
           // Smoothed heights plus extra relief (slopes everywhere): same grid for texture and mesh
@@ -97,6 +133,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
           scene.add(terrain.group)
           const water = createRivers(zone.rivers, terrain) // animated water inside the carved channels
           scene.add(water.mesh)
+          await zoneProgress(0.6)
           // Main roads: bridges over the rivers above, around the monuments, only on explored land
           const roads = createRoads(roadsInBounds(roadList, zone.bounds), {
             heightAt: terrain.heightAt,
@@ -106,8 +143,9 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
             landmarkDistance: landmarks.distance,
           })
           scene.add(roads.group)
-          return { terrain, texture, water, roads }
-        })
+          zones.push({ terrain, texture, water, roads })
+          await zoneProgress(1)
+        }
         const roadSurfaceAt = (x: number, z: number) => Math.max(...zones.map((zn) => zn.roads.surfaceAt(x, z)))
         const nearRoad = (x: number, z: number, m: number) => zones.some((zn) => zn.roads.nearRoad(x, z, m))
         const main = zones[0].terrain // la zona principal
@@ -122,6 +160,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
         const se = lonLatToWorld(mb.east + 3, mb.south - 3)
         const clouds = createClouds({ minX: nw.x, maxX: se.x, minZ: nw.z, maxZ: se.z })
         scene.add(clouds.mesh)
+        await progress(0.78)
 
         landmarks.place(main.heightAt) // on their flattened plazas (the detective can climb them, like houses)
 
@@ -141,6 +180,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
         })
         const towns = createTowns(houses)
         scene.add(towns.group)
+        await progress(0.85)
 
         // Paisaje por regiones: olivares, viñedos, bosques, dehesa, palmeras y molinos (scenery.json)
         const sceneryItems = placeScenery(sceneryRegions, {
@@ -154,6 +194,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
         })
         const scenery = createScenery(sceneryItems)
         scene.add(scenery.group)
+        await progress(0.95)
 
         // El detective: empieza en Madrid, mirando hacia la Puerta de Alcalá
         // Ground under the detective: the terrain or, over a house or a monument, its roof.
@@ -258,6 +299,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
             updateHud(input.turbo && input.throttle > 0)
           }
         })
+        callbacks.current.onProgress?.(1)
         setStatus('ready')
 
         cleanup = () => {
@@ -286,6 +328,10 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
         }
       })
       .catch((err) => {
+        if (err === CANCELLED) {
+          disposePartial() // closed mid-build: drop the renderer and its canvas
+          return
+        }
         console.error(err)
         if (!cancelled) setStatus('error')
       })
