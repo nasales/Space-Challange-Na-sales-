@@ -4403,8 +4403,8 @@
        2
       ],
       "trend": {
-       "slope_per_year": -0.0,
-       "ci_low": -0.0,
+       "slope_per_year": 0.0,
+       "ci_low": 0.0,
        "ci_high": 0.047619,
        "p_value": 0.000990628,
        "significant": true,
@@ -6669,7 +6669,7 @@
       -5.85658,
       -4.41613,
       -3.79993,
-      7.28306e-14
+      0.0
      ]
     },
     "running_mean": {

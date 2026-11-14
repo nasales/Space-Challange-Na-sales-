@@ -176,11 +176,11 @@ def yearly_trend(years: list[int], values: list[float]) -> dict:
     y = np.asarray(values, dtype=float)
     sen = stats.theilslopes(y, x, 1 - ALPHA)
     p = float(pymannkendall.original_test(y, ALPHA).p)
-    slope, intercept = float(sen.slope), float(sen.intercept)
+    slope, intercept = float(sen.slope) + 0.0, float(sen.intercept)   # + 0.0: no "-0.0"
     return {
         "slope_per_year": _round(slope),
-        "ci_low": _round(float(sen.low_slope)),
-        "ci_high": _round(float(sen.high_slope)),
+        "ci_low": _round(float(sen.low_slope) + 0.0),
+        "ci_high": _round(float(sen.high_slope) + 0.0),
         "p_value": _round(p),
         "significant": bool(p < ALPHA),
         "test": YEARLY_TEST,
@@ -262,14 +262,20 @@ def standardise(anomaly: list[float | None]) -> list[float | None]:
 
 
 def cumulative_anomaly(anomaly: list[float | None]) -> list[float | None]:
-    """Running sum of anomalies; gaps add 0 and are null themselves."""
+    """Running sum of anomalies; gaps add 0 and are null themselves.
+
+    The anomalies sum to zero over the record, so the last value is 0 up to float noise;
+    sums smaller than 1e-9 x the largest |anomaly| are written as 0.
+    """
+    valid = [abs(a) for a in anomaly if a is not None]
+    tiny = 1e-9 * (max(valid) if valid else 0.0)
     total, out = 0.0, []
     for a in anomaly:
         if a is None:
             out.append(None)
         else:
             total += a
-            out.append(total)
+            out.append(0.0 if abs(total) < tiny else total)
     return out
 
 
@@ -337,9 +343,9 @@ def window_trends(dates: list[str], values: list[float | None],
         r = analyze_trend(dates[i0:], values[i0:])
         out.append({
             "start_year": start,
-            "slope_per_year": _round(r["slope"]),
-            "ci_low": _round(r["slope_ci_low"]),
-            "ci_high": _round(r["slope_ci_high"]),
+            "slope_per_year": _round(r["slope"] + 0.0),
+            "ci_low": _round(r["slope_ci_low"] + 0.0),
+            "ci_high": _round(r["slope_ci_high"] + 0.0),
             "p_value": _round(r["p_value"]),
             "significant": r["significant"],
         })

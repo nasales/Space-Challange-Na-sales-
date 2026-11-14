@@ -3890,7 +3890,7 @@
       3.71261,
       2.33526,
       0.472878,
-      -7.54952e-15
+      0.0
      ]
     },
     "running_mean": {
@@ -6575,9 +6575,9 @@
        0.0
       ],
       "trend": {
-       "slope_per_year": -0.0,
-       "ci_low": -0.0,
-       "ci_high": -0.0,
+       "slope_per_year": 0.0,
+       "ci_low": 0.0,
+       "ci_high": 0.0,
        "p_value": 0.549654,
        "significant": false,
        "test": "mann-kendall",
@@ -6649,8 +6649,8 @@
        0.048
       ],
       "trend": {
-       "slope_per_year": -0.0,
-       "ci_low": -0.0,
+       "slope_per_year": 0.0,
+       "ci_low": 0.0,
        "ci_high": 0.00218182,
        "p_value": 0.35739,
        "significant": false,
@@ -7162,7 +7162,7 @@
       ],
       "trend": {
        "slope_per_year": 0.00362393,
-       "ci_low": -0.0,
+       "ci_low": 0.0,
        "ci_high": 0.00666667,
        "p_value": 0.0629,
        "significant": false,
@@ -7309,7 +7309,7 @@
       "trend": {
        "slope_per_year": -0.014325,
        "ci_low": -0.0263333,
-       "ci_high": -0.0,
+       "ci_high": 0.0,
        "p_value": 0.0459135,
        "significant": true,
        "test": "mann-kendall",
@@ -8662,7 +8662,7 @@
       1.05429,
       1.02943,
       0.939429,
-      4.88498e-15
+      0.0
      ]
     },
     "running_mean": {

@@ -4797,7 +4797,7 @@
     "window_trends": [
      {
       "start_year": 1998,
-      "slope_per_year": -0.0,
+      "slope_per_year": 0.0,
       "ci_low": -0.0131381,
       "ci_high": 0.0131844,
       "p_value": 0.897242,
@@ -11372,7 +11372,7 @@
       -7.78511,
       -5.04073,
       -2.60528,
-      -9.41469e-14
+      0.0
      ]
     },
     "running_mean": {

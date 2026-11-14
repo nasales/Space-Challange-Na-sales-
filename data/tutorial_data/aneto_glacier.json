@@ -4403,9 +4403,9 @@
        0
       ],
       "trend": {
-       "slope_per_year": -0.0,
+       "slope_per_year": 0.0,
        "ci_low": -0.0416667,
-       "ci_high": -0.0,
+       "ci_high": 0.0,
        "p_value": 0.0816454,
        "significant": false,
        "test": "mann-kendall",
@@ -6669,7 +6669,7 @@
       -12.7025,
       -7.95837,
       -4.6971,
-      -9.76996e-14
+      0.0
      ]
     },
     "running_mean": {
@@ -11960,7 +11960,7 @@
       -1.92686,
       -1.93629,
       -0.282,
-      1.06581e-14
+      0.0
      ]
     },
     "running_mean": {
