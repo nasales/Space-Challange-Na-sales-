@@ -6,6 +6,7 @@ import type { ComponentType } from 'react'
 import AlmeriaLevel from './almeria/AlmeriaLevel'
 import AnetoLevel from './aneto/AnetoLevel'
 import CulebraLevel from './culebra/CulebraLevel'
+import DaimielLevel from './daimiel/DaimielLevel'
 import DonanaLevel from './donana/DonanaLevel'
 import FilomenaLevel from './filomena/FilomenaLevel'
 import type { CaseLevelProps } from './types'
@@ -16,6 +17,7 @@ export const LEVELS: Partial<Record<string, ComponentType<CaseLevelProps>>> = {
   almeria_murcia: AlmeriaLevel,
   aneto_glacier: AnetoLevel,
   sierra_culebra: CulebraLevel,
+  daimiel: DaimielLevel,
 }
 
 export function getLevel(caseId: string): ComponentType<CaseLevelProps> | undefined {
