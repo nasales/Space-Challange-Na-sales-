@@ -3,7 +3,18 @@
 // from Data (Diego), Interface (Yeipi) and Game (Person 2).
 
 /** Featured cases that have a tutorial. The game draws a marker only for these ids. */
-export const TUTORIAL_CASE_IDS = ['dana_valencia'] as const
+export const TUTORIAL_CASE_IDS = [
+  'dana_valencia',
+  'filomena_madrid',
+  'cordoba_heat',
+  'aneto_glacier',
+  'donana',
+  'daimiel',
+  'almeria_murcia',
+  'ebro_delta',
+  'galicia_fires',
+  'sierra_culebra',
+] as const
 export type TutorialCaseId = (typeof TUTORIAL_CASE_IDS)[number]
 
 /** Where a case marker goes on the map (taken from data/cases_index.json). */
@@ -66,23 +77,71 @@ export interface TutorialStep {
 /**
  * What the UI draws. All series come from TutorialData; the script never contains numbers
  * that the data does not back up.
+ * Basic views (every case):
  * - monthly: raw monthly values
  * - climatology: the 12-month average cycle (Jan..Dec), one line
  * - anomaly: monthly values minus the climatology of their month
  * - annual: annual means (only complete years)
- * Any view except climatology can add the trend line with show_trend.
+ * Technique views (each featured case teaches one; data in TutorialSeries.extras):
+ * - same_month: one calendar month across the years (`month` 1-12), e.g. every January
+ * - season: one season across the years (`season`), e.g. every summer
+ * - ranking: bars of `season` (or annual if no season) sorted from highest to lowest;
+ *   `top_n` bars, the last `recent_years` years coloured differently
+ * - threshold_count: per year, number of months above/below a threshold (`threshold_id`)
+ * - zscore_pair: two variables (`variables`) on one scale: standardised anomalies,
+ *   12-month running mean
+ * - cumulative: running sum of anomalies (multi-year droughts and recoveries)
+ * - running_mean: monthly series with a centred running mean of `window` months (12 or 60)
+ * - periods: histogram of monthly anomalies, before vs from the split date of the series
+ * - season_scatter: one dot per year, x = `season` mean of `variables[0]`,
+ *   y = `season` mean of `variables[1]`; the last `recent_years` years coloured differently
+ * - window_trends: trend of the monthly series for different start years (bar = slope,
+ *   whisker = 95% CI, filled if significant)
+ * show_trend adds a trend line to monthly, anomaly, annual, same_month, season and
+ * threshold_count (from the matching trend in the data).
  */
 export interface ChartSpec {
   variable: string
-  view: 'monthly' | 'climatology' | 'anomaly' | 'annual'
-  /** Optional zoom, inclusive, "YYYY-MM" (or "YYYY" for annual) */
+  view:
+    | 'monthly'
+    | 'climatology'
+    | 'anomaly'
+    | 'annual'
+    | 'same_month'
+    | 'season'
+    | 'ranking'
+    | 'threshold_count'
+    | 'zscore_pair'
+    | 'cumulative'
+    | 'running_mean'
+    | 'periods'
+    | 'season_scatter'
+    | 'window_trends'
+  /** Optional zoom, inclusive, "YYYY-MM" (or "YYYY" for yearly views) */
   range?: [string, string]
   show_trend?: boolean
   /** Draw the series with the largest monthly value as a labelled point */
   highlight_max?: boolean
-  /** Labelled points or bands. Dates must exist in the data. */
+  /** Labelled points or bands. Dates must exist in the data ("YYYY" for yearly views). */
   highlights?: Highlight[]
+  /** same_month: 1 = January ... 12 = December */
+  month?: number
+  /** season, ranking, season_scatter */
+  season?: SeasonId
+  /** ranking: number of bars (default all) */
+  top_n?: number
+  /** ranking, season_scatter: highlight the last N years */
+  recent_years?: number
+  /** threshold_count: id in TutorialSeries.extras.threshold_counts */
+  threshold_id?: string
+  /** zscore_pair, season_scatter: two variable ids (variable is the first one) */
+  variables?: [string, string]
+  /** running_mean: 12 or 60 */
+  window?: 12 | 60
 }
+
+/** DJF = Dec-Jan-Feb, assigned to the year of its January; JJAS = June-September (fire season) */
+export type SeasonId = 'DJF' | 'MAM' | 'JJA' | 'SON' | 'JJAS'
 
 export type Highlight =
   | { kind: 'point'; date: string; label: string }
@@ -130,4 +189,67 @@ export interface TutorialSeries {
     monthly_line: [number, number]
     annual_line: [number, number]
   }
+  /** Technique data (always present for every variable since the 10-case update) */
+  extras?: TutorialExtras
+}
+
+/** A yearly sub-series with its own trend (Sen slope + Mann-Kendall on the yearly values). */
+export interface YearlySeries {
+  years: number[]
+  values: number[]
+  trend: YearlyTrend
+}
+
+export interface YearlyTrend {
+  slope_per_year: number
+  ci_low: number
+  ci_high: number
+  p_value: number
+  significant: boolean
+  test: string
+  /** Line value at the first and last year */
+  line: [number, number]
+}
+
+export interface TutorialExtras {
+  /** 12 entries, index 0 = January; only years where that month has data */
+  same_month: YearlySeries[]
+  /** Complete seasons only */
+  seasons: Record<SeasonId, YearlySeries>
+  /** Defined per case in pipeline/tutorial_data.py (may be empty) */
+  threshold_counts: {
+    id: string
+    /** e.g. "Months below 0 °C" */
+    label: string
+    op: 'above' | 'below'
+    value: number
+    years: number[]
+    counts: number[]
+    trend: YearlyTrend
+  }[]
+  /** Standardised anomaly (anomaly / its standard deviation), centred 12-month running mean */
+  zscore_smooth12: { dates: string[]; values: (number | null)[] }
+  /** Running sum of anomalies (gaps count as 0) */
+  cumulative_anomaly: { dates: string[]; values: (number | null)[] }
+  /** Centred running means of the monthly values; null where the window is incomplete */
+  running_mean: { '12': (number | null)[]; '60': (number | null)[] }
+  /** Monthly anomalies split in two halves of the record */
+  periods: {
+    split: string
+    before: { from: string; to: string; mean: number; n: number }
+    after: { from: string; to: string; mean: number; n: number }
+    /** Shared histogram bin edges (length = counts length + 1) */
+    bin_edges: number[]
+    before_counts: number[]
+    after_counts: number[]
+  }
+  /** analyze_trend on the monthly series from each start year to the end */
+  window_trends: {
+    start_year: number
+    slope_per_year: number
+    ci_low: number
+    ci_high: number
+    p_value: number
+    significant: boolean
+  }[]
 }

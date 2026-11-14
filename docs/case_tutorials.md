@@ -44,3 +44,20 @@ While the case is open the game is paused (driving keys ignored).
   5. Trend line and noise: the slope summarises decades, single points do not.
   6. Significance in plain words: could this slope appear by chance? (p-value, confidence range)
   7. Compare variables: rain shows no clear trend, temperature rises clearly.
+
+## One technique per case (agreed with Diego, 2026-11-14)
+Every case opens with one short recap step (what a monthly series and a trend are, told with
+that case), then teaches its own way of analysing a time series (5-7 steps in total).
+
+| Case | Variables | Technique (main views) | Lesson |
+|---|---|---|---|
+| `dana_valencia` | PRECIP, T2M | anomalies, extreme vs trend (`anomaly`, `annual`) | One extreme event is not a trend; monthly means hide a storm of a few hours |
+| `filomena_madrid` | T2M, PRECIP | same month across the years (`same_month`, month 1) | A cold January exists, yet Januaries are warming: weather is not climate |
+| `cordoba_heat` | T2M | records and ranking (`ranking`, `season` JJA) | With a trend, records pile up at the end |
+| `aneto_glacier` | T2M, PRECIP | seasons separately + physical threshold (`season` DJF/JJA, `threshold_count` below 0 °C) | A yearly mean hides what each season does |
+| `donana` | SOILM, PRECIP | two clues on one scale (`zscore_pair`) | Compare different units; what satellites cannot see (the aquifer); p right at 0.05 |
+| `daimiel` | SOILM, PRECIP | cumulative anomaly (`cumulative`) | A wetland responds to accumulated totals, not to single months |
+| `almeria_murcia` | PRECIP, SOILM | running means (`running_mean` 12 and 60) | Smoothing shows multi-year swings but can fool you; no significant trend |
+| `ebro_delta` | PRECIP, T2M | before vs after (`periods`) | Temperature shifts the whole distribution, rain does not; storm Gloria was a sea storm these variables cannot measure |
+| `galicia_fires` | T2M, SOILM | season of risk + compound conditions (`season` JJAS, `season_scatter`) | Look at the season that matters; hot and dry together |
+| `sierra_culebra` | T2M, SOILM | does the answer depend on the window? (`window_trends`) | Uncertainty, record length, reading a confidence interval; weak evidence |
