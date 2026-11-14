@@ -24,22 +24,77 @@ const VIEW_DISTANCE = 1100
 /** Con la cámara más lejos que esto (vista aérea) los árboles no se dibujan: serían puntitos. */
 const HIDE_ABOVE = 700
 
+/** Wind animation frame rate: comic "on twos" stepping, like the river water. */
+const ANIM_FPS = 12
+
 /**
- * Material de los árboles: el toon de siempre + "agacharse". Cada copia mira dónde está su base
- * (instanceMatrix) y, si queda cerca del segmento detective → cámara, se aplasta hacia el suelo.
+ * Material de los árboles: el toon de siempre + "agacharse" + the comic Spider-Verse look.
+ * - Ducking: each copy checks where its base is (instanceMatrix) and, if it is close to the
+ *   detective → camera segment, squashes down towards the ground.
+ * - Wind on twos: the crown sways with the per-vertex `aSway` weight (0 on the trunk), with a
+ *   per-tree phase, in time steps of 1/12 s.
+ * - Comic shading on top of the 2-tone cel + violet shadow: a crisp light band on the sunlit top
+ *   of each clump, Ben-Day halftone dots that grow with the shade, sparse ink hatching in the
+ *   deepest shadow and a faint cyan / magenta misregistration rim on the silhouette.
  */
 function duckingMaterial() {
   const material = toonMaterial(0xffffff, { vertexColors: true })
   const uniforms = {
     uDuckA: { value: new THREE.Vector2() }, // detective
     uDuckB: { value: new THREE.Vector2() }, // cámara
+    uTime: { value: 0 }, // stepped on twos
   }
   const toon = material.onBeforeCompile
   material.onBeforeCompile = (shader, renderer) => {
     toon.call(material, shader, renderer)
     Object.assign(shader.uniforms, uniforms)
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <opaque_fragment>',
+      /* glsl */ `{
+        // How much light this pixel gets (same measure as addCartoonShadows): 0 sun, 1 shade
+        const vec3 lumaW = vec3(0.299, 0.587, 0.114);
+        vec3 litC = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse;
+        float lightC = dot(litC, lumaW) / max(dot(diffuseColor.rgb, lumaW), 1e-3);
+        float shadeC = smoothstep(0.88, 0.74, lightC);
+        float ndl = 0.0;
+        #if NUM_DIR_LIGHTS > 0
+          ndl = dot(normal, directionalLights[0].direction);
+        #endif
+        float dist = length(vViewPosition);
+        float near = 1.0 - smoothstep(260.0, 650.0, dist); // comic detail fades out far away
+
+        // 1) Light band on the sunlit top of each clump (crisp, anti-aliased edge)
+        float bw = max(fwidth(ndl), 1e-3);
+        float lightBand = smoothstep(0.78 - bw, 0.78 + bw, ndl) * (1.0 - shadeC);
+        outgoingLight = mix(outgoingLight, outgoingLight * 1.1 + vec3(0.07, 0.06, -0.01), lightBand * 0.85);
+
+        // 2) Ben-Day halftone in the shade: screen-space dots on a 45 degree grid, bigger with more shade
+        vec2 hp = mat2(0.7071, -0.7071, 0.7071, 0.7071) * gl_FragCoord.xy / 5.0;
+        float hd = length(fract(hp) - 0.5);
+        float dotR = 0.44 * shadeC * near;
+        float hw = max(fwidth(hd), 1e-3);
+        float dots = 1.0 - smoothstep(dotR - hw, dotR + hw, hd);
+        outgoingLight = mix(outgoingLight, outgoingLight * 0.62, dots);
+
+        // 3) Sparse ink hatching where the shadow is deepest (facing away from the sun)
+        float core = shadeC * smoothstep(-0.15, -0.55, ndl) * near;
+        float hl = abs(fract((gl_FragCoord.x - gl_FragCoord.y) / 6.0) - 0.5);
+        float hatch = 1.0 - smoothstep(0.06, 0.06 + max(fwidth(hl) * 1.5, 0.02), hl);
+        outgoingLight = mix(outgoingLight, vec3(0.102, 0.078, 0.137), hatch * core * 0.45);
+
+        // 4) Offset-print misregistration: a faint cyan rim on one side, magenta on the other
+        float fres = 1.0 - abs(dot(normal, normalize(-vViewPosition)));
+        float rim = smoothstep(0.62, 0.86, fres) * near;
+        vec3 ink2 = normal.x < 0.0 ? vec3(0.2, 0.78, 1.0) : vec3(1.0, 0.32, 0.62);
+        outgoingLight = mix(outgoingLight, ink2, rim * 0.28);
+      }
+      #include <opaque_fragment>`,
+    )
     shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nuniform vec2 uDuckA;\nuniform vec2 uDuckB;')
+      .replace(
+        '#include <common>',
+        '#include <common>\nuniform vec2 uDuckA;\nuniform vec2 uDuckB;\nuniform float uTime;\nattribute float aSway;',
+      )
       .replace(
         '#include <begin_vertex>',
         `#include <begin_vertex>
@@ -53,10 +108,15 @@ function duckingMaterial() {
         float duckD = distance(duckOrigin, uDuckA + duckAB * duckT);
         float duck = 1.0 - smoothstep(${DUCK_RADIUS.toFixed(1)}, ${(DUCK_RADIUS + DUCK_FADE).toFixed(1)}, duckD);
         transformed.y *= mix(1.0, 0.22, duck);
-        transformed.xz *= mix(1.0, 0.7, duck);`,
+        transformed.xz *= mix(1.0, 0.7, duck);
+        // Wind: a slow sway plus a quicker flutter, each tree with its own phase (stepped time)
+        float swayPh = dot(duckOrigin, vec2(0.071, 0.113));
+        vec2 gust = vec2(sin(uTime * 1.3 + swayPh), 0.5 * cos(uTime * 0.9 + swayPh * 1.7));
+        gust += 0.25 * vec2(sin(uTime * 4.1 + swayPh * 3.0), cos(uTime * 3.3 + swayPh * 2.0));
+        transformed.xz += gust * aSway * (1.0 - duck);`,
       )
   }
-  material.customProgramCacheKey = () => 'scenery-duck'
+  material.customProgramCacheKey = () => 'scenery-duck-comic'
   return { material, uniforms }
 }
 
@@ -128,7 +188,10 @@ export function createScenery(items: SceneryItem[]) {
    * y la cámara, para que se agachen los que se meten en medio. Oculta los trozos lejanos.
    * @param cameraDistance distancia de la cámara al detective
    */
+  let clock = 0
   const update = (dt: number, x: number, z: number, camera: THREE.Vector3, cameraDistance: number) => {
+    clock += dt
+    uniforms.uTime.value = Math.floor(clock * ANIM_FPS) / ANIM_FPS
     const aerial = cameraDistance > HIDE_ABOVE
     for (const mesh of chunks) {
       const c = mesh.boundingSphere!.center
