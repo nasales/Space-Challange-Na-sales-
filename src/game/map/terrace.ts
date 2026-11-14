@@ -22,6 +22,18 @@ function locate(meters: number) {
   return { i, t }
 }
 
+/**
+ * Continuous floor position at a height (-1 = sea): the floor index plus how far up the ramp to
+ * the next floor it is (smoothstep), e.g. 3.6. Used to fade band colours across a slope.
+ */
+export function terraceFloat(meters: number): number {
+  if (meters <= 0) return -1
+  const { i, t } = locate(meters)
+  if (i === TERRACE_LEVELS.length - 1) return i
+  const s = Math.min(1, Math.max(0, (t - WALL_START) / (1 - WALL_START)))
+  return i + s * s * (3 - 2 * s)
+}
+
 /** Index of the floor SEEN at a height (-1 = sea). It changes halfway up the ramp. */
 export function terraceIndex(meters: number): number {
   if (meters <= 0) return -1

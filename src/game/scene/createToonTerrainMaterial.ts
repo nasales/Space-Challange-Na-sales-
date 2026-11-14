@@ -14,6 +14,10 @@ const CLIFF_COLOR = new THREE.Color('#ec9a6c') // warm terracotta, matches the s
  * 39 degrees: the middle of the ramps between floors, not their gentle feet and tops.
  */
 const CLIFF_NORMAL_Y = 0.78
+/** Width of the fade between ground colour and cliff colour (in normal.y): wide = elegant gradient. */
+const CLIFF_FADE = 0.16
+/** How much of the cliff colour the steepest walls take (1 = full terracotta). */
+const CLIFF_STRENGTH = 0.8
 /** Height between two strata lines on the walls (about every 100 m of real height). */
 const STRATA_SPACING = metersToY(100, HEIGHT_EXAGGERATION)
 /** Contrast of the strata (1 = no strata). Soft, so the ground does not get busy. */
@@ -67,7 +71,7 @@ export function createToonTerrainMaterial(map: THREE.Texture) {
         `#include <map_fragment>
         float ny = normalize(vWorldNormal).y;
         float aa = max(fwidth(ny), 0.004);
-        float steep = 1.0 - smoothstep(${CLIFF_NORMAL_Y.toFixed(3)} - aa, ${CLIFF_NORMAL_Y.toFixed(3)} + aa, ny);
+        float steep = (1.0 - smoothstep(${(CLIFF_NORMAL_Y - CLIFF_FADE).toFixed(3)} - aa, ${(CLIFF_NORMAL_Y + CLIFF_FADE).toFixed(3)} + aa, ny)) * ${CLIFF_STRENGTH.toFixed(2)};
         float sy = vWorldY / strataSpacing;
         float saa = max(fwidth(sy), 0.001);
         float band = smoothstep(0.5 - saa, 0.5 + saa, fract(sy)) * (1.0 - smoothstep(1.0 - saa, 1.0, fract(sy)));
