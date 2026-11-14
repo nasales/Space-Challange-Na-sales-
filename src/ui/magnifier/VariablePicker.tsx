@@ -4,10 +4,10 @@
 // screen with diameter LENS_SCREEN_DIAMETER, and this component draws a clear glass of exactly
 // that size on top of it: the map stays visible through the glass, magnified and slightly bent.
 // Esc fades the clues, the lens "lets go", and the game flies back out (onOpenChange(false)).
-// The variable buttons are placeholders for now: visible and inviting, but disabled.
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
-import { CLIMATE_VARIABLES, type VariableIcon } from '../../shared/variables'
+// The clues on the glass (ClueRing) are placeholders for now: visible and inviting, but inactive.
+import { useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react'
 import { LENS_SCREEN_DIAMETER, type LensFocusState } from '../../shared/events'
+import ClueRing from './ClueRing'
 import './VariablePicker.css'
 
 /**
@@ -146,54 +146,8 @@ export default function VariablePicker({ canOpen, lensState = 'out', onOpenChang
         {/* Thickness, fringe and reflections */}
         <GlassSurface />
 
-        <div className="variable-picker__content">
-          <header className="variable-picker__header" style={{ '--i': 0 } as CSSProperties}>
-            <p className="variable-picker__kicker">Case file</p>
-            <h2 id="variable-picker-title" className="variable-picker__title">
-              Something changed here
-            </h2>
-            <p id="variable-picker-lead" className="variable-picker__lead">
-              Pick a clue and hold it under the lens.
-            </p>
-          </header>
-
-          <ul className="variable-picker__list">
-            {CLIMATE_VARIABLES.map((v, i) => (
-              <li key={v.id} style={{ '--i': i + 1 } as CSSProperties}>
-                <button
-                  type="button"
-                  className="variable-picker__option"
-                  disabled
-                  aria-disabled="true"
-                  title="Coming soon"
-                >
-                  <span className="variable-picker__icon" aria-hidden="true">
-                    <ClueIcon icon={v.icon} />
-                  </span>
-                  <span className="variable-picker__text">
-                    <span className="variable-picker__name">
-                      {v.name} <span className="variable-picker__unit">{v.unit}</span>
-                    </span>
-                    <span className="variable-picker__blurb">{v.blurb}</span>
-                  </span>
-                  <span className="variable-picker__stamp" aria-hidden="true">
-                    Soon
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-
-          <footer
-            className="variable-picker__footer"
-            style={{ '--i': CLIMATE_VARIABLES.length + 1 } as CSSProperties}
-          >
-            <p className="variable-picker__soon">New clues unlock soon</p>
-            <p className="variable-picker__back">
-              <kbd>Esc</kbd> Back to the map
-            </p>
-          </footer>
-        </div>
+        {/* Clues, case question and hints (title/lead ids for the dialog live there) */}
+        <ClueRing phase={phase} />
       </div>
     </div>
   )
@@ -396,68 +350,4 @@ function GlassSurface() {
       <div className="variable-picker__glint" />
     </div>
   )
-}
-
-/* ------------------------------------------------------------------------------------------------
-   Clue icons: ink outlines and flat comic fills, 24 x 24.
------------------------------------------------------------------------------------------------- */
-
-function ClueIcon({ icon }: { icon: VariableIcon }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="#1a1423"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      {ICONS[icon]}
-    </svg>
-  )
-}
-
-const ICONS: Record<VariableIcon, ReactNode> = {
-  thermometer: (
-    <>
-      <path d="M10 4.5a2 2 0 0 1 4 0v9.2a4 4 0 1 1-4 0Z" fill="#fff8e7" />
-      <circle cx="12" cy="17" r="2" fill="#e5322d" stroke="none" />
-      <path d="M12 15V8" stroke="#e5322d" strokeWidth="1.6" />
-      <path d="M16.5 6h2M16.5 9h1.5M16.5 12h2" strokeWidth="1.4" />
-    </>
-  ),
-  wind: (
-    <>
-      <path d="M3 9h11a2.5 2.5 0 1 0-2.5-2.5" />
-      <path d="M3 13h15a2.5 2.5 0 1 1-2.5 2.5" />
-      <path d="M3 17h7" stroke="#5ea8c2" />
-    </>
-  ),
-  soil: (
-    <>
-      <path d="M3 17c3-1.5 6 1.5 9 0s6 1.5 9 0v4H3Z" fill="#a8743a" />
-      <path d="M12 3.5c2.3 3 3.5 4.9 3.5 6.6a3.5 3.5 0 0 1-7 0c0-1.7 1.2-3.6 3.5-6.6Z" fill="#5ea8c2" />
-    </>
-  ),
-  evaporation: (
-    <>
-      <circle cx="17" cy="7" r="3" fill="#f2c14e" />
-      <path d="M3 20h18" />
-      <path d="M6 17c-1-1.5 1-2.5 0-4s1-2.5 0-4" stroke="#5ea8c2" />
-      <path d="M10.5 17c-1-1.5 1-2.5 0-4s1-2.5 0-4" stroke="#5ea8c2" />
-    </>
-  ),
-  rain: (
-    <>
-      <path d="M7 14a4 4 0 0 1-.4-8A5 5 0 0 1 16 5.5 3.5 3.5 0 0 1 17 14Z" fill="#fff8e7" />
-      <path d="M8 17l-1 3M12 17l-1 3M16 17l-1 3" stroke="#5ea8c2" strokeWidth="2" />
-    </>
-  ),
-  hourglass: (
-    <>
-      <path d="M6 3h12M6 21h12" />
-      <path d="M7.5 3c0 5 4.5 6 4.5 9s-4.5 4-4.5 9h9c0-5-4.5-6-4.5-9s4.5-4 4.5-9Z" fill="#fff8e7" />
-      <path d="M9 19.5h6l-3-3.5Z" fill="#f2c14e" stroke="none" />
-    </>
-  ),
 }
