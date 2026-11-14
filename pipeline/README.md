@@ -107,7 +107,7 @@ Before starting, ask the human which person they are (Ivan or Diego) and which b
 | 0 | Ivan + Diego | `ivan_dev` / `diego_dev` | This README and `pipeline/__init__.py` | Both agree and have it on their branch |
 | 1 | Ivan | `ivan_dev` | `analyze_trend` in `trend.py` with the method above | `pytest pipeline/tests` passes with synthetic tests (known trend, negative trend, seasonal no-trend, white-noise false-positive rate, autocorrelated no-trend, gaps, < 120 months, bad input) and matches `trend_stats()` on the same synthetic series |
 | 1 | Diego | `diego_dev` | ✅ `Series`, `Series.validate()` and `from_start_month()` | Tests pass for gaps, fill codes, NaN, malformed start month, database dates, unsorted/duplicated/missing dates, bad metadata |
-| 2 | Ivan | `ivan_dev` | Robustness: optional annual-mean trend, warning when the series has many gaps | New tests pass, old ones still pass |
+| 2 | Ivan | `ivan_dev` | Robustness: warning when the series has many gaps. ~~Optional annual-mean trend~~ dropped: pre-whitening on ~20 annual means removes most of the trend | New tests pass, old ones still pass |
 | 2 | Diego | `diego_dev` | ✅ `build_case` + `write_case` + `trend_from_db`, using the stub `analyze_trend` until block 1 of Ivan is merged | Output passes the contract validator |
 | 3 | Ivan + Diego (humans, cross) | — | Each human writes 2-3 tests of the other's code in `tests/stats/` (agents never edit this folder) | They pass, or a bug line goes to the owner |
 | 4 | Diego | `diego_dev` | ✅ (fake export; recheck with the real one) Adapter `pipeline/sources/supabase_export.py` (`cell_id_for`, `find_cell`, `load_series`, `load_trend`, `iter_series`): reads `export/cells/<cell_id>.json` + `variables.json` into `Series` + trend dict | Returns a valid `Series` for cell `753817` (Salamanca) |
@@ -118,7 +118,8 @@ Before starting, ask the human which person they are (Ivan or Diego) and which b
 
 ## Integration
 - Each person merges their own branch into `main`, always after the QA checks pass (`./scripts/check.sh`, QA report in `docs/agents/qa.md`).
-- After Ivan's block 1 is merged: Diego replaces the stub with the real `analyze_trend` and regenerates his test JSON.
+- ✅ After Ivan's block 1 is merged: the real `analyze_trend` replaces the stub automatically (`get_analyze_trend()`); checked end to end.
+- If Perry runs the ETL with `--with-trends` (for `compare_db.py`), those trends are only for comparison: `fill_trends` then upserts the official `analyze_trend` rows over them.
 - After Diego's block 4: first real case end to end (JSON export -> `Series` + trend -> `data/cache/` JSON), handed to Yeipi.
 - After Diego's block 5: Perry uploads the trend rows; `get_cell` then returns real trends to the game.
 - Before Sunday 13:00 (freeze): `trends` filled, all featured cases in `data/cache/`, `check.sh` green, `AI_USAGE.md` and `REFERENCES.md` complete.
