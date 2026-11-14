@@ -1,0 +1,50 @@
+"""Tests for pipeline.build_cases: one case from a fake raw POWER file passes the contract validator."""
+
+import importlib.util
+import json
+from pathlib import Path
+
+import numpy as np
+
+from pipeline.build_cases import build_one
+from pipeline.build_case import CONTRACT_FIELDS
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def _validator():
+    spec = importlib.util.spec_from_file_location("validate_contract", ROOT / "scripts" / "validate_contract.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _fake_raw(param, years=range(1981, 2001), seed=0):
+    rng = np.random.default_rng(seed)
+    data = {}
+    for year in years:
+        for month in range(1, 13):
+            t = year - 1981 + (month - 1) / 12
+            data[f"{year}{month:02d}"] = round(15 + 8 * np.sin(2 * np.pi * t) + 0.03 * t + rng.normal(0, 0.5), 2)
+        data[f"{year}13"] = 15.0
+    data["199005"] = -999.0
+    return {"header": {"fill_value": -999.0}, "parameters": {param: {"units": "C"}},
+            "properties": {"parameter": {param: data}}}
+
+
+def test_build_one_from_raw_file_passes_contract(tmp_path):
+    raw_dir, cache_dir = tmp_path / "raw", tmp_path / "cache"
+    raw_dir.mkdir()
+    case = {"id": "test_case", "place": "Testville", "lat": 40.0, "lon": -3.0, "variables": ["T2M"]}
+    (raw_dir / "test_case_T2M.json").write_text(json.dumps(_fake_raw("T2M")))
+
+    contract_case, trend, _ = build_one(case, "T2M", raw_dir=raw_dir, cache_dir=cache_dir)
+
+    out = cache_dir / "case_test_case_T2M.json"
+    assert out.exists()
+    assert _validator().check(str(out)) == []
+    written = json.loads(out.read_text(encoding="utf-8"))
+    assert set(written) == set(CONTRACT_FIELDS)
+    assert written["dataset"] == "NASA POWER (MERRA-2 based) T2M"
+    assert len(written["dates"]) == 240 and written["values"][written["dates"].index("1990-05")] is None
+    assert written["slope"] == trend["slope"]
