@@ -15,8 +15,10 @@ result (trend slope + significance test such as Mann-Kendall).
 | Interface | Yeipi | Interface agent | `docs/agents/interface.md` |
 | Game (3D map, car) | Person 2 | Game agent | `docs/agents/game.md` |
 | Data + statistics | Person 3 | Data agent | `docs/agents/data.md` |
-| Backend + AI checker + integration | Person 4 | QA agent | `docs/agents/qa.md` |
+| Backend + AI checker + integration | Person 4 | Backend agent | — |
 | Product, submission, pitch | Person 5 | — | — |
+
+**QA is done by every person for their own changes**, following `docs/agents/qa.md`, before asking Person 4 to merge.
 
 If you do not know which area you belong to, ask the human before doing anything.
 
@@ -61,6 +63,7 @@ A task is done only when:
 - it works on another teammate's machine, not only yours;
 - it does not break the demo path (featured case → variable → chart → conclusion → AI check);
 - `./scripts/check.sh` passes;
+- the author ran the QA checklist in `docs/agents/qa.md` and attached the QA REPORT to the PR;
 - everything is in English;
 - `AI_USAGE.md` is updated (and `REFERENCES.md`, if needed).
 

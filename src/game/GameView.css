@@ -1,0 +1,10 @@
+.game-view {
+  position: absolute;
+  inset: 0;
+  background: #bfe8f7; /* same sky as the scene, so there is no flash while loading */
+}
+
+.game-view__canvas {
+  position: absolute;
+  inset: 0;
+}

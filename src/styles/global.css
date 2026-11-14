@@ -1,0 +1,27 @@
+/* Global styles: the app fills the whole screen, no scroll (the 3D scene fills the background). */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  /* same turquoise as the map sea, so the map "floats" on the water */
+  background: #5ea8c2;
+  color: #3b4a6b;
+  font-family: system-ui, sans-serif;
+  overflow: hidden;
+}
+
+.app {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}

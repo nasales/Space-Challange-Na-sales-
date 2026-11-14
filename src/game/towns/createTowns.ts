@@ -1,0 +1,275 @@
+// Casas de los pueblos y ciudades, estilo maqueta cartoon.
+// - Cada tipo de casa se monta con piezas (muros, zócalo, tejado, puerta, ventanas...) y se junta en
+//   UNA geometría con el color guardado en cada vértice: así todas las piezas usan un solo material.
+// - Las ~6.000 casas se dibujan con InstancedMesh (copias de la misma geometría en distintos sitios),
+//   agrupadas por trozos del mapa para que three.js no dibuje los trozos que no salen en cámara.
+// - Las casas bloquean al detective (rejilla espacial para comprobarlo rápido).
+import * as THREE from 'three'
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
+import { toonMaterial } from '../scene/toonGradient'
+import { piece, box, plate } from '../scene/vertexPieces'
+import type { HouseSpot, HouseVariant, TownStyle } from './placeTowns'
+
+/** Tamaño de las casas respecto a sus medidas base (una casa baja mide 10 de ancho sin escalar). */
+const HOUSE_SCALE = 1.1
+/** Tamaño de los trozos del mapa (unidades del mundo) para descartar lo que no se ve. */
+const CHUNK = 300
+/** Cuánto se hunden los muros bajo el suelo (para que no se vean huecos en las cuestas). */
+const SINK = 3
+/** Altura del punto más alto de cada tipo (sin escalar): casa baja, de dos alturas, alargada, iglesia, bloque, torre. */
+const ROOF_TOP: Record<HouseVariant, number> = { 0: 11, 1: 16.5, 2: 11, 3: 33, 4: 24, 5: 45 }
+/** Huecos oscuros del campanario. */
+const BELFRY = 0x2a2833
+
+const PALETTES: Record<TownStyle, Record<string, number>> = {
+  // Sur y centro: casas encaladas, zócalo ocre, teja roja y contraventanas azules
+  south: { wall: 0xfbf7ef, band: 0xf0b84a, roof: 0xe2643c, door: 0x7a4a2c, window: 0x2f6fb5, iron: 0x2a2833, gold: 0xf2c14e,
+    block: 0xf7cf8f, tower: 0xf3b4a2, cornice: 0xfbf7ef },
+  // Norte: piedra, tejado de pizarra y ventanas blancas
+  north: { wall: 0xd3c9b6, band: 0x9a8f80, roof: 0x4d566b, door: 0x5a3a22, window: 0xf7f7f2, iron: 0xf7f7f2, gold: 0xf2c14e,
+    block: 0xc4bfb6, tower: 0xb4c0c8, cornice: 0x8e8a84 },
+}
+
+/** Tejado a dos aguas: prisma triangular de ancho w, alto h y fondo d (cumbrera a lo largo de Z). */
+function roof(w: number, h: number, d: number, color: number, y0: number, rotY = 0) {
+  const s = new THREE.Shape()
+  s.moveTo(-w / 2, 0)
+  s.lineTo(w / 2, 0)
+  s.lineTo(0, h)
+  s.closePath()
+  const geo = new THREE.ExtrudeGeometry(s, { depth: d, bevelEnabled: false })
+  geo.translate(0, 0, -d / 2)
+  return piece(geo, color, 0, y0, 0, rotY)
+}
+
+/** Medidas de los edificios (sin escalar): ancho (X), fondo (Z), alto de muros y número de plantas. */
+const BUILDINGS = {
+  4: { w: 16, d: 14, h: 20, floors: 4 }, // bloque de pisos
+  5: { w: 14, d: 14, h: 40, floors: 8 }, // torre
+} as const
+
+/** Bloque de pisos o torre: caja de color con rejilla de ventanas en las cuatro fachadas y azotea. */
+function buildBuilding(parts: THREE.BufferGeometry[], variant: 4 | 5, p: Record<string, number>) {
+  const { w, d, h, floors } = BUILDINGS[variant]
+  const facade = variant === 4 ? p.block : p.tower
+  const floorH = h / floors
+  parts.push(box(w, h + SINK, d, facade, 0, -SINK), box(w + 0.1, 1.5 + SINK, d + 0.1, p.band, 0, -SINK))
+  parts.push(box(w + 0.8, 1, d + 0.8, p.cornice, 0, h)) // cornisa
+  // Ventanas: 3 o 4 por fachada y planta (la planta baja, portal y escaparates)
+  const cols = (len: number) => (len >= 16 ? [-5.4, -1.8, 1.8, 5.4] : [-4.2, 0, 4.2])
+  for (let f = 1; f < floors; f++) {
+    const y = f * floorH + 1.2
+    for (const x of cols(w)) {
+      parts.push(plate(1.8, 2.4, p.window, x, y, d / 2 + 0.02), plate(1.8, 2.4, p.window, -x, y, -d / 2 - 0.02, Math.PI))
+      if (variant === 4) parts.push(box(2.4, 0.3, 1, p.iron, x, y - 0.4, d / 2 + 0.5)) // balconcitos
+    }
+    for (const z of cols(d)) {
+      parts.push(plate(1.8, 2.4, p.window, w / 2 + 0.02, y, z, Math.PI / 2), plate(1.8, 2.4, p.window, -w / 2 - 0.02, y, -z, -Math.PI / 2))
+    }
+  }
+  parts.push(plate(3, 3.8, p.door, 0, 0, d / 2 + 0.03)) // portal
+  for (const x of [-w / 2 + 3, w / 2 - 3]) parts.push(plate(3.4, 2.6, p.window, x, 0.8, d / 2 + 0.03)) // escaparates
+  // Azotea: depósito de agua (bloque) o caseta con antena (torre)
+  if (variant === 4) {
+    parts.push(cylinderPiece(1.6, 2.4, p.cornice, -4, h + 1, -3))
+  } else {
+    parts.push(box(4, 2.5, 4, p.cornice, 2, h + 1, -2), box(0.3, 4, 0.3, p.iron, 2, h + 3.5, -2))
+  }
+}
+
+/** Depósito de agua: cilindro con la base en y0. */
+const cylinderPiece = (r: number, hgt: number, color: number, x: number, y0: number, z: number) =>
+  piece(new THREE.CylinderGeometry(r, r, hgt, 8), color, x, y0 + hgt / 2, z)
+
+/** Construye la geometría de un tipo de casa (frente hacia +Z, base en y = 0). */
+function buildHouse(variant: HouseVariant, style: TownStyle) {
+  const p = PALETTES[style]
+  const parts: THREE.BufferGeometry[] = []
+  const windowsFront = (xs: number[], ys: number[], z: number) => {
+    for (const x of xs) for (const y of ys) parts.push(plate(1.6, 1.7, p.window, x, y, z))
+  }
+  if (variant === 0) {
+    // Casa baja
+    parts.push(box(10, 7 + SINK, 9, p.wall, 0, -SINK), box(10.1, 1.2 + SINK, 9.1, p.band, 0, -SINK))
+    parts.push(roof(11.4, 4, 10, p.roof, 7))
+    parts.push(plate(2, 3.6, p.door, 0, 0, 4.52))
+    windowsFront([-3, 3], [3.2], 4.52)
+    for (const sx of [-5.05, 5.05]) parts.push(plate(1.6, 1.7, p.window, sx * 0.994, 3.2, 0, Math.sign(sx) * Math.PI / 2))
+  } else if (variant === 1) {
+    // Casa de dos alturas, con balcón y chimenea
+    parts.push(box(11, 12 + SINK, 10, p.wall, 0, -SINK), box(11.1, 1.2 + SINK, 10.1, p.band, 0, -SINK))
+    parts.push(roof(12.4, 4.5, 11, p.roof, 12))
+    parts.push(plate(2, 3.6, p.door, 0, 0, 5.02))
+    windowsFront([-3.2, 3.2], [3.2], 5.02)
+    windowsFront([-3.2, 0, 3.2], [8], 5.02)
+    parts.push(box(5, 0.4, 1.3, p.iron, 0, 6.6, 5.6)) // balcón
+    parts.push(box(5, 1, 0.12, p.iron, 0, 7, 6.2)) // barandilla
+    parts.push(box(1.4, 3.5, 1.4, p.wall, 3, 13, -2)) // chimenea
+  } else if (variant === 2) {
+    // Casa alargada (tejado con la cumbrera a lo largo)
+    parts.push(box(16, 7 + SINK, 9, p.wall, 0, -SINK), box(16.1, 1.2 + SINK, 9.1, p.band, 0, -SINK))
+    parts.push(roof(10.4, 4, 17.4, p.roof, 7, Math.PI / 2))
+    parts.push(plate(2, 3.6, p.door, -4, 0, 4.52))
+    windowsFront([0, 4, 6.5], [3.2], 4.52)
+  } else if (variant === 4 || variant === 5) {
+    buildBuilding(parts, variant, p)
+  } else {
+    // Iglesia con campanario
+    parts.push(box(12, 10 + SINK, 22, p.wall, 0, -SINK, -2), box(12.1, 1.5 + SINK, 22.1, p.band, 0, -SINK, -2))
+    parts.push(roof(13.4, 5, 23, p.roof, 10))
+    parts.push(box(6.5, 24 + SINK, 6.5, p.wall, 0, -SINK, 10)) // torre
+    for (const [x, z, w, d] of [[0, 13.3, 2, 0.3], [0, 6.7, 2, 0.3], [3.3, 10, 0.3, 2], [-3.3, 10, 0.3, 2]])
+      parts.push(box(w, 3, d, BELFRY, x, 18.5, z)) // huecos de las campanas
+    parts.push(piece(new THREE.ConeGeometry(4.9, 6, 4), p.roof, 0, 27, 10, Math.PI / 4)) // chapitel
+    parts.push(box(0.4, 2.6, 0.4, p.gold, 0, 30, 10), box(1.6, 0.4, 0.4, p.gold, 0, 31.4, 10)) // cruz
+    parts.push(plate(3, 5, p.door, 0, 0, 13.28)) // portada
+    for (const z of [-8, -2, 4]) for (const sx of [-6.05, 6.05]) parts.push(plate(1.4, 3, p.window, sx * 0.995, 4, z, Math.sign(sx) * Math.PI / 2))
+  }
+  const merged = mergeGeometries(parts)!
+  parts.forEach((g) => g.dispose())
+  return merged
+}
+
+/** Tejado a dos aguas: altura en un punto a distancia |t| de la cumbrera (muro + perfil del tejado). */
+const gable = (t: number, wallTop: number, half: number, rise: number) => wallTop + rise * Math.max(0, 1 - Math.abs(t) / half)
+const inside = (lx: number, lz: number, hx: number, z0: number, z1: number) => Math.abs(lx) <= hx && lz >= z0 && lz <= z1
+
+/**
+ * Altura de la superficie de cada tipo de casa en un punto (lx, lz) de su planta, sin escalar.
+ * -Infinity si el punto está fuera. Sale de las mismas medidas que buildHouse: así el detective
+ * pisa justo el tejado que se ve.
+ */
+function surfaceOf(variant: HouseVariant, lx: number, lz: number): number {
+  switch (variant) {
+    case 0: return inside(lx, lz, 5, -4.5, 4.5) ? gable(lx, 7, 5.7, 4) : -Infinity
+    case 1: return inside(lx, lz, 5.5, -5, 5) ? gable(lx, 12, 6.2, 4.5) : -Infinity
+    case 2: return inside(lx, lz, 8, -4.5, 4.5) ? gable(lz, 7, 5.2, 4) : -Infinity
+    case 3: {
+      let top = inside(lx, lz, 6, -13, 9) ? gable(lx, 10, 6.7, 5) : -Infinity // nave
+      if (inside(lx, lz, 3.25, 6.75, 13.25)) {
+        // torre con chapitel (pirámide de 4 caras desde y = 24 hasta 30)
+        const m = Math.max(Math.abs(lx), Math.abs(lz - 10))
+        top = Math.max(top, 24 + 6 * Math.max(0, 1 - m / 3.46))
+      }
+      return top
+    }
+    default: {
+      const b = BUILDINGS[variant]
+      return inside(lx, lz, b.w / 2, -b.d / 2, b.d / 2) ? b.h + 1 : -Infinity // azotea (encima de la cornisa)
+    }
+  }
+}
+
+export function createTowns(houses: HouseSpot[]) {
+  const group = new THREE.Group()
+  const material = toonMaterial(0xffffff, { vertexColors: true })
+  const geometries = new Map<string, THREE.BufferGeometry>()
+  const geometryFor = (style: TownStyle, variant: HouseVariant) => {
+    const key = `${style}-${variant}`
+    if (!geometries.has(key)) geometries.set(key, buildHouse(variant, style))
+    return geometries.get(key)!
+  }
+
+  // Agrupar por trozo del mapa y tipo de casa
+  const buckets = new Map<string, HouseSpot[]>()
+  for (const h of houses) {
+    const key = `${Math.floor(h.x / CHUNK)},${Math.floor(h.z / CHUNK)},${h.style},${h.variant}`
+    if (!buckets.has(key)) buckets.set(key, [])
+    buckets.get(key)!.push(h)
+  }
+  const m = new THREE.Matrix4()
+  const q = new THREE.Quaternion()
+  const up = new THREE.Vector3(0, 1, 0)
+  const pos = new THREE.Vector3()
+  const scl = new THREE.Vector3()
+  for (const list of buckets.values()) {
+    const { style, variant } = list[0]
+    const mesh = new THREE.InstancedMesh(geometryFor(style, variant), material, list.length)
+    list.forEach((h, i) => {
+      pos.set(h.x, h.y, h.z)
+      q.setFromAxisAngle(up, h.rot)
+      scl.setScalar(h.scale * HOUSE_SCALE)
+      m.compose(pos, q, scl)
+      mesh.setMatrixAt(i, m)
+    })
+    mesh.computeBoundingSphere() // esfera que envuelve todas las copias: para descartar el trozo entero
+    mesh.castShadow = mesh.receiveShadow = true
+    group.add(mesh)
+  }
+
+  // ---- Choques: rejilla espacial (celda → casas) para comprobar solo las cercanas ----
+  const CELL = 40
+  const grid = new Map<string, HouseSpot[]>()
+  for (const h of houses) {
+    const key = `${Math.floor(h.x / CELL)},${Math.floor(h.z / CELL)}`
+    if (!grid.has(key)) grid.set(key, [])
+    grid.get(key)!.push(h)
+  }
+  /** ¿Choca el punto (x, z) con alguna casa? (extra: margen añadido al radio, p. ej. para no plantar árboles pegados) */
+  const blocks = (x: number, z: number, extra = 0) => {
+    const cx = Math.floor(x / CELL), cz = Math.floor(z / CELL)
+    for (let i = -1; i <= 1; i++) {
+      for (let j = -1; j <= 1; j++) {
+        const cell = grid.get(`${cx + i},${cz + j}`)
+        if (!cell) continue
+        for (const h of cell) {
+          const r = h.radius * h.scale * 0.9 + extra
+          if ((h.x - x) ** 2 + (h.z - z) ** 2 < r * r) return true
+        }
+      }
+    }
+    return false
+  }
+
+  /** Altura del tejado en (x, z) si hay una casa encima; si no, -Infinity. (La usa la cámara.) */
+  const topAt = (x: number, z: number) => {
+    const cx = Math.floor(x / CELL), cz = Math.floor(z / CELL)
+    let top = -Infinity
+    for (let i = -1; i <= 1; i++) {
+      for (let j = -1; j <= 1; j++) {
+        for (const h of grid.get(`${cx + i},${cz + j}`) ?? []) {
+          const r = h.radius * h.scale * 1.3 // un poco más ancho: el tejado vuela sobre los muros
+          if ((h.x - x) ** 2 + (h.z - z) ** 2 < r * r) top = Math.max(top, h.y + ROOF_TOP[h.variant] * h.scale * HOUSE_SCALE)
+        }
+      }
+    }
+    return top
+  }
+
+  /**
+   * Altura de la superficie de las casas en (x, z): tejado o azotea, o -Infinity si no hay casa.
+   * El detective la usa como "suelo", así que escala las casas igual que las montañas.
+   */
+  const surfaceAt = (x: number, z: number) => {
+    const cx = Math.floor(x / CELL), cz = Math.floor(z / CELL)
+    let top = -Infinity
+    for (let i = -1; i <= 1; i++) {
+      for (let j = -1; j <= 1; j++) {
+        for (const h of grid.get(`${cx + i},${cz + j}`) ?? []) {
+          const dx = x - h.x, dz = z - h.z
+          const s = h.scale * HOUSE_SCALE
+          if (dx * dx + dz * dz > (25 * s) ** 2) continue // lejos: ni se mira
+          // Al sistema de la casa: deshacer el giro y la escala
+          const cos = Math.cos(h.rot), sin = Math.sin(h.rot)
+          const lx = (dx * cos - dz * sin) / s
+          const lz = (dx * sin + dz * cos) / s
+          const local = surfaceOf(h.variant, lx, lz)
+          if (local > -Infinity) top = Math.max(top, h.y + local * s)
+        }
+      }
+    }
+    return top
+  }
+
+  return {
+    group,
+    blocks,
+    topAt,
+    surfaceAt,
+    count: houses.length,
+    dispose: () => {
+      geometries.forEach((g) => g.dispose())
+      material.dispose()
+    },
+  }
+}

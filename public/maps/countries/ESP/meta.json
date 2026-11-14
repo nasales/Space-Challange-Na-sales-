@@ -1,0 +1,50 @@
+{
+  "id": "ESP",
+  "name": "España",
+  "zones": [
+    {
+      "bounds": {
+        "west": -9.636,
+        "east": 4.722,
+        "south": 35.626,
+        "north": 44.165
+      },
+      "height": {
+        "file": "zone-0-height.bin",
+        "width": 2041,
+        "height": 1574,
+        "type": "int16",
+        "units": "m"
+      },
+      "satellite": {
+        "file": "zone-0-satellite.jpg",
+        "width": 4082,
+        "height": 3148
+      }
+    },
+    {
+      "bounds": {
+        "west": -18.561,
+        "east": -13.023,
+        "south": 27.246,
+        "north": 29.637
+      },
+      "height": {
+        "file": "zone-1-height.bin",
+        "width": 787,
+        "height": 441,
+        "type": "int16",
+        "units": "m"
+      },
+      "satellite": {
+        "file": "zone-1-satellite.jpg",
+        "width": 1574,
+        "height": 882
+      }
+    }
+  ],
+  "sources": {
+    "satellite": "NASA GIBS – BlueMarble_NextGeneration",
+    "elevation": "AWS Terrain Tiles (Terrarium, SRTM y otros)"
+  }
+}

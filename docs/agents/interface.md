@@ -1,9 +1,10 @@
 # Interface agent — owner: Yeipi
 
 ## Scope (only edit these)
-- `src/ui/` — Sherlock screen, menus, variable picker, conclusion box, AI feedback panel
+- `src/ui/` — HUD (`src/ui/hud/`), Sherlock screen (`src/ui/sherlock/`), menus, variable picker, conclusion box, AI feedback panel
 - `src/ui/assets/`
-(TODO: adjust paths once the stack is chosen)
+- Shared with Game (change only with agreement): `src/shared/`, `src/App.tsx`
+- Stack: Vite + React + TypeScript. The UI never imports from `src/game/`; it only uses the types in `src/shared/`.
 
 ## What you build
 - The Sherlock screen shows charts **without stating the conclusion**. The statistical result (slope, p-value) is only revealed **after** the player submits their conclusion.

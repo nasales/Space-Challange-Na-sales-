@@ -1,0 +1,40 @@
+.controls-hint {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  margin: 0;
+  padding: 10px 14px;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+  background: rgb(255 255 255 / 0.82);
+  border: 2px solid #1c1f26;
+  border-radius: 10px;
+  box-shadow: 3px 3px 0 #1c1f26; /* hard toy-style shadow */
+  color: #1c1f26;
+  font-size: 13px;
+  pointer-events: none; /* does not block the mouse */
+}
+
+.controls-hint__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.controls-hint__keys {
+  display: flex;
+  gap: 3px;
+  min-width: 112px;
+}
+
+.controls-hint kbd {
+  min-width: 22px;
+  padding: 1px 6px;
+  border: 1.5px solid #1c1f26;
+  border-radius: 5px;
+  background: #fff;
+  box-shadow: 0 2px 0 #1c1f26;
+  font: 600 12px system-ui, sans-serif;
+  text-align: center;
+}
