@@ -42,6 +42,16 @@ export interface TutorialScript {
     /** The question the player will answer at the end */
     question: string
   }
+  /**
+   * Optional opening scene on the map: the witness (src/shared/witness.ts) tells the detective
+   * the context in speech bubbles, and ends with a claim the player will test with the data.
+   * When present, the UI plays it before the steps (the intro card can be skipped or shortened).
+   */
+  scene?: {
+    lines: { speaker: 'detective' | 'witness'; text: string }[]
+    /** The witness's claim, in quotes, pinned at the top of the detective's notebook */
+    claim: string
+  }
   steps: TutorialStep[]
   /** Last screen: the player writes their own conclusion (normal game loop) */
   conclusion: {
@@ -56,6 +66,10 @@ export interface TutorialScript {
     /** One entry per variable used in the tutorial */
     by_variable: Record<string, string>
     lesson: string
+    /** Was the witness's claim right? Shown with the "CASE CLOSED" stamp. */
+    claim_verdict?: 'right' | 'wrong' | 'partly'
+    /** One or two sentences explaining the verdict, addressed to the witness */
+    claim_text?: string
   }
 }
 
@@ -72,6 +86,8 @@ export interface TutorialStep {
   }
   /** One-line lesson shown after the step (after answering, if there is a question) */
   takeaway: string
+  /** Optional short note added to the detective's notebook when the step is solved */
+  clue?: string
 }
 
 /**

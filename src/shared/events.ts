@@ -55,6 +55,17 @@ export interface GameCallbacks {
   onStop?: (stop: GameStop) => void
   /** The camera flight into (or out of) the hand lens has finished */
   onLensFocus?: (state: LensFocusState) => void
+  /**
+   * While `dialogueCase` is set: screen positions (CSS px, viewport) just above the heads of the
+   * detective and the witness, so the UI can anchor speech bubbles. Sent every frame once the
+   * camera has framed both (or on change); null when the dialogue camera is not active.
+   */
+  onDialogueAnchors?: (anchors: DialogueAnchors | null) => void
+}
+
+export interface DialogueAnchors {
+  detective: { x: number; y: number }
+  witness: { x: number; y: number }
 }
 
 /** Props of the game view: the callbacks plus what the app shell tells the game. */
@@ -68,4 +79,13 @@ export interface GameViewProps extends GameCallbacks {
   paused?: boolean
   /** Featured case ids already solved (their markers are drawn green) */
   completedCases?: readonly string[]
+  /**
+   * Case whose witness is talking to the detective (src/shared/witness.ts), or null.
+   * While set: the detective turns to face the witness, the camera frames both side by side
+   * (leaving the lower third of the screen free for the dialogue box), keyboard driving is
+   * ignored, and onDialogueAnchors reports where to draw the bubbles.
+   */
+  dialogueCase?: string | null
+  /** Who is speaking now (small talking animation), or null */
+  speaking?: 'detective' | 'witness' | null
 }
