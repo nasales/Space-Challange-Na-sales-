@@ -12,7 +12,7 @@ import unicodedata
 from pathlib import Path
 from typing import Callable
 
-from pipeline.series import Series
+from pipeline.series import Series, normalize_month
 
 CONTRACT_FIELDS = (
     "place", "lat", "lon", "variable", "units", "dataset",
@@ -74,6 +74,9 @@ def trend_from_db(row: dict) -> dict:
     ):
         if row.get(src) is not None:
             trend[dst] = row[src]
+    for key in ("start", "end"):  # database dates "2000-01-01" -> "2000-01"
+        if key in trend:
+            trend[key] = normalize_month(trend[key])
     return trend
 
 

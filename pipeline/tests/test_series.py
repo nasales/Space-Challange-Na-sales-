@@ -47,6 +47,14 @@ def test_start_month_in_the_middle_of_a_year():
     assert s.dates == ["1998-11", "1998-12", "1999-01"]
 
 
+@pytest.mark.parametrize("start", ["2000-01-01", "1998-11-01"])
+def test_start_month_as_database_date(start):
+    # Supabase stores start_month as a `date`: first day of the month
+    s = from_start_month(start, [1.0, 2.0, 3.0], **META)
+    assert s.dates[0] == start[:7]
+    assert len(s.dates) == 3
+
+
 def test_gaps_stay_none():
     s = from_start_month("2000-01", [1.0, None, 3.0], **META)
     assert s.values == [1.0, None, 3.0]
@@ -88,7 +96,9 @@ def test_non_numeric_value_raises(bad):
         from_start_month("2000-01", [1.0, bad], **META)
 
 
-@pytest.mark.parametrize("bad", ["2000-1", "2000/01", "2000-13", "2000-00", "2000-01-15", "", None, 200001])
+@pytest.mark.parametrize(
+    "bad", ["2000-1", "2000/01", "2000-13", "2000-00", "2000-01-15", "2000-13-01", "", None, 200001]
+)
 def test_malformed_start_month_raises(bad):
     with pytest.raises(ValueError):
         from_start_month(bad, [1.0], **META)

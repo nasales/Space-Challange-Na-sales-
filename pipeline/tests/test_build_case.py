@@ -27,8 +27,8 @@ SIGNIFICANT = {"slope": 0.04, "p_value": 0.003, "significant": True, "test": "ma
 NOT_SIGNIFICANT = {"slope": 0.01, "p_value": 0.41, "significant": False, "test": "mann-kendall"}
 
 DB_ROW = {
-    "period_start": "2000-01",
-    "period_end": "2024-12",
+    "period_start": "2000-01-01",  # Supabase `date` columns
+    "period_end": "2024-12-01",
     "n_months": 298,
     "mean_value": 12.3,
     "slope_per_decade": 0.45,

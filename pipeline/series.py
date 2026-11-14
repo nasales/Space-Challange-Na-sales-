@@ -14,6 +14,7 @@ from dataclasses import dataclass
 FILL_VALUES: tuple[float, ...] = (-999.0, -9999.0, -99999.0)
 
 _MONTH_RE = re.compile(r"^(\d{4})-(\d{2})$")
+_FIRST_DAY_RE = re.compile(r"^\d{4}-\d{2}-01$")
 
 
 @dataclass
@@ -78,10 +79,11 @@ def from_start_month(
 ) -> Series:
     """Build a validated `Series` from the Supabase export shape: first month + one value per month.
 
+    `start_month` is "YYYY-MM" or the database date "YYYY-MM-01".
     `null`/None, NaN, infinity and fill codes (-999, -9999, -99999) become `None`.
     Anything else that is not a number raises ValueError.
     """
-    month = parse_month(start_month)
+    month = parse_month(normalize_month(start_month))
     dates: list[str] = []
     clean: list[float | None] = []
     for i, raw in enumerate(values):
@@ -113,6 +115,14 @@ def parse_month(text: str) -> tuple[int, int]:
     if not 1 <= month <= 12:
         raise ValueError(f"invalid month number in {text!r}")
     return year, month
+
+
+def normalize_month(text: str) -> str:
+    """Accept "YYYY-MM" or a first-of-month date "YYYY-MM-01" (Supabase `date`); return "YYYY-MM"."""
+    if isinstance(text, str) and _FIRST_DAY_RE.match(text):
+        text = text[:7]
+    format_month(parse_month(text))  # raises ValueError if malformed
+    return text
 
 
 def format_month(ym: tuple[int, int]) -> str:
