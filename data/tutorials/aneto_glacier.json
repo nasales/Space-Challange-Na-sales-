@@ -76,7 +76,7 @@
     {
       "id": "summers",
       "title": "Suspect one: the summers",
-      "text": "Each point is now one summer: the average of June, July and August, from 1980 to 2026. The trend is about +0.46 °C every 10 years, about 2 °C over the whole period. Here p = 0.00035: less than 1 in 1,000, so very unlikely to be chance. The 95% confidence range, +0.020 to +0.074 °C per year, is all above zero.",
+      "text": "Each point is now one summer: the average of June, July and August, from 1980 to 2026. The trend is about +0.46 °C every 10 years, about 2 °C over the whole period. Here p = 0.00035: less than 1 in 1,000, so very unlikely to be chance. The 95% confidence range, +0.20 to +0.74 °C per decade, is all above zero.",
       "chart": {
         "variable": "T2M",
         "view": "season",
@@ -112,7 +112,7 @@
     {
       "id": "winters",
       "title": "Now the winters",
-      "text": "Same view for winter: December, January and February, each winter named after its January (1981 to 2026). The slope is smaller, about +0.36 °C every 10 years, and winters jump a lot from one year to the next. Here p = 0.051, just above the usual 0.05 limit. The 95% confidence range, -0.0001 to +0.065 °C per year, only just touches zero.",
+      "text": "Same view for winter: December, January and February, each winter named after its January (1981 to 2026). The slope is smaller, about +0.36 °C every 10 years, and winters jump a lot from one year to the next. Here p = 0.051, just above the usual 0.05 limit. The 95% confidence range, about 0.00 to +0.65 °C per decade, only just touches zero.",
       "chart": {
         "variable": "T2M",
         "view": "season",
@@ -248,7 +248,7 @@
   "reveal": {
     "by_variable": {
       "T2M": "Air temperature at the Aneto square (January 1980 to September 2026) rises clearly: about +0.39 °C per decade (95% range +0.27 to +0.52 °C per decade), p < 0.001, about 1.8 °C over the whole period. Summers warm clearly (+0.46 °C per decade, p = 0.00035); winters warm less and not significantly (+0.36 °C per decade, p = 0.051). Months below 0 °C fell from 2.0 per year in the 1980s to 0.8 in 2016-2025, but that drop is not significant on its own (p = 0.082).",
-      "PRECIP": "Precipitation at the Aneto square (January 1998 to September 2025) shows no significant trend: about +0.04 mm/day per decade, p = 0.72, and the 95% confidence range (-0.014 to +0.022 mm/day per year) includes zero. Winter (p = 0.53) and summer (p = 0.58) show no clear trend either."
+      "PRECIP": "Precipitation at the Aneto square (January 1998 to September 2025) shows no significant trend: about +0.04 mm/day per decade, p = 0.72, and the 95% confidence range (-0.14 to +0.22 mm/day per decade) includes zero. Winter (p = 0.53) and summer (p = 0.58) show no clear trend either."
     },
     "lesson": "A yearly average hides what each season does. Split by season, the clearest change is in summer, when the glacier melts, while its winter income of snow and rain shows no clear change. The data point to the heat as the main suspect, not to less precipitation. Remember the limits: these values describe a large square of the map, much lower and warmer than the ice, and a result just above p = 0.05 is weak evidence, not proof either way."
   }

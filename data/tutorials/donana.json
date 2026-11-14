@@ -179,7 +179,7 @@
     {
       "id": "borderline",
       "title": "Right on the edge",
-      "text": "The soil trend is about -0.29 kg/m² every 10 years, about -0.8 over the whole record. Its p-value is 0.0498: just under the usual 0.05 limit, so it counts as significant, barely. The 95% confidence range, -0.059 to +0.0002 kg/m² per year, almost touches zero. Here the two checks sit right on the edge: there is a sign of drying, but the evidence is weak.",
+      "text": "The soil trend is about -0.29 kg/m² every 10 years, about -0.8 over the whole record. Its p-value is 0.0498: just under the usual 0.05 limit, so it counts as significant, barely. The 95% confidence range, -0.59 to +0.002 kg/m² per decade, almost touches zero. Here the two checks sit right on the edge: there is a sign of drying, but the evidence is weak.",
       "chart": {
         "variable": "SOILM",
         "view": "annual",
@@ -210,7 +210,7 @@
     {
       "id": "cannot_see",
       "title": "What the data cannot see",
-      "text": "The rain trend is about -0.05 mm/day every 10 years, with p = 0.44: no clear change. Its 95% range, -0.025 to +0.008 mm/day per year, includes zero. And the aquifer? Groundwater lies far below the top 10 cm of soil, and pumping is not in either record. These charts cannot test how much water the farms take. A detective says what the evidence shows, and also what it cannot see.",
+      "text": "The rain trend is about -0.05 mm/day every 10 years, with p = 0.44: no clear change. Its 95% range, -0.25 to +0.08 mm/day per decade, includes zero. And the aquifer? Groundwater lies far below the top 10 cm of soil, and pumping is not in either record. These charts cannot test how much water the farms take. A detective says what the evidence shows, and also what it cannot see.",
       "chart": {
         "variable": "PRECIP",
         "view": "annual",
@@ -246,8 +246,8 @@
   },
   "reveal": {
     "by_variable": {
-      "SOILM": "Soil moisture in the top 10 cm near Doñana (January 2000 to July 2026) shows a small decline: about -0.29 kg/m² per decade, p = 0.0498. That is just significant at the 5% level, but the 95% confidence range (-0.059 to +0.0002 kg/m² per year) almost reaches zero, so the evidence is weak.",
-      "PRECIP": "Rain near Doñana (January 1998 to September 2025) shows no significant trend: about -0.05 mm/day per decade, p = 0.44, and the 95% confidence range (-0.025 to +0.008 mm/day per year) includes zero."
+      "SOILM": "Soil moisture in the top 10 cm near Doñana (January 2000 to July 2026) shows a small decline: about -0.29 kg/m² per decade, p = 0.0498. That is just significant at the 5% level, but the 95% confidence range (-0.59 to +0.002 kg/m² per decade) almost reaches zero, so the evidence is weak.",
+      "PRECIP": "Rain near Doñana (January 1998 to September 2025) shows no significant trend: about -0.05 mm/day per decade, p = 0.44, and the 95% confidence range (-0.25 to +0.08 mm/day per decade) includes zero."
     },
     "lesson": "Expressing each month as \"how unusual\" (in standard deviations) lets you compare clues with different units. Here the soil shows a weak sign of drying that the rain does not show, so something besides rain may be involved, but these data cannot say what. The aquifer and the pumping are not measured by these satellite and model records: to test that idea you would need groundwater data. Moving together, or apart, is not proof of a cause, and borderline evidence must be said with care."
   }

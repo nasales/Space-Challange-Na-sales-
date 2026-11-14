@@ -115,7 +115,7 @@
     {
       "id": "summer_soil",
       "title": "Is the summer soil drying?",
-      "text": "Same idea for soil moisture: one point per fire season, June to September, but only from 2000 to 2025, because this record is shorter. The trend line goes down a little, about -0.36 kg/m² every 10 years. But p = 0.22: 22 in 100, so a slope like this could easily appear by chance. The 95% confidence range, -0.14 to +0.04 kg/m² per year, includes zero.",
+      "text": "Same idea for soil moisture: one point per fire season, June to September, but only from 2000 to 2025, because this record is shorter. The trend line goes down a little, about -0.36 kg/m² every 10 years. But p = 0.22: 22 in 100, so a slope like this could easily appear by chance. The 95% confidence range, -1.4 to +0.4 kg/m² per decade, includes zero.",
       "chart": {
         "variable": "SOILM",
         "view": "season",
@@ -185,7 +185,7 @@
     {
       "id": "fire_years",
       "title": "Where do the fire years sit?",
-      "text": "Here 2017 and 2025, the big fire years in Ourense, are marked. 2017 had the second driest summer soil since 2000 (about 18.2 kg/m²). 2025 had the third driest (about 19.0) and the second hottest summer since 2000 (about 20.3 °C). 2005 is marked too: the driest summer soil of all. Not every hot summer is dry: compare the dots in the top-right corner.",
+      "text": "Here 2017 and 2025, the big fire years in Ourense, are marked. 2017 had the second driest summer soil since 2000 (about 18.2 kg/m²). 2025 had the third driest (about 19.0) and the second hottest summer from 2000 to 2025 (about 20.3 °C). 2005 is marked too: the driest summer soil of all. Not every hot summer is dry: compare the dots in the top-right corner.",
       "chart": {
         "variable": "T2M",
         "view": "season_scatter",
@@ -262,7 +262,7 @@
   "reveal": {
     "by_variable": {
       "T2M": "Fire seasons (June to September) in Ourense warm significantly: about +0.29 °C per decade from 1980 to 2026, p = 0.0047; the whole monthly record (January 1980 to September 2026) also rises, about +0.26 °C per decade, p < 0.001, about 1.2 °C in total.",
-      "SOILM": "Summer soil moisture (June to September, 2000 to 2025) falls slightly, about -0.36 kg/m² per decade, but this is not significant (p = 0.22; the 95% range, -0.14 to +0.04 kg/m² per year, includes zero). The big fire years 2017 and 2025 both had some of the driest summer soils since 2000."
+      "SOILM": "Summer soil moisture (June to September, 2000 to 2025) falls slightly, about -0.36 kg/m² per decade, but this is not significant (p = 0.22; the 95% range, -1.4 to +0.4 kg/m² per decade, includes zero). The big fire years 2017 and 2025 both had some of the driest summer soils since 2000."
     },
     "lesson": "For a hazard, look at the season that matters, not the whole year. Fire risk grows when heat and dry soil come together: here the summers are clearly warming, while the soil drying is not yet clear, and the big fire years sit in the hot and dry corner. Weather is only part of the story: sparks, wind, abandoned land and fuel also decide whether a place burns, and these data cannot see them."
   }

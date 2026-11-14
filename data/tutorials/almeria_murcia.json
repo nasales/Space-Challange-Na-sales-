@@ -148,7 +148,7 @@
     {
       "id": "whole_record",
       "title": "Back to the whole record",
-      "text": "Yearly averages, 1998 to 2024, with the trend line through all the months. 2023 and 2024 were very dry, but so were 2005, 2014 and 2017. The line falls only about 0.05 mm/day every 10 years. The test gives p = 0.23: 23 in 100, so a slope like this could easily appear by chance. The 95% confidence range, -0.015 to +0.005 mm/day per year, includes zero.",
+      "text": "Yearly averages, 1998 to 2024, with the trend line through all the months. 2023 and 2024 were very dry, but so were 2005, 2014 and 2017. The line falls only about 0.05 mm/day every 10 years. The test gives p = 0.23: 23 in 100, so a slope like this could easily appear by chance. The 95% confidence range, -0.15 to +0.05 mm/day per decade, includes zero.",
       "chart": {
         "variable": "PRECIP",
         "view": "annual",
@@ -259,8 +259,8 @@
   },
   "reveal": {
     "by_variable": {
-      "PRECIP": "Rain in Almería-Murcia (January 1998 to September 2025) shows no significant trend: the slope is about -0.05 mm/day per decade, p = 0.23, and the 95% confidence range (-0.015 to +0.005 mm/day per year) includes zero. The five-year average swings from about 1.23 mm/day (late 2000s) to about 0.79 (mid-2010s) and back.",
-      "SOILM": "Soil moisture in the top 10 cm (January 2000 to July 2026) shows no significant trend: about -0.36 kg/m² per decade, p = 0.15, with a 95% confidence range (-0.093 to +0.019 kg/m² per year) that includes zero. Its 12-month average was lowest in April 2024 and has partly recovered since."
+      "PRECIP": "Rain in Almería-Murcia (January 1998 to September 2025) shows no significant trend: the slope is about -0.05 mm/day per decade, p = 0.23, and the 95% confidence range (-0.15 to +0.05 mm/day per decade) includes zero. The five-year average swings from about 1.23 mm/day (late 2000s) to about 0.79 (mid-2010s) and back.",
+      "SOILM": "Soil moisture in the top 10 cm (January 2000 to July 2026) shows no significant trend: about -0.36 kg/m² per decade, p = 0.15, with a 95% confidence range (-0.93 to +0.19 kg/m² per decade) that includes zero. Its 12-month average was lowest in April 2024 and has partly recovered since."
     },
     "lesson": "Running means are a great tool to see wet and dry spells of several years, but a smooth curve can fool you: a window that starts at a wet peak turns a natural swing into what looks like a steady drop. Drylands are naturally very variable, so \"drier\" needs a test on the whole record. Here neither rain nor soil has a significant trend. That is a valid result: it means no clear evidence of change in these records, not proof that nothing is changing, and dry spells still matter for water."
   }

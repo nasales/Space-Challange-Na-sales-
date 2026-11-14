@@ -239,7 +239,7 @@
   "reveal": {
     "by_variable": {
       "T2M": "Air temperature in the Ebro Delta (January 1980 to September 2026) rises clearly: about +0.35 °C per decade (95% range +0.26 to +0.43 °C per decade), p < 0.001, about 1.6 °C over the whole period. The average monthly anomaly moved from -0.36 °C (1980-2002) to +0.35 °C (2003-2026).",
-      "PRECIP": "Rain in the Ebro Delta (January 1998 to September 2025) shows no significant trend: the slope is about zero, p = 0.90, and the 95% confidence range (-0.013 to +0.013 mm/day per year) includes zero. January 2020 was very wet, but the two periods have the same average anomaly."
+      "PRECIP": "Rain in the Ebro Delta (January 1998 to September 2025) shows no significant trend: the slope is about zero, p = 0.90, and the 95% confidence range (-0.13 to +0.13 mm/day per decade) includes zero. January 2020 was very wet, but the two periods have the same average anomaly."
     },
     "lesson": "Comparing two periods shows whether the whole distribution moved: temperature did, rain did not. One extreme month, even storm Gloria, does not move a distribution. And storm Gloria flooded the delta mainly from the sea: sea level, waves, the sinking of the delta and the loss of river sediment are not measured by these variables. Choosing the right evidence matters as much as reading it well."
   }

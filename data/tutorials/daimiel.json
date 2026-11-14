@@ -131,7 +131,7 @@
             "feedback": "Right: the balance stays near its lowest level until the wet winter of 2009-2010."
           },
           {
-            "text": "It climbs back to where it was in 2004",
+            "text": "It climbs back to where it was in late 2004",
             "correct": false,
             "feedback": "Compare the height of the line inside the band with its height in 2004. Does it get back up there before December 2009?"
           },
@@ -212,7 +212,7 @@
     {
       "id": "borderline",
       "title": "Soil: a borderline result",
-      "text": "Soil moisture tilts down: about -0.05 kg/m² per year, about -1.3 over the whole record, while a normal year averages about 20. Here p = 0.047, just under the 0.05 line. But the 95% confidence range, -0.105 to +0.008 per year, still includes zero, so no change is also possible. This is a borderline result: a weak hint of drying, not strong proof.",
+      "text": "Soil moisture tilts down: about -0.49 kg/m² per decade, about -1.3 over the whole record, while a normal year averages about 20. Here p = 0.047, just under the 0.05 line. But the 95% confidence range, -1.05 to +0.08 per decade, still includes zero, so no change is also possible. This is a borderline result: a weak hint of drying, not strong proof.",
       "chart": {
         "variable": "SOILM",
         "view": "annual",
@@ -248,7 +248,7 @@
   },
   "reveal": {
     "by_variable": {
-      "PRECIP": "Rain at Daimiel (January 1998 to September 2025) shows no significant trend: about -0.009 mm/day per decade, p = 0.83, and the 95% confidence range (-0.013 to +0.011 mm/day per year) includes zero. The cumulative curve shows real dry runs (late 2004 to May 2006, and 2014 to 2023) and wet runs (the winter of 2009-2010), but no long-term change.",
+      "PRECIP": "Rain at Daimiel (January 1998 to September 2025) shows no significant trend: about -0.009 mm/day per decade, p = 0.83, and the 95% confidence range (-0.13 to +0.11 mm/day per decade) includes zero. The cumulative curve shows real dry runs (late 2004 to May 2006, and 2014 to 2023) and wet runs (the winter of 2009-2010), but no long-term change.",
       "SOILM": "Soil moisture in the top 10 cm (January 2000 to July 2026) shows a borderline downward trend: about -0.49 kg/m² per decade, p = 0.047, but the 95% confidence range (-1.05 to +0.08 kg/m² per decade) includes zero. Weak evidence of drying, not strong proof."
     },
     "lesson": "A wetland responds to water added up over years, not to single months. A cumulative anomaly shows dry and wet runs and their turning points, but it always ends at zero, so only its shape matters; a trend test is still needed to talk about long-term change. Here the sky shows dry and wet runs but no clear trend in rain. What drains a wetland can also be on the ground: these data cannot see the water pumped from the aquifer."
