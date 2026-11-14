@@ -27,6 +27,7 @@
 | pymannkendall 1.4.3 | MIT | https://github.com/mmhs013/pyMannKendall | Mann-Kendall test in `pipeline/trend.py` |
 | SciPy 1.18.1 | BSD-3-Clause | https://scipy.org | Sen slope (`theilslopes`) and normal quantile in `pipeline/trend.py` |
 | NumPy 2.5.4 | BSD-3-Clause | https://numpy.org | Array maths in `pipeline/` |
+| Matplotlib 3.11.2 | Matplotlib License (PSF-based, BSD-compatible) | https://matplotlib.org | Featured trends figure in `pipeline/results_figure.py` |
 | pytest 9.2.0 | MIT | https://pytest.org | Tests in `pipeline/tests/` |
 | earthaccess 0.19.0 | MIT | https://github.com/nsidc/earthaccess | NASA Earthdata search and streaming in `archivos_preSupabase/etl_espana.py` |
 | xarray 2026.9.0 | Apache-2.0 | https://xarray.dev | Gridded data handling in the ETL |
