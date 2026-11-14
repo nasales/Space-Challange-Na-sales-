@@ -104,7 +104,7 @@ Before starting, ask the human which person they are (Ivan or Diego) and which b
 | 2 | Ivan | `ivan_dev` | Robustness: optional annual-mean trend, warning when the series has many gaps | New tests pass, old ones still pass |
 | 2 | Diego | `diego_dev` | ✅ `build_case` + `write_case` + `trend_from_db`, using the stub `analyze_trend` until block 1 of Ivan is merged | Output passes the contract validator |
 | 3 | Ivan + Diego (humans, cross) | — | Each human writes 2-3 tests of the other's code in `tests/stats/` (agents never edit this folder) | They pass, or a bug line goes to the owner |
-| 4 | Diego | `diego_dev` | Adapter `pipeline/sources/supabase_export.py`: reads `export/cells/<cell_id>.json` + `variables.json` into `Series` + trend dict | Returns a valid `Series` for cell `753817` (Salamanca) |
+| 4 | Diego | `diego_dev` | ✅ (fake export; recheck with the real one) Adapter `pipeline/sources/supabase_export.py` (`cell_id_for`, `find_cell`, `load_series`, `load_trend`, `iter_series`): reads `export/cells/<cell_id>.json` + `variables.json` into `Series` + trend dict | Returns a valid `Series` for cell `753817` (Salamanca) |
 | 4 | Ivan | `ivan_dev` | `explain(trend, series) -> str` in `explain.py`: plain-English facts for the AI checker | Correct text for one significant and one non-significant case |
 | 5 | Diego | `diego_dev` | `fill_trends.py` (Interface 4): trends for all cells × variables, handed to Perry for upload | Rows file passes a schema check; skipped series listed with a reason |
 | 6 | Diego | `diego_dev` | Featured cases in `data/cache/`, at least one non-significant | `./scripts/check.sh` passes |

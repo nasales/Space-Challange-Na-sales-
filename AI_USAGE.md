@@ -12,3 +12,4 @@ Every agent adds one line per task.
 | 2026-11-14 | Claude Code (Data agent, Diego) | Data | Block 1: `Series`, `validate()` and `from_start_month()` in `pipeline/series.py` with 40 tests in `pipeline/tests/test_series.py` |
 | 2026-11-14 | Claude Code (Data agent, Diego) | Data | Block 2: `build_case`, `write_case`, `trend_from_db`, stub `analyze_trend` in `pipeline/build_case.py` with 36 tests (incl. contract validator check) |
 | 2026-11-14 | Claude Code (Data agent, Diego) | Data | Accept database dates `YYYY-MM-01` in `from_start_month`/`trend_from_db`; `pipeline/README.md` v3 (statistics fills `trends`, new fill-trends block) |
+| 2026-11-14 | Claude Code (Data agent, Diego) | Data | Block 4: Supabase JSON export adapter `pipeline/sources/supabase_export.py` with 18 tests on a fake export copying the ETL layout |
