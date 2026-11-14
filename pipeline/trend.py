@@ -31,7 +31,8 @@ def analyze_trend(dates: list[str], values: list[float | None], alpha: float = 0
          before the test, which corrects the false positives caused by serially correlated
          monthly data.
       4. 95 % confidence interval of the slope: Gilbert (1987) rank method, with var(S)
-         inflated by (1 + rho) / (1 - rho), rho = lag-1 autocorrelation of the residuals.
+         inflated by (1 + rho) / (1 - rho), rho = lag-1 autocorrelation of the residuals
+         (details in _gilbert_ci; identical to trend_stats() in archivos_preSupabase/etl_espana.py).
 
     References:
       Yue, S. and Wang, C. (2002). Applicability of prewhitening to eliminate the influence
@@ -63,12 +64,11 @@ def analyze_trend(dates: list[str], values: list[float | None], alpha: float = 0
 
     sen = stats.theilslopes(y, t)
     slope = float(sen.slope)
-    intercept = float(sen.intercept)
 
     mk = pymannkendall.pre_whitening_modification_test(y, alpha)
     p_value = float(mk.p)
 
-    ci_low, ci_high = _gilbert_ci(t, y, slope, intercept, alpha)
+    ci_low, ci_high = _gilbert_ci(t, y, slope, alpha)
 
     significant = bool(p_value < alpha)
     if not significant:
@@ -144,48 +144,37 @@ def _anomalies(months: list[tuple[int, int]], values: list[float | None]) -> lis
     return [None if v is None else float(v) - climatology[m] for (_, m), v in zip(months, values)]
 
 
-def _gilbert_ci(t: np.ndarray, y: np.ndarray, slope: float, intercept: float, alpha: float) -> tuple[float, float]:
+def _gilbert_ci(t: np.ndarray, y: np.ndarray, slope: float, alpha: float) -> tuple[float, float]:
     """(1 - alpha) confidence interval of the Sen slope, Gilbert (1987), autocorrelation-inflated.
+
+    Matches trend_stats() in archivos_preSupabase/etl_espana.py (the database script) exactly.
 
     Steps:
       1. All N' = n(n-1)/2 pairwise slopes (y_j - y_i) / (t_j - t_i), i < j, sorted.
-      2. var(S) of Mann-Kendall with the ties correction, on the (non-pre-whitened) anomalies:
-         [n(n-1)(2n+5) - sum t_k(t_k-1)(2t_k+5)] / 18, t_k = size of each group of tied values.
-      3. var(S) *= (1 + rho) / (1 - rho), rho = lag-1 autocorrelation of the residuals
-         y - (intercept + slope * t), taken between consecutive non-null points.
-      4. C = z(1 - alpha/2) * sqrt(var(S)); 1-based ranks M1 = (N' - C) / 2 and
-         M2 = (N' + C) / 2 + 1; the interval is the slopes at ranks M1 and M2.
-
-    Rounding: M1 is rounded down and M2 rounded up, then both are clipped to [1, N'].
-    This makes the interval slightly wider (conservative) and guarantees low <= slope <= high.
+      2. rho = Pearson lag-1 autocorrelation of the residuals y - slope * t (mean removed),
+         between consecutive non-null points.
+      3. var(S) = n(n-1)(2n+5)/18 * (1 + rho) / (1 - rho), Mann-Kendall variance without
+         ties correction (ties are negligible for real-valued anomalies).
+      4. C = z * sqrt(var(S)), z = z(1 - alpha/2) rounded to 2 decimals (1.96 for alpha = 0.05,
+         the value used by the database script).
+      5. 0-based indices into the sorted slopes: lo = floor((N' - C) / 2), hi = ceil((N' + C) / 2),
+         both clipped to [0, N' - 1]. Rounding outwards makes the interval slightly wider
+         (conservative) and guarantees low <= slope <= high.
     """
     n = len(y)
     i, j = np.triu_indices(n, k=1)
     pair_slopes = np.sort((y[j] - y[i]) / (t[j] - t[i]))
     n_pairs = len(pair_slopes)
 
-    _, tie_counts = np.unique(y, return_counts=True)
-    var_s = (n * (n - 1) * (2 * n + 5) - np.sum(tie_counts * (tie_counts - 1) * (2 * tie_counts + 5))) / 18
+    residuals = y - slope * t
+    residuals = residuals - residuals.mean()
+    # Clip rho to [0, 0.95] as the database does: a negative rho would shrink the interval
+    # below the independent-data case, and rho close to 1 would make the factor explode.
+    rho = float(np.clip(np.corrcoef(residuals[:-1], residuals[1:])[0, 1], 0, 0.95))
+    var_s = n * (n - 1) * (2 * n + 5) / 18 * (1 + rho) / (1 - rho)
 
-    residuals = y - (intercept + slope * t)
-    rho = _lag1_autocorrelation(residuals)
-    # Clip rho to [0, 0.99]: a negative rho would shrink the interval below the
-    # independent-data case, and rho close to 1 would make the inflation factor explode.
-    rho = min(max(rho, 0.0), 0.99)
-    var_s *= (1 + rho) / (1 - rho)
-
-    c = stats.norm.ppf(1 - alpha / 2) * math.sqrt(var_s)
-    m1 = math.floor((n_pairs - c) / 2)
-    m2 = math.ceil((n_pairs + c) / 2 + 1)
-    m1 = min(max(m1, 1), n_pairs)
-    m2 = min(max(m2, 1), n_pairs)
-    return float(pair_slopes[m1 - 1]), float(pair_slopes[m2 - 1])
-
-
-def _lag1_autocorrelation(x: np.ndarray) -> float:
-    """Lag-1 autocorrelation, same estimator as pymannkendall (mean removed, divided by n)."""
-    d = x - x.mean()
-    denom = float(np.dot(d, d))
-    if denom == 0:
-        return 0.0
-    return float(np.dot(d[:-1], d[1:]) / denom)
+    z = round(float(stats.norm.ppf(1 - alpha / 2)), 2)
+    c = z * math.sqrt(var_s)
+    lo = int(np.clip(math.floor((n_pairs - c) / 2), 0, n_pairs - 1))
+    hi = int(np.clip(math.ceil((n_pairs + c) / 2), 0, n_pairs - 1))
+    return float(pair_slopes[lo]), float(pair_slopes[hi])
