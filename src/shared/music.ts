@@ -19,7 +19,7 @@ export type MusicTrackId = keyof typeof MUSIC_TRACKS
 export const DEFAULT_TRACK: MusicTrackId = 'investigation'
 
 /** Background level: low enough to keep the game sounds and the reading comfortable. */
-const VOLUME = 0.35
+const VOLUME = 0.46 // was 0.35, raised 30 % at the team's request (too quiet)
 
 let audio: HTMLAudioElement | null = null
 
