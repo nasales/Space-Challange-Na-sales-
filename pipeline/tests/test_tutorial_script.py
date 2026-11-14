@@ -6,6 +6,7 @@ seasons, thresholds, windows, highlight and range dates must all exist there.
 """
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -22,10 +23,20 @@ TREND_VIEWS = {"monthly", "anomaly", "annual", "same_month", "season", "threshol
 SEASONS = {"DJF", "MAM", "JJA", "SON", "JJAS"}
 WINDOWS = {12, 60}
 MAX_WORDS = 90  # docs say "at most ~80 words"; small margin
+SPEAKERS = {"detective", "witness"}
+VERDICTS = {"right", "wrong", "partly"}
+MAX_LINE_WORDS = 40  # one speech bubble
+MAX_CLUE_WORDS = 15  # one notebook line
 
 
 def load(path):
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def witness_ids():
+    """Case ids that have a witness: keys of WITNESSES in src/shared/witness.ts."""
+    text = (ROOT / "src" / "shared" / "witness.ts").read_text(encoding="utf-8")
+    return set(re.findall(r"caseId:\s*['\"](\w+)['\"]", text))
 
 
 def tutorial_data(case_id):
@@ -153,6 +164,26 @@ def test_tutorial_script(path):
     assert set(r["by_variable"]) == used, "reveal needs one entry per variable used"
     assert set(r["by_variable"]) <= set(data["variables"]), "reveal variable not in data"
     assert all(r["by_variable"].values())
+
+    # optional witness scene, notebook clues and claim verdict
+    scene = s.get("scene")
+    if scene is not None:
+        assert s["case_id"] in witness_ids(), \
+            f"case {s['case_id']} has a scene but no witness in src/shared/witness.ts"
+        assert scene["lines"], "scene needs lines"
+        for i, line in enumerate(scene["lines"]):
+            assert line["speaker"] in SPEAKERS, f"scene line {i}: speaker {line['speaker']}"
+            assert line["text"].strip(), f"scene line {i}: empty text"
+            assert len(line["text"].split()) <= MAX_LINE_WORDS, f"scene line {i}: too long"
+        assert scene["claim"].strip(), "scene needs a claim"
+    for step in s["steps"]:
+        if "clue" in step:
+            assert step["clue"].strip(), f"step {step['id']}: empty clue"
+            assert len(step["clue"].split()) <= MAX_CLUE_WORDS, f"step {step['id']}: clue too long"
+    if "claim_verdict" in r:
+        assert r["claim_verdict"] in VERDICTS, f"claim_verdict {r['claim_verdict']}"
+    if "claim_text" in r:
+        assert r["claim_text"].strip()
 
 
 # --- the validator itself, on made-up charts against the real data --------------------------

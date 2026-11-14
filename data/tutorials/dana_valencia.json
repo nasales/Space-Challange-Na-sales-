@@ -11,16 +11,81 @@
     ],
     "question": "After the 2024 DANA floods, is it raining more and more in Valencia, or is something else changing?"
   },
+  "scene": {
+    "lines": [
+      {
+        "speaker": "witness",
+        "text": "Bon dia, detective! Over here, by the orange trees. You came about the flood, no?"
+      },
+      {
+        "speaker": "detective",
+        "text": "Bon dia. I did. I am looking into what happened here in October 2024. Can you tell me?"
+      },
+      {
+        "speaker": "witness",
+        "text": "The 29th of October. A DANA sat right over us and dropped months of rain in a few hours."
+      },
+      {
+        "speaker": "detective",
+        "text": "A DANA?"
+      },
+      {
+        "speaker": "witness",
+        "text": "A pocket of cold air high up that breaks away and stays put. Over a warm autumn sea, it feeds storms for hours."
+      },
+      {
+        "speaker": "witness",
+        "text": "The ravines filled in minutes. Flash floods ran through towns and roads. More than 220 people died."
+      },
+      {
+        "speaker": "detective",
+        "text": "I am sorry. That was a terrible day for the whole region."
+      },
+      {
+        "speaker": "witness",
+        "text": "For weeks we shovelled mud out of our neighbours' houses. Everyone helped, young and old."
+      },
+      {
+        "speaker": "witness",
+        "text": "Now everyone on the radio says \"climate change\". A warmer world gives storms more fuel, they say."
+      },
+      {
+        "speaker": "detective",
+        "text": "Many people ask the same thing. What do you think, Vicent?"
+      },
+      {
+        "speaker": "witness",
+        "text": "Mira, xiquet, I have watched this sky all my life. The weather here is changing, and it rains more every year. I am telling you!"
+      },
+      {
+        "speaker": "detective",
+        "text": "That is a clear claim. A good detective does not guess: we test a claim with evidence."
+      },
+      {
+        "speaker": "detective",
+        "text": "So, the question: is it raining more and more in Valencia, or is something else changing? Let us read the NASA data."
+      },
+      {
+        "speaker": "witness",
+        "text": "Go on, then. You will see I am right!"
+      }
+    ],
+    "claim": "The weather here is changing, and it rains more every year."
+  },
   "steps": [
     {
       "id": "monthly_series",
       "title": "One point per month",
-      "text": "This line is a time series: one point for every month from January 1998 to September 2025. Each point is the average rain per day in that month, in millimetres per day (mm/day), over the square of land that contains Valencia. Time runs from left to right. The marked point is October 2024, the month of the DANA. Data: NASA GPM IMERG.",
+      "text": "Let's check Vicent's claim. This line is a time series: one point for every month from January 1998 to September 2025. Each point is the average rain per day in that month, in millimetres per day (mm/day), over the square of land that contains Valencia. Time runs from left to right. The marked point is October 2024, the month of the DANA. Data: NASA GPM IMERG.",
       "chart": {
         "variable": "PRECIP",
         "view": "monthly",
         "highlights": [
-          { "kind": "point", "date": "2024-10", "label": "October 2024 (DANA)" }
+          {
+            "kind": "point",
+            "date": "2024-10",
+            "label": "October 2024 (DANA)"
+          }
         ]
       },
       "question": {
@@ -43,7 +108,8 @@
           }
         ]
       },
-      "takeaway": "A time series is a story told one point at a time: here, one point per month."
+      "takeaway": "A time series is a story told one point at a time: here, one point per month.",
+      "clue": "Rain record: one point per month, Jan 1998 to Sep 2025."
     },
     {
       "id": "seasons",
@@ -73,7 +139,8 @@
           }
         ]
       },
-      "takeaway": "Seasons repeat every year, so compare each month with the same month in other years."
+      "takeaway": "Seasons repeat every year, so compare each month with the same month in other years.",
+      "clue": "Driest in summer (July). Compare Octobers with Octobers."
     },
     {
       "id": "anomalies",
@@ -83,7 +150,11 @@
         "variable": "PRECIP",
         "view": "anomaly",
         "highlights": [
-          { "kind": "point", "date": "2024-10", "label": "October 2024" }
+          {
+            "kind": "point",
+            "date": "2024-10",
+            "label": "October 2024"
+          }
         ]
       },
       "question": {
@@ -106,18 +177,23 @@
           }
         ]
       },
-      "takeaway": "An anomaly tells you how unusual a month was, after removing the seasons."
+      "takeaway": "An anomaly tells you how unusual a month was, after removing the seasons.",
+      "clue": "Oct 2024: about 1.4 mm/day wetter than a normal October."
     },
     {
       "id": "october_2024",
       "title": "One terrible month",
-      "text": "In October 2024 this square got about 3.6 mm/day on average, more than a normal October (about 2.3). But it is not the highest point: the wettest month in this record is October 2000. How? A storm of a few hours is averaged over a whole month and over a square of about 10 km, and much of the heaviest rain fell inland, west of the city.",
+      "text": "In October 2024 this square got about 3.6 mm/day on average, more than a normal October (about 2.3). But it is not the highest point: the wettest month in this record is October 2000. How? A storm of a few hours is averaged over a whole month and over a square of about 10 km, and much of the heaviest rain fell inland, west of the city. The flood Vicent lived was real; a monthly mean just hides it.",
       "chart": {
         "variable": "PRECIP",
         "view": "monthly",
         "highlight_max": true,
         "highlights": [
-          { "kind": "point", "date": "2024-10", "label": "October 2024 (DANA)" }
+          {
+            "kind": "point",
+            "date": "2024-10",
+            "label": "October 2024 (DANA)"
+          }
         ]
       },
       "question": {
@@ -140,12 +216,13 @@
           }
         ]
       },
-      "takeaway": "One extreme event is a single point; it cannot tell you, by itself, where the series is going."
+      "takeaway": "One extreme event is a single point; it cannot tell you, by itself, where the series is going.",
+      "clue": "Oct 2024: 3.6 mm/day. Big, but Oct 2000 is the record."
     },
     {
       "id": "trend_noise",
       "title": "Trend line and noise",
-      "text": "The straight line is the trend: the best single slope through all the months. It goes up by only about 0.02 mm/day every 10 years. The up-and-down jumps around it are called noise: normal weather that changes from month to month. In Valencia the noise is huge, with jumps of several mm/day, while the trend is almost flat.",
+      "text": "Vicent says it rains more every year. If so, this line should climb. The straight line is the trend: the best single slope through all the months. It goes up by only about 0.02 mm/day every 10 years. The up-and-down jumps around it are called noise: normal weather that changes from month to month. In Valencia the noise is huge, with jumps of several mm/day, while the trend is almost flat.",
       "chart": {
         "variable": "PRECIP",
         "view": "anomaly",
@@ -171,12 +248,13 @@
           }
         ]
       },
-      "takeaway": "A trend summarises decades; single points, however extreme, are mostly noise."
+      "takeaway": "A trend summarises decades; single points, however extreme, are mostly noise.",
+      "clue": "Rain trend almost flat: about +0.02 mm/day per decade."
     },
     {
       "id": "significance",
       "title": "Could it be chance?",
-      "text": "Rain goes up and down by chance, so even with no real change a line can tilt a little. The p-value is the chance of getting a slope this big if nothing were really changing. For rain here, p = 0.67: 67 in 100, so it could easily be chance. The 95% confidence range, -0.014 to +0.018 mm/day per year, includes zero.",
+      "text": "Rain goes up and down by chance, so even with no real change a line can tilt a little. The p-value is the chance of getting a slope this big if nothing were really changing. For rain here, p = 0.67: 67 in 100, so it could easily be chance. The 95% confidence range, -0.14 to +0.18 mm/day per decade, includes zero. This is the key test of Vicent's rain claim.",
       "chart": {
         "variable": "PRECIP",
         "view": "annual",
@@ -202,12 +280,13 @@
           }
         ]
       },
-      "takeaway": "Not significant means \"no clear evidence of change\", not \"proof that nothing changes\"."
+      "takeaway": "Not significant means \"no clear evidence of change\", not \"proof that nothing changes\".",
+      "clue": "Rain: p = 0.67, range includes zero. No clear trend."
     },
     {
       "id": "temperature",
       "title": "Now look at the air",
-      "text": "Same steps, another clue: the yearly average air temperature in Valencia from 1980. Data: NASA MERRA-2. The trend is about +0.3 °C every 10 years, about 1.5 °C over the whole period. Here p < 0.001: less than 1 in 1,000, so very unlikely to be chance. The confidence range, +0.022 to +0.041 °C per year, is all above zero.",
+      "text": "Vicent also said the weather is changing. Same steps, another clue: the yearly average air temperature in Valencia from 1980. Data: NASA MERRA-2. The trend is about +0.3 °C per decade, about 1.5 °C over the whole period. Here p < 0.001: less than 1 in 1,000, so very unlikely to be chance. The confidence range, +0.22 to +0.41 °C per decade, is all above zero.",
       "chart": {
         "variable": "T2M",
         "view": "annual",
@@ -233,18 +312,23 @@
           }
         ]
       },
-      "takeaway": "Temperature in Valencia shows a clear, significant rise."
+      "takeaway": "Temperature in Valencia shows a clear, significant rise.",
+      "clue": "Air: about +0.3 °C per decade, p < 0.001. Clearly warming."
     },
     {
       "id": "compare",
       "title": "Two clues side by side",
-      "text": "This is the temperature anomaly: each month compared with its normal value, like you did for rain. The trend line climbs steadily through the noise. So the two clues tell different stories: rain jumps a lot with no clear trend, while temperature keeps rising. A detective reports both, and keeps them apart.",
+      "text": "This is the temperature anomaly: each month compared with its normal value, like you did for rain. The trend line climbs steadily through the noise. So the two clues tell different stories: rain jumps a lot with no clear trend, while temperature keeps rising. A detective reports both, keeps them apart, and checks each half of Vicent's claim on its own.",
       "chart": {
         "variable": "T2M",
         "view": "anomaly",
         "show_trend": true,
         "highlights": [
-          { "kind": "point", "date": "2024-10", "label": "October 2024" }
+          {
+            "kind": "point",
+            "date": "2024-10",
+            "label": "October 2024"
+          }
         ]
       },
       "question": {
@@ -267,7 +351,8 @@
           }
         ]
       },
-      "takeaway": "Different variables can tell different stories about the same place."
+      "takeaway": "Different variables can tell different stories about the same place.",
+      "clue": "Two clues, two stories: rain flat, temperature rising."
     }
   ],
   "conclusion": {
@@ -277,9 +362,11 @@
   },
   "reveal": {
     "by_variable": {
-      "PRECIP": "Rain in Valencia (January 1998 to September 2025) shows no significant trend: the slope is about +0.02 mm/day per decade, p = 0.67, and the 95% confidence range (-0.014 to +0.018 mm/day per year) includes zero. October 2024 was wetter than a normal October, but it is one event, not a trend.",
+      "PRECIP": "Rain in Valencia (January 1998 to September 2025) shows no significant trend: the slope is about +0.02 mm/day per decade, p = 0.67, and the 95% confidence range (-0.14 to +0.18 mm/day per decade) includes zero. October 2024 was wetter than a normal October, but it is one event, not a trend.",
       "T2M": "Air temperature in Valencia (January 1980 to September 2026) rises clearly: about +0.31 °C per decade (95% range +0.22 to +0.41 °C per decade), p < 0.001, about 1.5 °C over the whole period."
     },
-    "lesson": "An extreme event, even a deadly one, is not a trend. A non-significant trend is a valid result: the rain data show no clear change, which is not proof that nothing changes. What is changing clearly here is temperature. Scientists know that warmer air can hold more water vapour, which is one reason they study whether heavy downpours are getting stronger; this monthly rain record cannot answer that on its own."
+    "lesson": "An extreme event, even a deadly one, is not a trend. A non-significant trend is a valid result: the rain data show no clear change, which is not proof that nothing changes. What is changing clearly here is temperature. Scientists know that warmer air can hold more water vapour, which is one reason they study whether heavy downpours are getting stronger; this monthly rain record cannot answer that on its own.",
+    "claim_verdict": "partly",
+    "claim_text": "Vicent, the storm was real and terrible, and you are right that something is changing: the air here is about 1.5 °C warmer than in 1980. But the monthly rain record shows no clear trend, so \"it rains more every year\" is not supported by this data."
   }
 }
