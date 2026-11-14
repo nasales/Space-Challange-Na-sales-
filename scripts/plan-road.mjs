@@ -48,7 +48,7 @@ const GRADE_MAX = 40
 const COAST_CLOSED_KM = 2 // closed this close to the sea
 const COAST_SOFT_KM = 8 // extra cost from 2 to 8 km
 const COAST_SOFT = 6
-const MONUMENT_KM = 40 // monuments are big on the toy map: their whole area is closed
+const MONUMENT_KM = 41 // monuments are big on the toy map: their whole area is closed (41: the smoothed line stays >= 40 km away)
 const RIVER_CELL = { 1: 250, 2: 220, 3: 160 } // per river cell entered: few crossings, narrow rivers preferred
 const RIVER_BAND_KM = 3.5 // band next to a river
 const RIVER_BAND = 3
@@ -468,6 +468,42 @@ function simplifyClosed(line, tol) {
   const half = Math.floor(line.length / 2)
   return [...dp(line.slice(0, half + 1)).slice(0, -1), ...dp([...line.slice(half), line[0]]).slice(0, -1)]
 }
+/**
+ * Removes every self-crossing of a line (km plane): where segment i crosses segment j, the small
+ * loop between them is cut out and replaced by the crossing point. On a closed line (no repeated
+ * last point) the shorter side of the crossing is the one cut. Usually a tight spur at an anchor
+ * or waypoint, where the leg in and the leg out run close and smoothing makes them touch.
+ */
+function removeSelfCrossings(line, closed) {
+  let p = line
+  for (let guard = 0; guard < 100; guard++) {
+    const n = p.length
+    const segs = closed ? n : n - 1
+    let hit = null
+    for (let i = 0; i < segs && !hit; i++) {
+      const a = p[i], b = p[(i + 1) % n]
+      for (let j = i + 2; j < segs; j++) {
+        if (closed && i === 0 && j === n - 1) continue // neighbours around the seam
+        const c = p[j], d = p[(j + 1) % n]
+        const rx = b[0] - a[0], ry = b[1] - a[1], sx = d[0] - c[0], sy = d[1] - c[1]
+        const den = rx * sy - ry * sx
+        if (Math.abs(den) < 1e-12) continue
+        const t = ((c[0] - a[0]) * sy - (c[1] - a[1]) * sx) / den
+        const u = ((c[0] - a[0]) * ry - (c[1] - a[1]) * rx) / den
+        if (t > 0 && t < 1 && u > 0 && u < 1) {
+          hit = { i, j, x: [a[0] + rx * t, a[1] + ry * t] }
+          break
+        }
+      }
+    }
+    if (!hit) return p
+    const { i, j, x } = hit
+    // inner part: points i+1..j; outer part: j+1..i (around the seam on a closed line)
+    if (!closed || j - i <= n - (j - i)) p = [...p.slice(0, i + 1), x, ...p.slice(j + 1)]
+    else p = [x, ...p.slice(i + 1, j + 1)]
+  }
+  return p
+}
 function chaikinClosed(line, iterations) {
   let p = line
   for (let k2 = 0; k2 < iterations; k2++) {
@@ -517,7 +553,7 @@ pts = chaikinClosed(simplifyClosed(pts, 1.2), 3)
     return [p[0] - ((b[1] - a[1]) / tl) * sm[i], p[1] + ((b[0] - a[0]) / tl) * sm[i]]
   })
 }
-pts = simplifyClosed(pts, 0.12)
+pts = removeSelfCrossings(simplifyClosed(pts, 0.12), true)
 
 // Start the loop far from any river (so the seam never sits on a bridge)
 {
@@ -793,7 +829,7 @@ for (const road of NET_ROADS) {
       return [q[0] + nx * sm[i], q[1] + ny * sm[i]]
     })
   }
-  p = simplifyOpen(p, 0.12)
+  p = removeSelfCrossings(simplifyOpen(p, 0.12), false)
   const line = p.map(([x, y]) => [+(x / KX).toFixed(4), +(y / KY).toFixed(4)])
   network.push({ name: road.name, rank: road.rank, lines: [line] })
   markLine(line, NET_USED_KM, NET_USED)
