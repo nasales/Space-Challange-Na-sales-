@@ -28,3 +28,4 @@ __pycache__/
 
 # ETL output (large, regenerate with archivos_preSupabase/etl_espana.py)
 export/
+etl_cache/

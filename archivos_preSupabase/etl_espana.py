@@ -31,6 +31,7 @@ import argparse
 import json
 import math
 import os
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -45,6 +46,9 @@ REGIONS = {
     "canarias": (-18.25, 27.5, -13.25, 29.5),
 }
 MIN_MONTHS = 120  # at least 10 years of valid data to compute a trend
+# Monthly Spain subsets already read (resume after a crash). Override with ETL_CACHE_DIR.
+CACHE_DIR = Path(os.environ.get("ETL_CACHE_DIR", "etl_cache"))
+WORKERS = int(os.environ.get("ETL_WORKERS", "4"))  # monthly files read in parallel
 
 
 @dataclass
@@ -130,20 +134,65 @@ def fetch_dataset(specs: list[VarSpec], end: str, start: str | None = None) -> x
     )
     print(f"[{s0.short_name}] {len(results)} monthly files")
     names = [s.nc_var for s in specs]
-    parts = []
-    files = earthaccess.open(results)
-    for i in range(len(files)):
-        f = files[i]
-        kw = {"group": s0.group} if s0.group else {}
-        with xr.open_dataset(f, engine="h5netcdf", **kw) as ds:
-            parts.append(ds[names].sel(lat=slice(lat0, lat1), lon=slice(lon0, lon1)).load())
-        # Close each remote file and drop the reference: otherwise every file keeps its
-        # read cache in memory (~14 MB per GLDAS file) until the whole product is read.
-        f.close()
-        files[i] = None
-        if i % 24 == 0:
-            print(f"  {s0.short_name}: {i + 1}/{len(results)}")
+    # Local cache of the Spain subsets: a crashed run resumes where it stopped.
+    cache = CACHE_DIR / s0.short_name / "_".join(names)
+    cache.mkdir(parents=True, exist_ok=True)
+    jobs = []
+    for granule in results:
+        url = granule.data_links()[0]
+        jobs.append((url, names, s0.group, (lon0, lat0, lon1, lat1),
+                     str(cache / (Path(url).stem + ".nc"))))
+    todo = [j for j in jobs if not Path(j[4]).exists()]
+    print(f"  {len(jobs) - len(todo)} already cached, {len(todo)} to read "
+          f"with {WORKERS} parallel workers")
+    # Separate processes, not threads: h5py serialises all reads inside one process.
+    from concurrent.futures import ProcessPoolExecutor, as_completed
+    done = len(jobs) - len(todo)
+    with ProcessPoolExecutor(max_workers=WORKERS) as pool:
+        futures = [pool.submit(_fetch_subset, *j) for j in todo]
+        for fut in as_completed(futures):
+            fut.result()  # re-raises a file that failed after all retries
+            done += 1
+            if done % 8 == 0 or done == len(jobs):
+                print(f"  {s0.short_name}: {done}/{len(jobs)}")
+    parts = [xr.load_dataset(j[4]) for j in jobs]
     return xr.concat(parts, dim="time").sortby("time")
+
+
+_logged_in = False
+
+
+def _fetch_subset(url: str, names: list[str], group: str | None,
+                  bbox: tuple[float, float, float, float], cached: str) -> None:
+    """Worker: read the Spain subset of one monthly file and save it to the cache.
+    Retries transient NASA errors (502/503...) with exponential backoff."""
+    import earthaccess
+
+    global _logged_in
+    if not _logged_in:
+        earthaccess.login(strategy="netrc")
+        _logged_in = True
+    lon0, lat0, lon1, lat1 = bbox
+    kw = {"group": group} if group else {}
+    for attempt in range(6):
+        try:
+            f = earthaccess.open([url])[0]
+            try:
+                with xr.open_dataset(f, engine="h5netcdf", **kw) as ds:
+                    part = ds[names].sel(lat=slice(lat0, lat1), lon=slice(lon0, lon1)).load()
+            finally:
+                f.close()  # otherwise each file keeps its read cache in memory
+            break
+        except Exception as exc:  # NASA servers return transient 5xx errors
+            if attempt == 5:
+                raise
+            wait = 10 * 2 ** attempt
+            print(f"  retry {attempt + 1}/5 in {wait}s ({Path(url).name}): {str(exc)[:100]}",
+                  flush=True)
+            time.sleep(wait)
+    tmp = cached + ".tmp"
+    part.to_netcdf(tmp)
+    os.replace(tmp, cached)  # atomic: a killed run never leaves a half-written file
 
 
 def land_cells(cells: list[dict]) -> list[dict]:
@@ -317,7 +366,7 @@ def export_json(out: Path, cells: list, specs: list, series: list, trends: list)
     meta = {s.id: {"name_en": s.name_en, "unit": s.unit,
                    "source": f"NASA {s.short_name} v{s.version}",
                    "definition_en": s.definition_en} for s in specs}
-    (out / "variables.json").write_text(json.dumps(meta, ensure_ascii=False))
+    (out / "variables.json").write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
     (out / "trends.json").write_text(json.dumps(trends))
     by_cell: dict[int, dict] = {}
     cinfo = {c["cell_id"]: c for c in cells}
