@@ -23,6 +23,11 @@ export interface HudState {
   rush: number
   /** True while the detective stands still with the magnifier out (the "paused" moment) */
   stopped: boolean
+  /** Detective position in world units (east = +x, north = -z), for the minimap */
+  x: number
+  z: number
+  /** Facing in radians: forward = (-sin(heading), -cos(heading)), so 0 faces north */
+  heading: number
 }
 
 /** 'intro': the map is drawn and the camera is swooping down to the detective (no control, no HUD yet). */

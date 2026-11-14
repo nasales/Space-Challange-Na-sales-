@@ -1,13 +1,10 @@
-// Top-right panel: where you are (nearest town, region and exact coordinates).
-// If a landmark is nearby, it is shown first with a short description.
+// Place name under the minimap: where you are (nearest town and region).
+// If a landmark is nearby, its name and "city, region" are shown instead.
 import type { LocationInfo } from '../../shared/events'
 import './LocationPanel.css'
 
 /** Closer than this to a town counts as being "in" it. */
 const INSIDE_KM = 6
-
-const formatCoord = (value: number, pos: string, neg: string) =>
-  `${Math.abs(value).toFixed(4)}° ${value >= 0 ? pos : neg}`
 
 export default function LocationPanel({ info }: { info: LocationInfo }) {
   const inside = info.km < INSIDE_KM
@@ -25,7 +22,6 @@ export default function LocationPanel({ info }: { info: LocationInfo }) {
           <p className="location-panel__region">
             {lm.city}, {info.region}
           </p>
-          <p className="location-panel__description">{lm.description}</p>
         </>
       ) : (
         <>
@@ -36,9 +32,6 @@ export default function LocationPanel({ info }: { info: LocationInfo }) {
           {info.region && <p className="location-panel__region">{info.region}</p>}
         </>
       )}
-      <p className="location-panel__coords">
-        {formatCoord(info.lat, 'N', 'S')}, {formatCoord(info.lon, 'E', 'W')}
-      </p>
     </section>
   )
 }

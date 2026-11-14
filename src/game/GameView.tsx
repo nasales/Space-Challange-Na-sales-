@@ -251,6 +251,9 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
             turbo,
             rush: Math.min(1, Math.max(0, (speed - TUNING.maxSpeed) / (TUNING.turboSpeed - TUNING.maxSpeed))),
             stopped: detective.inspect > 0.5, // magnifier out: the player may open the variable picker
+            x: carState.x,
+            z: carState.z,
+            heading: carState.heading,
           })
         }
         // Lens flight state: 'in' reported once per flight; a flight that has started must end with 'out'
