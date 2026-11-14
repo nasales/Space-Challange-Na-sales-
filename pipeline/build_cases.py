@@ -18,7 +18,8 @@ Sources (get_series(case, variable) -> dates, values, units, dataset):
   `start_month` is "YYYY-MM" or "YYYY-MM-01"; `values` has one number per month, null for gaps (same
   shape as the `series` table). var_id is T2M, PRECIP, SOILM, NDVI, LST or SNOW (common aliases such
   as precip / soilmoist are accepted, see pipeline/sources/case_export.py). Units and dataset come
-  from variables.json; lat / lon of the case file are the box centre. Files use the common id
+  from variables.json and are converted to the POWER display units before the analysis (see
+  convert_units: K -> °C, mm/hr -> mm/day); lat / lon of the case file are the box centre. Files use the common id
   (case_<id>_PRECIP.json ...) and the POWER file of the same variable type is deleted
   (e.g. _PRECTOTCORR when _PRECIP is written). Cases or variables missing in the export keep their
   POWER file (fallback) and are listed in the report.
@@ -33,6 +34,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import warnings
 from pathlib import Path
 
 from pipeline import nasa_power
@@ -66,6 +68,42 @@ def _power_series(case: dict, variable: str, raw_dir: Path = RAW_DIR, refresh: b
     return dates, values, units, dataset_name(param)
 
 
+def _norm_unit(unit: str) -> str:
+    return "".join(str(unit).lower().split()).replace("²", "2").replace("^", "").replace("-1", "")
+
+
+KELVIN = {"k", "kelvin"}
+MM_PER_HOUR = {"mm/hr", "mm/h", "mmhr", "mmh", "mm/hour"}
+KG_M2 = {"kg/m2", "kgm-2", "kgm2", "kg/m-2"}
+UNITLESS = {"", "1", "-", "none", "unitless", "ndvi", "ndvi(0-1)", "index"}
+PERCENT = {"%", "percent", "pct"}
+
+
+def convert_units(variable: str, unit: str, values: list) -> tuple[list, str]:
+    """Convert an export series to the display units used for POWER. Returns (values, unit label).
+
+    K -> °C (value - 273.15), mm/hr -> mm/day (x 24); soil moisture kg/m2 -> "kg/m² (0-10 cm)";
+    NDVI -> "NDVI (0-1)"; snow cover % -> "%". Unknown units are kept as they are, with a warning.
+    """
+    u = _norm_unit(unit)
+
+    def conv(f):
+        return [None if v is None else f(v) for v in values]
+
+    if variable in ("T2M", "LST") and u in KELVIN:
+        return conv(lambda v: v - 273.15), "°C"
+    if variable == "PRECIP" and u in MM_PER_HOUR:
+        return conv(lambda v: v * 24), "mm/day"
+    if variable == "SOILM" and u in KG_M2:
+        return list(values), "kg/m² (0-10 cm)"
+    if variable == "NDVI" and u in UNITLESS:
+        return list(values), "NDVI (0-1)"
+    if variable == "SNOW" and u in PERCENT:
+        return list(values), "%"
+    warnings.warn(f"unknown unit {unit!r} for {variable}: kept as it is, no conversion", stacklevel=2)
+    return list(values), str(unit)
+
+
 def _case_export_series(case: dict, variable: str, export_dir: str | Path | None = None, **_):
     """Series from the case export. Raises LookupError if the case or variable is not in it."""
     if export_dir is None:
@@ -82,7 +120,8 @@ def _case_export_series(case: dict, variable: str, export_dir: str | Path | None
     s = from_start_month(entry["start_month"], entry["values"], place=case["place"], lat=0.0, lon=0.0,
                          variable=variable, units=str(meta[variable]["unit"]),
                          dataset=str(meta[variable]["source"]))
-    return s.dates, s.values, s.units, s.dataset
+    values, units = convert_units(variable, s.units, s.values)
+    return s.dates, values, units, s.dataset
 
 
 SOURCES = {"power": _power_series, "case_export": _case_export_series}
