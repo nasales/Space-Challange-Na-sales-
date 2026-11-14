@@ -1,0 +1,255 @@
+{
+  "case_id": "aneto_glacier",
+  "title": "Aneto glacier",
+  "place": "Aneto (Pyrenees)",
+  "intro": {
+    "headline": "The last big ice of the Pyrenees",
+    "paragraphs": [
+      "Aneto is the highest mountain in the Pyrenees, the range between Spain and France. On its northern side lies the largest glacier of the whole range. Since the 1980s it has lost most of its ice, and scientists expect it to disappear within a few decades.",
+      "A glacier works like a bank account. In winter, snow falls and piles up: that is the income. In summer, the sun and warm air melt ice: that is the spending. If the spending is bigger than the income year after year, the glacier shrinks.",
+      "So there are two suspects: summers that melt more, or winters that bring less snow. In this case file you will look at NASA data for the Aneto area season by season, and then decide for yourself."
+    ],
+    "question": "The largest glacier in the Pyrenees is shrinking. Is it the heat, or less snow and rain?"
+  },
+  "steps": [
+    {
+      "id": "recap",
+      "title": "Quick recap: points and a line",
+      "text": "Each point is the average air temperature of one month, 2 metres above the ground, from January 1980 to September 2026, over the square of the map that contains Aneto. The zigzag is the seasons: cold winters, warm summers. The straight line is the trend: the best single slope through all the months. Data: NASA MERRA-2.",
+      "chart": {
+        "variable": "T2M",
+        "view": "monthly",
+        "show_trend": true
+      },
+      "question": {
+        "prompt": "What does the straight line on this chart show?",
+        "options": [
+          {
+            "text": "The overall direction of temperature over the decades",
+            "correct": true,
+            "feedback": "Right: the trend line sums up all the months in one slope."
+          },
+          {
+            "text": "The temperature of one single month",
+            "correct": false,
+            "feedback": "One month is one point on the zigzag. The straight line runs across the whole chart, from 1980 to 2026. What could it summarise?"
+          },
+          {
+            "text": "The coldest month of every year",
+            "correct": false,
+            "feedback": "The coldest months are the low tips of the zigzag. The straight line sits in the middle of the zigzag, not at its bottom."
+          }
+        ]
+      },
+      "takeaway": "Points tell you about single months; the trend line tells you about the decades."
+    },
+    {
+      "id": "two_seasons",
+      "title": "Two seasons, two jobs",
+      "text": "This is a normal year at this square: all Januaries averaged together, all Februaries, and so on. For the glacier, the year has two jobs. Winter is when snow can pile up: the months near or below 0 °C. Summer is when ice melts: the warmest months. A yearly average mixes both jobs together, so a detective looks at each season on its own.",
+      "chart": {
+        "variable": "T2M",
+        "view": "climatology"
+      },
+      "question": {
+        "prompt": "In a normal year, which months are at or below 0 °C at this square?",
+        "options": [
+          {
+            "text": "December, January and February",
+            "correct": true,
+            "feedback": "Yes: only the middle of winter is at or below freezing here."
+          },
+          {
+            "text": "June, July and August",
+            "correct": false,
+            "feedback": "Find June, July and August on the chart. Are they at the bottom of the curve, or at the top?"
+          },
+          {
+            "text": "Every month from October to April",
+            "correct": false,
+            "feedback": "Look at the 0 °C level and follow the curve. Which months are actually at or under it? October and April are well above."
+          }
+        ]
+      },
+      "takeaway": "Winter builds the glacier and summer melts it, so study each season separately."
+    },
+    {
+      "id": "summers",
+      "title": "Suspect one: the summers",
+      "text": "Each point is now one summer: the average of June, July and August, from 1980 to 2026. The trend is about +0.46 °C every 10 years, about 2 °C over the whole period. Here p = 0.00035: less than 1 in 1,000, so very unlikely to be chance. The 95% confidence range, +0.020 to +0.074 °C per year, is all above zero.",
+      "chart": {
+        "variable": "T2M",
+        "view": "season",
+        "season": "JJA",
+        "show_trend": true,
+        "highlights": [
+          { "kind": "point", "date": "2003", "label": "Summer 2003" },
+          { "kind": "point", "date": "2022", "label": "Summer 2022" }
+        ]
+      },
+      "question": {
+        "prompt": "How do the most recent summers compare with the summers of the 1980s?",
+        "options": [
+          {
+            "text": "They are warmer",
+            "correct": true,
+            "feedback": "Yes: the last summers sit well above the 1980s."
+          },
+          {
+            "text": "About the same",
+            "correct": false,
+            "feedback": "Compare the points on the far left with the points on the far right. Are they at the same height?"
+          },
+          {
+            "text": "They are colder",
+            "correct": false,
+            "feedback": "Follow the trend line from left to right. Does it go down or up?"
+          }
+        ]
+      },
+      "takeaway": "The melt season is warming clearly and significantly."
+    },
+    {
+      "id": "winters",
+      "title": "Now the winters",
+      "text": "Same view for winter: December, January and February, each winter named after its January (1981 to 2026). The slope is smaller, about +0.36 °C every 10 years, and winters jump a lot from one year to the next. Here p = 0.051, just above the usual 0.05 limit. The 95% confidence range, -0.0001 to +0.065 °C per year, only just touches zero.",
+      "chart": {
+        "variable": "T2M",
+        "view": "season",
+        "season": "DJF",
+        "show_trend": true
+      },
+      "question": {
+        "prompt": "With p = 0.051 for winters, what is the most honest thing to say?",
+        "options": [
+          {
+            "text": "Winters may be warming, but the evidence is not strong enough to call it significant",
+            "correct": true,
+            "feedback": "Well done: close to the limit is still not below it."
+          },
+          {
+            "text": "Winters are warming as clearly as summers",
+            "correct": false,
+            "feedback": "Compare this p-value (0.051) with the summer one (0.00035). A trend is called significant only when p is below 0.05. Is 0.051 below 0.05?"
+          },
+          {
+            "text": "This proves winters are not changing",
+            "correct": false,
+            "feedback": "Look at the trend line: it tilts up. Not having enough evidence is not the same as proving there is no change."
+          }
+        ]
+      },
+      "takeaway": "Split by season, the same place tells two stories: a clear summer warming, a weaker winter one."
+    },
+    {
+      "id": "snow_and_rain",
+      "title": "Suspect two: less snow?",
+      "text": "The other suspect is the glacier's income. This is winter precipitation (rain and snow together, measured as water), December to February, from 1999 to 2025. Data: NASA GPM IMERG. Wet and dry winters come and go, but the trend line is almost flat: p = 0.53, so it could easily be chance. Summer precipitation is the same story: p = 0.58.",
+      "chart": {
+        "variable": "PRECIP",
+        "view": "season",
+        "season": "DJF",
+        "show_trend": true
+      },
+      "question": {
+        "prompt": "Does this chart show winter precipitation clearly falling?",
+        "options": [
+          {
+            "text": "No: winters go up and down with no clear trend",
+            "correct": true,
+            "feedback": "Correct: no clear change in the glacier's winter income."
+          },
+          {
+            "text": "Yes: it falls steeply",
+            "correct": false,
+            "feedback": "Follow the trend line from the left edge to the right edge. Does it drop a lot, or stay nearly level?"
+          },
+          {
+            "text": "Yes: there is no precipitation in recent winters",
+            "correct": false,
+            "feedback": "Look at the last points on the right. Are they at zero, or at the same kind of height as earlier winters?"
+          }
+        ]
+      },
+      "takeaway": "Precipitation shows no clear trend in winter or in summer."
+    },
+    {
+      "id": "freezing_months",
+      "title": "Counting freezing months",
+      "text": "A threshold turns a series into a count. Each bar is the number of months in a year with an average below 0 °C at this square. In the 1980s there were 2.0 per year on average; in 2016-2025, only 0.8. Four of those ten years had none. But counts are small whole numbers that jump around: p = 0.082, so this drop alone is not significant.",
+      "chart": {
+        "variable": "T2M",
+        "view": "threshold_count",
+        "threshold_id": "below_0",
+        "highlights": [
+          { "kind": "band", "from": "1980", "to": "1989", "label": "1980s: 2.0 per year" },
+          { "kind": "band", "from": "2016", "to": "2025", "label": "2016-2025: 0.8 per year" }
+        ]
+      },
+      "question": {
+        "prompt": "What do you see in the years with zero freezing months?",
+        "options": [
+          {
+            "text": "Most of them are in the last ten years",
+            "correct": true,
+            "feedback": "Yes: 2016, 2022, 2024 and 2025 had no month below 0 °C."
+          },
+          {
+            "text": "They are all in the 1980s",
+            "correct": false,
+            "feedback": "Look for the empty spots (no bar) inside the 1980s band, then inside the 2016-2025 band. Which band has more?"
+          },
+          {
+            "text": "Every year has at least one freezing month",
+            "correct": false,
+            "feedback": "Scan the chart for years with no bar at all. There are several."
+          }
+        ]
+      },
+      "takeaway": "A physical threshold, like 0 °C, turns temperature into something the glacier feels."
+    },
+    {
+      "id": "pixel_vs_ice",
+      "title": "Where is this thermometer?",
+      "text": "These are yearly averages, between about 5.5 and 9.3 °C. The ice is far colder than that. Why? The data cover a square of about 50 km that includes lower, warmer valleys, so its average height is far below the glacier. The freezing months you counted are at this square, not on the ice. Use the square for the direction of change, not the exact temperature on the glacier.",
+      "chart": {
+        "variable": "T2M",
+        "view": "annual",
+        "show_trend": true
+      },
+      "question": {
+        "prompt": "What can this square of data tell the detective about the glacier?",
+        "options": [
+          {
+            "text": "How the climate around it is changing, not the exact temperature on the ice",
+            "correct": true,
+            "feedback": "Right: good for the direction of change, not for the ice itself."
+          },
+          {
+            "text": "The exact temperature on the ice",
+            "correct": false,
+            "feedback": "Read the values on the axis: most years average well above 0 °C. Could a glacier survive at that temperature all year?"
+          },
+          {
+            "text": "Nothing at all, so the data are useless",
+            "correct": false,
+            "feedback": "Look at the trend line: the area is warming, and that matters for the glacier too. A limitation is not the same as no information."
+          }
+        ]
+      },
+      "takeaway": "Always ask where the data were measured before you use them as evidence."
+    }
+  ],
+  "conclusion": {
+    "prompt": "The largest glacier in the Pyrenees is shrinking. Is it the heat, or less snow and rain? Write your conclusion using what the charts showed you.",
+    "variable": "T2M",
+    "placeholder": "Looking at each season separately at Aneto, I think..."
+  },
+  "reveal": {
+    "by_variable": {
+      "T2M": "Air temperature at the Aneto square (January 1980 to September 2026) rises clearly: about +0.39 °C per decade (95% range +0.27 to +0.52 °C per decade), p < 0.001, about 1.8 °C over the whole period. Summers warm clearly (+0.46 °C per decade, p = 0.00035); winters warm less and not significantly (+0.36 °C per decade, p = 0.051). Months below 0 °C fell from 2.0 per year in the 1980s to 0.8 in 2016-2025, but that drop is not significant on its own (p = 0.082).",
+      "PRECIP": "Precipitation at the Aneto square (January 1998 to September 2025) shows no significant trend: about +0.04 mm/day per decade, p = 0.72, and the 95% confidence range (-0.014 to +0.022 mm/day per year) includes zero. Winter (p = 0.53) and summer (p = 0.58) show no clear trend either."
+    },
+    "lesson": "A yearly average hides what each season does. Split by season, the clearest change is in summer, when the glacier melts, while its winter income of snow and rain shows no clear change. The data point to the heat as the main suspect, not to less precipitation. Remember the limits: these values describe a large square of the map, much lower and warmer than the ice, and a result just above p = 0.05 is weak evidence, not proof either way."
+  }
+}
