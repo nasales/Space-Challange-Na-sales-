@@ -15,7 +15,7 @@ result (trend slope + significance test such as Mann-Kendall).
 | Interface | Yeipi | Interface agent | `docs/agents/interface.md` |
 | Game (3D map, car) | Person 2 | Game agent | `docs/agents/game.md` |
 | Data + statistics | Person 3 | Data agent | `docs/agents/data.md` |
-| Backend + AI checker + integration | Person 4 | QA agent | `docs/agents/qa.md` |
+| Backend + AI checker + integration | Perry | QA agent | `docs/agents/qa.md` |
 | Product, submission, pitch | Person 5 | — | — |
 
 If you do not know which area you belong to, ask the human before doing anything.
