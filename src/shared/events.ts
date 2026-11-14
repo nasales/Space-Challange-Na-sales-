@@ -22,6 +22,8 @@ export interface HudState {
   rush: number
   /** True while the detective stands still with the magnifier out (the "paused" moment) */
   stopped: boolean
+  /** Featured case whose trigger zone the detective stands in (case id), or null */
+  caseZone: string | null
 }
 
 export type GameStatus = 'loading' | 'ready' | 'error'
@@ -62,4 +64,8 @@ export interface GameViewProps extends GameCallbacks {
    * While true, and until 'out' is reported, the game ignores keyboard input and the detective stays still.
    */
   focusLens?: boolean
+  /** true while a featured case level is open: the game ignores keyboard input */
+  paused?: boolean
+  /** Featured case ids already solved (their markers are drawn green) */
+  completedCases?: readonly string[]
 }

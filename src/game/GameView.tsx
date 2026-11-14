@@ -31,6 +31,8 @@ import { bendRiversAround, prepareRivers } from './map/rivers'
 import { createRivers } from './scene/createRivers'
 import { loadRoads, roadsInBounds } from './roads/roadData'
 import { createRoads } from './roads/createRoads'
+import { createCaseMarkers } from './cases/createCaseMarkers'
+import { CASES } from '../levels/data'
 import type { GameStatus, GameViewProps, HudState } from '../shared/events'
 import './GameView.css'
 
@@ -48,12 +50,12 @@ function makeTexture(canvas: HTMLCanvasElement, renderer: THREE.WebGLRenderer) {
 }
 
 /** Only the 3D canvas. The HUD and status messages live in src/ui, fed through the callbacks. */
-export default function GameView({ onStatus, onHud, onLensFocus, focusLens = false }: GameViewProps) {
+export default function GameView({ onStatus, onHud, onLensFocus, focusLens = false, paused = false, completedCases }: GameViewProps) {
   const container = useRef<HTMLDivElement>(null)
   // Latest callbacks (and pause flag), read from inside the animation loop without restarting the scene
-  const callbacks = useRef({ onStatus, onHud, onLensFocus, focusLens })
+  const callbacks = useRef({ onStatus, onHud, onLensFocus, focusLens, paused, completedCases })
   useEffect(() => {
-    callbacks.current = { onStatus, onHud, onLensFocus, focusLens }
+    callbacks.current = { onStatus, onHud, onLensFocus, focusLens, paused, completedCases }
   })
   const setStatus = (status: GameStatus) => callbacks.current.onStatus?.(status)
   const setHud = (hud: HudState) => callbacks.current.onHud?.(hud)
@@ -124,6 +126,10 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
         scene.add(clouds.mesh)
 
         landmarks.place(main.heightAt) // on their flattened plazas (the detective can climb them, like houses)
+        // Featured cases: a floating "!" over each one (prototype, no interaction yet)
+        const caseMarkers = createCaseMarkers(CASES)
+        caseMarkers.place(main.heightAt, landmarks.surfaceAt) // rings also lie on monument plazas
+        scene.add(caseMarkers.group)
 
         // Pueblos y ciudades: casitas en las poblaciones reales. Cada punto se consulta en la
         // zona (Península o Canarias) que lo contiene
@@ -178,7 +184,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
         const keyboard = createKeyboard()
         const chase = createChaseCamera(camera, renderer.domElement)
         // Solo en desarrollo: acceso desde la consola/Playwright para depurar
-        if (import.meta.env.DEV) Object.assign(window, { __game: { carState, camera, chase, ground, detective, renderer, scene, towns, houses, scenery, sceneryItems, landmarks, main } })
+        if (import.meta.env.DEV) Object.assign(window, { __game: { carState, camera, chase, ground, detective, renderer, scene, towns, houses, scenery, sceneryItems, landmarks, caseMarkers, main } })
 
         const fog = scene.fog as THREE.Fog
         const ink = createInkOutline(renderer) // contornos negros de cómic
@@ -201,12 +207,14 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
             turbo,
             rush: Math.min(1, Math.max(0, (speed - TUNING.maxSpeed) / (TUNING.turboSpeed - TUNING.maxSpeed))),
             stopped: detective.inspect > 0.5, // magnifier out: the player may open the variable picker
+            caseZone: caseMarkers.zoneAt(carState.x, carState.z),
           })
         }
         // Lens flight state: 'in' reported once per flight; a flight that has started must end with 'out'
         let lensInReported = false
         let lensFlying = false
         let lastTime: number | null = null
+        let shownCompleted: readonly string[] | undefined
         renderer.setAnimationLoop((time) => {
           // Segundos desde el fotograma anterior, con la marca de tiempo que da el navegador.
           // Acotado entre 0 y 0,1 s: si el juego se atasca un momento, no da un salto enorme
@@ -217,7 +225,8 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
           const wantLens = !!callbacks.current.focusLens
           if (wantLens) lensFlying = true
           else lensInReported = false
-          const input = lensFlying ? { throttle: 0, steer: 0, turbo: false } : keyboard.read()
+          // A case level is open (paused): same as the lens flight, the keyboard is ignored
+          const input = lensFlying || callbacks.current.paused ? { throttle: 0, steer: 0, turbo: false } : keyboard.read()
           stepCar(carState, input, ground, dt)
           detective.setFocus(chase.stepFocus(wantLens, dt))
           detective.update(carState, dt)
@@ -233,6 +242,12 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
             callbacks.current.onLensFocus?.('out')
           }
           clouds.update(dt)
+          // Solved cases in green (only when the app sends a new list)
+          if (callbacks.current.completedCases !== shownCompleted) {
+            shownCompleted = callbacks.current.completedCases
+            for (const c of CASES) caseMarkers.setCompleted(c.id, !!shownCompleted?.includes(c.id))
+          }
+          caseMarkers.update(dt)
           for (const z of zones) {
             z.water.update(dt)
             z.roads.update(dt)
@@ -281,6 +296,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
           sky.dispose()
           lighting.dispose()
           clouds.dispose()
+          caseMarkers.dispose()
           ink.dispose()
           dispose()
         }
