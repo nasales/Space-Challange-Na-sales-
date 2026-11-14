@@ -23,6 +23,15 @@ export interface LandmarkData {
   heading: number
   /** tamaño relativo (1 = normal); para que quepa en su sitio */
   scale?: number
+  /** Flat ground around the footprint (world units); default PLAZA. Small monuments want less. */
+  plaza?: number
+  /** Width of the band where the plaza blends into the terrain (world units); default BLEND. */
+  blend?: number
+  /**
+   * How close houses may stand to the footprint (world units); default DEFAULT_CLEARANCE.
+   * Scenery scales with it in the same proportion (see spacing()).
+   */
+  clearance?: number
   description: string
 }
 
@@ -39,11 +48,13 @@ const PLINTH_COLOR = 0x8e949c
 const PLINTH_MARGIN = 6 // cuánto sobresale la losa del monumento
 const PLINTH_HEIGHT = 1.2
 /** Explanada totalmente llana alrededor de la losa (unidades): sitio para aparcar y mirarlo. */
-const PLAZA = 90
+const DEFAULT_PLAZA = 90
 /** Ancho de la franja donde la explanada se funde con el terreno de alrededor (unidades). */
-const BLEND = 50
+const DEFAULT_BLEND = 50
 /** A menos de esta distancia (unidades) el panel muestra el monumento. */
 const NEAR_DISTANCE = 250
+/** Free ring that towns keep around a monument (same value as LANDMARK_CLEARANCE in placeTowns). */
+const DEFAULT_CLEARANCE = 80
 
 interface Placed {
   data: LandmarkData
@@ -227,6 +238,7 @@ export function createLandmarks(list: LandmarkData[]) {
       const nw = lonLatToWorld(b.west, b.north), se = lonLatToWorld(b.east, b.south)
       const cellX = (se.x - nw.x) / (gw - 1), cellZ = (se.z - nw.z) / (gh - 1)
       for (const p of placed) {
+        const PLAZA = p.data.plaza ?? DEFAULT_PLAZA, BLEND = p.data.blend ?? DEFAULT_BLEND
         const reach = Math.hypot(p.halfW, p.halfD) + PLAZA + BLEND
         const c0 = Math.max(0, Math.floor((p.x - reach - nw.x) / cellX))
         const c1 = Math.min(gw - 1, Math.ceil((p.x + reach - nw.x) / cellX))
@@ -239,7 +251,12 @@ export function createLandmarks(list: LandmarkData[]) {
         for (let r = r0; r <= r1; r++)
           for (let c = c0; c <= c1; c++)
             if (outside(p, nw.x + c * cellX, nw.z + r * cellZ) === 0) inside.push(heights[r * gw + c])
-        if (inside.length === 0) continue
+        if (inside.length === 0) {
+          // Footprint smaller than a terrain cell: use the cell nearest to its centre
+          const c = Math.round((p.x - nw.x) / cellX), r = Math.round((p.z - nw.z) / cellZ)
+          if (c < 0 || c >= gw || r < 0 || r >= gh) continue
+          inside.push(heights[r * gw + c])
+        }
         inside.sort((a, b) => a - b)
         const target = Math.max(inside[Math.floor(inside.length / 2)], 60)
 
@@ -284,6 +301,17 @@ export function createLandmarks(list: LandmarkData[]) {
     distance(x: number, z: number) {
       let best = Infinity
       for (const p of placed) best = Math.min(best, outside(p, x, z))
+      return best
+    },
+
+    /**
+     * Like distance(), for keeping houses and scenery away: a monument with its own `clearance`
+     * counts as proportionally farther, so the callers' fixed clearances (80 for houses, 70 for
+     * scenery) shrink to `clearance` (and 7/8 of it). Without `clearance` it equals distance().
+     */
+    spacing(x: number, z: number) {
+      let best = Infinity
+      for (const p of placed) best = Math.min(best, (outside(p, x, z) * DEFAULT_CLEARANCE) / (p.data.clearance ?? DEFAULT_CLEARANCE))
       return best
     },
 
