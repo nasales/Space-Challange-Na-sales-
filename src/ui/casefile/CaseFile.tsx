@@ -6,13 +6,32 @@
 import { useEffect, useRef, useState, type RefObject } from 'react'
 import type { TutorialData, TutorialScript, TutorialSeries, TutorialStep } from '../../shared/tutorial'
 import TimeSeriesChart from './TimeSeriesChart'
-import { baseUnits, credit, formatP, signed, testName } from './format'
+import { baseUnits, credit, fixText, formatP, signed, testName } from './format'
 import { loadTutorial, type LoadedTutorial } from './loader'
+import { useKeyCapture } from './keys'
+import Notebook, { type NotebookClue } from './Notebook'
 import './CaseFile.css'
+
+/**
+ * Inside the full case flow (CaseFlow.tsx): the notebook is shown, the intro card is replaced by a
+ * short question line when a witness scene already told the story, and submitting the conclusion
+ * hands over to the final challenge instead of showing the reveal here.
+ */
+export interface CaseFileFlow {
+  /** The witness's claim, pinned at the top of the notebook */
+  claim?: string
+  witnessName?: string
+  /** true when the witness scene played: no intro card */
+  brief: boolean
+  onConcluded: (conclusion: string, clues: NotebookClue[]) => void
+}
 
 interface CaseFileProps {
   caseId: string
   onClose: () => void
+  /** Already loaded by the caller (skips the loading screen) */
+  tutorial?: LoadedTutorial
+  flow?: CaseFileFlow
 }
 
 type Load = { state: 'loading' } | { state: 'error'; message: string } | { state: 'ready'; tutorial: LoadedTutorial }
@@ -21,8 +40,8 @@ type Load = { state: 'loading' } | { state: 'error'; message: string } | { state
 const MIN_CONCLUSION = 12
 const MAX_CONCLUSION = 1500
 
-export default function CaseFile({ caseId, onClose }: CaseFileProps) {
-  const [load, setLoad] = useState<Load>({ state: 'loading' })
+export default function CaseFile({ caseId, onClose, tutorial: given, flow }: CaseFileProps) {
+  const [load, setLoad] = useState<Load>(given ? { state: 'ready', tutorial: given } : { state: 'loading' })
   const [loadedId, setLoadedId] = useState(caseId)
   if (loadedId !== caseId) {
     // a new case was opened while mounted: start again
@@ -31,6 +50,7 @@ export default function CaseFile({ caseId, onClose }: CaseFileProps) {
   }
 
   useEffect(() => {
+    if (given) return
     let alive = true
     loadTutorial(caseId)
       .then((tutorial) => alive && setLoad({ state: 'ready', tutorial }))
@@ -38,7 +58,7 @@ export default function CaseFile({ caseId, onClose }: CaseFileProps) {
     return () => {
       alive = false
     }
-  }, [caseId])
+  }, [caseId, given])
 
   // Native modal dialog: the browser keeps focus inside it and the game canvas behind is inert.
   const dialogRef = useRef<HTMLDialogElement>(null)
@@ -53,13 +73,13 @@ export default function CaseFile({ caseId, onClose }: CaseFileProps) {
   return (
     <dialog
       ref={dialogRef}
-      className="casefile"
+      className={`casefile${flow ? ' casefile--notebook' : ''}`}
       aria-label="Case file"
       // Escape is handled by our key listener (it prevents the default, so this rarely fires)
       onCancel={(e) => e.preventDefault()}
     >
       {load.state === 'ready' ? (
-        <Tutorial key={caseId} tutorial={load.tutorial} onClose={onClose} />
+        <Tutorial key={caseId} tutorial={load.tutorial} onClose={onClose} flow={flow} />
       ) : (
         <div className="casefile__sheet">
           <Header label="Case file" onClose={onClose} />
@@ -93,33 +113,7 @@ function KeyShield({ onEscape, enabled }: { onEscape: () => void; enabled: boole
   return null
 }
 
-/**
- * Window capture listener: runs before the game's keydown listener and stops it.
- * onEscape(null) still blocks keys but ignores Escape.
- */
-function useKeyCapture(onEscape: (() => void) | null) {
-  const handler = useRef(onEscape)
-  useEffect(() => {
-    handler.current = onEscape
-  })
-  const active = onEscape !== null
-  useEffect(() => {
-    if (!active) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault() // stops the dialog's own cancel/close
-        handler.current?.()
-      } else if (e.key === 'Enter' && e.repeat) {
-        e.preventDefault() // a held Enter (used to open the case) must not click through the screens
-      }
-      e.stopImmediatePropagation()
-    }
-    window.addEventListener('keydown', onKey, true)
-    return () => window.removeEventListener('keydown', onKey, true)
-  }, [active])
-}
-
-function Header({
+export function Header({
   label,
   progress,
   onClose,
@@ -150,14 +144,23 @@ interface Answer {
   solved: boolean
 }
 
-function Tutorial({ tutorial, onClose }: { tutorial: LoadedTutorial; onClose: () => void }) {
+function Tutorial({ tutorial, onClose, flow }: { tutorial: LoadedTutorial; onClose: () => void; flow?: CaseFileFlow }) {
   const { script, data } = tutorial
   const n = script.steps.length
-  // 0 = intro, 1..n = steps, n + 1 = conclusion, n + 2 = reveal
-  const [at, setAt] = useState(0)
+  // 0 = intro, 1..n = steps, n + 1 = conclusion, n + 2 = reveal (only without a flow)
+  const first = flow?.brief ? 1 : 0
+  const [at, setAt] = useState(first)
   const [answers, setAnswers] = useState<Record<string, Answer>>({})
   const [text, setText] = useState('')
   const [confirming, setConfirming] = useState(false)
+  // steps without a question count as solved once seen
+  const [seen, setSeen] = useState<ReadonlySet<string>>(() => new Set())
+  const current = at >= 1 && at <= n ? script.steps[at - 1] : null
+  if (current && !current.question && !seen.has(current.id)) setSeen(new Set(seen).add(current.id))
+
+  const clues: NotebookClue[] = script.steps.flatMap((s, i) =>
+    (s.question ? answers[s.id]?.solved : seen.has(s.id)) ? [{ id: s.id, n: i + 1, text: fixText(s.clue ?? s.takeaway) }] : [],
+  )
 
   const midway = at > 0 && at <= n + 1
   const requestClose = () => (midway ? setConfirming(true) : onClose())
@@ -173,7 +176,7 @@ function Tutorial({ tutorial, onClose }: { tutorial: LoadedTutorial; onClose: ()
 
   const go = (to: number) => {
     setConfirming(false)
-    setAt(Math.max(0, Math.min(n + 2, to)))
+    setAt(Math.max(first, Math.min(n + 2, to)))
   }
 
   let progress: string | undefined
@@ -181,10 +184,15 @@ function Tutorial({ tutorial, onClose }: { tutorial: LoadedTutorial; onClose: ()
   else if (at === n + 1) progress = 'Your conclusion'
   else if (at === n + 2) progress = 'Case solved'
 
-  return (
+  const sheet = (
     <div className="casefile__sheet">
-      <Header label={script.title} progress={progress} onClose={requestClose} />
+      <Header label={flow?.brief ? `Case file · ${script.title}` : script.title} progress={progress} onClose={requestClose} />
       {at >= 1 && at <= n + 1 && <ProgressDots total={n + 1} current={at} />}
+      {flow?.brief && at >= 1 && at <= n && (
+        <p className="casefile__brief">
+          <span className="casefile__brief-label">The question</span> {script.intro.question}
+        </p>
+      )}
 
       <div className="casefile__body" ref={bodyRef}>
         {at === 0 && <Intro script={script} headingRef={headingRef} onStart={() => go(1)} />}
@@ -197,7 +205,7 @@ function Tutorial({ tutorial, onClose }: { tutorial: LoadedTutorial; onClose: ()
             answer={answers[script.steps[at - 1].id] ?? { picked: null, solved: false }}
             onAnswer={(a) => setAnswers((all) => ({ ...all, [script.steps[at - 1].id]: a }))}
             headingRef={headingRef}
-            onBack={() => go(at - 1)}
+            onBack={at > first ? () => go(at - 1) : undefined}
             onNext={() => go(at + 1)}
             last={at === n}
           />
@@ -210,7 +218,8 @@ function Tutorial({ tutorial, onClose }: { tutorial: LoadedTutorial; onClose: ()
             onText={setText}
             headingRef={headingRef}
             onBack={() => go(n)}
-            onSubmit={() => go(n + 2)}
+            onSubmit={() => (flow ? flow.onConcluded(text.trim(), clues) : go(n + 2))}
+            submitLabel={flow ? 'Submit and take the final test' : undefined}
           />
         )}
 
@@ -230,6 +239,14 @@ function Tutorial({ tutorial, onClose }: { tutorial: LoadedTutorial; onClose: ()
           </div>
         </div>
       )}
+    </div>
+  )
+
+  if (!flow) return sheet
+  return (
+    <div className="casefile__layout">
+      {sheet}
+      <Notebook claim={flow.claim} witnessName={flow.witnessName} clues={clues} total={n} />
     </div>
   )
 }
@@ -289,7 +306,8 @@ function Step({
   answer: Answer
   onAnswer: (a: Answer) => void
   headingRef: HeadingRef
-  onBack: () => void
+  /** undefined on the first screen of a brief case file (nothing to go back to) */
+  onBack?: () => void
   onNext: () => void
   last: boolean
 }) {
@@ -353,10 +371,12 @@ function Step({
         )}
       </div>
 
-      <div className="casefile__nav">
-        <button type="button" className="casefile__btn" onClick={onBack}>
-          Back
-        </button>
+      <div className={onBack ? 'casefile__nav' : 'casefile__nav casefile__nav--end'}>
+        {onBack && (
+          <button type="button" className="casefile__btn" onClick={onBack}>
+            Back
+          </button>
+        )}
         <button type="button" className="casefile__btn casefile__btn--primary" onClick={onNext} disabled={!solved}>
           {last ? 'Write my conclusion' : 'Next clue'}
         </button>
@@ -372,6 +392,7 @@ function Conclusion({
   headingRef,
   onBack,
   onSubmit,
+  submitLabel = 'Submit conclusion',
 }: {
   script: TutorialScript
   text: string
@@ -379,6 +400,7 @@ function Conclusion({
   headingRef: HeadingRef
   onBack: () => void
   onSubmit: () => void
+  submitLabel?: string
 }) {
   const ready = text.trim().length >= MIN_CONCLUSION
   return (
@@ -426,7 +448,7 @@ function Conclusion({
             Back
           </button>
           <button type="submit" className="casefile__btn casefile__btn--primary" disabled={!ready}>
-            Submit conclusion
+            {submitLabel}
           </button>
         </div>
       </form>
@@ -464,12 +486,6 @@ function Reveal({
   headingRef: HeadingRef
   onClose: () => void
 }) {
-  // The conclusion's variable goes first
-  // One entry per variable of the reveal; if the script lists none, every variable of the data
-  const listed = Object.keys(script.reveal.by_variable ?? {})
-  const vars = (listed.length ? listed : Object.keys(data.variables)).sort(
-    (a, b) => Number(b === script.conclusion.variable) - Number(a === script.conclusion.variable),
-  )
   return (
     <section className="casefile__screen">
       <h2 className="casefile__title casefile__title--step" ref={headingRef} tabIndex={-1}>
@@ -488,6 +504,27 @@ function Reveal({
         extra: the statistical result below is the fallback (docs/agents/interface.md, check 5).
       */}
 
+      <StatsReveal script={script} data={data} />
+
+      <div className="casefile__nav casefile__nav--end">
+        <button type="button" className="casefile__btn casefile__btn--primary" onClick={onClose}>
+          Close case file
+        </button>
+      </div>
+    </section>
+  )
+}
+
+/** What the statistics say per variable (reveal.by_variable + trend numbers) and the lesson */
+export function StatsReveal({ script, data }: { script: TutorialScript; data: TutorialData }) {
+  // The conclusion's variable goes first
+  // One entry per variable of the reveal; if the script lists none, every variable of the data
+  const listed = Object.keys(script.reveal.by_variable ?? {})
+  const vars = (listed.length ? listed : Object.keys(data.variables)).sort(
+    (a, b) => Number(b === script.conclusion.variable) - Number(a === script.conclusion.variable),
+  )
+  return (
+    <>
       {vars.map((v) => {
         const series = data.variables[v]
         return (
@@ -503,12 +540,6 @@ function Reveal({
         <p className="casefile__note-label">Lesson</p>
         <p className="casefile__note-text">{script.reveal.lesson}</p>
       </div>
-
-      <div className="casefile__nav casefile__nav--end">
-        <button type="button" className="casefile__btn casefile__btn--primary" onClick={onClose}>
-          Close case file
-        </button>
-      </div>
-    </section>
+    </>
   )
 }

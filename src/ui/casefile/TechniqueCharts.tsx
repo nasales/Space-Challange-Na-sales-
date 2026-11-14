@@ -93,6 +93,13 @@ export function rankingView(spec: ChartSpec, series: TutorialSeries, W: number):
         )
       })}
       <line x1={base} x2={base} y1={P.t} y2={H - P.b} className="casefile-chart__axis" />
+      {!fromZero && (
+        // axis break: the bars start at the lowest tick, not at zero
+        <path
+          d={`M${base - 6} ${H - P.b - 4} l12 -5 M${base - 6} ${H - P.b + 2} l12 -5`}
+          className="casefile-chart__break"
+        />
+      )}
     </>
   )
 
@@ -118,7 +125,13 @@ export function rankingView(spec: ChartSpec, series: TutorialSeries, W: number):
       ))}
     </>
   )
-  return { H, body, summary, keys }
+  return {
+    H,
+    body,
+    summary: fromZero ? summary : `${summary} The axis starts at ${sig(x0)}, not at zero.`,
+    keys,
+    note: fromZero ? undefined : `The axis does not start at 0: it starts at ${sig(x0)} ${baseUnits(series.units)}, to show the differences.`,
+  }
 }
 
 // ---- periods ---------------------------------------------------------------------------------
@@ -303,7 +316,9 @@ export function windowTrendsView(spec: ChartSpec, series: TutorialSeries, W: num
   const keep = yearRange(spec)
   const wt = (series.extras?.window_trends ?? []).filter((w) => keep(w.start_year))
   if (wt.length === 0) return missing('trend by start year')
-  const { narrow, H, P, plotW } = frame(W, { t: 4 })
+  const marked = highlightYears(spec)
+  // room above the tallest whisker for up to two stacked labels
+  const { narrow, H, P, plotW } = frame(W, { t: 4 + 16 * Math.min(2, marked.size) })
   const dec = (v: number) => v * 10
   const vals = wt.flatMap((w) => [dec(w.slope_per_year), dec(w.ci_low), dec(w.ci_high)])
   const { ticks: yTicks, sy } = yScale(vals, P.t, H - P.b, { ticks: narrow ? 4 : 5, zero: true })
@@ -313,9 +328,13 @@ export function windowTrendsView(spec: ChartSpec, series: TutorialSeries, W: num
   const long = band >= 64
   const every = band >= 34 ? 1 : Math.ceil(34 / band)
   const unit = `${baseUnits(series.units)} per decade`
-  const marked = highlightYears(spec)
 
   const taken: Box[] = [textBox(4, 14, 'start', unit)]
+  // labels must not cover any bar or whisker (QA: "About 47 years of data" on a phone)
+  wt.forEach((w, i) => {
+    const ys = [dec(w.slope_per_year), dec(w.ci_low), dec(w.ci_high), 0].map(sy)
+    taken.push({ x0: cx(i) - barW / 2 - 2, x1: cx(i) + barW / 2 + 2, y0: Math.min(...ys) - 2, y1: Math.max(...ys) + 2 })
+  })
   const placed = placeLabels(
     wt.flatMap((w, i) => (marked.has(w.start_year) ? [{ cx: cx(i), cy: sy(dec(w.ci_high)), label: marked.get(w.start_year) ?? '' }] : [])),
     taken,
@@ -361,12 +380,12 @@ export function windowTrendsView(spec: ChartSpec, series: TutorialSeries, W: num
   const summary =
     `${series.name}: trend per decade measured from ${wt.length} different start years (${wt[0].start_year} to ` +
     `${wt[wt.length - 1].start_year}), each up to the end of the record, as bars with a 95% range whisker. ` +
-    `${nSig} of ${wt.length} bars are filled (clear trend), the others are hollow.` +
+    `${nSig} of ${wt.length} bars are filled (significant, p below 0.05), the others are hollow (not significant).` +
     placed.map((m) => ` Marked: ${m.label}.`).join('')
   const keys = (
     <>
-      <Key kind="bar">Clear trend (significant)</Key>
-      <Key kind="hollow">Could be chance (not significant)</Key>
+      <Key kind="bar">Significant (p &lt; 0.05)</Key>
+      <Key kind="hollow">Not significant</Key>
       <Key kind="whisker">95% range</Key>
     </>
   )

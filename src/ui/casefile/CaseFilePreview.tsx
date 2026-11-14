@@ -1,9 +1,10 @@
 // TEMPORARY dev preview: open the site with ?casefile=<case_id> (e.g. ?casefile=dana_valencia)
-// to see the case file alone, without the game. ?casefile alone (or an unknown id) lists every
-// case that has a story script, so the team can test each one. Renders nothing without the parameter.
-// Remove this file and its line in src/App.tsx when the game opens cases by itself.
-import { useState } from 'react'
-import CaseFile from './CaseFile'
+// to play a featured case alone, without the 3D game: witness scene (with stand-in figures),
+// case file + notebook, final test, case closed. ?casefile alone (or an unknown id) lists every
+// case that has a story script. ?casefile=<id>&hint shows the "in a case zone" tag first.
+// Renders nothing without the parameter. The final test comes from the app shell (renderLevel).
+import { useState, type ReactNode } from 'react'
+import CaseFlow, { type LevelSlotProps } from './CaseFlow'
 import CaseHint from './CaseHint'
 import { hasTutorial, listTutorials } from './loader'
 import './CaseFile.css'
@@ -11,19 +12,27 @@ import './CaseFile.css'
 const PARAMS = new URLSearchParams(window.location.search)
 const PARAM = PARAMS.get('casefile')
 
-export default function CaseFilePreview() {
-  const [open, setOpen] = useState(true)
+export default function CaseFilePreview({ renderLevel }: { renderLevel: (p: LevelSlotProps) => ReactNode }) {
+  const [open, setOpen] = useState(!PARAMS.has('hint'))
+  const [round, setRound] = useState(0)
   if (PARAM == null) return null
   if (!PARAM || !hasTutorial(PARAM)) return <CaseList unknown={PARAM || null} />
   return (
     <div className="casefile-preview">
       {open ? (
-        <CaseFile caseId={PARAM} onClose={() => setOpen(false)} />
+        <CaseFlow key={round} caseId={PARAM} renderLevel={renderLevel} onClose={() => setOpen(false)} />
       ) : (
         <>
           <CaseHint caseId={PARAM} />
-          <button type="button" className="casefile-preview__reopen" onClick={() => setOpen(true)}>
-            Open the case file again
+          <button
+            type="button"
+            className="casefile-preview__reopen"
+            onClick={() => {
+              setRound((r) => r + 1)
+              setOpen(true)
+            }}
+          >
+            Open the case again
           </button>
           <a className="casefile-preview__all" href="?casefile">
             All case files

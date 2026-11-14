@@ -44,6 +44,11 @@ export function signed(x: number): string {
 
 export function formatP(p: number): string {
   if (p < 0.001) return 'p < 0.001'
+  // near the 5% line two digits are not enough: 0.0498 must not read "0.05" (it is below it)
+  if (p > 0.045 && p < 0.055) {
+    const s = Number(p.toPrecision(3))
+    return `p = ${p < 0.05 && s >= 0.05 ? '0.0499' : s}`
+  }
   return `p = ${Number(p.toPrecision(2))}`
 }
 

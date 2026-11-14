@@ -1,7 +1,7 @@
 // App shell: first the main menu, then (after Play) the 3D game with the interface drawn on top.
 // src/game and src/ui never import each other; they only talk through src/shared.
 // The menu's animated character comes from src/game and is passed into the menu as a slot here.
-import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import GameView from './game/GameView'
 import DetectiveShowcase from './game/detective/DetectiveShowcase'
 import Hud from './ui/hud/Hud'
@@ -11,12 +11,14 @@ import Wardrobe from './ui/wardrobe/Wardrobe'
 import DbTest from './ui/dbtest/DbTest'
 import DbStatus from './ui/status/DbStatus'
 import CaseFilePreview from './ui/casefile/CaseFilePreview'
+import CaseFlow, { type DialogueState, type LevelSlotProps } from './ui/casefile/CaseFlow'
+import CaseHint from './ui/casefile/CaseHint'
+import { createAnchorStore } from './ui/casefile/anchors'
 import type { GameStatus, HudState, LensFocusState } from './shared/events'
 import { loadOutfit, type Outfit } from './shared/outfit'
 import { loadCompleted, markCompleted } from './shared/progress'
 import CaseLevel from './levels/CaseLevel'
 import { getLevel } from './levels/registry'
-import { getCaseEntry } from './levels/data'
 
 type Screen = 'menu' | 'wardrobe' | 'game'
 
@@ -25,32 +27,17 @@ const DB_TEST = new URLSearchParams(window.location.search).has('dbtest')
 // Temporary preview of a featured-case tutorial: ?casefile=dana_valencia
 const CASE_PREVIEW = new URLSearchParams(window.location.search).has('casefile')
 
-/** Featured case level drawn over the paused game. */
-const OVERLAY_STYLE: CSSProperties = { position: 'fixed', inset: 0, zIndex: 50, overflow: 'auto' }
-/** Small hint while the detective stands in a case zone (prototype look; Interface can restyle it). */
-const HINT_STYLE: CSSProperties = {
-  position: 'fixed',
-  left: '50%',
-  bottom: '96px',
-  transform: 'translateX(-50%)',
-  zIndex: 20,
-  padding: '8px 16px',
-  borderRadius: '12px',
-  border: '2px solid #1a1423',
-  background: '#ffc21a',
-  color: '#1a1423',
-  font: '600 15px/1.3 system-ui, sans-serif',
-  pointerEvents: 'none',
-  maxWidth: 'calc(100vw - 32px)',
-  textAlign: 'center',
-}
+/** Final test of a featured case (Ivan's level), drawn by the case flow over the paused game */
+const renderLevel = (p: LevelSlotProps) => <CaseLevel {...p} />
+
+const NO_DIALOGUE: DialogueState = { active: false, speaking: null }
 
 export default function App() {
   return (
     <>
       {CASE_PREVIEW ? (
         <main className="app">
-          <CaseFilePreview />
+          <CaseFilePreview renderLevel={renderLevel} />
         </main>
       ) : DB_TEST ? (
         <main className="app">
@@ -74,12 +61,18 @@ function Game() {
   // meanwhile); the game reports when the flight has arrived (in) or is back (out)
   const [focusLens, setFocusLens] = useState(false)
   const [lensState, setLensState] = useState<LensFocusState>('out')
-  // Featured cases: Space inside a case zone (detective stopped) opens that case's level
+  // Featured cases: Space inside a case zone (detective stopped) opens the case flow
+  // (witness scene -> case file -> final test -> case closed, src/ui/casefile/CaseFlow.tsx).
+  // Escape inside the flow is handled there, one phase at a time.
   const [openCase, setOpenCase] = useState<string | null>(null)
+  const [dialogue, setDialogue] = useState<DialogueState>(NO_DIALOGUE)
+  const [anchors] = useState(createAnchorStore)
   const [completed, setCompleted] = useState<Set<string>>(loadCompleted)
   const completedList = useMemo(() => [...completed], [completed])
   const zoneCase = hud?.caseZone && getLevel(hud.caseZone) ? hud.caseZone : null
-  const canOpenCase = screen === 'game' && status === 'ready' && !!hud?.stopped && !!zoneCase && !openCase
+  // only with the camera out of the hand lens (the picker cannot reset it once a case is open)
+  const canOpenCase =
+    screen === 'game' && status === 'ready' && !!hud?.stopped && !!zoneCase && !openCase && !focusLens && lensState === 'out'
   useEffect(() => {
     if (!canOpenCase) return
     const onKey = (e: KeyboardEvent) => {
@@ -90,15 +83,15 @@ function Game() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [canOpenCase, zoneCase])
-  // Esc leaves an open level (the levels only show their exit button on the last screen)
-  useEffect(() => {
-    if (!openCase) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.code === 'Escape') setOpenCase(null)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [openCase])
+  const closeCase = useCallback(() => {
+    setOpenCase(null)
+    setDialogue(NO_DIALOGUE)
+  }, [])
+  const solveCase = useCallback((caseId: string) => {
+    // Green marker only for a correct answer in the final test (Ivan's rule)
+    markCompleted(caseId)
+    setCompleted((prev) => new Set(prev).add(caseId))
+  }, [])
 
   if (screen === 'menu') {
     return (
@@ -134,6 +127,9 @@ function Game() {
         onLensFocus={setLensState}
         paused={!!openCase}
         completedCases={completedList}
+        dialogueCase={openCase && dialogue.active ? openCase : null}
+        speaking={dialogue.speaking}
+        onDialogueAnchors={anchors.set}
       />
       <Hud status={status} hud={hud} />
       {/* Outside case zones Space opens the magnifier picker, as before */}
@@ -143,24 +139,18 @@ function Game() {
         onOpenChange={setFocusLens}
         location={hud?.location ?? null}
       />
-      {zoneCase && !openCase && (
-        <div className="case-zone-hint" style={HINT_STYLE}>
-          {hud?.stopped ? 'Press Space' : 'Stop and press Space'} to investigate {getCaseEntry(zoneCase)?.title ?? zoneCase}
-        </div>
-      )}
+      {zoneCase && !openCase && <CaseHint caseId={zoneCase} stopped={!!hud?.stopped} />}
       {openCase && (
-        <div className="case-level-overlay" style={OVERLAY_STYLE}>
-          <CaseLevel
-            caseId={openCase}
-            onExit={() => setOpenCase(null)}
-            onResult={(r) => {
-              // Green marker only for a correct answer (Ivan's rule)
-              if (!r.correct) return
-              markCompleted(r.caseId)
-              setCompleted((prev) => new Set(prev).add(r.caseId))
-            }}
-          />
-        </div>
+        <CaseFlow
+          key={openCase}
+          caseId={openCase}
+          renderLevel={renderLevel}
+          onClose={closeCase}
+          onSolved={solveCase}
+          onDialogue={setDialogue}
+          anchors={anchors}
+          outfit={outfit}
+        />
       )}
     </main>
   )

@@ -87,7 +87,10 @@ interface LineArgs {
 
 function lineChart(a: LineArgs): ViewResult {
   const { W, layers, yearly } = a
-  const { narrow, H, P, plotW, plotH } = frame(W)
+  // units (top left) and title (top right) share one row when they fit with a clear gap,
+  // otherwise the title goes on a second row (bold 12px text: about 7.4 px per character)
+  const stackTitle = !!a.title && 4 + (a.unitsLabel.length + a.title.length) * 7.4 + 16 > W - 14
+  const { narrow, H, P, plotW, plotH } = frame(W, stackTitle ? { t: 16 } : {})
   const main = layers[0]
   const all = layers.flatMap((l) => l.pts)
   const nums = all.filter((p): p is Pt & { y: number } => p.y != null)
@@ -181,7 +184,7 @@ function lineChart(a: LineArgs): ViewResult {
   const area = { left: P.l, right: W - P.r, top: 0, bottom: H - P.b }
   const anchorAt = (px: number) => (px < P.l + 70 ? 'start' : px > W - P.r - 70 ? 'end' : 'middle') as 'start' | 'end' | 'middle'
   const taken: Box[] = [textBox(4, 14, 'start', a.unitsLabel)]
-  if (a.title) taken.push(textBox(W - P.r, 14, 'end', a.title))
+  if (a.title) taken.push(stackTitle ? textBox(4, 30, 'start', a.title) : textBox(W - P.r, 14, 'end', a.title))
   bands.forEach((b) => {
     const mid = (sx(b.xa) + sx(b.xb)) / 2
     taken.push(textBox(mid, P.t + 13, anchorAt(mid), b.label))
@@ -222,7 +225,12 @@ function lineChart(a: LineArgs): ViewResult {
         {a.unitsLabel}
       </text>
       {a.title && (
-        <text x={W - P.r} y={14} textAnchor="end" className="casefile-chart__title">
+        <text
+          x={stackTitle ? 4 : W - P.r}
+          y={stackTitle ? 30 : 14}
+          textAnchor={stackTitle ? 'start' : 'end'}
+          className="casefile-chart__title"
+        >
           {a.title}
         </text>
       )}

@@ -386,6 +386,12 @@
 }
 
 /* ---- Technique views (same_month ... window_trends) ---- */
+.casefile-chart__break {
+  fill: none;
+  stroke: var(--cf-ink);
+  stroke-width: 2;
+}
+
 .casefile-chart__title {
   font-size: 12px;
   font-weight: 700;
@@ -939,5 +945,78 @@
   .casefile__option,
   .casefile__close {
     transition: none;
+  }
+}
+
+/* ---- Case flow: case file + detective's notebook side by side ---- */
+.casefile--notebook {
+  width: min(1120px, calc(100vw - 24px));
+}
+
+.casefile__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 30px;
+  align-items: start;
+}
+
+.casefile__layout > .notebook {
+  max-height: calc(100dvh - 44px);
+  margin-top: 26px;
+}
+
+/* the question, kept on every step when the witness scene replaced the intro card */
+.casefile__brief {
+  position: relative;
+  margin: 12px clamp(18px, 5vw, 40px) 0;
+  padding: 6px 10px;
+  border-left: 5px solid var(--cf-red);
+  background: rgba(242, 193, 78, 0.28);
+  font-family: var(--cf-type);
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.casefile__brief-label {
+  margin-right: 4px;
+  font-family: var(--cf-display);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cf-red);
+}
+
+@media (max-width: 860px) {
+  .casefile--notebook {
+    width: min(780px, calc(100vw - 24px));
+  }
+
+  .casefile__layout {
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: 0;
+    max-height: calc(100dvh - 24px);
+  }
+
+  .casefile__layout > .notebook {
+    position: relative;
+    z-index: 3;
+    flex: none;
+    margin: 12px 0 0;
+    max-height: none;
+  }
+
+  .casefile__layout > .casefile__sheet {
+    min-height: 0;
+    flex: 1 1 auto;
+    max-height: none;
+    margin-top: 34px;
+  }
+}
+
+@media (max-width: 600px) {
+  .casefile__brief {
+    font-size: 0.82rem;
   }
 }
