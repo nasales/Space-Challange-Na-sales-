@@ -3,6 +3,7 @@
 //   import DanaValenciaLevel from './cases/DanaValenciaLevel'
 //   export const LEVELS = { dana_valencia: DanaValenciaLevel, ... }
 import type { ComponentType } from 'react'
+import CulebraLevel from './culebra/CulebraLevel'
 import DonanaLevel from './donana/DonanaLevel'
 import FilomenaLevel from './filomena/FilomenaLevel'
 import type { CaseLevelProps } from './types'
@@ -10,6 +11,7 @@ import type { CaseLevelProps } from './types'
 export const LEVELS: Partial<Record<string, ComponentType<CaseLevelProps>>> = {
   filomena_madrid: FilomenaLevel,
   donana: DonanaLevel,
+  sierra_culebra: CulebraLevel,
 }
 
 export function getLevel(caseId: string): ComponentType<CaseLevelProps> | undefined {

@@ -1,0 +1,89 @@
+/* Sierra de la Culebra level: noise slider and detection bars. Only --lvl-* variables from ../theme.css. */
+.lvcu-figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lvcu-figure figcaption {
+  font-weight: 700;
+}
+
+.lvcu-noise {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lvcu-noise__label {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.lvcu-noise input[type='range'] {
+  width: 100%;
+  accent-color: var(--lvl-red);
+}
+
+.lvcu-noise input[type='range']:focus-visible {
+  outline: 3px solid var(--lvl-ink);
+  outline-offset: 3px;
+}
+
+.lvcu-noise__rate {
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.lvcu-bars {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.lvcu-bars__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 4px;
+  font: 600 12px var(--lvl-font);
+  color: var(--lvl-dark);
+  background: var(--lvl-paper);
+  border: var(--lvl-border-panel);
+  border-radius: var(--lvl-radius-panel);
+  cursor: pointer;
+}
+
+.lvcu-bars__item--on {
+  background: var(--lvl-gold);
+  box-shadow: var(--lvl-shadow-panel);
+}
+
+.lvcu-bars__item:focus-visible {
+  outline: 3px solid var(--lvl-ink);
+  outline-offset: 2px;
+}
+
+.lvcu-bars__track {
+  position: relative;
+  width: 60%;
+  height: 70px;
+  background: var(--lvl-panel-bg);
+  border: 1px solid var(--lvl-divider);
+}
+
+.lvcu-bars__fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--lvl-red);
+}
+
+.lvcu-bars__pct {
+  font-weight: 800;
+}
