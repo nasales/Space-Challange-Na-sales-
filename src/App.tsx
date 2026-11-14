@@ -6,11 +6,26 @@ import GameView from './game/GameView'
 import DetectiveShowcase from './game/detective/DetectiveShowcase'
 import Hud from './ui/hud/Hud'
 import MainMenu from './ui/menu/MainMenu'
+import DbTest from './ui/dbtest/DbTest'
 import type { GameStatus, HudState } from './shared/events'
 
 type Screen = 'menu' | 'game'
 
+// Temporary team page: open the site with ?dbtest to test the database connection.
+const DB_TEST = new URLSearchParams(window.location.search).has('dbtest')
+
 export default function App() {
+  if (DB_TEST) {
+    return (
+      <main className="app">
+        <DbTest />
+      </main>
+    )
+  }
+  return <Game />
+}
+
+function Game() {
   const [screen, setScreen] = useState<Screen>('menu')
   const [status, setStatus] = useState<GameStatus>('loading')
   const [hud, setHud] = useState<HudState | null>(null)

@@ -28,3 +28,31 @@ export const fetchCases = (signal?: AbortSignal) => getJson<CaseSummary[]>('/api
 
 export const fetchCase = (id: string, signal?: AbortSignal) =>
   getJson<CaseData>(`/api/cases/${encodeURIComponent(id)}`, signal)
+
+/** One variable of a map cell, as returned by the Supabase `get_cell` function. */
+export interface CellVariable {
+  cell_id: number
+  lat: number
+  lon: number
+  distance_km: number
+  var_id: string
+  name_en: string
+  unit: string
+  source: string
+  definition_en: string
+  start_month: string
+  values: (number | null)[]
+  climatology: (number | null)[]
+  period_start: string | null
+  period_end: string | null
+  slope_per_decade: number | null
+  slope_ci_low: number | null
+  slope_ci_high: number | null
+  p_value: number | null
+  significant: boolean | null
+  direction: string | null
+}
+
+/** Any point of the map. An empty list means sea or outside the map. */
+export const fetchCell = (lat: number, lon: number, signal?: AbortSignal) =>
+  getJson<CellVariable[]>(`/api/cell?lat=${lat}&lon=${lon}`, signal)
