@@ -15,6 +15,8 @@ from scipy import stats
 
 MIN_MONTHS = 120
 TEST_NAME = "mann-kendall-prewhitening-yue-wang-2002"
+MIN_COVERAGE = 0.8       # warn "many gaps" below this share of non-null months
+MAX_GAP_MONTHS = 12      # warn "long gap" for a run of None longer than this
 _DATE_RE = re.compile(r"^(\d{4})-(\d{2})$")
 
 
@@ -40,6 +42,10 @@ def analyze_trend(dates: list[str], values: list[float | None], alpha: float = 0
       Gilbert, R. O. (1987). Statistical Methods for Environmental Pollution Monitoring.
         Van Nostrand Reinhold, New York.
 
+    Warnings (informative only, they never change the slope or the p-value):
+      "many gaps" if fewer than 80 % of the months between start and end are non-null;
+      "long gap" if a run of None between start and end is longer than 12 months.
+
     Args:
         dates: "YYYY-MM" strings, monthly, sorted, consecutive, no duplicates.
         values: same length as `dates`; None marks a gap.
@@ -48,8 +54,8 @@ def analyze_trend(dates: list[str], values: list[float | None], alpha: float = 0
     Returns:
         dict with slope (units/year), p_value, significant, test, slope_ci_low, slope_ci_high,
         mk_tau, n_points (non-null months), start and end (first and last non-null month),
-        total_change (slope * years spanned) and direction ("increasing", "decreasing" or
-        "no trend").
+        total_change (slope * years spanned), direction ("increasing", "decreasing" or
+        "no trend") and warnings (list of str, empty if fine).
 
     Raises:
         ValueError: mismatched lengths, malformed / duplicated / unsorted / non-consecutive
@@ -59,6 +65,7 @@ def analyze_trend(dates: list[str], values: list[float | None], alpha: float = 0
 
     anomalies = _anomalies(months, values)
     keep = [i for i, v in enumerate(anomalies) if v is not None]
+    warnings = _gap_warnings(values, keep[0], keep[-1])
     t = np.array([_decimal_year(*months[i]) for i in keep])
     y = np.array([anomalies[i] for i in keep], dtype=float)
 
@@ -91,7 +98,23 @@ def analyze_trend(dates: list[str], values: list[float | None], alpha: float = 0
         "end": dates[keep[-1]],
         "total_change": slope * float(t[-1] - t[0]),
         "direction": direction,
+        "warnings": warnings,
     }
+
+
+def _gap_warnings(values: list[float | None], first: int, last: int) -> list[str]:
+    """Data-quality warnings for the analysed period values[first..last] (informative only)."""
+    period = values[first:last + 1]
+    warnings = []
+    if sum(v is not None for v in period) < MIN_COVERAGE * len(period):
+        warnings.append("many gaps")
+    run = longest = 0
+    for v in period:
+        run = run + 1 if v is None else 0
+        longest = max(longest, run)
+    if longest > MAX_GAP_MONTHS:
+        warnings.append("long gap")
+    return warnings
 
 
 def _validate(dates: list[str], values: list[float | None], alpha: float) -> list[tuple[int, int]]:
