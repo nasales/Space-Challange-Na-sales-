@@ -15,10 +15,8 @@ import { buildMezquitaCordoba, buildMezquitaCordobaBase } from './mezquitaCordob
 import { buildCatedralBurgos, buildCatedralBurgosBase } from './catedralBurgos'
 import { buildTeatroMerida, buildTeatroMeridaBase } from './teatroMerida'
 import { buildBasilicaPilar, buildBasilicaPilarBase } from './basilicaPilar'
-import { buildMolinosConsuegra, buildMolinosConsuegraBase } from './molinosConsuegra'
-import { buildAlcazarToledo, buildAlcazarToledoBase } from './alcazarToledo'
-import { buildMurallasAvila, buildMurallasAvilaBase } from './murallasAvila'
 import { buildPlazaMayorSalamanca, buildPlazaMayorSalamancaBase } from './plazaMayorSalamanca'
+import { buildCasasColgadas, buildCasasColgadasBase } from './casasColgadas'
 
 export interface LandmarkModel {
   /** El monumento en sí (unidades del modelo, base en y = 0). */
@@ -46,9 +44,6 @@ export const LANDMARK_MODELS: Record<string, LandmarkModel> = {
   'catedral-burgos': { build: buildCatedralBurgos, base: buildCatedralBurgosBase, margin: 5 },
   'teatro-merida': { build: buildTeatroMerida, base: buildTeatroMeridaBase, margin: 6 },
   'basilica-pilar': { build: buildBasilicaPilar, base: buildBasilicaPilarBase, margin: 6 },
-  // The margin is also the slope of the ridge (see buildMolinosConsuegraBase)
-  'molinos-consuegra': { build: buildMolinosConsuegra, base: buildMolinosConsuegraBase, margin: 8 },
-  'alcazar-toledo': { build: buildAlcazarToledo, base: buildAlcazarToledoBase, margin: 5 },
-  'murallas-avila': { build: buildMurallasAvila, base: buildMurallasAvilaBase, margin: 4 },
   'plaza-mayor-salamanca': { build: buildPlazaMayorSalamanca, base: buildPlazaMayorSalamancaBase, margin: 4 },
+  'casas-colgadas': { build: buildCasasColgadas, base: buildCasasColgadasBase, margin: 6 },
 }
