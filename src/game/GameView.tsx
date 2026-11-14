@@ -29,6 +29,7 @@ import { createKeyboard } from './input/keyboard'
 import { nearestPlace } from './location/nearestPlace'
 import { createLandmarks, loadLandmarks } from './landmarks/createLandmarks'
 import { bendRiversAround } from './map/rivers'
+import { createRivers } from './scene/createRivers'
 import type { GameCallbacks, GameStatus, HudState } from '../shared/events'
 import './GameView.css'
 
@@ -90,7 +91,9 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
           const texture = makeTexture(buildToyMap(zone, heights, country, textureWidth), renderer)
           const terrain = createTerrain(zone, heights, country, texture)
           scene.add(terrain.group)
-          return { terrain, texture }
+          const water = createRivers(zone.rivers, terrain) // animated water inside the carved channels
+          scene.add(water.mesh)
+          return { terrain, texture, water }
         })
         const main = zones[0].terrain // la zona principal
 
@@ -197,6 +200,7 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
           magnifier.update(detective.inspect, detective.lensPosition(), carState.heading, surfaceAt, dt)
           chase.update(carState, groundNoLandmarks, dt, detective.inspect, towns.topAt, landmarks.surfaceAt)
           clouds.update(dt)
+          for (const z of zones) z.water.update(dt)
           scenery.update(dt, carState.x, carState.z, camera.position, chase.distance)
           // La niebla y el plano cercano de la cámara se adaptan a la distancia:
           // de cerca hay niebla para dar profundidad; de lejos se aparta para ver todo.
@@ -233,9 +237,10 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
           worldMesh.geometry.dispose()
           ;(worldMesh.material as THREE.Material).dispose()
           worldTexture.dispose()
-          for (const { terrain, texture } of zones) {
+          for (const { terrain, texture, water } of zones) {
             terrain.dispose()
             texture.dispose()
+            water.dispose()
           }
           sky.dispose()
           lighting.dispose()

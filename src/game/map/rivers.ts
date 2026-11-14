@@ -2,7 +2,7 @@
 // shallow beds carved into the terrain. Both use the same raster "edge field" built here, in the
 // pixel space of the texture or of the height grid, so the paint and the carve line up.
 import type { Bounds, River } from './mapData'
-import { mix, smooth, SEA, type RGB } from './palette'
+import { mix, scale, smooth, SEA, type RGB } from './palette'
 
 /** River colours: the toy sea's own palette (palette.ts SEA), so rivers and sea read as one water. */
 export const RIVER_COLORS = {
@@ -16,8 +16,9 @@ export const RIVER_COLORS = {
 const HALF_WIDTH_KM: Record<number, number> = { 1: 1.7, 2: 1.0, 3: 0.65 }
 /** Width (km) of the light bank strip outside the water. */
 const BANK_KM = 0.45
-/** Carve depth (world units) of the river bed per km of half width. */
-const CARVE_PER_KM = 1.5
+/** Carve depth (world units) of the river bed: a base plus this much per km of half width. */
+const CARVE_BASE = 1.2
+const CARVE_PER_KM = 2.2
 /** The carve fades out this far (km) outside the water edge: gentle banks, no cliffs. */
 const CARVE_BANK_KM = 1.2
 
@@ -26,8 +27,11 @@ export const FIELD_REACH_KM = 4
 
 export const riverHalfWidthKm = (rank: number) => HALF_WIDTH_KM[rank] ?? HALF_WIDTH_KM[3]
 
+/** Depth (world units) of the carved channel at the centre of a river with half width `hwKm`. */
+export const channelDepth = (hwKm: number) => CARVE_BASE + hwKm * CARVE_PER_KM
+
 /** Chaikin corner cutting: turns the coarse source polylines into smooth curves (ends kept). */
-function chaikin(line: [number, number][], iterations: number): [number, number][] {
+export function chaikin(line: [number, number][], iterations: number): [number, number][] {
   let pts = line
   for (let k = 0; k < iterations && pts.length > 2; k++) {
     const next: [number, number][] = [pts[0]]
@@ -172,13 +176,12 @@ export const PAINT_MIN_HALF_PX = 3.5
 export function paintRiver(land: RGB, e: number, hwPx: number, pxPerKm: number): RGB {
   const bankW = BANK_KM * pxPerKm + 1
   if (!(e < bankW + 1)) return land
-  const foamW = Math.max(0.5, Math.min(0.9, hwPx * 0.14))
-  const lightW = Math.max(0.5, hwPx * 0.18)
-  // bank -> foam -> light water -> water, from the outside in
-  let c = mix(land, RIVER_COLORS.bank, 0.4 * smooth(bankW + 1, 0, e)) // bank fades out gradually
-  c = mix(c, RIVER_COLORS.foam, 0.9 * smooth(0.9, -0.4, e))
-  c = mix(c, RIVER_COLORS.light, smooth(-foamW + 0.6, -foamW - 0.6, e))
-  c = mix(c, RIVER_COLORS.water, smooth(-foamW - lightW + 0.8, -foamW - lightW - 0.8, e))
+  // The animated water mesh (scene/createRivers.ts) covers the channel: here only a sandy bank,
+  // a darker wet strip at the shore and deep water underneath (seen in the far, mipmapped view)
+  void hwPx
+  let c = mix(land, RIVER_COLORS.bank, 0.35 * smooth(bankW + 1, 0, e)) // bank fades out gradually
+  c = mix(c, scale(c, 0.82), smooth(2, 0, e)) // wet earth at the shore
+  c = mix(c, RIVER_COLORS.water, smooth(0.5, -1, e))
   return c
 }
 
@@ -220,7 +223,7 @@ export function riverCarveDepth(
         }
       }
       if (nearPlaza) continue
-      const depth = (hw / cellsPerKm) * CARVE_PER_KM
+      const depth = channelDepth(hw / cellsPerKm)
       carve[i] = depth * smooth(bank, -hw * 0.5, e)
     }
   }
