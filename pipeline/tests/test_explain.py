@@ -38,7 +38,7 @@ def _trend(**overrides):
 def test_significant_increasing():
     text = explain(_trend(), FakeSeries())
     assert text.splitlines() == [
-        "Place: Salamanca (40.9, -5.62)",
+        "Place: Salamanca (40.875, -5.625)",
         "Variable: tair (°C). Data: NASA GLDAS-2.1 Noah",
         "Period: 2000-01 to 2019-12, 240 valid months",
         "Trend: 0.0261 °C/year (0.261 °C/decade), 95% CI 0.0202 to 0.032 °C/year",

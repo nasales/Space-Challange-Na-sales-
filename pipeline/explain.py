@@ -20,7 +20,8 @@ def explain(trend: dict, series) -> str:
         series: any object with attributes place, variable, units, dataset, lat, lon
             (e.g. pipeline.series.Series); missing attributes are skipped too.
 
-    Numbers use 3 significant figures; p-values below 0.001 are written "p < 0.001".
+    Numbers use 3 significant figures, except lat/lon (3 decimals); p-values below 0.001 are
+    written "p < 0.001".
     """
     place = getattr(series, "place", None)
     variable = getattr(series, "variable", None)
@@ -33,7 +34,7 @@ def explain(trend: dict, series) -> str:
     lines = []
 
     if place is not None:
-        coords = f" ({_num(lat)}, {_num(lon)})" if lat is not None and lon is not None else ""
+        coords = f" ({lat:.3f}, {lon:.3f})" if lat is not None and lon is not None else ""
         lines.append(f"Place: {place}{coords}")
 
     if variable is not None:
