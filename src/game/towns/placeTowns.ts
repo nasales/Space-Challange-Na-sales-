@@ -31,10 +31,14 @@ export interface TownGround {
   landmarkDistance: (x: number, z: number) => number
   /** true if (x, z) is in a river or within `margin` units of its water */
   nearRiver: (x: number, z: number, margin: number) => boolean
+  /** true if (x, z) is on a road or within `margin` units of its edge (optional: no roads) */
+  nearRoad?: (x: number, z: number, margin: number) => boolean
 }
 
 /** Gap (world units) between a house footprint and river water. */
 const RIVER_CLEARANCE = 6
+/** Gap (world units) between a house footprint and a road edge (a pavement, so towns line the road). */
+const ROAD_CLEARANCE = 2.5
 
 /** Regiones con casas de piedra y tejado de pizarra. */
 const NORTH = new Set(['Galicia', 'Asturias', 'Cantabria', 'País Vasco', 'Navarra'])
@@ -134,6 +138,10 @@ export function placeTowns(places: Place[], ground: TownGround): HouseSpot[] {
       const pts = [[0, 0], [radius, 0], [-radius, 0], [0, radius], [0, -radius]].map(([dx, dz]) => [x + dx, z + dz])
       if (!pts.every(([px, pz]) => ground.isLand(px, pz))) continue
       if (ground.nearRiver(x, z, radius * Math.SQRT2 + RIVER_CLEARANCE)) continue // whole square footprint dry
+      if (ground.nearRoad?.(x, z, radius * Math.SQRT2 + ROAD_CLEARANCE)) {
+        tries-- // never on a road; a spot taken by the road does not use up the town's attempts
+        continue
+      }
       const hs = pts.map(([px, pz]) => ground.heightAt(px, pz))
       if (Math.max(...hs) - Math.min(...hs) > MAX_SLOPE) continue
 
