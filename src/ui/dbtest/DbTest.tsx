@@ -24,7 +24,7 @@ interface Result {
   ms: number
 }
 
-// Córdoba, a land point with all six variables
+// Cordoba, a land point with all six variables
 const POINT = { lat: 37.88, lon: -4.78 }
 
 const fmt = (x: number | null | undefined, digits = 3) => (x == null ? '-' : x.toFixed(digits))
