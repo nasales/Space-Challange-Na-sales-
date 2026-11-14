@@ -18,7 +18,6 @@ import { createInkOutline } from './scene/createInkOutline'
 import { createDetective } from './detective/createDetective'
 import { createDust } from './effects/createDust'
 import { createFootprints } from './effects/createFootprints'
-import { createMagnifier } from './effects/createMagnifier'
 import { placeTowns } from './towns/placeTowns'
 import { createTowns } from './towns/createTowns'
 import { placeScenery, loadScenery } from './scenery/placeScenery'
@@ -32,7 +31,7 @@ import { bendRiversAround, prepareRivers } from './map/rivers'
 import { createRivers } from './scene/createRivers'
 import { loadRoads, roadsInBounds } from './roads/roadData'
 import { createRoads } from './roads/createRoads'
-import type { GameCallbacks, GameStatus, HudState } from '../shared/events'
+import type { GameStatus, GameViewProps, HudState } from '../shared/events'
 import './GameView.css'
 
 const EXPLORED_COUNTRY = 'ESP'
@@ -49,12 +48,12 @@ function makeTexture(canvas: HTMLCanvasElement, renderer: THREE.WebGLRenderer) {
 }
 
 /** Only the 3D canvas. The HUD and status messages live in src/ui, fed through the callbacks. */
-export default function GameView({ onStatus, onHud }: GameCallbacks) {
+export default function GameView({ onStatus, onHud, onLensFocus, focusLens = false }: GameViewProps) {
   const container = useRef<HTMLDivElement>(null)
-  // Latest callbacks, read from inside the animation loop without restarting the scene
-  const callbacks = useRef({ onStatus, onHud })
+  // Latest callbacks (and pause flag), read from inside the animation loop without restarting the scene
+  const callbacks = useRef({ onStatus, onHud, onLensFocus, focusLens })
   useEffect(() => {
-    callbacks.current = { onStatus, onHud }
+    callbacks.current = { onStatus, onHud, onLensFocus, focusLens }
   })
   const setStatus = (status: GameStatus) => callbacks.current.onStatus?.(status)
   const setHud = (hud: HudState) => callbacks.current.onHud?.(hud)
@@ -175,8 +174,7 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
         // Efectos al correr: nubecitas de polvo en cada pisada y huellas en el suelo
         const dust = createDust()
         const footprints = createFootprints()
-        const magnifier = createMagnifier() // círculo de lupa al pararse a investigar
-        scene.add(dust.mesh, footprints.group, magnifier.group)
+        scene.add(dust.mesh, footprints.group)
         const keyboard = createKeyboard()
         const chase = createChaseCamera(camera, renderer.domElement)
         // Solo en desarrollo: acceso desde la consola/Playwright para depurar
@@ -202,21 +200,38 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
             kmh: Math.round(speed * KMH_PER_UNIT),
             turbo,
             rush: Math.min(1, Math.max(0, (speed - TUNING.maxSpeed) / (TUNING.turboSpeed - TUNING.maxSpeed))),
+            stopped: detective.inspect > 0.5, // magnifier out: the player may open the variable picker
           })
         }
+        // Lens flight state: 'in' reported once per flight; a flight that has started must end with 'out'
+        let lensInReported = false
+        let lensFlying = false
         let lastTime: number | null = null
         renderer.setAnimationLoop((time) => {
           // Segundos desde el fotograma anterior, con la marca de tiempo que da el navegador.
           // Acotado entre 0 y 0,1 s: si el juego se atasca un momento, no da un salto enorme
           const dt = lastTime === null ? 0 : Math.min(Math.max((time - lastTime) / 1000, 0), 0.1)
           lastTime = time
-          const input = keyboard.read()
+          // Lens focus: the camera flies into the hand lens while the app asks for it. The keyboard
+          // stays ignored from the request until the flight back out has been reported
+          const wantLens = !!callbacks.current.focusLens
+          if (wantLens) lensFlying = true
+          else lensInReported = false
+          const input = lensFlying ? { throttle: 0, steer: 0, turbo: false } : keyboard.read()
           stepCar(carState, input, ground, dt)
+          detective.setFocus(chase.stepFocus(wantLens, dt))
           detective.update(carState, dt)
           dust.update(carState, surfaceAt, detective.stridePhase, dt)
           footprints.update(carState, surfaceAt, detective.stridePhase)
-          magnifier.update(detective.inspect, detective.lensPosition(), carState.heading, surfaceAt, dt)
-          chase.update(carState, groundNoLandmarks, dt, detective.inspect, towns.topAt, landmarks.surfaceAt)
+          const lens = chase.focus > 0 ? { center: detective.lensPosition(), normal: detective.lensNormal(), radius: detective.lensRadius() } : null
+          chase.update(carState, groundNoLandmarks, dt, detective.inspect, towns.topAt, landmarks.surfaceAt, lens)
+          if (wantLens && chase.focus === 1 && !lensInReported) {
+            lensInReported = true
+            callbacks.current.onLensFocus?.('in')
+          } else if (!wantLens && lensFlying && chase.focus === 0) {
+            lensFlying = false
+            callbacks.current.onLensFocus?.('out')
+          }
           clouds.update(dt)
           for (const z of zones) {
             z.water.update(dt)
@@ -251,7 +266,6 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
           detective.dispose()
           dust.dispose()
           footprints.dispose()
-          magnifier.dispose()
           landmarks.dispose()
           towns.dispose()
           scenery.dispose()

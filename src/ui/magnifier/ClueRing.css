@@ -1,0 +1,977 @@
+/* Clues on the glass of the hand lens: six round evidence medallions on a ring, the case question
+   in the centre, the hints lettered along the lower rim. No boxes anywhere: everything is round
+   or is comic lettering (ink stroke + Ben-Day halftone backing) so it reads over any map colour.
+
+   Motion follows the game's river shader (src/game/scene/createRivers.ts): the comic layers move
+   "on twos", 12 fps, one frame every 83 ms, written as keyframes 83 ms apart with steps(1, end).
+
+   Layout (fractions of the lens diameter D, measured from the lens centre):
+     medallion centres on a circle of radius 0.30 D, every 60 degrees, the first at the top;
+     medallion diameter 0.13 D (outer edge at 0.365 D, the glass ends at 0.5 D);
+     names hang 0.012 D under each medallion, one line, up to 0.27 D wide;
+     the centre block is 0.36 D wide, 0.02 D below the centre;
+     the hints sit on a 0.455 D arc in the gaps beside the bottom medallion.
+
+   Backdrop rule of the glass (VariablePicker.css): no opacity/filter/mask on an ancestor of a
+   backdrop-filter layer. This file uses no backdrop-filter, and the ring sits beside the optics,
+   not around them, so fading the clues never blanks the glass. */
+.clue-ring {
+  --cr-gold: #f2c14e;
+  --cr-ink: #1a1423;
+  --cr-paper: #fff8e7;
+  --cr-cyan: #34c6f4;
+  --cr-magenta: #ff4f9a;
+  --cr-d: var(--lens-d, min(72vh, 72vw));
+  --cr-m: max(44px, calc(var(--cr-d) * 0.13));
+  --cr-label-w: calc(var(--cr-d) * 0.27);
+  --cr-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --cr-ease-in: cubic-bezier(0.55, 0, 1, 0.45);
+
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  color: var(--cr-paper);
+  text-align: center;
+  font-family: system-ui, sans-serif;
+}
+
+/* Comic lettering: paper fill, ink stroke painted under the fill, a soft cast shadow */
+.clue-ring__title,
+.clue-ring__lead,
+.clue-ring__caption-name,
+.clue-ring__caption-blurb,
+.clue__name,
+.clue-ring__soon,
+.clue-ring__back {
+  -webkit-text-stroke: 0.24em var(--cr-ink);
+  paint-order: stroke fill;
+  text-shadow: 0 0.12em 0.22em rgb(26 20 35 / 0.45);
+}
+
+/* Ben-Day dot cloud behind a block of lettering: round, fading out, never a box */
+.clue-ring__centre::before,
+.clue__label::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  background: radial-gradient(circle, rgb(26 20 35 / 0.55) 0 32%, transparent 36%) 0 0 / 4px 4px;
+  -webkit-mask: radial-gradient(closest-side, #000 30%, transparent 100%);
+  mask: radial-gradient(closest-side, #000 30%, transparent 100%);
+  pointer-events: none;
+}
+
+/* ---- Centre: case question, or the question of the clue being looked at ---- */
+.clue-ring__centre {
+  position: absolute;
+  left: 50%;
+  top: calc(50% + var(--cr-d) * 0.02);
+  width: calc(var(--cr-d) * 0.36);
+  translate: -50% -50%;
+  display: grid;
+  place-items: center;
+  isolation: isolate;
+  pointer-events: none;
+}
+
+.clue-ring__centre::before {
+  inset: -22% -14%;
+}
+
+.clue-ring__heading,
+.clue-ring__caption {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--cr-d) * 0.014);
+  margin: 0;
+}
+
+.clue-ring__title {
+  margin: 0;
+  color: var(--cr-gold);
+  font-size: clamp(1rem, calc(var(--cr-d) * 0.042), 1.7rem);
+  font-weight: 900;
+  line-height: 0.98;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.clue-ring__lead {
+  margin: 0;
+  font-size: clamp(0.7rem, calc(var(--cr-d) * 0.021), 0.95rem);
+  font-weight: 700;
+  line-height: 1.25;
+  text-wrap: balance;
+}
+
+.clue-ring__heading {
+  transition:
+    opacity 160ms ease-in,
+    transform 160ms ease-in;
+}
+
+.clue-ring--peek .clue-ring__heading {
+  opacity: 0;
+  transform: scale(0.92);
+  transition:
+    opacity 120ms ease-out,
+    transform 220ms var(--cr-ease-out);
+}
+
+.clue-ring__caption {
+  opacity: 0;
+  transition: opacity 140ms ease-in;
+}
+
+/* Step 5b: the clue's own question slides in under the lens centre (clip reveal + rise) */
+.clue-ring--peek .clue-ring__caption {
+  opacity: 1;
+  animation: cr-caption-in 320ms var(--cr-ease-out) 240ms both;
+  transition: none;
+}
+
+.clue-ring__caption-name {
+  color: var(--cr-gold);
+  font-size: clamp(0.78rem, calc(var(--cr-d) * 0.027), 1.1rem);
+  font-weight: 900;
+  line-height: 1.05;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.clue-ring__caption-unit {
+  color: var(--cr-paper);
+  font-weight: 700;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.clue-ring__caption-blurb {
+  font-size: clamp(0.7rem, calc(var(--cr-d) * 0.022), 0.98rem);
+  font-weight: 700;
+  line-height: 1.25;
+  text-wrap: balance;
+}
+
+/* ---- The ring ---- */
+.clue-ring__ring {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Each slot is a point at the medallion centre (polar position set inline as --x, --y) */
+.clue-ring__slot {
+  position: absolute;
+  left: calc(50% + var(--x) * 100%);
+  top: calc(50% + var(--y) * 100%);
+  width: 0;
+  height: 0;
+}
+
+.clue-ring__slot:has(.clue:is(:hover, :focus-visible)) {
+  z-index: 2;
+}
+
+/* The button is invisible: only the round disc and the lettering take the pointer */
+.clue {
+  position: absolute;
+  left: calc(var(--cr-label-w) / -2);
+  top: calc(var(--cr-m) / -2);
+  width: var(--cr-label-w);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--cr-d) * 0.012);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: default;
+  outline: none;
+  pointer-events: none;
+  isolation: isolate;
+  -webkit-tap-highlight-color: transparent;
+  transform-origin: 50% calc(var(--cr-m) / 2);
+  transition:
+    opacity 200ms ease-out,
+    scale 240ms var(--cr-ease-out),
+    filter 200ms ease-out;
+}
+
+.clue__disc,
+.clue__label {
+  pointer-events: auto;
+}
+
+/* Step 1b: while one clue is looked at, the others step back */
+.clue-ring__ring:has(.clue:is(:hover, :focus-visible)) .clue:not(:hover, :focus-visible) {
+  opacity: 0.55;
+  scale: 0.88;
+  filter: saturate(0.5);
+}
+
+/* ---- Medallion: brass rim, ink outline, halftone paper face ---- */
+.clue__disc {
+  position: relative;
+  flex: none;
+  width: var(--cr-m);
+  height: var(--cr-m);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle closest-side, transparent 80%, rgb(70 40 0 / 0.45) 87%, transparent 92%),
+    conic-gradient(
+      from 200deg,
+      #7a4d0f,
+      #f9dc84 10%,
+      #c48b21 22%,
+      #fff2bd 34%,
+      #a46e17 48%,
+      #f2c14e 60%,
+      #7a4d0f 72%,
+      #e8b748 84%,
+      #fff0b0 92%,
+      #7a4d0f
+    );
+  box-shadow:
+    0 0 0 2px var(--cr-ink),
+    0 calc(var(--cr-m) * 0.06) calc(var(--cr-m) * 0.12) rgb(26 20 35 / 0.4);
+  transition:
+    transform 180ms var(--cr-ease-in),
+    box-shadow 180ms ease-in;
+}
+
+/* Keyboard focus: a gold ring outside the ink, on top of the hover sequence */
+.clue:focus-visible .clue__disc {
+  outline: 3px solid var(--cr-gold);
+  outline-offset: 4px;
+}
+
+.clue__face {
+  position: absolute;
+  inset: 13%;
+  border-radius: 50%;
+  overflow: hidden;
+  background: radial-gradient(circle at 35% 30%, #fffdf5, var(--cr-paper) 50%, #f1d898);
+}
+
+/* Ben-Day shading, heavier towards the lower right like printed shadow */
+.clue__face::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, rgb(26 20 35 / 0.24) 0 30%, transparent 34%) 0 0 / 12% 12%;
+  -webkit-mask: linear-gradient(135deg, transparent 30%, #000 85%);
+  mask: linear-gradient(135deg, transparent 30%, #000 85%);
+  transition: transform 160ms ease-in;
+}
+
+/* Ink ring at the edge of the face, its inner shadow and a glass sheen */
+.clue__face::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(ellipse 58% 34% at 36% 20%, rgb(255 255 255 / 0.75), transparent 72%);
+  box-shadow:
+    inset 0 0 0 2px var(--cr-ink),
+    inset 0 calc(var(--cr-m) * 0.04) calc(var(--cr-m) * 0.07) rgb(26 20 35 / 0.3);
+  pointer-events: none;
+}
+
+.clue__icon {
+  position: absolute;
+  inset: 17%;
+  display: grid;
+  transition: transform 160ms var(--cr-ease-in);
+}
+
+.clue__icon > svg,
+.clue__ghost {
+  grid-area: 1 / 1;
+  width: 100%;
+  height: 100%;
+}
+
+.clue__ghost svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Misregistered print plates: the icon outline in cyan and magenta only */
+.clue__ghost {
+  opacity: 0;
+  mix-blend-mode: multiply;
+}
+
+.clue__ghost svg * {
+  fill: none;
+  stroke: currentColor;
+}
+
+.clue__ghost--cyan {
+  color: var(--cr-cyan);
+}
+
+.clue__ghost--magenta {
+  color: var(--cr-magenta);
+}
+
+/* Round "Soon" rubber stamp on the rim */
+.clue__stamp {
+  position: absolute;
+  top: -8%;
+  right: -12%;
+  display: grid;
+  place-items: center;
+  width: max(20px, calc(var(--cr-m) * 0.4));
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--cr-ink);
+  color: var(--cr-gold);
+  font-size: max(7px, calc(var(--cr-m) * 0.11));
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  rotate: 14deg;
+  box-shadow:
+    inset 0 0 0 2px var(--cr-ink),
+    inset 0 0 0 3px var(--cr-gold),
+    0 2px 4px rgb(26 20 35 / 0.35);
+}
+
+/* Burst behind the medallion: impact lines (::before) and a halftone flash (::after) */
+.clue__burst {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--cr-m) / 2);
+  z-index: -1;
+  width: calc(var(--cr-m) * 2.3);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  pointer-events: none;
+}
+
+.clue__burst::before,
+.clue__burst::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 120ms ease-in;
+}
+
+.clue__burst::before {
+  inset: 0;
+  background: repeating-conic-gradient(
+    from 4deg,
+    var(--cr-ink) 0 3deg,
+    transparent 3deg 11deg,
+    var(--cr-ink) 11deg 12.5deg,
+    transparent 12.5deg 22.5deg
+  );
+  -webkit-mask: radial-gradient(closest-side, transparent 52%, #000 56%, #000 76%, transparent 97%);
+  mask: radial-gradient(closest-side, transparent 52%, #000 56%, #000 76%, transparent 97%);
+}
+
+.clue__burst::after {
+  inset: 10%;
+  background: radial-gradient(circle, var(--cr-gold) 0 34%, transparent 38%) 50% 50% /
+    calc(var(--cr-m) * 0.11) calc(var(--cr-m) * 0.11);
+  -webkit-mask: radial-gradient(closest-side, #000 38%, transparent 100%);
+  mask: radial-gradient(closest-side, #000 38%, transparent 100%);
+}
+
+/* ---- Name lettering under the medallion ---- */
+.clue__label {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  isolation: isolate;
+}
+
+.clue__label::before {
+  inset: -45% -10%;
+}
+
+.clue__name {
+  position: relative;
+  font-size: clamp(0.62rem, calc(var(--cr-d) * 0.022), 0.95rem);
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: color 160ms ease-in;
+}
+
+/* Cyan and magenta plates of the name, off register for a few frames on hover */
+.clue__name::before,
+.clue__name::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0;
+  -webkit-text-stroke: 0;
+  text-shadow: none;
+}
+
+.clue__name::before {
+  color: var(--cr-cyan);
+}
+
+.clue__name::after {
+  color: var(--cr-magenta);
+}
+
+.clue__underline {
+  width: 88%;
+  height: max(5px, calc(var(--cr-d) * 0.013));
+  overflow: visible;
+}
+
+.clue__underline path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 120ms ease-in;
+}
+
+.clue__underline-ink {
+  stroke: var(--cr-ink);
+  stroke-width: 5;
+}
+
+.clue__underline-gold {
+  stroke: var(--cr-gold);
+  stroke-width: 2.4;
+}
+
+/* ================================================================================================
+   Hover / keyboard focus sequence (about 650 ms). Each step holds its end state; leaving drops the
+   animations and the quick transitions above (120-180 ms, ease-in) carry everything back.
+     0 ms      1  disc pops toward the viewer, overshoots, settles lifted (420 ms)
+     80 ms     2  icon magnifies inside its rim with a barrel squash (400 ms)
+     120 ms    3  impact lines burst on twos (6 frames, 500 ms) over a halftone flash (4 frames)
+     160 ms    4  cyan/magenta plates off register, snapping back into register (6 frames)
+     240 ms    5  caption slides in at the centre; 300 ms: the gold underline writes on (280 ms)
+   The transitions are switched off while hovered so they never fight the keyframes.
+================================================================================================ */
+.clue:is(:hover, :focus-visible) .clue__disc {
+  transform: translateY(-7%) scale(1.2);
+  box-shadow:
+    0 0 0 2px var(--cr-ink),
+    0 calc(var(--cr-m) * 0.22) calc(var(--cr-m) * 0.34) rgb(26 20 35 / 0.38);
+  animation: cr-pop 420ms var(--cr-ease-out) both;
+  transition: none;
+}
+
+.clue:is(:hover, :focus-visible) .clue__icon {
+  transform: scale(1.45);
+  animation: cr-zoom 400ms var(--cr-ease-out) 80ms both;
+  transition: none;
+}
+
+.clue:is(:hover, :focus-visible) .clue__face::before {
+  transform: scale(1.4);
+  transition: transform 400ms var(--cr-ease-out) 80ms;
+}
+
+.clue:is(:hover, :focus-visible) .clue__burst::before {
+  animation: cr-lines 500ms steps(1, end) 120ms both;
+  transition: none;
+}
+
+.clue:is(:hover, :focus-visible) .clue__burst::after {
+  opacity: 0.7;
+  animation: cr-dots 333ms steps(1, end) 120ms both;
+  transition: none;
+}
+
+.clue:is(:hover, :focus-visible) .clue__ghost--cyan {
+  animation: cr-plate-cyan 500ms steps(1, end) 160ms both;
+}
+
+.clue:is(:hover, :focus-visible) .clue__ghost--magenta {
+  animation: cr-plate-magenta 500ms steps(1, end) 160ms both;
+}
+
+.clue:is(:hover, :focus-visible) .clue__name {
+  color: var(--cr-gold);
+  transition: none;
+}
+
+.clue:is(:hover, :focus-visible) .clue__name::before {
+  animation: cr-type-cyan 500ms steps(1, end) 200ms both;
+}
+
+.clue:is(:hover, :focus-visible) .clue__name::after {
+  animation: cr-type-magenta 500ms steps(1, end) 200ms both;
+}
+
+.clue:is(:hover, :focus-visible) .clue__underline path {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 280ms var(--cr-ease-out) 300ms;
+}
+
+/* ---- Hints along the rim ---- */
+.clue-ring__rim {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.clue-ring__rim-text {
+  /* user units of the 100 x 100 viewBox, so the lettering scales with the lens */
+  font-size: 2.15px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  fill: var(--cr-paper);
+  stroke: var(--cr-ink);
+  stroke-width: 0.6px;
+  stroke-linejoin: round;
+  paint-order: stroke fill;
+}
+
+.clue-ring__rim-key {
+  fill: var(--cr-gold);
+  font-weight: 900;
+}
+
+/* Plain-text twins for screen readers (shown as lettering on narrow screens) */
+.clue-ring__sr,
+.clue-ring__footer {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.clue-ring__soon,
+.clue-ring__back {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.clue-ring__back kbd {
+  margin-right: 0.3em;
+  color: var(--cr-gold);
+  font: inherit;
+  font-weight: 900;
+}
+
+/* ---- Entrance and exit, synced with the picker phase ---- */
+.clue-ring--open .clue-ring__centre,
+.clue-ring--open .clue-ring__footer {
+  animation: cr-rise 480ms var(--cr-ease-out) both;
+  animation-delay: calc(300ms + var(--i, 0) * 55ms);
+}
+
+/* SVG text: opacity only (a px translate here would be in viewBox units, far too big) */
+.clue-ring--open .clue-ring__rim-text {
+  animation: cr-fade-in 400ms ease-out both;
+  animation-delay: calc(300ms + var(--i, 0) * 55ms);
+}
+
+/* The medallions are inked in on twos: 6 frames, 83 ms apart */
+.clue-ring--open .clue-ring__slot {
+  animation: cr-ink-in 500ms steps(1, end) both;
+  animation-delay: calc(300ms + var(--i, 0) * 55ms);
+}
+
+.clue-ring--closing .clue-ring__centre,
+.clue-ring--closing .clue-ring__slot,
+.clue-ring--closing .clue-ring__rim,
+.clue-ring--closing .clue-ring__footer {
+  animation: cr-fade-out 160ms ease-in both;
+}
+
+/* ---- Narrow screens: the glass is a card (VariablePicker.css); clues become a grid of circles ---- */
+@media (max-width: 560px) {
+  .clue-ring {
+    --cr-m: 56px;
+    --cr-label-w: 100%;
+
+    position: relative;
+    inset: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    max-height: calc(100dvh - 56px - 2 * var(--vp-bezel, 12px));
+    overflow-y: auto;
+    padding: 26px 12px 18px;
+    border-radius: 0;
+  }
+
+  .clue-ring__centre {
+    position: relative;
+    left: auto;
+    top: auto;
+    width: 100%;
+    translate: none;
+  }
+
+  .clue-ring__ring {
+    position: relative;
+    inset: auto;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px 4px;
+    width: 100%;
+  }
+
+  .clue-ring__slot {
+    position: relative;
+    left: auto;
+    top: auto;
+    width: auto;
+    height: auto;
+  }
+
+  .clue {
+    position: relative;
+    left: auto;
+    top: auto;
+    width: 100%;
+  }
+
+  .clue__name {
+    font-size: 0.6rem;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .clue-ring__rim {
+    display: none;
+  }
+
+  .clue-ring__footer {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px 16px;
+  }
+}
+
+/* ---- Reduced motion: a plain static highlight, nothing moves ---- */
+@media (prefers-reduced-motion: reduce) {
+  .clue-ring *,
+  .clue-ring *::before,
+  .clue-ring *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .clue:is(:hover, :focus-visible) .clue__disc {
+    transform: none;
+    box-shadow:
+      0 0 0 2px var(--cr-ink),
+      0 0 0 5px var(--cr-gold),
+      0 calc(var(--cr-m) * 0.06) calc(var(--cr-m) * 0.12) rgb(26 20 35 / 0.4);
+  }
+
+  .clue:is(:hover, :focus-visible) .clue__icon,
+  .clue:is(:hover, :focus-visible) .clue__face::before,
+  .clue-ring--peek .clue-ring__heading {
+    transform: none;
+  }
+
+  .clue-ring__ring:has(.clue:is(:hover, :focus-visible)) .clue:not(:hover, :focus-visible) {
+    scale: none;
+    filter: none;
+    opacity: 0.7;
+  }
+
+  .clue__burst,
+  .clue__ghost,
+  .clue__name::before,
+  .clue__name::after {
+    display: none;
+  }
+}
+
+/* ---- Keyframes ---- */
+@keyframes cr-pop {
+  0% {
+    transform: none;
+    box-shadow:
+      0 0 0 2px var(--cr-ink),
+      0 calc(var(--cr-m) * 0.06) calc(var(--cr-m) * 0.12) rgb(26 20 35 / 0.4);
+  }
+  55% {
+    transform: translateY(-9%) scale(1.3);
+  }
+  100% {
+    transform: translateY(-7%) scale(1.2);
+    box-shadow:
+      0 0 0 2px var(--cr-ink),
+      0 calc(var(--cr-m) * 0.22) calc(var(--cr-m) * 0.34) rgb(26 20 35 / 0.38);
+  }
+}
+
+/* Lens within the lens: wide-then-tall squash before it settles, like glass bending the icon */
+@keyframes cr-zoom {
+  0% {
+    transform: none;
+  }
+  45% {
+    transform: scale(1.68, 1.42);
+  }
+  75% {
+    transform: scale(1.4, 1.52);
+  }
+  100% {
+    transform: scale(1.45);
+  }
+}
+
+/* 6 frames: the lines shoot out and boil (small twists each frame), then let go */
+@keyframes cr-lines {
+  0% {
+    opacity: 0;
+    transform: scale(0.55);
+  }
+  16.6% {
+    opacity: 1;
+    transform: scale(0.76) rotate(4deg);
+  }
+  33.3% {
+    transform: scale(0.93) rotate(-3deg);
+  }
+  50% {
+    transform: scale(1.04) rotate(5deg);
+  }
+  66.6% {
+    opacity: 0.85;
+    transform: scale(1.1) rotate(-2deg);
+  }
+  83.3% {
+    opacity: 0.45;
+    transform: scale(1.14) rotate(3deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.16);
+  }
+}
+
+/* 4 frames: the dots flash out and stay as a soft gold backing */
+@keyframes cr-dots {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  25% {
+    opacity: 0.95;
+    transform: scale(0.72);
+  }
+  50% {
+    transform: scale(0.92);
+  }
+  75% {
+    transform: scale(1.06);
+  }
+  100% {
+    opacity: 0.7;
+    transform: none;
+  }
+}
+
+@keyframes cr-plate-cyan {
+  0% {
+    opacity: 0;
+  }
+  16.6% {
+    opacity: 0.95;
+    transform: translate(-14%, 8%);
+  }
+  33.3% {
+    transform: translate(-9%, 5%);
+  }
+  50% {
+    transform: translate(-11%, -3%);
+  }
+  66.6% {
+    transform: translate(-4%, 2%);
+  }
+  83.3% {
+    opacity: 0.9;
+    transform: translate(-1.5%, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: none;
+  }
+}
+
+@keyframes cr-plate-magenta {
+  0% {
+    opacity: 0;
+  }
+  16.6% {
+    opacity: 0.95;
+    transform: translate(13%, -7%);
+  }
+  33.3% {
+    transform: translate(10%, -4%);
+  }
+  50% {
+    transform: translate(8%, 4%);
+  }
+  66.6% {
+    transform: translate(4%, -2%);
+  }
+  83.3% {
+    opacity: 0.9;
+    transform: translate(1.5%, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: none;
+  }
+}
+
+@keyframes cr-type-cyan {
+  0% {
+    opacity: 0;
+  }
+  16.6% {
+    opacity: 0.95;
+    transform: translate(-0.22em, 0.1em);
+  }
+  33.3% {
+    transform: translate(-0.14em, 0.06em);
+  }
+  50% {
+    transform: translate(-0.16em, -0.05em);
+  }
+  66.6% {
+    transform: translate(-0.07em, 0.03em);
+  }
+  83.3% {
+    opacity: 0.85;
+    transform: translate(-0.03em, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: none;
+  }
+}
+
+@keyframes cr-type-magenta {
+  0% {
+    opacity: 0;
+  }
+  16.6% {
+    opacity: 0.95;
+    transform: translate(0.2em, -0.09em);
+  }
+  33.3% {
+    transform: translate(0.15em, -0.05em);
+  }
+  50% {
+    transform: translate(0.12em, 0.06em);
+  }
+  66.6% {
+    transform: translate(0.06em, -0.03em);
+  }
+  83.3% {
+    opacity: 0.85;
+    transform: translate(0.03em, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: none;
+  }
+}
+
+@keyframes cr-caption-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.7em);
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    clip-path: inset(-20% -20% -20% -20%);
+  }
+}
+
+@keyframes cr-ink-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) rotate(-20deg);
+  }
+  16.6% {
+    opacity: 1;
+    transform: scale(0.7) rotate(-8deg);
+  }
+  33.3% {
+    transform: scale(1.05) rotate(3deg);
+  }
+  50% {
+    transform: scale(1.12) rotate(-2deg);
+  }
+  66.6% {
+    transform: scale(1.04) rotate(1deg);
+  }
+  83.3% {
+    transform: scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes cr-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes cr-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes cr-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}

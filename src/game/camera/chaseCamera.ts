@@ -5,8 +5,10 @@
 // - Se suaviza la DISTANCIA al coche, no su posición absoluta: así el retraso no depende
 //   de la velocidad ni de lo que dure cada fotograma, y no da tirones a toda velocidad.
 // - Con la rueda del ratón te alejas hasta una vista aérea para "inspeccionar la zona".
+// - Lens focus: the camera flies into the detective's hand lens (stepFocus + the lens param of update).
 import * as THREE from 'three'
 import { damp, TUNING, type CarState } from '../car/carPhysics'
+import { LENS_SCREEN_FRACTION } from '../../shared/events'
 
 const BASE_DISTANCE = 22
 const BASE_HEIGHT = 9
@@ -18,6 +20,37 @@ const MAX_AHEAD = 30
 const LOOK_HEIGHT = 4.5
 /** How far a monument may rise above the sight line before the camera moves in front of it. */
 const WALL_MARGIN = 1.5
+/** Duration of the flight into the lens and back out (s). */
+const FOCUS_IN_TIME = 0.9
+const FOCUS_OUT_TIME = 0.6
+/** Narrower field of view once in the lens (telephoto feel). The final distance uses this value. */
+const FOCUS_FOV = 36
+/** Extra push-in near the end of the flight (fraction of the final distance); zero on the last frame. */
+const FOCUS_PUSH = 0.07
+/** Widest field of view the camera may open to when it has to come closer to the lens (near a wall). */
+const FOCUS_FOV_MAX = 70
+/** Points checked along the lens axis for roofs, monuments and ground in the way. */
+const FREE_SAMPLES = 16
+
+/** The hand lens as the camera needs it: glass centre, glass normal (towards the camera) and glass radius, in world units. */
+export interface LensTarget {
+  center: THREE.Vector3
+  normal: THREE.Vector3
+  radius: number
+}
+
+const easeInOutCubic = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
+
+/**
+ * Distance from the glass at which its diameter covers LENS_SCREEN_FRACTION of
+ * min(viewport width, viewport height). fov is vertical: the visible half-height at distance D is
+ * D * tan(fov / 2) and the half-width is that times aspect, so the smaller half-extent is
+ * D * tan(fov / 2) * min(1, aspect). Solving radius / halfExtent = LENS_SCREEN_FRACTION gives D.
+ */
+export function lensFocusDistance(radius: number, fovDeg: number, aspect: number) {
+  const halfTan = Math.tan(THREE.MathUtils.degToRad(fovDeg) / 2) * Math.min(1, aspect)
+  return radius / (LENS_SCREEN_FRACTION * halfTan)
+}
 
 export function createChaseCamera(camera: THREE.PerspectiveCamera, dom: HTMLElement) {
   let zoom = 1.9 // distancia inicial: se ve bien al detective y lo que tiene delante
@@ -29,14 +62,39 @@ export function createChaseCamera(camera: THREE.PerspectiveCamera, dom: HTMLElem
   const offset = { x: 0, y: 0, z: 0 } // cámara
   const aheadOff = { x: 0, y: 0, z: 0 } // punto al que mira
 
+  // Lens focus: wanted on/off, linear progress 0..1 and its eased value
+  let focusWanted = false
+  let focusProgress = 0
+  let focusEased = 0
+  const reducedMotion = typeof window.matchMedia === 'function' ? window.matchMedia('(prefers-reduced-motion: reduce)') : null
+  let chaseFov = camera.fov // the chase field of view, kept apart from the focus blend
+  const chasePos = new THREE.Vector3()
+  const focusPos = new THREE.Vector3()
+  const focusLook = new THREE.Vector3()
+
   const onWheel = (e: WheelEvent) => {
     e.preventDefault()
+    if (focusWanted || focusProgress > 0) return // no zooming while flying into the lens
     targetZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, targetZoom * Math.exp(e.deltaY * 0.0012)))
   }
   dom.addEventListener('wheel', onWheel, { passive: false })
 
   /** Distancia actual de la cámara al coche (para ajustar niebla y sombras). */
   let distance = 0
+
+  /**
+   * Move the lens focus towards on/off and return the eased amount 0..1.
+   * Call once per frame before posing the detective and before update.
+   * With prefers-reduced-motion it jumps straight to the end state.
+   */
+  const stepFocus = (on: boolean, dt: number) => {
+    focusWanted = on
+    if (reducedMotion?.matches) focusProgress = on ? 1 : 0
+    else if (on) focusProgress = Math.min(1, focusProgress + dt / FOCUS_IN_TIME)
+    else focusProgress = Math.max(0, focusProgress - dt / FOCUS_OUT_TIME)
+    focusEased = easeInOutCubic(focusProgress)
+    return focusEased
+  }
 
   /**
    * @param inspect 0..1: cuánto está investigando el detective (la cámara sube a mirar por encima de su hombro)
@@ -52,6 +110,7 @@ export function createChaseCamera(camera: THREE.PerspectiveCamera, dom: HTMLElem
     inspect = 0,
     obstacleAt: (x: number, z: number) => number = () => -Infinity,
     wallAt: (x: number, z: number) => number = () => -Infinity,
+    lens: LensTarget | null = null,
   ) => {
     zoom = damp(zoom, targetZoom, 6, dt)
     const speed01 = Math.min(1, Math.abs(car.speed) / TUNING.turboSpeed) // 0 parado, 1 turbo a tope
@@ -118,12 +177,73 @@ export function createChaseCamera(camera: THREE.PerspectiveCamera, dom: HTMLElem
     camera.lookAt(lookAt)
 
     // Más velocidad → visión más abierta
-    camera.fov = damp(camera.fov, 52 + speed01 * 26, 4, dt)
+    chaseFov = damp(chaseFov, 52 + speed01 * 26, 4, dt)
+    camera.fov = chaseFov
+
+    // ---- Lens focus: blend the chase pose into a pose looking straight at the glass ----
+    // The chase pose above keeps updating, so flying back out lands on the current chase view.
+    if (lens && focusEased > 0) {
+      const e = focusEased
+      // Final pose: on the glass axis at the distance where the glass fills the contract size.
+      // If a roof, a monument or the ground is in the way, the camera stays ON the axis but comes
+      // closer, and widens its field of view so the glass still covers exactly the same share of
+      // the screen (never lifted: a lifted camera sees the glass tilted and off-centre)
+      const blocked = (x: number, y: number, z: number) =>
+        y < Math.max(heightAt(x, z) + 0.3, wallAt(x, z) + 0.5, obstacleAt(x, z) + 0.5)
+      const ideal = lensFocusDistance(lens.radius, FOCUS_FOV, camera.aspect)
+      let free = ideal
+      for (let k = 1; k <= FREE_SAMPLES; k++) {
+        const d = (ideal * k) / FREE_SAMPLES
+        const { x, y, z } = lens.center
+        if (blocked(x + lens.normal.x * d, y + lens.normal.y * d, z + lens.normal.z * d)) {
+          free = (ideal * (k - 1)) / FREE_SAMPLES
+          break
+        }
+      }
+      const minDist = lensFocusDistance(lens.radius, FOCUS_FOV_MAX, camera.aspect)
+      const finalDist = Math.max(minDist, Math.min(ideal, free * 0.9))
+      // fov that makes the glass fill the contract size at finalDist (inverse of lensFocusDistance)
+      const halfTan = lens.radius / (LENS_SCREEN_FRACTION * finalDist * Math.min(1, camera.aspect))
+      const finalFov = finalDist < ideal ? THREE.MathUtils.radToDeg(2 * Math.atan(halfTan)) : FOCUS_FOV
+      camera.fov = chaseFov + (finalFov - chaseFov) * e
+      // On the way in, a small extra push-in peaks late and is gone when the progress reaches 1
+      const push = focusWanted && focusProgress < 1 ? FOCUS_PUSH * Math.sin(Math.PI * focusProgress) ** 2 * focusProgress : 0
+      const dist = finalDist * (1 - push)
+      focusPos.copy(lens.normal).multiplyScalar(dist).add(lens.center)
+      chasePos.copy(camera.position)
+      if (e >= 1) {
+        // Fully in: exactly on the glass axis, looking at the glass centre, so the camera's forward
+        // is -lens.normal and the glass is square to it (a centred circle, not an ellipse) and
+        // matches the UI glass drawn at the screen centre. No lerp rounding on this frame.
+        camera.position.copy(focusPos)
+        focusLook.copy(lens.center)
+      } else {
+        camera.position.lerpVectors(chasePos, focusPos, e)
+        // The camera turns to the lens a little ahead of the move, so the glass is centred early
+        const lookE = 1 - (1 - e) * (1 - e)
+        focusLook.lerpVectors(lookAt, lens.center, lookE)
+      }
+      // Mid-flight the straight path may still graze a roof or a monument: lift it there only. The
+      // final pose is free by construction, so this fades out and never tilts the last frame
+      if (e < 1) {
+        const p = camera.position
+        const lift = Math.max(heightAt(p.x, p.z) + 0.3, wallAt(p.x, p.z) + 0.5, obstacleAt(p.x, p.z) + 0.5) - p.y
+        if (lift > 0) p.y += lift * (1 - e)
+      }
+      camera.lookAt(focusLook)
+      distance = camera.position.distanceTo(focusLook)
+      return
+    }
     distance = camera.position.distanceTo(lookAt)
   }
 
   return {
     update,
+    stepFocus,
+    /** Eased lens focus 0..1 (1 = the glass fills LENS_SCREEN_FRACTION of the smaller screen side). */
+    get focus() {
+      return focusEased
+    },
     get distance() {
       return distance
     },
