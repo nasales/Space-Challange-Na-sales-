@@ -1,0 +1,245 @@
+/* Giant magnifier over the map: gold rim, ink outline, glass with a highlight, ink handle.
+   Same colours as the ground magnifier in the game (gold #f2c14e, ink #1a1423). */
+.variable-picker {
+  --lens-gold: #f2c14e;
+  --lens-ink: #1a1423;
+  --lens-paper: #fff8e7;
+  --lens-text: #3b4a6b;
+  --lens-size: min(84vmin, 660px);
+
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(26 20 35 / 0.45);
+  animation: variable-picker-fade 200ms ease-out both;
+}
+
+.variable-picker--closing {
+  animation: variable-picker-fade 220ms ease-in reverse both;
+}
+
+/* ---- The lens ---- */
+.variable-picker__lens {
+  position: relative;
+  width: var(--lens-size);
+  height: var(--lens-size);
+  border-radius: 50%;
+  /* ink outline, gold rim, thin ink inner line */
+  border: 5px solid var(--lens-ink);
+  box-shadow:
+    inset 0 0 0 clamp(14px, 2.6vmin, 22px) var(--lens-gold),
+    inset 0 0 0 calc(clamp(14px, 2.6vmin, 22px) + 4px) var(--lens-ink),
+    10px 10px 0 rgb(26 20 35 / 0.55);
+  background: var(--lens-gold);
+  outline: none;
+  transform-origin: 50% 50%;
+  animation: variable-picker-pop 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.variable-picker--closing .variable-picker__lens {
+  animation: variable-picker-shrink 220ms ease-in both;
+}
+
+/* Handle: sticks out of the bottom-right of the rim */
+.variable-picker__handle {
+  position: absolute;
+  z-index: -1;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--lens-size) * 0.13);
+  height: calc(var(--lens-size) * 0.42);
+  border: 5px solid var(--lens-ink);
+  border-radius: 14px;
+  background: linear-gradient(var(--lens-gold) 0 22%, var(--lens-ink) 22% 26%, #5a3a2a 26%);
+  transform-origin: 50% 0;
+  transform: rotate(-45deg) translate(-50%, calc(var(--lens-size) * 0.47));
+}
+
+.variable-picker__glass {
+  position: absolute;
+  inset: calc(clamp(14px, 2.6vmin, 22px) + 4px);
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(6px, 1.4vmin, 12px);
+  padding: 12% 13%;
+  background:
+    radial-gradient(circle at 32% 28%, rgb(255 255 255 / 0.95), rgb(255 255 255 / 0) 42%),
+    radial-gradient(circle at 50% 50%, #f4fbff 0%, #d5ecf5 70%, #b6dbe9 100%);
+  color: var(--lens-text);
+  text-align: center;
+}
+
+/* Shine on the glass, like the reflection arc of the ground magnifier */
+.variable-picker__glass::before {
+  content: '';
+  position: absolute;
+  inset: 6%;
+  border-radius: 50%;
+  border: 6px solid transparent;
+  border-top-color: rgb(255 255 255 / 0.85);
+  transform: rotate(-35deg);
+  pointer-events: none;
+}
+
+.variable-picker__kicker {
+  margin: 0;
+  padding: 3px 10px;
+  background: var(--lens-ink);
+  color: var(--lens-paper);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  transform: rotate(-2deg);
+}
+
+.variable-picker__title {
+  margin: 0;
+  font-size: clamp(1.05rem, 3vmin, 1.7rem);
+  font-weight: 900;
+  line-height: 1.1;
+  text-transform: uppercase;
+  color: var(--lens-ink);
+}
+
+.variable-picker__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(6px, 1.2vmin, 10px);
+  width: 100%;
+}
+
+.variable-picker__option {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 8px;
+  border: 2.5px solid var(--lens-ink);
+  border-radius: 10px;
+  background: var(--lens-paper);
+  box-shadow: 3px 3px 0 var(--lens-ink);
+  color: var(--lens-text);
+  font: inherit;
+  line-height: 1.15;
+}
+
+.variable-picker__option:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  box-shadow: 2px 2px 0 rgb(26 20 35 / 0.5);
+  border-style: dashed;
+}
+
+.variable-picker__name {
+  font-size: clamp(0.68rem, 1.7vmin, 0.88rem);
+  font-weight: 700;
+}
+
+.variable-picker__unit {
+  font-size: clamp(0.62rem, 1.4vmin, 0.76rem);
+  opacity: 0.8;
+}
+
+.variable-picker__hint {
+  margin: 0;
+  font-size: clamp(0.66rem, 1.5vmin, 0.82rem);
+  font-style: italic;
+}
+
+.variable-picker__back {
+  margin: 0;
+  font-size: clamp(0.7rem, 1.6vmin, 0.85rem);
+  font-weight: 600;
+}
+
+.variable-picker__back kbd {
+  padding: 1px 6px;
+  border: 1.5px solid var(--lens-ink);
+  border-radius: 5px;
+  background: #fff;
+  box-shadow: 0 2px 0 var(--lens-ink);
+  font: 600 12px system-ui, sans-serif;
+}
+
+/* Narrow screens: a circle this small cannot hold the buttons, so the lens becomes a rounded card */
+@media (max-width: 560px) {
+  .variable-picker {
+    --lens-size: calc(100vw - 32px);
+  }
+  .variable-picker__lens {
+    height: auto;
+    max-height: calc(100vh - 32px);
+    border-radius: 36px;
+  }
+  .variable-picker__glass {
+    position: relative;
+    inset: auto;
+    margin: 18px;
+    border-radius: 22px;
+    padding: 20px 16px;
+    overflow-y: auto;
+  }
+  .variable-picker__list {
+    grid-template-columns: 1fr;
+  }
+  .variable-picker__handle {
+    display: none;
+  }
+}
+
+@keyframes variable-picker-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes variable-picker-pop {
+  from {
+    transform: scale(0.12) rotate(-25deg);
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+  to {
+    transform: scale(1) rotate(0);
+    opacity: 1;
+  }
+}
+
+@keyframes variable-picker-shrink {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0.1) rotate(-20deg);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .variable-picker,
+  .variable-picker--closing,
+  .variable-picker__lens,
+  .variable-picker--closing .variable-picker__lens {
+    animation: none;
+  }
+}

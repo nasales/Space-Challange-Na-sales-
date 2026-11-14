@@ -20,6 +20,8 @@ export interface HudState {
   turbo: boolean
   /** 0 to 1: intensity of the speed lines */
   rush: number
+  /** True while the detective stands still with the magnifier out (the "paused" moment) */
+  stopped: boolean
 }
 
 export type GameStatus = 'loading' | 'ready' | 'error'
@@ -36,4 +38,10 @@ export interface GameCallbacks {
   onStatus?: (status: GameStatus) => void
   onHud?: (hud: HudState) => void
   onStop?: (stop: GameStop) => void
+}
+
+/** Props of the game view: the callbacks plus what the app shell tells the game. */
+export interface GameViewProps extends GameCallbacks {
+  /** While true (e.g. an overlay is open) the game ignores keyboard input and the detective stays still */
+  paused?: boolean
 }

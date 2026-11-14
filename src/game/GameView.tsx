@@ -30,7 +30,7 @@ import { nearestPlace } from './location/nearestPlace'
 import { createLandmarks, loadLandmarks } from './landmarks/createLandmarks'
 import { bendRiversAround } from './map/rivers'
 import { createRivers } from './scene/createRivers'
-import type { GameCallbacks, GameStatus, HudState } from '../shared/events'
+import type { GameStatus, GameViewProps, HudState } from '../shared/events'
 import './GameView.css'
 
 const EXPLORED_COUNTRY = 'ESP'
@@ -47,12 +47,12 @@ function makeTexture(canvas: HTMLCanvasElement, renderer: THREE.WebGLRenderer) {
 }
 
 /** Only the 3D canvas. The HUD and status messages live in src/ui, fed through the callbacks. */
-export default function GameView({ onStatus, onHud }: GameCallbacks) {
+export default function GameView({ onStatus, onHud, paused = false }: GameViewProps) {
   const container = useRef<HTMLDivElement>(null)
-  // Latest callbacks, read from inside the animation loop without restarting the scene
-  const callbacks = useRef({ onStatus, onHud })
+  // Latest callbacks (and pause flag), read from inside the animation loop without restarting the scene
+  const callbacks = useRef({ onStatus, onHud, paused })
   useEffect(() => {
-    callbacks.current = { onStatus, onHud }
+    callbacks.current = { onStatus, onHud, paused }
   })
   const setStatus = (status: GameStatus) => callbacks.current.onStatus?.(status)
   const setHud = (hud: HudState) => callbacks.current.onHud?.(hud)
@@ -184,6 +184,7 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
             kmh: Math.round(speed * KMH_PER_UNIT),
             turbo,
             rush: Math.min(1, Math.max(0, (speed - TUNING.maxSpeed) / (TUNING.turboSpeed - TUNING.maxSpeed))),
+            stopped: detective.inspect > 0.5, // magnifier out: the player may open the variable picker
           })
         }
         let lastTime: number | null = null
@@ -192,7 +193,8 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
           // Acotado entre 0 y 0,1 s: si el juego se atasca un momento, no da un salto enorme
           const dt = lastTime === null ? 0 : Math.min(Math.max((time - lastTime) / 1000, 0), 0.1)
           lastTime = time
-          const input = keyboard.read()
+          // Paused (an overlay is open): ignore the keyboard so the detective stays still
+          const input = callbacks.current.paused ? { throttle: 0, steer: 0, turbo: false } : keyboard.read()
           stepCar(carState, input, ground, dt)
           detective.update(carState, dt)
           dust.update(carState, surfaceAt, detective.stridePhase, dt)
