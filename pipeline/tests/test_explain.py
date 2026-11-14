@@ -89,3 +89,9 @@ def test_p_value_formatting():
 
 def test_deterministic():
     assert explain(_trend(), FakeSeries()) == explain(_trend(), FakeSeries())
+
+
+def test_dataset_credit_does_not_repeat_nasa():
+    text = explain(_trend(), FakeSeries(dataset="NASA POWER (MERRA-2 based) T2M"))
+    assert "Data: NASA POWER (MERRA-2 based) T2M" in text
+    assert "NASA NASA" not in text
