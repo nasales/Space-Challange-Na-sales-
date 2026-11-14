@@ -21,6 +21,12 @@ export interface ZoneData {
   rivers?: River[]
 }
 
+/**
+ * What happens at one end of a river line: `source` (a spring), `mouth` (it reaches the sea),
+ * `join` (it flows into another river) or `cut` (the line just stops, e.g. at the zone edge).
+ */
+export type RiverEnd = 'source' | 'mouth' | 'join' | 'cut'
+
 /** A river (Natural Earth centerlines), as stored in rivers.json. */
 export interface River {
   name: string
@@ -28,6 +34,8 @@ export interface River {
   rank: 1 | 2 | 3
   /** One or more polylines of [lon, lat] points. */
   lines: [number, number][][]
+  /** Kind of the first and last end of each line (same order as `lines`); set by prepareRivers. */
+  ends?: [RiverEnd, RiverEnd][]
 }
 
 /** Una población del país (de GeoNames). */
