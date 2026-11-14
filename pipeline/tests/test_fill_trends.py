@@ -122,6 +122,22 @@ def test_update_export_puts_trends_back_for_load_trend(export, tmp_path):
     assert len(json.loads((export / "trends.json").read_text())) == 2
 
 
+def test_update_export_runs_per_variable_keep_earlier_rows(export, tmp_path):
+    fill_trends(export, tmp_path / "a.json", analyze=fake_analyze, update_export=True, var_ids=["tair"])
+    fill_trends(export, tmp_path / "b.json", analyze=fake_analyze, update_export=True, var_ids=["precip"])
+    rows = json.loads((export / "trends.json").read_text())
+    assert {(r["cell_id"], r["var_id"]) for r in rows} == {(SALAMANCA, "tair"), (SALAMANCA, "precip")}
+    assert load_trend(export, SALAMANCA, "tair") is not None
+    assert load_trend(export, SALAMANCA, "precip") is not None
+
+
+def test_update_export_rerun_replaces_instead_of_duplicating(export, tmp_path):
+    for _ in range(2):
+        fill_trends(export, tmp_path / "rows.json", analyze=fake_analyze, update_export=True)
+    rows = json.loads((export / "trends.json").read_text())
+    assert len(rows) == 2
+
+
 # ---------- SQL ----------
 
 SCHEMA = """

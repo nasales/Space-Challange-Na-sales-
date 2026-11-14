@@ -19,6 +19,7 @@ CONTRACT_FIELDS = (
     "dates", "values", "slope", "p_value", "significant", "test",
 )
 ALPHA = 0.05  # docs/contract.md: significant means p_value < 0.05
+DB_P_TOLERANCE = 1e-6  # float32 (`real`) rounding near 0.05 is ~4e-9; anything bigger is a real mismatch
 MIN_POINTS = 24  # same minimum as scripts/validate_contract.py
 STUB_TEST = "stub"
 DB_TEST = "mann-kendall-prewhitened"  # Mann-Kendall with Yue-Wang 2002 pre-whitening
@@ -57,7 +58,7 @@ def trend_from_db(row: dict) -> dict:
 
     trend = {
         "slope": _per_year(row["slope_per_decade"], "slope_per_decade"),
-        "p_value": row["p_value"],
+        "p_value": _db_p_value(row["p_value"], row["significant"]),
         "significant": row["significant"],
         "test": DB_TEST,
     }
@@ -157,6 +158,20 @@ def write_case(case: dict, path: str | Path, *, allow_stub: bool = False) -> Non
 
 def _is_number(x: object) -> bool:
     return isinstance(x, (int, float)) and not isinstance(x, bool)
+
+
+def _db_p_value(p_value: object, significant: object) -> object:
+    """Undo `real` (float32) rounding of p_value right at the 0.05 threshold.
+
+    `significant` was computed from the full-precision p, so when the stored p only
+    disagrees with it by rounding, trust `significant` and move p to the nearest
+    consistent value. Larger disagreements are left for build_case to reject.
+    """
+    if not _is_number(p_value) or not isinstance(significant, bool):
+        return p_value
+    if significant == (p_value < ALPHA) or abs(p_value - ALPHA) > DB_P_TOLERANCE:
+        return p_value
+    return math.nextafter(ALPHA, 0.0) if significant else ALPHA
 
 
 def _per_year(value: object, name: str) -> float:

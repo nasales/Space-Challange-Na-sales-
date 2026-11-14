@@ -162,7 +162,11 @@ def _sql_literal(value: object) -> str:
 
 
 def _update_export(export_dir: str | Path, rows: list[dict]) -> None:
-    """Put each trend row inside its cell file (plan B JSON) and rewrite trends.json, like the ETL does."""
+    """Put each trend row inside its cell file (plan B JSON) and merge the rows into trends.json.
+
+    Rows already in trends.json for other cells or variables are kept, so running
+    `--only tair` and later `--only precip` ends with both.
+    """
     export_dir = Path(export_dir)
     by_cell: dict[int, list[dict]] = {}
     for r in rows:
@@ -172,7 +176,15 @@ def _update_export(export_dir: str | Path, rows: list[dict]) -> None:
         for r in cell_rows:
             cell["vars"][r["var_id"]]["trend"] = r
         (export_dir / "cells" / f"{cell_id}.json").write_text(json.dumps(cell), encoding="utf-8")
-    (export_dir / "trends.json").write_text(json.dumps(rows), encoding="utf-8")
+
+    trends_file = export_dir / "trends.json"
+    merged: dict[tuple[int, str], dict] = {}
+    if trends_file.exists():
+        for r in json.loads(trends_file.read_text(encoding="utf-8")):
+            merged[(r["cell_id"], r["var_id"])] = r
+    for r in rows:
+        merged[(r["cell_id"], r["var_id"])] = r
+    trends_file.write_text(json.dumps([merged[k] for k in sorted(merged)]), encoding="utf-8")
 
 
 def _finite(value: object, name: str) -> float:

@@ -209,6 +209,31 @@ def test_trend_from_db_feeds_build_case(series):
     assert "slope_ci_low" not in case  # extra fields stay out of the JSON
 
 
+FLOAT32_005 = 0.05000000074505806  # 0.05 as stored in a Postgres `real` column
+
+
+@pytest.mark.parametrize("p_value", [0.05, FLOAT32_005])
+def test_trend_from_db_fixes_float32_rounding_at_threshold(series, p_value, tmp_path):
+    # True p was 0.0499999..., significant=True, but `real` rounded p up to 0.05
+    trend = trend_from_db(dict(DB_ROW, p_value=p_value, significant=True))
+    assert trend["p_value"] < 0.05 and trend["p_value"] == pytest.approx(0.05)
+    path = tmp_path / "edge.json"
+    write_case(build_case(series, trend), path)
+    assert load_contract_validator().check(str(path)) == []
+
+
+def test_trend_from_db_keeps_consistent_threshold_value():
+    trend = trend_from_db(dict(DB_ROW, p_value=0.05, significant=False))
+    assert trend["p_value"] == 0.05
+
+
+def test_trend_from_db_does_not_hide_real_mismatch(series):
+    trend = trend_from_db(dict(DB_ROW, p_value=0.06, significant=True))
+    assert trend["p_value"] == 0.06
+    with pytest.raises(ValueError, match="does not match"):
+        build_case(series, trend)
+
+
 def test_trend_from_db_missing_slope_raises():
     with pytest.raises(ValueError, match="slope_per_decade"):
         trend_from_db(dict(DB_ROW, slope_per_decade=None))
