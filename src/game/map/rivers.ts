@@ -2,20 +2,14 @@
 // shallow beds carved into the terrain. Both use the same raster "edge field" built here, in the
 // pixel space of the texture or of the height grid, so the paint and the carve line up.
 import type { Bounds, River } from './mapData'
-import { mix, smooth, type RGB } from './palette'
+import { mix, smooth, SEA, type RGB } from './palette'
 
-const hex = (h: string): RGB => [
-  parseInt(h.slice(1, 3), 16),
-  parseInt(h.slice(3, 5), 16),
-  parseInt(h.slice(5, 7), 16),
-]
-
-/** River colours: same family as the toy sea (palette.ts SEA), a bit brighter so they pop on land. */
+/** River colours: the toy sea's own palette (palette.ts SEA), so rivers and sea read as one water. */
 export const RIVER_COLORS = {
-  water: hex('#2F8FEC'),
-  light: hex('#7FDDF7'), // = SEA.coast: lighter water next to the banks
-  foam: hex('#FFFFFF'),
-  bank: hex('#F6EFC4'), // pale sandy bank, mixed into the land colour
+  water: mix(SEA.deep, SEA.shallow, 0.25),
+  light: SEA.coast, // lighter water next to the banks
+  foam: SEA.foam,
+  bank: [246, 239, 196] as RGB, // pale sandy bank, mixed into the land colour
 }
 
 /** Half width of the water ribbon (km, cartoon scale, not real) by rank: 1 big, 2 medium, 3 small. */
@@ -66,6 +60,8 @@ export function rasterizeRivers(
   h: number,
   pxPerKm: number,
   reachKm: number,
+  /** Minimum half width (px) for ranks 1–2, so big rivers still read in the far overview. */
+  minHalfPx = 0,
 ): RiverField {
   const edge = new Float32Array(w * h).fill(Infinity)
   const halfWidth = new Float32Array(w * h)
@@ -73,7 +69,7 @@ export function rasterizeRivers(
   const sy = (h - 1) / (bounds.north - bounds.south)
 
   for (const river of rivers) {
-    const hw = riverHalfWidthKm(river.rank) * pxPerKm
+    const hw = Math.max(riverHalfWidthKm(river.rank) * pxPerKm, river.rank <= 2 ? minHalfPx : 0)
     const reach = hw + reachKm * pxPerKm
     for (const line of river.lines) {
       const pts = chaikin(line, 3).map(([lon, lat]) => [(lon - bounds.west) * sx, (bounds.north - lat) * sy])
@@ -164,22 +160,25 @@ export function bendRiversAround(rivers: River[], clearings: RiverClearing[]): R
 }
 
 /** Reach (km) that `paintRiver` needs from the field. */
-export const PAINT_REACH_KM = BANK_KM + 0.4
+export const PAINT_REACH_KM = BANK_KM + 0.6
+/** Minimum painted half width (texture px) of ranks 1–2. */
+export const PAINT_MIN_HALF_PX = 3.5
 
 /**
  * Colour of a land pixel with the river painted on top: blue water, lighter water near the edge,
- * a thin white foam line and a pale bank. Band edges are anti-aliased over ~1 px.
+ * a thin white foam line and a pale bank. Band edges are soft (~1–2 px) so they stay clean up
+ * close, where one texture pixel covers a few world units.
  */
 export function paintRiver(land: RGB, e: number, hwPx: number, pxPerKm: number): RGB {
-  if (!(e < BANK_KM * pxPerKm + 1)) return land
-  const foamW = Math.max(0.5, Math.min(1.1, hwPx * 0.18))
-  const lightW = Math.max(0.4, hwPx * 0.22)
-  const bankW = BANK_KM * pxPerKm
+  const bankW = BANK_KM * pxPerKm + 1
+  if (!(e < bankW + 1)) return land
+  const foamW = Math.max(0.5, Math.min(0.9, hwPx * 0.14))
+  const lightW = Math.max(0.5, hwPx * 0.18)
   // bank -> foam -> light water -> water, from the outside in
-  let c = mix(land, RIVER_COLORS.bank, 0.45 * smooth(bankW + 0.5, bankW - 0.5, e))
-  c = mix(c, RIVER_COLORS.foam, smooth(0.5, -0.5, e))
-  c = mix(c, RIVER_COLORS.light, smooth(-foamW + 0.5, -foamW - 0.5, e))
-  c = mix(c, RIVER_COLORS.water, smooth(-foamW - lightW + 0.5, -foamW - lightW - 0.5, e))
+  let c = mix(land, RIVER_COLORS.bank, 0.4 * smooth(bankW + 1, 0, e)) // bank fades out gradually
+  c = mix(c, RIVER_COLORS.foam, 0.9 * smooth(0.9, -0.4, e))
+  c = mix(c, RIVER_COLORS.light, smooth(-foamW + 0.6, -foamW - 0.6, e))
+  c = mix(c, RIVER_COLORS.water, smooth(-foamW - lightW + 0.8, -foamW - lightW - 0.8, e))
   return c
 }
 

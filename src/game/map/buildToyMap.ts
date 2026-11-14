@@ -11,7 +11,7 @@ import { computeExploredRegion } from './exploredRegion'
 import { UNITS_PER_DEG_LON, UNITS_PER_KM } from './projection'
 import { SEA, SAND, LEVEL_COLORS, FIELD_TINT, UNEXPLORED, mix, scale, smooth, type RGB } from './palette'
 import { fractalNoise } from './valueNoise'
-import { rasterizeRivers, paintRiver, PAINT_REACH_KM } from './rivers'
+import { rasterizeRivers, paintRiver, PAINT_REACH_KM, PAINT_MIN_HALF_PX } from './rivers'
 
 /** Tamaño de las manchas de campos, en píxeles de la textura. */
 const FIELD_SIZE = 28
@@ -106,7 +106,7 @@ export function buildToyMap(
   const sat = satCtx.getImageData(0, 0, width, height).data
 
   // 3b) Rivers: distance of each pixel to the nearest water edge (rasterised once)
-  const rivers = data.rivers?.length ? rasterizeRivers(data.rivers, bounds, width, height, pxPerKm, PAINT_REACH_KM) : null
+  const rivers = data.rivers?.length ? rasterizeRivers(data.rivers, bounds, width, height, pxPerKm, PAINT_REACH_KM, PAINT_MIN_HALF_PX) : null
 
   // 4) Pintar
   const pxWorld = UNITS_PER_KM / pxPerKm // world units per texture pixel (for the hillshade)
