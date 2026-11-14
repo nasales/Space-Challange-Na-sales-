@@ -3,7 +3,7 @@
 import * as THREE from 'three'
 
 export const SKY_TOP = new THREE.Color(0x1a7dff)
-export const SKY_HORIZON = new THREE.Color(0x9fe4ff)
+export const SKY_HORIZON = new THREE.Color(0x92d6ff) // a touch bluer: the fog uses it, less milky
 /** Dirección hacia el sol: al suroeste (como en España por la tarde) y algo alto, para que
  *  las fachadas que miran al sur estén iluminadas y las sombras no sean eternas. */
 export const SUN_DIRECTION = new THREE.Vector3(-0.45, 0.42, 0.78).normalize()

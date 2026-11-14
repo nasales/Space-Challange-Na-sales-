@@ -7,39 +7,41 @@ const hex = (h: string): RGB => [
   parseInt(h.slice(5, 7), 16),
 ]
 
+// Note: the final screen pass (createInkOutline) adds saturation, so these base colours are a bit
+// calmer than the final look. Pick them as "clean toy paint", not neon.
 export const SEA = {
-  deep: hex('#1E8FFF'), // azul eléctrico de cómic
-  shallow: hex('#2EB8FF'),
-  coast: hex('#7FE9FF'),
+  deep: hex('#2A7FE8'), // clear toy blue
+  shallow: hex('#36A6F2'),
+  coast: hex('#7FDDF7'),
   foam: hex('#FFFFFF'),
 }
 
-export const SAND = hex('#FFEC6B')
+export const SAND = hex('#FFE48A')
 
-// Un color por piso (mismo orden que TERRACE_LEVELS en terrace.ts).
-// Tres versiones según la zona sea húmeda, intermedia o seca.
+// One colour per terrace level (same order as TERRACE_LEVELS in terrace.ts), in three versions
+// for wet, intermediate and dry zones. Levels 0-4 are a clear 5-step ramp per zone (light lowlands
+// -> deeper uplands) so the relief reads as clean bands; level 5 is terracotta sierra, 6 lavender
+// rock, 7-8 snow.
 export const LEVEL_COLORS: Record<'wet' | 'mid' | 'dry', RGB[]> = {
-  // Paleta de cómic para el suelo. La Meseta (pisos 2-4) en dorado de trigal; terracota solo en las
-  // sierras, lavanda en la roca alta y nieve en las cumbres. Variado, pero sin ser chillón.
-  wet: ['#4FE86A', '#3CDE63', '#2CD25F', '#22C25C', '#1CAE5A', '#C9806E', '#9C7FC4', '#F3EEFF', '#FFFFFF'].map(hex),
-  mid: ['#B4F046', '#A0EA40', '#8DE03E', '#7AD440', '#6CC446', '#C9806E', '#9C7FC4', '#F3EEFF', '#FFFFFF'].map(hex),
-  dry: ['#FAD978', '#F8D171', '#F6C96B', '#F3BE64', '#EBA95F', '#D98A68', '#9C7FC4', '#F3EEFF', '#FFFFFF'].map(hex),
+  wet: ['#7EDC5C', '#64D153', '#4CC34C', '#3AB249', '#2DA046', '#E58C66', '#A98AE6', '#F1ECFF', '#FFFFFF'].map(hex),
+  mid: ['#C2E05C', '#AAD653', '#92C94C', '#7CBA47', '#68A843', '#E58C66', '#A98AE6', '#F1ECFF', '#FFFFFF'].map(hex),
+  dry: ['#FFDF78', '#F8D268', '#EEC75E', '#E8C25A', '#DAB352', '#DB7F5C', '#A98AE6', '#F1ECFF', '#FFFFFF'].map(hex),
 }
 
-/** Color de las manchas de "campos" en las llanuras, según la zona. */
+/** Colour of the "field" patches in the plains: a lighter shade of the same zone hue. */
 export const FIELD_TINT: Record<'wet' | 'mid' | 'dry', RGB> = {
-  wet: hex('#8CF77A'), // prados más claros
-  mid: hex('#F2D86A'), // trigales
-  dry: hex('#8FEA4E'), // regadíos verde chillón en mitad del secano
+  wet: hex('#A8EE78'), // light meadows
+  mid: hex('#DCEB72'), // young wheat
+  dry: hex('#FFEA9A'), // pale stubble fields
 }
 
-// Mundo sin explorar: grises suaves, como una maqueta todavía sin pintar.
+// Unexplored world: soft blue "paper map" tones, clearly not playable but not dull grey.
 export const UNEXPLORED = {
-  land: hex('#C3C7CE'),
-  sea: hex('#8E9BA8'),
-  coast: hex('#5F6873'),
-  border: hex('#EEF0F3'),
-  wall: hex('#9AA0A8'),
+  land: hex('#E0E8F3'),
+  sea: hex('#A8C2E2'),
+  coast: hex('#7E92B0'),
+  border: hex('#FFFFFF'),
+  wall: hex('#B5C3D8'),
 }
 
 

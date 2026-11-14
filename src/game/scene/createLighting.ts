@@ -6,7 +6,8 @@ import { SUN_DIRECTION } from './createSky'
 const SHADOW_MAP_SIZE = 4096
 
 export function createLighting() {
-  const hemi = new THREE.HemisphereLight(0xb8d4ff, 0xffd9a8, 1.9) // cielo azulado: sombras frías, de dibujo animado
+  // Bluish sky / warm ground fill. Kept moderate: a strong fill bleaches colours toward pastel
+  const hemi = new THREE.HemisphereLight(0x9cc4ff, 0xffc98a, 1.4)
   const sun = new THREE.DirectionalLight(0xffefcc, 2.1) // sol cálido
   sun.castShadow = true
   sun.shadow.mapSize.set(SHADOW_MAP_SIZE, SHADOW_MAP_SIZE)

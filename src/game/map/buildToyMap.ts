@@ -12,6 +12,12 @@ import { fractalNoise } from './valueNoise'
 
 /** Tamaño de las manchas de campos, en píxeles de la textura. */
 const FIELD_SIZE = 28
+/** How much the field patches take the field tint (0..1). */
+const FIELD_STRENGTH = 0.7
+/** Large, gentle brightness variation in the plains (0 = none). */
+const BRIGHTNESS_NOISE = 0.06
+/** Blur (texture pixels) of the satellite image that decides wet/mid/dry zones. */
+const ZONE_BLUR = 10
 
 /**
  * @param heights alturas suavizadas (m) en la rejilla de datos (la misma que usa el terreno 3D)
@@ -63,7 +69,7 @@ export function buildToyMap(
   satCanvas.width = width
   satCanvas.height = height
   const satCtx = satCanvas.getContext('2d', { willReadFrequently: true })!
-  satCtx.filter = 'blur(4px)' // desenfocado: las manchas verdes salen redondeadas, no en cuadros
+  satCtx.filter = `blur(${ZONE_BLUR}px)` // blurred: zones become big round shapes, not speckles
   satCtx.drawImage(data.satellite, 0, 0, width, height)
   const sat = satCtx.getImageData(0, 0, width, height).data
 
@@ -88,8 +94,8 @@ export function buildToyMap(
         // ---- MAR: tres bandas planas + dos líneas de espuma ----
         const dl = distToLand[i]
         c = elev[i] > -150 ? SEA.shallow : SEA.deep
-        if (dl < 7) c = SEA.coast
-        if (dl < 2.2 || (dl > 11 && dl < 13)) c = SEA.foam
+        if (dl < 8) c = SEA.coast
+        if (dl < 2.6 || (dl > 12 && dl < 14.5)) c = SEA.foam
       } else {
         // ---- TIERRA: color plano según piso y zona ----
         const g_r = sat[i * 4 + 1] - sat[i * 4] // verde menos rojo
@@ -99,11 +105,11 @@ export function buildToyMap(
           // Llanuras y Meseta: manchas de "campos" de borde nítido (estilo cómic, sin líneas) y
           // un ligero cambio de brillo, para que el suelo no sea un color muerto
           const n = fractalNoise(x / FIELD_SIZE, y / FIELD_SIZE)
-          const field = smooth(0.6, 0.63, n) // 0 o 1, casi sin transición
-          c = mix(c, FIELD_TINT[zone], field * 0.55)
-          c = scale(c, 1 + (fractalNoise(x / 160 + 50, y / 160) - 0.5) * 0.1)
+          const field = smooth(0.62, 0.64, n) // 0 or 1, almost no transition
+          c = mix(c, FIELD_TINT[zone], field * FIELD_STRENGTH)
+          c = scale(c, 1 + (fractalNoise(x / 160 + 50, y / 160) - 0.5) * BRIGHTNESS_NOISE)
         }
-        if (lv === 0 && distToSea[i] < 4) c = SAND // playa
+        if (lv === 0 && distToSea[i] < 5) c = SAND // beach
         // (Ya no se pinta un borde oscuro entre pisos: los contornos de tinta marcan esos bordes)
       }
 

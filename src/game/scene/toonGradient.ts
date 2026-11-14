@@ -20,7 +20,7 @@ export function getToonGradient(): THREE.DataTexture {
 }
 
 /** En sombra: el color base se oscurece y enfría (multiplicando) y se le suma un toque violeta. */
-const SHADOW_MULTIPLY = 'vec3(0.5, 0.44, 0.72)'
+const SHADOW_MULTIPLY = 'vec3(0.46, 0.38, 0.74)' // deeper, more saturated violet (comic contrast)
 const SHADOW_ADD = 'vec3(0.05, 0.025, 0.13)' // violeta #6B4FA0 de la paleta
 
 /**
@@ -29,7 +29,11 @@ const SHADOW_ADD = 'vec3(0.05, 0.025, 0.13)' // violeta #6B4FA0 de la paleta
  * Modifica el código del shader (se llama dentro de onBeforeCompile).
  * @param strength 1 = sombra completa; menos = más suave (el suelo usa menos para no cargar la vista)
  */
-export function addCartoonShadows(shader: { fragmentShader: string }, strength = 1) {
+export function addCartoonShadows(
+  shader: { fragmentShader: string },
+  strength = 1,
+  tint: { multiply: string; add: string } = { multiply: SHADOW_MULTIPLY, add: SHADOW_ADD },
+) {
   shader.fragmentShader = shader.fragmentShader.replace(
     '#include <opaque_fragment>',
     `{
@@ -37,7 +41,7 @@ export function addCartoonShadows(shader: { fragmentShader: string }, strength =
       vec3 lit = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse;
       float light = dot(lit, luma) / max(dot(diffuseColor.rgb, luma), 1e-3);
       float shade = smoothstep(0.88, 0.74, light) * ${strength.toFixed(2)}; // 0 al sol, 1 en sombra
-      vec3 shadowed = diffuseColor.rgb * ${SHADOW_MULTIPLY} + ${SHADOW_ADD};
+      vec3 shadowed = diffuseColor.rgb * ${tint.multiply} + ${tint.add};
       outgoingLight = mix(outgoingLight, shadowed + totalEmissiveRadiance, shade);
     }
     #include <opaque_fragment>`,

@@ -20,6 +20,22 @@ const GROUND_EDGE_FULL = 0.25
 const GROUND_INK = 0.55
 /** Grosor de la línea, en píxeles. */
 const LINE_WIDTH = 1.6
+/**
+ * Colour grade applied to the whole picture (cartoon "vivid" look):
+ * SATURATION pushes every colour away from grey; VIBRANCE adds extra saturation to dull colours
+ * only (vivid ones and near-greys like skin and clouds stay sane); CONTRAST spreads tones around
+ * mid-grey. All in linear light, before the ink.
+ */
+const SATURATION = '1.1'
+const VIBRANCE = '0.15'
+const CONTRAST = '1.05'
+/**
+ * Object ink gets lighter with distance (fraction of fadeNear where it starts/ends, and the
+ * strength it keeps), so tiny objects such as olive trees do not turn into black rings at mid zoom.
+ */
+const OBJECT_INK_FAR_START = '0.15'
+const OBJECT_INK_FAR_END = '0.6'
+const OBJECT_INK_FAR = '0.45'
 
 const vertexShader = /* glsl */ `
   varying vec2 vUv;
@@ -64,11 +80,19 @@ const fragmentShader = /* glsl */ `
       max(texture2D(tColor, vUv + vec2(texel.x, 0.0)).a, texture2D(tColor, vUv - vec2(texel.x, 0.0)).a),
       max(texture2D(tColor, vUv + vec2(0.0, texel.y)).a, texture2D(tColor, vUv - vec2(0.0, texel.y)).a)));
     // Objetos: tinta completa. Suelo: solo los saltos grandes, más suave y que se apaga antes a lo lejos
-    float objectEdge = smoothstep(${EDGE_START}, ${EDGE_FULL}, rel) * (1.0 - smoothstep(fadeNear, fadeFar, d));
+    float objectEdge = smoothstep(${EDGE_START}, ${EDGE_FULL}, rel) * (1.0 - smoothstep(fadeNear, fadeFar, d))
+                     * mix(1.0, ${OBJECT_INK_FAR}, smoothstep(fadeNear * ${OBJECT_INK_FAR_START}, fadeNear * ${OBJECT_INK_FAR_END}, d));
     float groundEdge = smoothstep(${GROUND_EDGE_START}, ${GROUND_EDGE_FULL}, rel) * ${GROUND_INK}
                      * (1.0 - smoothstep(fadeNear * 0.4, fadeNear, d));
     float edge = mix(groundEdge, objectEdge, object);
-    gl_FragColor = vec4(mix(color.rgb, ink, edge), 1.0);
+    // Colour grade: saturation + vibrance + contrast (see constants above)
+    vec3 c = color.rgb;
+    float luma = dot(c, vec3(0.2126, 0.7152, 0.0722));
+    float hi = max(c.r, max(c.g, c.b));
+    float sat = (hi - min(c.r, min(c.g, c.b))) / max(hi, 1e-4);
+    c = max(mix(vec3(luma), c, ${SATURATION} + ${VIBRANCE} * (1.0 - sat)), 0.0);
+    c = 0.18 * pow(c / 0.18, vec3(${CONTRAST}));
+    gl_FragColor = vec4(mix(c, ink, edge), 1.0);
     #include <colorspace_fragment>
   }
 `
