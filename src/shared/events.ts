@@ -55,6 +55,8 @@ export interface GameCallbacks {
   onStop?: (stop: GameStop) => void
   /** The camera flight into (or out of) the hand lens has finished */
   onLensFocus?: (state: LensFocusState) => void
+  /** Map loading progress, 0 to 1 (1 just before status 'ready'), for the loading bar */
+  onProgress?: (progress: number) => void
 }
 
 /** Props of the game view: the callbacks plus what the app shell tells the game. */

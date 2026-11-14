@@ -5,6 +5,7 @@ import { useState } from 'react'
 import GameView from './game/GameView'
 import DetectiveShowcase from './game/detective/DetectiveShowcase'
 import Hud from './ui/hud/Hud'
+import MapLoader from './ui/loading/MapLoader'
 import MainMenu from './ui/menu/MainMenu'
 import VariablePicker from './ui/magnifier/VariablePicker'
 import Wardrobe from './ui/wardrobe/Wardrobe'
@@ -38,6 +39,7 @@ function Game() {
   const [screen, setScreen] = useState<Screen>('menu')
   const [status, setStatus] = useState<GameStatus>('loading')
   const [hud, setHud] = useState<HudState | null>(null)
+  const [loadProgress, setLoadProgress] = useState(0)
   const [outfit, setOutfit] = useState<Outfit>(loadOutfit)
   // The picker asks the game to fly the camera into the hand lens (the game ignores the keyboard
   // meanwhile); the game reports when the flight has arrived (in) or is back (out)
@@ -71,8 +73,9 @@ function Game() {
 
   return (
     <main className="app">
-      <GameView onStatus={setStatus} onHud={setHud} focusLens={focusLens} onLensFocus={setLensState} outfit={outfit} />
+      <GameView onStatus={setStatus} onHud={setHud} focusLens={focusLens} onLensFocus={setLensState} onProgress={setLoadProgress} outfit={outfit} />
       <Hud status={status} hud={hud} />
+      <MapLoader status={status} progress={loadProgress} outfit={outfit} />
       <VariablePicker canOpen={status === 'ready' && !!hud?.stopped} lensState={lensState} onOpenChange={setFocusLens} />
     </main>
   )
