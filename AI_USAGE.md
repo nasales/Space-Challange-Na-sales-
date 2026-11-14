@@ -9,3 +9,4 @@ Every agent adds one line per task.
 | 2026-11-14 | Claude Code (Data agent, Diego) | Data | Updated `pipeline/README.md` to v2: aligned work split and trend method with the chosen GLDAS/IMERG/MERRA-2 dataset |
 | 2026-11-14 | Claude Code (Data agent, Diego) | Data | Renamed Diego's working branch to `diego_dev` in `pipeline/README.md` |
 | 2026-11-14 | Claude Code (Data agent, Diego) | Data | Block 1: `Series`, `validate()` and `from_start_month()` in `pipeline/series.py` with 40 tests in `pipeline/tests/test_series.py` |
+| 2026-11-14 | Claude Code (Data agent, Diego) | Data | Block 2: `build_case`, `write_case`, `trend_from_db`, stub `analyze_trend` in `pipeline/build_case.py` with 36 tests (incl. contract validator check) |
