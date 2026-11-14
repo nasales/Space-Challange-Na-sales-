@@ -30,6 +30,8 @@ import { nearestPlace } from './location/nearestPlace'
 import { createLandmarks, loadLandmarks } from './landmarks/createLandmarks'
 import { bendRiversAround, prepareRivers } from './map/rivers'
 import { createRivers } from './scene/createRivers'
+import { loadRoads, roadsInBounds } from './roads/roadData'
+import { createRoads } from './roads/createRoads'
 import type { GameCallbacks, GameStatus, HudState } from '../shared/events'
 import './GameView.css'
 
@@ -62,8 +64,8 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
     let cancelled = false
     let cleanup = () => {}
 
-    Promise.all([loadCountryData(EXPLORED_COUNTRY), loadWorldData(), loadLandmarks(EXPLORED_COUNTRY), loadScenery(EXPLORED_COUNTRY)])
-      .then(([explored, world, landmarkList, sceneryRegions]) => {
+    Promise.all([loadCountryData(EXPLORED_COUNTRY), loadWorldData(), loadLandmarks(EXPLORED_COUNTRY), loadScenery(EXPLORED_COUNTRY), loadRoads(EXPLORED_COUNTRY)])
+      .then(([explored, world, landmarkList, sceneryRegions, roadList]) => {
         if (cancelled) return
         const country = world.countries.find((c) => c.id === EXPLORED_COUNTRY)!
         const { renderer, scene, camera, dispose } = createScene(el)
@@ -82,6 +84,8 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
         // Alturas suavizadas: las mismas para la textura y la malla, así encajan
         // Rivers bend around the monuments so no plaza or model stands in the water
         const clearings = landmarks.riverClearings(10)
+        // Roads bend around the monuments too (circles in world units)
+        const roadClearings = landmarks.riverClearings(8).map((c) => ({ ...lonLatToWorld(c.lon, c.lat), r: c.radiusKm * UNITS_PER_KM }))
         const zones = explored.zones.map((z) => {
           // Rivers: gaps closed, ends labelled (spring / mouth / confluence), then bent around monuments
           const zone = z.rivers ? { ...z, rivers: bendRiversAround(prepareRivers(z.rivers, z), clearings) } : z
@@ -94,8 +98,19 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
           scene.add(terrain.group)
           const water = createRivers(zone.rivers, terrain) // animated water inside the carved channels
           scene.add(water.mesh)
-          return { terrain, texture, water }
+          // Main roads: bridges over the rivers above, around the monuments, only on explored land
+          const roads = createRoads(roadsInBounds(roadList, zone.bounds), {
+            heightAt: terrain.heightAt,
+            isExploredLand: terrain.isExploredLand,
+            rivers: zone.rivers,
+            clearings: roadClearings,
+            landmarkDistance: landmarks.distance,
+          })
+          scene.add(roads.group)
+          return { terrain, texture, water, roads }
         })
+        const roadSurfaceAt = (x: number, z: number) => Math.max(...zones.map((zn) => zn.roads.surfaceAt(x, z)))
+        const nearRoad = (x: number, z: number, m: number) => zones.some((zn) => zn.roads.nearRoad(x, z, m))
         const main = zones[0].terrain // la zona principal
 
         // Ambiente: cielo con sol, luces con sombras y nubes moviéndose sobre España
@@ -123,6 +138,7 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
           isLand: (x, z) => terrainAt(x, z)?.isExploredLand(x, z) ?? false,
           landmarkDistance: landmarks.distance,
           nearRiver: (x, z, m) => terrainAt(x, z)?.nearRiver(x, z, m) ?? false,
+          nearRoad,
         })
         const towns = createTowns(houses)
         scene.add(towns.group)
@@ -135,6 +151,7 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
           nearHouse: towns.blocks,
           landmarkDistance: landmarks.distance,
           nearRiver: (x, z, m) => terrainAt(x, z)?.nearRiver(x, z, m) ?? false,
+          nearRoad,
         })
         const scenery = createScenery(sceneryItems)
         scene.add(scenery.group)
@@ -142,9 +159,9 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
         // El detective: empieza en Madrid, mirando hacia la Puerta de Alcalá
         // Ground under the detective: the terrain or, over a house or a monument, its roof.
         // So he climbs houses and monuments like mountain steps (no collisions)
-        const surfaceAt = (x: number, z: number) => Math.max(main.heightAt(x, z), towns.surfaceAt(x, z), landmarks.surfaceAt(x, z))
+        const surfaceAt = (x: number, z: number) => Math.max(main.heightAt(x, z), towns.surfaceAt(x, z), landmarks.surfaceAt(x, z), roadSurfaceAt(x, z))
         // For the camera: ground without monuments (it treats monuments as walls, see chaseCamera)
-        const groundNoLandmarks = (x: number, z: number) => Math.max(main.heightAt(x, z), towns.surfaceAt(x, z))
+        const groundNoLandmarks = (x: number, z: number) => Math.max(main.heightAt(x, z), towns.surfaceAt(x, z), roadSurfaceAt(x, z))
         const ground: Ground = {
           heightAt: surfaceAt,
           isDrivable: (x, z) => main.isExploredLand(x, z) && !scenery.blocks(x, z),
@@ -201,7 +218,10 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
           magnifier.update(detective.inspect, detective.lensPosition(), carState.heading, surfaceAt, dt)
           chase.update(carState, groundNoLandmarks, dt, detective.inspect, towns.topAt, landmarks.surfaceAt)
           clouds.update(dt)
-          for (const z of zones) z.water.update(dt)
+          for (const z of zones) {
+            z.water.update(dt)
+            z.roads.update(dt)
+          }
           scenery.update(dt, carState.x, carState.z, camera.position, chase.distance)
           // La niebla y el plano cercano de la cámara se adaptan a la distancia:
           // de cerca hay niebla para dar profundidad; de lejos se aparta para ver todo.
@@ -238,10 +258,11 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
           worldMesh.geometry.dispose()
           ;(worldMesh.material as THREE.Material).dispose()
           worldTexture.dispose()
-          for (const { terrain, texture, water } of zones) {
+          for (const { terrain, texture, water, roads } of zones) {
             terrain.dispose()
             texture.dispose()
             water.dispose()
+            roads.dispose()
           }
           sky.dispose()
           lighting.dispose()
