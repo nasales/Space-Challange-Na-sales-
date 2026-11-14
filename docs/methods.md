@@ -54,4 +54,57 @@ Units: `T2M` 2 m air temperature (°C), `PRECTOTCORR` precipitation (mm/day), `G
 
 Temperature rises significantly at all 7 places where it was tested (about +0.2 to +0.3 °C per decade). Precipitation and soil wetness show no significant trend, except a small increase in precipitation at Aneto.
 
-References: Yue, S. and Wang, C. (2002), *Water Resources Research* 38(6), 1068, https://doi.org/10.1029/2001WR000861. Gilbert, R. O. (1987), *Statistical Methods for Environmental Pollution Monitoring*, Van Nostrand Reinhold.
+## Results on the map (any point in Spain, real data)
+The same method was run on every land cell of the database export (Diego, `pipeline/fill_trends.py`,
+checked with `pipeline/check_trends.py`): 1184 cells of 0.25° × 6 variables = **7090 series**
+(7 coastal cells have no GLDAS soil data, so no `soilmoist` or `evap`). No series was skipped:
+all have at least 120 valid months. `check_trends` reported 0 errors and 0 warnings.
+
+| Variable | Source | Period | Series | Significant | Increasing | Decreasing | Median slope per decade (all cells) |
+|---|---|---|---|---|---|---|---|
+| `tair` air temperature | GLDAS-2.1 Noah | 2000-01 to 2026-07 | 1184 | 1096 (93 %) | 1081 | 15 | +0.89 °C |
+| `t2m_long` 2 m temperature | MERRA-2 | 1980-01 to 2026-09 | 1184 | 1181 (100 %) | 1181 | 0 | +0.33 °C |
+| `soilmoist` soil moisture 0-10 cm | GLDAS-2.1 Noah | 2000-01 to 2026-07 | 1177 | 633 (54 %) | 0 | 633 | -0.58 kg/m² |
+| `evap` evapotranspiration | GLDAS-2.1 Noah | 2000-01 to 2026-07 | 1177 | 396 (34 %) | 260 | 136 | +0.007 mm/day |
+| `wind` wind speed | GLDAS-2.1 Noah | 2000-01 to 2026-07 | 1184 | 942 (80 %) | 392 | 550 | -0.08 m/s |
+| `precip` precipitation | GPM IMERG V07 | 1998-01 to 2025-09 | 1184 | 2 (0.2 %) | 1 | 1 | -0.002 mm/day |
+
+If nothing were changing anywhere, about 5 % of cells (about 59 per variable) would be significant by chance.
+- **Temperature** rises almost everywhere, in both sources. The long MERRA-2 series is significant in 1181 of 1184 cells.
+- **Soil moisture** falls in half of the cells and rises in none.
+- **Precipitation** shows no trend: 2 significant cells out of 1184, fewer than expected by chance.
+- **Wind** and **evapotranspiration** change in both directions depending on the region.
+
+**Cross-check between two independent sources.** Over the same period (2000-2026), GLDAS `tair`
+and MERRA-2 `t2m_long` agree in the sign of the trend in 97 % of the cells and in significance
+in 92 %. GLDAS shows more warming (median +0.89 against +0.65 °C per decade), and the correlation
+of the slopes across cells is 0.42: the two products agree on the picture but not cell by cell.
+
+## Limitations
+- **Many tests at once.** About 7000 tests at α = 0.05 mean that around 5 % of cells can look significant by chance. We do not correct for multiple testing (for example with a false discovery rate, Benjamini and Hochberg, 1995; Wilks, 2016), so a single significant cell is weaker evidence than a pattern over a whole region. For temperature and soil moisture the share of significant cells is far above 5 %; for precipitation it is below.
+- **Short series.** GLDAS and IMERG start in 2000 and 1998 (about 26 years). A trend over 26 years can be shaped by a few unusual years at the start or the end, and it says nothing about earlier decades. MERRA-2 (from 1980) is the long-term reference.
+- **Different end months.** GLDAS ends in 2026-07, IMERG in 2025-09 and MERRA-2 in 2026-09 because of NASA publication delays. Trends of different variables do not cover exactly the same period.
+- **Resolution.** MERRA-2 is about 55 km, so 4 or 5 neighbouring 0.25° cells share the same value, and near the coast its nearest point can be over the sea. A cell is an area average, not a weather station: it does not show local effects such as a city's heat island.
+- **Model and satellite data, not direct measurements.** GLDAS is a land surface model forced with observations, MERRA-2 is a reanalysis, and IMERG combines satellites calibrated with rain gauges. They are validated products, but each has its own biases, as the tair/t2m_long comparison shows.
+- **A linear trend is a summary.** The Sen slope gives one average rate of change. It does not show changes in extremes, sudden jumps or cycles of several years.
+- **Trend is not cause.** A significant trend says that a variable changed, not why. The game asks the player for a conclusion about the data, not about its causes.
+- **No trend is not proof of no change.** A non-significant result means the data do not show clear evidence of change at α = 0.05.
+
+## References
+**Statistical methods**
+- Mann, H. B. (1945). Nonparametric tests against trend. *Econometrica* 13(3), 245-259. https://doi.org/10.2307/1907187
+- Kendall, M. G. (1975). *Rank Correlation Methods*, 4th ed. Charles Griffin, London.
+- Theil, H. (1950). A rank-invariant method of linear and polynomial regression analysis, I, II, III. *Proceedings of the Koninklijke Nederlandse Akademie van Wetenschappen* 53, 386-392, 521-525, 1397-1412.
+- Sen, P. K. (1968). Estimates of the regression coefficient based on Kendall's tau. *Journal of the American Statistical Association* 63(324), 1379-1389. https://doi.org/10.1080/01621459.1968.10480934
+- Yue, S. and Wang, C. (2002). Applicability of prewhitening to eliminate the influence of serial correlation on the Mann-Kendall test. *Water Resources Research* 38(6), 1068. https://doi.org/10.1029/2001WR000861
+- Gilbert, R. O. (1987). *Statistical Methods for Environmental Pollution Monitoring*. Van Nostrand Reinhold.
+- Benjamini, Y. and Hochberg, Y. (1995). Controlling the false discovery rate: a practical and powerful approach to multiple testing. *Journal of the Royal Statistical Society B* 57(1), 289-300. https://doi.org/10.1111/j.2517-6161.1995.tb02031.x
+- Wilks, D. S. (2016). "The stippling shows statistically significant grid points": how research results are routinely overstated and overinterpreted, and what to do about it. *Bulletin of the American Meteorological Society* 97(12), 2263-2273. https://doi.org/10.1175/BAMS-D-15-00267.1
+
+**Data products** (dataset DOIs are listed in "NASA data" above)
+- Rodell, M. et al. (2004). The Global Land Data Assimilation System. *Bulletin of the American Meteorological Society* 85(3), 381-394. https://doi.org/10.1175/BAMS-85-3-381
+- Huffman, G. J., Stocker, E. F., Bolvin, D. T., Nelkin, E. J. and Tan, J. (2023). GPM IMERG Final Precipitation L3 1 month 0.1 degree x 0.1 degree V07. Goddard Earth Sciences Data and Information Services Center (GES DISC). https://doi.org/10.5067/GPM/IMERG/3B-MONTH/07
+- Gelaro, R. et al. (2017). The Modern-Era Retrospective Analysis for Research and Applications, Version 2 (MERRA-2). *Journal of Climate* 30(14), 5419-5454. https://doi.org/10.1175/JCLI-D-16-0758.1
+- NASA POWER: data obtained from the NASA Langley Research Center (LaRC) POWER Project funded through the NASA Earth Science/Applied Science Program. https://power.larc.nasa.gov/
+
+A plain-language version of this page for players is in `docs/methods_plain.md`.
