@@ -53,3 +53,4 @@ Every agent adds one line per task.
 | 2026-11-14 | Claude Code (Data agent, Diego) | Data | AGENTS.md open request to Ivan: add the dry-run validation results to docs/methods.md |
 | 2026-11-14 | Claude Code (Opus 5.5, QA/backend agent, Perry) | Backend | Full Supabase load (6 variables, 1184 cells, 7090 series) and load checks; ETL: retries for transient NASA errors, resumable local cache, 4 parallel readers, UTF-8 `variables.json`; brief updated with the results |
 | 2026-11-14 | Claude Code (Opus 5.5) | Data | docs/methods.md: Diego's full-scale dry run in Validation; AGENTS.md: ticked Diego's request, open requests to Yeipi (cases_index.json) and Perry (share export) |
+| 2026-11-14 | Claude Code (Opus 5.5) | Data | docs/case_data_request.md: data request to Perry for the 10 featured cases (datasets, boxes, variables); AGENTS.md open request |
