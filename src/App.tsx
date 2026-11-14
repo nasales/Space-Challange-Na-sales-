@@ -15,6 +15,7 @@ import DbStatus from './ui/status/DbStatus'
 import type { GameStatus, HudState, LensFocusState } from './shared/events'
 import { loadOutfit, type Outfit } from './shared/outfit'
 import { loadCompleted, markCompleted } from './shared/progress'
+import { startBackgroundMusic } from './shared/music'
 import CaseLevel from './levels/CaseLevel'
 import { getLevel } from './levels/registry'
 import { getCaseEntry } from './levels/data'
@@ -76,6 +77,8 @@ function Game() {
   const [openCase, setOpenCase] = useState<string | null>(null)
   const [completed, setCompleted] = useState<Set<string>>(loadCompleted)
   const completedList = useMemo(() => [...completed], [completed])
+  // Background music from the menu on (it starts on the first click or key press)
+  useEffect(startBackgroundMusic, [])
   const zoneCase = hud?.caseZone && getLevel(hud.caseZone) ? hud.caseZone : null
   const canOpenCase = screen === 'game' && status === 'ready' && !!hud?.stopped && !!zoneCase && !openCase && !paused
   const exitToMenu = () => {
