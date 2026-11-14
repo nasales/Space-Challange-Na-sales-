@@ -6,7 +6,7 @@
 import { useEffect, useRef, useState, type RefObject } from 'react'
 import type { TutorialData, TutorialScript, TutorialSeries, TutorialStep } from '../../shared/tutorial'
 import TimeSeriesChart from './TimeSeriesChart'
-import { credit, formatP, signed, testName } from './format'
+import { baseUnits, credit, formatP, signed, testName } from './format'
 import { loadTutorial, type LoadedTutorial } from './loader'
 import './CaseFile.css'
 
@@ -306,7 +306,7 @@ function Step({
       <p className="casefile__text">{step.text}</p>
 
       {series ? (
-        <TimeSeriesChart spec={step.chart} series={series} />
+        <TimeSeriesChart spec={step.chart} series={series} variables={data.variables} />
       ) : (
         <p className="casefile__msg">The data for {step.chart.variable} is missing from this case file.</p>
       )}
@@ -436,7 +436,8 @@ function Conclusion({
 
 function StatsLine({ series }: { series: TutorialSeries }) {
   const t = series.trend
-  const u = series.units
+  if (!t || !Number.isFinite(t.slope_per_year)) return <p className="casefile__stats">{credit(series)}</p>
+  const u = baseUnits(series.units)
   return (
     <p className="casefile__stats">
       Trend: <b>{signed(t.slope_per_year * 10)} {u} per decade</b> (95% range {signed(t.ci_low * 10)} to{' '}
@@ -464,7 +465,9 @@ function Reveal({
   onClose: () => void
 }) {
   // The conclusion's variable goes first
-  const vars = Object.keys(script.reveal.by_variable).sort(
+  // One entry per variable of the reveal; if the script lists none, every variable of the data
+  const listed = Object.keys(script.reveal.by_variable ?? {})
+  const vars = (listed.length ? listed : Object.keys(data.variables)).sort(
     (a, b) => Number(b === script.conclusion.variable) - Number(a === script.conclusion.variable),
   )
   return (
@@ -490,7 +493,7 @@ function Reveal({
         return (
           <article key={v} className="casefile__verdict">
             <h3 className="casefile__verdict-name">{series?.name ?? v}</h3>
-            <p className="casefile__text">{script.reveal.by_variable[v]}</p>
+            {script.reveal.by_variable?.[v] && <p className="casefile__text">{script.reveal.by_variable[v]}</p>}
             {series && <StatsLine series={series} />}
           </article>
         )

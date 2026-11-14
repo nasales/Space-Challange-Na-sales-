@@ -385,6 +385,199 @@
   margin-left: auto;
 }
 
+/* ---- Technique views (same_month ... window_trends) ---- */
+.casefile-chart__title {
+  font-size: 12px;
+  font-weight: 700;
+  fill: var(--cf-red);
+}
+
+.casefile-chart__axis-title {
+  font-size: 12px;
+  fill: var(--cf-ink);
+}
+
+.casefile-chart__line--second {
+  stroke: var(--cf-green);
+  stroke-width: 2.2;
+  stroke-dasharray: 7 3;
+}
+
+.casefile-chart__line--raw {
+  stroke: #9db5d8;
+  stroke-width: 1;
+}
+
+.casefile-chart__line--thick {
+  stroke: var(--cf-blue);
+  stroke-width: 3.5;
+}
+
+.casefile-chart__area {
+  stroke: none;
+}
+
+.casefile-chart__area--up {
+  fill: rgba(229, 50, 45, 0.22);
+}
+
+.casefile-chart__area--down {
+  fill: rgba(36, 87, 166, 0.22);
+}
+
+.casefile-chart__bar {
+  fill: var(--cf-blue);
+  stroke: var(--cf-ink);
+  stroke-width: 1;
+}
+
+.casefile-chart__bar--recent,
+.casefile-chart__bar--after {
+  fill: var(--cf-red);
+}
+
+.casefile-chart__bar--before {
+  fill: var(--cf-blue);
+}
+
+.casefile-chart__bar--hollow {
+  fill: #fff;
+  stroke: var(--cf-blue);
+  stroke-width: 2;
+}
+
+.casefile-chart__whisker line {
+  stroke: var(--cf-ink);
+  stroke-width: 1.5;
+}
+
+.casefile-chart__rowlabel {
+  font-size: 12px;
+  font-weight: 700;
+  fill: var(--cf-ink);
+}
+
+.casefile-chart__row.is-marked .casefile-chart__rowlabel {
+  fill: var(--cf-red);
+}
+
+.casefile-chart__dot--scatter {
+  fill: rgba(36, 87, 166, 0.55);
+  stroke: var(--cf-blue);
+  stroke-width: 1;
+}
+
+.casefile-chart__dot--recent {
+  fill: var(--cf-red);
+  stroke: var(--cf-ink);
+  stroke-width: 1;
+}
+
+.casefile-chart__dotlabel,
+.casefile-chart__mean text {
+  font-size: 12px;
+  font-weight: 700;
+  fill: var(--cf-ink);
+  paint-order: stroke;
+  stroke: #fff;
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+
+.casefile-chart__mean line {
+  stroke-width: 2.5;
+  stroke-dasharray: 6 3;
+}
+
+.casefile-chart__mean--before line {
+  stroke: var(--cf-ink);
+}
+
+.casefile-chart__mean--after line {
+  stroke: #8f1512;
+}
+
+.casefile-chart__mean--after text {
+  fill: #8f1512;
+}
+
+/* legend swatches */
+.casefile-chart__key--second::before {
+  border-top: 3px dashed var(--cf-green);
+}
+
+.casefile-chart__key--raw::before {
+  border-top: 1px solid #7f9cc8;
+}
+
+.casefile-chart__key--thick::before {
+  border-top: 4px solid var(--cf-blue);
+}
+
+.casefile-chart__key--bar::before,
+.casefile-chart__key--recent::before,
+.casefile-chart__key--before::before,
+.casefile-chart__key--after::before,
+.casefile-chart__key--hollow::before,
+.casefile-chart__key--up::before,
+.casefile-chart__key--down::before {
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--cf-ink);
+  background: var(--cf-blue);
+}
+
+.casefile-chart__key--recent::before,
+.casefile-chart__key--after::before {
+  background: var(--cf-red);
+}
+
+.casefile-chart__key--hollow::before {
+  border: 2px solid var(--cf-blue);
+  background: #fff;
+}
+
+.casefile-chart__key--up::before {
+  border: none;
+  background: rgba(229, 50, 45, 0.35);
+}
+
+.casefile-chart__key--down::before {
+  border: none;
+  background: rgba(36, 87, 166, 0.35);
+}
+
+.casefile-chart__key--dot::before,
+.casefile-chart__key--dot-recent::before {
+  width: 10px;
+  height: 10px;
+  border: 1px solid var(--cf-blue);
+  border-radius: 50%;
+  background: rgba(36, 87, 166, 0.55);
+}
+
+.casefile-chart__key--dot-recent::before {
+  border-color: var(--cf-ink);
+  background: var(--cf-red);
+}
+
+.casefile-chart__key--whisker::before {
+  width: 0;
+  height: 12px;
+  margin: 0 8px 0 4px;
+  border-top: none;
+  border-left: 2px solid var(--cf-ink);
+}
+
+.casefile-chart__key--plain::before {
+  display: none;
+}
+
+.casefile-chart__note {
+  flex-basis: 100%;
+  font-style: italic;
+}
+
 .casefile-chart__empty {
   margin: 0;
   padding: 24px;
@@ -646,6 +839,51 @@
 }
 
 /* ---- Dev preview helper ---- */
+.casefile-preview--list {
+  min-height: 100dvh;
+  padding: 24px 16px;
+  background: #fff8e7;
+  color: #161b2e;
+  font-family: var(--font-type, 'Courier Prime', 'Courier New', monospace);
+}
+
+.casefile-list {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px 20px;
+  border: 3px solid #161b2e;
+  background: #fff;
+}
+
+.casefile-list__title {
+  margin: 0 0 12px;
+  font: 800 1.8rem var(--font-display, 'Big Shoulders Display', 'Arial Narrow', sans-serif);
+}
+
+.casefile-list__items {
+  margin: 0;
+  padding-left: 20px;
+  line-height: 1.9;
+}
+
+.casefile-list__items a {
+  color: #2457a6;
+  font-weight: 700;
+}
+
+.casefile-list__items code {
+  font-size: 0.8em;
+  color: #3b4a6b;
+}
+
+.casefile-preview__all {
+  position: fixed;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #fff8e7;
+  font: 700 14px var(--font-type, 'Courier New', monospace);
+}
 .casefile-preview__reopen {
   position: fixed;
   top: 16px;
