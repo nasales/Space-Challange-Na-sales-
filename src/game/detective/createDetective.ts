@@ -56,8 +56,12 @@ const FOCUS_ARM_Z = 0.3 // and a little out to the right
  * down through the lens. Neither the head nor the arm is on that line of sight.
  */
 const FOCUS_NORMAL = new THREE.Vector3(0.35, 0.35, 1).normalize()
-/** Above this lens focus (0..1) the 3D lens is hidden and the UI glass takes over. */
-const LENS_HIDE_FOCUS = 0.97
+/**
+ * The 3D lens is hidden only once the camera is fully in (focus 1): the same frame the game reports
+ * 'in' and the UI glass appears (with no fade) at the same size and place, so the swap cannot be
+ * seen and there is never a frame with no lens at all.
+ */
+const LENS_HIDE_FOCUS = 0.9999
 
 export function createDetective() {
   const materials = new Map<number, THREE.Material>()

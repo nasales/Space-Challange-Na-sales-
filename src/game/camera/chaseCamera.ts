@@ -27,6 +27,10 @@ const FOCUS_OUT_TIME = 0.6
 const FOCUS_FOV = 36
 /** Extra push-in near the end of the flight (fraction of the final distance); zero on the last frame. */
 const FOCUS_PUSH = 0.07
+/** Widest field of view the camera may open to when it has to come closer to the lens (near a wall). */
+const FOCUS_FOV_MAX = 70
+/** Points checked along the lens axis for roofs, monuments and ground in the way. */
+const FREE_SAMPLES = 16
 
 /** The hand lens as the camera needs it: glass centre, glass normal (towards the camera) and glass radius, in world units. */
 export interface LensTarget {
@@ -180,11 +184,31 @@ export function createChaseCamera(camera: THREE.PerspectiveCamera, dom: HTMLElem
     // The chase pose above keeps updating, so flying back out lands on the current chase view.
     if (lens && focusEased > 0) {
       const e = focusEased
-      camera.fov = chaseFov + (FOCUS_FOV - chaseFov) * e
-      // Final distance from the final FOV, so the last frame matches the contract size exactly.
+      // Final pose: on the glass axis at the distance where the glass fills the contract size.
+      // If a roof, a monument or the ground is in the way, the camera stays ON the axis but comes
+      // closer, and widens its field of view so the glass still covers exactly the same share of
+      // the screen (never lifted: a lifted camera sees the glass tilted and off-centre)
+      const blocked = (x: number, y: number, z: number) =>
+        y < Math.max(heightAt(x, z) + 0.3, wallAt(x, z) + 0.5, obstacleAt(x, z) + 0.5)
+      const ideal = lensFocusDistance(lens.radius, FOCUS_FOV, camera.aspect)
+      let free = ideal
+      for (let k = 1; k <= FREE_SAMPLES; k++) {
+        const d = (ideal * k) / FREE_SAMPLES
+        const { x, y, z } = lens.center
+        if (blocked(x + lens.normal.x * d, y + lens.normal.y * d, z + lens.normal.z * d)) {
+          free = (ideal * (k - 1)) / FREE_SAMPLES
+          break
+        }
+      }
+      const minDist = lensFocusDistance(lens.radius, FOCUS_FOV_MAX, camera.aspect)
+      const finalDist = Math.max(minDist, Math.min(ideal, free * 0.9))
+      // fov that makes the glass fill the contract size at finalDist (inverse of lensFocusDistance)
+      const halfTan = lens.radius / (LENS_SCREEN_FRACTION * finalDist * Math.min(1, camera.aspect))
+      const finalFov = finalDist < ideal ? THREE.MathUtils.radToDeg(2 * Math.atan(halfTan)) : FOCUS_FOV
+      camera.fov = chaseFov + (finalFov - chaseFov) * e
       // On the way in, a small extra push-in peaks late and is gone when the progress reaches 1
       const push = focusWanted && focusProgress < 1 ? FOCUS_PUSH * Math.sin(Math.PI * focusProgress) ** 2 * focusProgress : 0
-      const dist = lensFocusDistance(lens.radius, FOCUS_FOV, camera.aspect) * (1 - push)
+      const dist = finalDist * (1 - push)
       focusPos.copy(lens.normal).multiplyScalar(dist).add(lens.center)
       chasePos.copy(camera.position)
       if (e >= 1) {
@@ -199,10 +223,13 @@ export function createChaseCamera(camera: THREE.PerspectiveCamera, dom: HTMLElem
         const lookE = 1 - (1 - e) * (1 - e)
         focusLook.lerpVectors(lookAt, lens.center, lookE)
       }
-      // Same safeguard as the chase view: never below the ground nor inside a roof or a monument.
-      // (Only if it lifts the final pose does the glass leave the camera axis; it stays centred.)
-      const p = camera.position
-      p.y = Math.max(p.y, heightAt(p.x, p.z) + 0.3, wallAt(p.x, p.z) + 0.5, obstacleAt(p.x, p.z) + 0.5)
+      // Mid-flight the straight path may still graze a roof or a monument: lift it there only. The
+      // final pose is free by construction, so this fades out and never tilts the last frame
+      if (e < 1) {
+        const p = camera.position
+        const lift = Math.max(heightAt(p.x, p.z) + 0.3, wallAt(p.x, p.z) + 0.5, obstacleAt(p.x, p.z) + 0.5) - p.y
+        if (lift > 0) p.y += lift * (1 - e)
+      }
       camera.lookAt(focusLook)
       distance = camera.position.distanceTo(focusLook)
       return

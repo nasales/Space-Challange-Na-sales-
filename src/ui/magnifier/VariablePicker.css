@@ -234,11 +234,9 @@
   animation: vp-glint 7s ease-in-out 1.4s infinite;
 }
 
-/* Fading layers when the lens lets go */
-.variable-picker--open .variable-picker__bezel,
-.variable-picker--open .variable-picker__surface {
-  animation: vp-fade-in 180ms ease-out both;
-}
+/* The brass and the glass surface appear at once, in the same frame the 3D lens is hidden
+   (same size and place, so the swap is invisible; a fade would leave a moment with no lens).
+   Fading layers only when the lens lets go: */
 
 .variable-picker--closing .variable-picker__bezel,
 .variable-picker--closing .variable-picker__optic,
