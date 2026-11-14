@@ -3,6 +3,7 @@
 // The variable buttons are placeholders for now: visible but disabled (nothing to open yet).
 import { useEffect, useRef, useState } from 'react'
 import { CLIMATE_VARIABLES } from '../../shared/variables'
+import type { LensFocusState } from '../../shared/events'
 import './VariablePicker.css'
 
 type Phase = 'closed' | 'open' | 'closing'
@@ -13,7 +14,9 @@ const CLOSE_MS = 220
 interface Props {
   /** The detective is stopped, so Space may open the picker */
   canOpen: boolean
-  /** Told whenever the picker starts covering the map (true) and when it is fully gone (false) */
+  /** Camera flight into the hand lens, reported by the game (not used yet: interface/magnifier-glass) */
+  lensState?: LensFocusState
+  /** Asks the game to fly into the hand lens (true) or back out (false) */
   onOpenChange?: (open: boolean) => void
 }
 

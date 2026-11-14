@@ -47,13 +47,17 @@ function makeTexture(canvas: HTMLCanvasElement, renderer: THREE.WebGLRenderer) {
 }
 
 /** Only the 3D canvas. The HUD and status messages live in src/ui, fed through the callbacks. */
-export default function GameView({ onStatus, onHud, paused = false }: GameViewProps) {
+export default function GameView({ onStatus, onHud, onLensFocus, focusLens = false }: GameViewProps) {
   const container = useRef<HTMLDivElement>(null)
   // Latest callbacks (and pause flag), read from inside the animation loop without restarting the scene
-  const callbacks = useRef({ onStatus, onHud, paused })
+  const callbacks = useRef({ onStatus, onHud, onLensFocus, focusLens })
   useEffect(() => {
-    callbacks.current = { onStatus, onHud, paused }
+    callbacks.current = { onStatus, onHud, onLensFocus, focusLens }
   })
+  // TEMP bridge until game/magnifier-zoom: report the lens flight as finished at once
+  useEffect(() => {
+    callbacks.current.onLensFocus?.(focusLens ? 'in' : 'out')
+  }, [focusLens])
   const setStatus = (status: GameStatus) => callbacks.current.onStatus?.(status)
   const setHud = (hud: HudState) => callbacks.current.onHud?.(hud)
 
@@ -194,7 +198,8 @@ export default function GameView({ onStatus, onHud, paused = false }: GameViewPr
           const dt = lastTime === null ? 0 : Math.min(Math.max((time - lastTime) / 1000, 0), 0.1)
           lastTime = time
           // Paused (an overlay is open): ignore the keyboard so the detective stays still
-          const input = callbacks.current.paused ? { throttle: 0, steer: 0, turbo: false } : keyboard.read()
+          // TODO(game/magnifier-zoom): camera flight into the lens, report onLensFocus, keep input blocked until 'out'
+          const input = callbacks.current.focusLens ? { throttle: 0, steer: 0, turbo: false } : keyboard.read()
           stepCar(carState, input, ground, dt)
           detective.update(carState, dt)
           dust.update(carState, surfaceAt, detective.stridePhase, dt)

@@ -33,15 +33,33 @@ export interface GameStop {
   lon: number
 }
 
+/**
+ * Camera flight into the detective's hand lens:
+ * - 'in': the camera has arrived. The lens glass is centred on screen and its diameter is
+ *   LENS_SCREEN_DIAMETER, so the UI glass drawn on top matches it exactly.
+ * - 'out': the camera is back on the normal chase view and the player can move again.
+ */
+export type LensFocusState = 'in' | 'out'
+
+/** On-screen diameter of the hand lens glass once the camera is in (CSS length; game and UI must agree). */
+export const LENS_SCREEN_DIAMETER = 'min(72vh, 72vw)'
+/** The same size as a fraction of min(viewport width, viewport height), for the 3D camera. */
+export const LENS_SCREEN_FRACTION = 0.72
+
 /** Callbacks the game view accepts from the app shell. */
 export interface GameCallbacks {
   onStatus?: (status: GameStatus) => void
   onHud?: (hud: HudState) => void
   onStop?: (stop: GameStop) => void
+  /** The camera flight into (or out of) the hand lens has finished */
+  onLensFocus?: (state: LensFocusState) => void
 }
 
 /** Props of the game view: the callbacks plus what the app shell tells the game. */
 export interface GameViewProps extends GameCallbacks {
-  /** While true (e.g. an overlay is open) the game ignores keyboard input and the detective stays still */
-  paused?: boolean
+  /**
+   * true: fly the camera into the hand lens (the detective holds it up); false: fly back out.
+   * While true, and until 'out' is reported, the game ignores keyboard input and the detective stays still.
+   */
+  focusLens?: boolean
 }
