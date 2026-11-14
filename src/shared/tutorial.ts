@@ -48,7 +48,7 @@ export interface TutorialScript {
    * When present, the UI plays it before the steps (the intro card can be skipped or shortened).
    */
   scene?: {
-    lines: { speaker: 'detective' | 'witness'; text: string }[]
+    lines: { speaker: 'detective' | 'witness'; text: string; mood?: LineMood }[]
     /** The witness's claim, in quotes, pinned at the top of the detective's notebook */
     claim: string
   }
@@ -72,6 +72,22 @@ export interface TutorialScript {
     claim_text?: string
   }
 }
+
+/**
+ * How the speaker feels on a dialogue line: drives the emote in the speech bubble (UI) and the
+ * talking pose / face of the 3D character (game). Default 'neutral'.
+ */
+export type LineMood =
+  | 'neutral'
+  | 'happy'
+  | 'curious'
+  | 'explaining'
+  | 'sad'
+  | 'proud'
+  | 'doubtful'
+  | 'insistent'
+  | 'determined'
+  | 'confident'
 
 export interface TutorialStep {
   id: string

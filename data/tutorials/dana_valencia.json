@@ -15,59 +15,59 @@
     "lines": [
       {
         "speaker": "witness",
-        "text": "Bon dia, detective! Over here, by the orange trees. You came about the flood, no?"
+        "text": "Bon dia, detective! Over here, by the orange trees. You came about the flood, no?", "mood": "happy"
       },
       {
         "speaker": "detective",
-        "text": "Bon dia. I did. I am looking into what happened here in October 2024. Can you tell me?"
+        "text": "Bon dia. I did. I am looking into what happened here in October 2024. Can you tell me?", "mood": "curious"
       },
       {
         "speaker": "witness",
-        "text": "The 29th of October. A DANA sat right over us and dropped months of rain in a few hours."
+        "text": "The 29th of October. A DANA sat right over us and dropped months of rain in a few hours.", "mood": "sad"
       },
       {
         "speaker": "detective",
-        "text": "A DANA?"
+        "text": "A DANA?", "mood": "curious"
       },
       {
         "speaker": "witness",
-        "text": "A pocket of cold air high up that breaks away and stays put. Over a warm autumn sea, it feeds storms for hours."
+        "text": "A pocket of cold air high up that breaks away and stays put. Over a warm autumn sea, it feeds storms for hours.", "mood": "explaining"
       },
       {
         "speaker": "witness",
-        "text": "The ravines filled in minutes. Flash floods ran through towns and roads. More than 220 people died."
+        "text": "The ravines filled in minutes. Flash floods ran through towns and roads. More than 220 people died.", "mood": "sad"
       },
       {
         "speaker": "detective",
-        "text": "I am sorry. That was a terrible day for the whole region."
+        "text": "I am sorry. That was a terrible day for the whole region.", "mood": "sad"
       },
       {
         "speaker": "witness",
-        "text": "For weeks we shovelled mud out of our neighbours' houses. Everyone helped, young and old."
+        "text": "For weeks we shovelled mud out of our neighbours' houses. Everyone helped, young and old.", "mood": "proud"
       },
       {
         "speaker": "witness",
-        "text": "Now everyone on the radio says \"climate change\". A warmer world gives storms more fuel, they say."
+        "text": "Now everyone on the radio says \"climate change\". A warmer world gives storms more fuel, they say.", "mood": "doubtful"
       },
       {
         "speaker": "detective",
-        "text": "Many people ask the same thing. What do you think, Vicent?"
+        "text": "Many people ask the same thing. What do you think, Vicent?", "mood": "curious"
       },
       {
         "speaker": "witness",
-        "text": "Mira, xiquet, I have watched this sky all my life. The weather here is changing, and it rains more every year. I am telling you!"
+        "text": "Mira, xiquet, I have watched this sky all my life. The weather here is changing, and it rains more every year. I am telling you!", "mood": "insistent"
       },
       {
         "speaker": "detective",
-        "text": "That is a clear claim. A good detective does not guess: we test a claim with evidence."
+        "text": "That is a clear claim. A good detective does not guess: we test a claim with evidence.", "mood": "determined"
       },
       {
         "speaker": "detective",
-        "text": "So, the question: is it raining more and more in Valencia, or is something else changing? Let us read the NASA data."
+        "text": "So, the question: is it raining more and more in Valencia, or is something else changing? Let us read the NASA data.", "mood": "determined"
       },
       {
         "speaker": "witness",
-        "text": "Go on, then. You will see I am right!"
+        "text": "Go on, then. You will see I am right!", "mood": "confident"
       }
     ],
     "claim": "The weather here is changing, and it rains more every year."

@@ -23,6 +23,7 @@ TREND_VIEWS = {"monthly", "anomaly", "annual", "same_month", "season", "threshol
 SEASONS = {"DJF", "MAM", "JJA", "SON", "JJAS"}
 WINDOWS = {12, 60}
 MAX_WORDS = 90  # docs say "at most ~80 words"; small margin
+MOODS = {"neutral", "happy", "curious", "explaining", "sad", "proud", "doubtful", "insistent", "determined", "confident"}  # LineMood in src/shared/tutorial.ts
 SPEAKERS = {"detective", "witness"}
 VERDICTS = {"right", "wrong", "partly"}
 MAX_LINE_WORDS = 40  # one speech bubble
@@ -174,6 +175,7 @@ def test_tutorial_script(path):
         for i, line in enumerate(scene["lines"]):
             assert line["speaker"] in SPEAKERS, f"scene line {i}: speaker {line['speaker']}"
             assert line["text"].strip(), f"scene line {i}: empty text"
+            assert line.get("mood", "neutral") in MOODS, f"scene line {i}: mood {line.get('mood')}"
             assert len(line["text"].split()) <= MAX_LINE_WORDS, f"scene line {i}: too long"
         assert scene["claim"].strip(), "scene needs a claim"
     for step in s["steps"]:
