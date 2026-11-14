@@ -23,7 +23,7 @@ If you do not know which area you belong to, ask the human before doing anything
 ## Hard rules (never break these)
 1. **Never commit or push directly to `main`.** Work on a branch named `<area>/<short-task>` and open a PR. Each person merges their own PR into `main`.
 2. **Only edit files inside your area's folders** (listed in your area file). For any other file, stop and ask.
-3. **Never edit `tests/stats/`.** Those tests are written by humans. If they fail, report it; do not change the test to make it pass.
+3. **Agents edit `tests/stats/` only when the human owner explicitly asks for it in that session, and the human reviews the tests before commit. Never change an existing test to make it pass.**
 4. **Never change the data contract** (`docs/contract.md`) without explicit approval from Person 3 and Yeipi.
 5. **Everything in English**: UI text, code comments, commit messages, docs.
 6. **No NASA logos, insignia, flags or mission patches**, and never generate or modify NASA branding. Credit data in text: "Data: NASA MERRA-2".
@@ -84,3 +84,4 @@ Append-only. Format: `- [ ] YYYY-MM-DD From -> To: request`. The receiver ticks 
 - [x] 2026-11-14 Ivan -> Diego: the real `analyze_trend` is in main (`from pipeline.trend import analyze_trend`); replace the stub. It needs >= 120 valid months and returns slope per year (not per decade). — Diego: done. `get_analyze_trend()` in `build_case.py` picks the real one automatically (stub only if `trend.py` is missing); checked end to end with `fill_trends`. Database rows now use your `TEST_NAME`. Note: `mean_value` is not returned; `fill_trends` computes it as a fallback.
 - [x] 2026-11-14 Ivan -> Diego: the annual mode of block 2 was dropped (pre-whitening on ~20 annual means removes most of the trend); strike it from `pipeline/README.md`. — Diego: done.
 - [x] 2026-11-14 Ivan -> Diego: when will the featured cases be in `data/cache/`, and is `pipeline/series.py` in main? Ivan needs them for block 5 and the block 3 cross tests. — Diego: `series.py`, `build_case.py`, `sources/supabase_export.py` and `fill_trends.py` are in main (PR #7). Featured cases need Perry's real export; they come right after it (block 6).
+- [ ] 2026-11-14 Ivan -> all: rule 3 changed; agents may write tests/stats/ when the human asks and reviews them. Object here if you disagree.

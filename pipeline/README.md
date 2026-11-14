@@ -37,7 +37,7 @@ JSON export (`etl_espana.py --export-dir export`):
 | `pipeline/series.py`, `pipeline/sources/*.py`, `pipeline/build_case.py`, `pipeline/fill_trends.py`, `pipeline/tests/test_series.py`, `pipeline/tests/test_build_case.py`, `pipeline/tests/test_sources.py`, `pipeline/tests/test_fill_trends.py`, `data/raw/`, `data/cache/*.json` | Diego |
 | `pipeline/requirements.txt`, `pipeline/tests/__init__.py`, `AI_USAGE.md`, `REFERENCES.md` | Shared: append lines at the end only |
 
-An agent working for one owner must not edit the other owner's files. Never edit `docs/contract.md` or `tests/stats/`.
+An agent working for one owner must not edit the other owner's files. Never edit `docs/contract.md`; edit `tests/stats/` only when the human asks and reviews (AGENTS.md rule 3).
 
 ## Interface 1 — `Series` (Diego, `pipeline/series.py`)
 ```python
@@ -109,7 +109,7 @@ Before starting, ask the human which person they are (Ivan or Diego) and which b
 | 1 | Diego | `diego_dev` | ✅ `Series`, `Series.validate()` and `from_start_month()` | Tests pass for gaps, fill codes, NaN, malformed start month, database dates, unsorted/duplicated/missing dates, bad metadata |
 | 2 | Ivan | `ivan_dev` | Robustness: warning when the series has many gaps. ~~Optional annual-mean trend~~ dropped: pre-whitening on ~20 annual means removes most of the trend | New tests pass, old ones still pass |
 | 2 | Diego | `diego_dev` | ✅ `build_case` + `write_case` + `trend_from_db`, using the stub `analyze_trend` until block 1 of Ivan is merged | Output passes the contract validator |
-| 3 | Ivan + Diego (humans, cross) | — | Each human writes 2-3 tests of the other's code in `tests/stats/` (agents never edit this folder) | They pass, or a bug line goes to the owner |
+| 3 | Ivan + Diego (humans, cross) | — | Each human writes 2-3 tests of the other's code in `tests/stats/` (an agent may write them only when its human asks and reviews them, AGENTS.md rule 3) | They pass, or a bug line goes to the owner |
 | 4 | Diego | `diego_dev` | ✅ (fake export; recheck with the real one) Adapter `pipeline/sources/supabase_export.py` (`cell_id_for`, `find_cell`, `load_series`, `load_trend`, `iter_series`): reads `export/cells/<cell_id>.json` + `variables.json` into `Series` + trend dict | Returns a valid `Series` for cell `753817` (Salamanca) |
 | 4 | Ivan | `ivan_dev` | `explain(trend, series) -> str` in `explain.py`: plain-English facts for the AI checker | Correct text for one significant and one non-significant case |
 | 5 | Diego | `diego_dev` | ✅ (needs Ivan's `trend.py` to run for real) `fill_trends.py` (Interface 4): trends for all cells × variables, handed to Perry for upload | Rows file passes a schema check; skipped series listed with a reason |
