@@ -4,10 +4,10 @@
 | Dataset | Version | Link | Used for |
 |---|---|---|---|
 | NASA GIBS — Blue Marble Next Generation | `BlueMarble_NextGeneration` layer (WMS, EPSG:4326, "best") | https://gibs.earthdata.nasa.gov | Satellite colour of the explored country on the 3D map (`scripts/fetch-map-data.mjs`) |
-| GLDAS Noah Land Surface Model L4 monthly 0.25° (`GLDAS_NOAH025_M`) | 2.1 | https://doi.org/10.5067/SXAVCZFAQLNO | `tair`, `wind`, `soilmoist`, `evap` and the land mask (Supabase `series`) |
-| GPM IMERG Final Precipitation L3 monthly 0.1° (`GPM_3IMERGM`) | V07 | https://doi.org/10.5067/GPM/IMERG/3B-MONTH/07 | `precip` (Supabase `series`) |
-| MERRA-2 tavgM_2d_slv_Nx monthly (`M2TMNXSLV`) | 5.12.4 | https://doi.org/10.5067/AP1B0BA5PD2K | `t2m_long` (Supabase `series`) |
-| NASA POWER (Prediction Of Worldwide Energy Resources) monthly point data, community AG: `T2M`, `PRECTOTCORR`, `GWETTOP`, 1981-2024. Data obtained from the NASA Langley Research Center (LaRC) POWER Project funded through the NASA Earth Science/Applied Science Program. Source: MERRA-2 | API v2.10.0 | https://power.larc.nasa.gov/ | Featured case studies (`data/raw/power/`, `data/cache/case_*.json`) |
+| GLDAS Noah Land Surface Model L4 monthly 0.25° (`GLDAS_NOAH025_M`) | 2.1 | https://doi.org/10.5067/SXAVCZFAQLNO | `tair`, `wind`, `soilmoist`, `evap` and the land mask (Supabase `series`); `SOILM` of the featured cases (`data/cache/case_*_SOILM.json`) |
+| GPM IMERG Final Precipitation L3 monthly 0.1° (`GPM_3IMERGM`) | V07 | https://doi.org/10.5067/GPM/IMERG/3B-MONTH/07 | `precip` (Supabase `series`); `PRECIP` of the featured cases (`data/cache/case_*_PRECIP.json`) |
+| MERRA-2 tavgM_2d_slv_Nx monthly (`M2TMNXSLV`) | 5.12.4 | https://doi.org/10.5067/AP1B0BA5PD2K | `t2m_long` (Supabase `series`); `T2M` of the featured cases (`data/cache/case_*_T2M.json`) |
+| NASA POWER (Prediction Of Worldwide Energy Resources) monthly point data, community AG: `T2M`, `PRECTOTCORR`, `GWETTOP`, 1981-2024. Data obtained from the NASA Langley Research Center (LaRC) POWER Project funded through the NASA Earth Science/Applied Science Program. Source: MERRA-2 | API v2.10.0 | https://power.larc.nasa.gov/ | Documented fallback for the featured case studies (`data/raw/power/`, `--source power`) |
 
 ## Other data, code, libraries, models, fonts and images
 | Name | License | Link | Used for |
