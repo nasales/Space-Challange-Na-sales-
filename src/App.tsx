@@ -8,6 +8,7 @@ import Hud from './ui/hud/Hud'
 import MainMenu from './ui/menu/MainMenu'
 import Wardrobe from './ui/wardrobe/Wardrobe'
 import DbTest from './ui/dbtest/DbTest'
+import DbStatus from './ui/status/DbStatus'
 import type { GameStatus, HudState } from './shared/events'
 import { loadOutfit, type Outfit } from './shared/outfit'
 
@@ -17,14 +18,19 @@ type Screen = 'menu' | 'wardrobe' | 'game'
 const DB_TEST = new URLSearchParams(window.location.search).has('dbtest')
 
 export default function App() {
-  if (DB_TEST) {
-    return (
-      <main className="app">
-        <DbTest />
-      </main>
-    )
-  }
-  return <Game />
+  return (
+    <>
+      {DB_TEST ? (
+        <main className="app">
+          <DbTest />
+        </main>
+      ) : (
+        <Game />
+      )}
+      {/* Database badge + build version, on every screen */}
+      <DbStatus />
+    </>
+  )
 }
 
 function Game() {

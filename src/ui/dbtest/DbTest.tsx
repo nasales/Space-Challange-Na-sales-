@@ -1,21 +1,22 @@
 // Database test page (temporary, for the team): open the site with ?dbtest.
-// Checks the whole chain browser -> /api (Python backend) -> Supabase and shows a short summary.
+// Checks the browser -> Supabase connection (publishable key, read only) and shows a short summary.
 // Not linked from the game; agreed with Yeipi (Interface) on 2026-11-14.
 import { useState } from 'react'
 import {
   fetchCase,
   fetchCases,
   fetchCell,
-  fetchHealth,
+  pingSupabase,
+  supabaseConfigured,
   type CaseSummary,
   type CellVariable,
-  type Health,
-} from '../../shared/api'
+} from '../../shared/supabase'
 import type { CaseData } from '../../shared/contract'
+import { VERSION_LABEL } from '../../shared/version'
 import './DbTest.css'
 
 interface Result {
-  health?: Health
+  connected: boolean
   cases?: CaseSummary[]
   firstCase?: CaseData
   cell?: CellVariable[]
@@ -47,20 +48,23 @@ export default function DbTest() {
     setBusy(true)
     const t0 = performance.now()
     const errors: string[] = []
-    const health = await attempt('/api/health', () => fetchHealth(), errors)
-    const cases = await attempt('/api/cases', () => fetchCases(), errors)
-    const firstCase = cases?.length ? await attempt('/api/cases/{id}', () => fetchCase(cases[0].id), errors) : undefined
-    const cell = await attempt('/api/cell', () => fetchCell(Number(lat), Number(lon)), errors)
-    setResult({ health, cases, firstCase, cell, errors, ms: Math.round(performance.now() - t0) })
+    const connected = (await attempt('connection', () => pingSupabase(), errors)) !== undefined
+    const cases = await attempt('cases', () => fetchCases(), errors)
+    const firstCase = cases?.length ? await attempt('case', () => fetchCase(cases[0].id), errors) : undefined
+    const cell = await attempt('get_cell', () => fetchCell(Number(lat), Number(lon)), errors)
+    setResult({ connected, cases, firstCase, cell, errors, ms: Math.round(performance.now() - t0) })
     setBusy(false)
   }
 
-  const ok = result && result.errors.length === 0 && result.health?.supabase === 'connected'
+  const ok = result && result.errors.length === 0 && result.connected
 
   return (
     <div className="dbtest">
       <h1>Database test</h1>
-      <p className="dbtest-note">Browser → /api (Python backend) → Supabase. Data: NASA MERRA-2, GPM IMERG, GLDAS.</p>
+      <p className="dbtest-note">
+        Browser → Supabase (read only). Data: NASA MERRA-2, GPM IMERG, GLDAS. Build: {VERSION_LABEL}
+        {!supabaseConfigured && ' · Supabase is not configured in this build'}
+      </p>
 
       <div className="dbtest-controls">
         <label>
@@ -77,7 +81,7 @@ export default function DbTest() {
       {result && (
         <div className="dbtest-result">
           <p className={ok ? 'dbtest-ok' : 'dbtest-bad'}>
-            {ok ? 'Connected' : 'Problem found'} · {result.ms} ms · Supabase: {result.health?.supabase ?? 'no answer'}
+            {ok ? 'Connected' : 'Problem found'} · {result.ms} ms · Supabase: {result.connected ? 'connected' : 'no answer'}
           </p>
 
           {result.errors.length > 0 && (
