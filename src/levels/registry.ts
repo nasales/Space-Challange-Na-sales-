@@ -8,6 +8,7 @@ import AnetoLevel from './aneto/AnetoLevel'
 import CordobaLevel from './cordoba/CordobaLevel'
 import CulebraLevel from './culebra/CulebraLevel'
 import DanaLevel from './dana/DanaLevel'
+import DaimielLevel from './daimiel/DaimielLevel'
 import DonanaLevel from './donana/DonanaLevel'
 import EbroLevel from './ebro/EbroLevel'
 import FilomenaLevel from './filomena/FilomenaLevel'
@@ -24,6 +25,7 @@ export const LEVELS: Partial<Record<string, ComponentType<CaseLevelProps>>> = {
   galicia_fires: GaliciaLevel,
   ebro_delta: EbroLevel,
   cordoba_heat: CordobaLevel,
+  daimiel: DaimielLevel,
 }
 
 export function getLevel(caseId: string): ComponentType<CaseLevelProps> | undefined {
