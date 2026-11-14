@@ -1,0 +1,16 @@
+{
+  "bounds": {
+    "west": -180,
+    "east": 180,
+    "south": -85,
+    "north": 85
+  },
+  "height": {
+    "file": "world-height.bin",
+    "width": 1440,
+    "height": 680,
+    "type": "int16",
+    "units": "m"
+  },
+  "source": "AWS Terrain Tiles (Terrarium, SRTM y otros)"
+}

@@ -1,0 +1,96 @@
+{
+  "_info": "Paisaje por regiones. Cada región: qué se planta (kinds), dónde (cajas lat/lon), cada cuánto (spacing, unidades del mundo), qué parte del terreno cubre (cover, 0-1, en manchas), cómo (rows = en filas, scatter = disperso) y entre qué alturas (metros). Los molinos se colocan en los puntos más altos (pick: highest).",
+  "regions": [
+    {
+      "id": "olivares-andalucia",
+      "kinds": ["olive"],
+      "boxes": [
+        { "south": 36.8, "north": 38.6, "west": -6.5, "east": -2.3 }
+      ],
+      "layout": "rows",
+      "spacing": 9,
+      "cover": 0.6,
+      "maxMeters": 900
+    },
+    {
+      "id": "molinos-la-mancha",
+      "kinds": ["windmill"],
+      "boxes": [
+        { "south": 39.2, "north": 39.6, "west": -3.9, "east": -2.8 }
+      ],
+      "pick": "highest",
+      "count": 30,
+      "minGap": 28,
+      "spacing": 10
+    },
+    {
+      "id": "vinedos",
+      "kinds": ["vine"],
+      "boxes": [
+        { "south": 42.2, "north": 42.7, "west": -3.1, "east": -1.8 },
+        { "south": 41.5, "north": 41.8, "west": -4.3, "east": -3.5 },
+        { "south": 38.6, "north": 39.1, "west": -3.8, "east": -3 }
+      ],
+      "layout": "rows",
+      "spacing": 7,
+      "rowLength": 12,
+      "cover": 0.6,
+      "maxMeters": 1100
+    },
+    {
+      "id": "bosques-norte",
+      "kinds": ["pine", "broadleaf", "broadleaf"],
+      "boxes": [
+        { "south": 42.3, "north": 43.9, "west": -9.4, "east": -1.5 },
+        { "south": 42.3, "north": 43, "west": -1.5, "east": 3.3 }
+      ],
+      "layout": "scatter",
+      "spacing": 9,
+      "cover": 0.5
+    },
+    {
+      "id": "pinares-sierras",
+      "kinds": ["pine"],
+      "boxes": [
+        { "south": 36, "north": 42.3, "west": -9.4, "east": 3.4 }
+      ],
+      "layout": "scatter",
+      "spacing": 9,
+      "cover": 0.55,
+      "minMeters": 1150
+    },
+    {
+      "id": "dehesa-extremadura",
+      "kinds": ["holmoak"],
+      "boxes": [
+        { "south": 38.3, "north": 40, "west": -7.3, "east": -5.3 }
+      ],
+      "layout": "scatter",
+      "spacing": 22,
+      "cover": 0.8,
+      "maxMeters": 1000
+    },
+    {
+      "id": "palmeral-elche",
+      "kinds": ["palm"],
+      "boxes": [
+        { "south": 37.9, "north": 38.4, "west": -0.9, "east": -0.5 }
+      ],
+      "layout": "scatter",
+      "spacing": 10,
+      "cover": 0.6,
+      "maxMeters": 400
+    },
+    {
+      "id": "palmeras-canarias",
+      "kinds": ["palm"],
+      "boxes": [
+        { "south": 27.6, "north": 29.5, "west": -18.2, "east": -13.3 }
+      ],
+      "layout": "scatter",
+      "spacing": 18,
+      "cover": 0.5,
+      "maxMeters": 500
+    }
+  ]
+}

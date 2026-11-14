@@ -6,6 +6,8 @@ Usage:
 For each case and variable: load data/raw/power/<id>_<var>.json (download it only if missing or
 with --refresh), run analyze_trend, and write data/cache/case_<id>_<var>.json with exactly the
 contract fields (docs/contract.md), using Diego's build_case / write_case.
+It also writes data/cases_index.json (outside data/cache/, so the contract validator ignores it)
+with the texts of every case and the list of its files.
 """
 
 from __future__ import annotations
@@ -24,6 +26,7 @@ from pipeline.trend import analyze_trend
 ROOT = Path(__file__).resolve().parent.parent
 RAW_DIR = ROOT / "data" / "raw" / "power"
 CACHE_DIR = ROOT / "data" / "cache"
+INDEX_PATH = ROOT / "data" / "cases_index.json"
 
 
 def dataset_name(param: str) -> str:
@@ -48,6 +51,46 @@ def build_one(case: dict, param: str, raw_dir: Path = RAW_DIR, cache_dir: Path =
     return contract_case, trend, series
 
 
+def case_file(case_id: str, param: str) -> str:
+    """Repo-relative path of a case file, as listed in the index."""
+    return f"data/cache/case_{case_id}_{param}.json"
+
+
+def load_case_file(path: str | Path) -> tuple[dict, Series]:
+    """Re-run analyze_trend on a committed contract file. Returns (full trend dict, series).
+
+    The contract file stores only slope / p_value / significant / test, so the CI and the other
+    trend keys are recomputed from its dates and values (deterministic, no download).
+    """
+    case = json.loads(Path(path).read_text(encoding="utf-8"))
+    series = Series(place=case["place"], lat=case["lat"], lon=case["lon"], variable=case["variable"],
+                    units=case["units"], dataset=case["dataset"], dates=case["dates"],
+                    values=case["values"]).validate()
+    return analyze_trend(series.dates, series.values), series
+
+
+def build_index(cases: list[dict] = CASES, root: Path = ROOT) -> list[dict]:
+    """One entry per case: id, title, place, lat, lon, question, context, files, facts.
+
+    `facts` maps each variable to the explain() text of its series (built from the case files).
+    """
+    keys = ("id", "title", "place", "lat", "lon", "question", "context")
+    index = []
+    for c in cases:
+        files = [case_file(c["id"], v) for v in c["variables"]]
+        facts = {v: explain(*load_case_file(Path(root) / f)) for v, f in zip(c["variables"], files)}
+        index.append({**{k: c[k] for k in keys}, "files": files, "facts": facts})
+    return index
+
+
+def write_index(path: str | Path = INDEX_PATH, cases: list[dict] = CASES) -> None:
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="\n") as f:
+        json.dump(build_index(cases), f, ensure_ascii=False, indent=1)
+        f.write("\n")
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Build the featured case studies from NASA POWER.")
     ap.add_argument("--refresh", action="store_true", help="download again even if the raw file exists")
@@ -62,6 +105,8 @@ def main(argv: list[str] | None = None) -> int:
             _, trend, series = build_one(case, param, refresh=args.refresh)
             print(explain(trend, series))
             print()
+    write_index()
+    print(f"Index: {INDEX_PATH.relative_to(ROOT).as_posix()}")
     return 0
 
 
