@@ -6,7 +6,7 @@ import { loadCountryData } from './map/mapData'
 import { loadWorldData } from './map/worldData'
 import { buildToyMap } from './map/buildToyMap'
 import { buildWorldTexture } from './map/buildWorldTexture'
-import { smoothHeights } from './map/terrace'
+import { addRelief, smoothHeights } from './map/terrace'
 import { lonLatToWorld, worldToLonLat, UNITS_PER_KM } from './map/projection'
 import { createScene } from './scene/createScene'
 import { createTerrain } from './scene/createTerrain'
@@ -79,7 +79,8 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
         // País explorado: una maqueta por zona (p. ej. Península y Canarias).
         // Alturas suavizadas: las mismas para la textura y la malla, así encajan
         const zones = explored.zones.map((zone) => {
-          const heights = smoothHeights(zone.heights, zone.heightWidth, zone.heightHeight)
+          // Smoothed heights plus extra relief (slopes everywhere): same grid for texture and mesh
+          const heights = addRelief(smoothHeights(zone.heights, zone.heightWidth, zone.heightHeight), zone.heightWidth, zone.heightHeight)
           landmarks.flattenTerrain(zone, heights) // explanadas bajo los monumentos
           const textureWidth = Math.min(4096, zone.heightWidth * 2)
           const texture = makeTexture(buildToyMap(zone, heights, country, textureWidth), renderer)

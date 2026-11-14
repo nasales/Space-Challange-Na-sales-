@@ -1,4 +1,5 @@
 // Toy-model "terraced" relief: heights are grouped into floors joined by long, gentle ramps.
+import { fractalNoise } from './valueNoise'
 
 /** Height (m) at which each floor starts. Same order and count as LEVEL_COLORS in palette.ts. */
 export const TERRACE_LEVELS = [0, 150, 350, 600, 900, 1200, 1600, 2000, 2500]
@@ -119,5 +120,51 @@ export function smoothHeights(src: Int16Array, w: number, h: number, passes = 6)
   softBlur(weight, tmp, w, h, LAND_RADIUS)
   softBlur(land, tmp, w, h, LAND_RADIUS)
   for (let i = 0; i < a.length; i++) if (a[i] > 0) a[i] = Math.max(1, land[i] / weight[i])
+  return a
+}
+
+/** Local relief boost: how far (grid cells, ~600 m each) and how strongly real hills/valleys are exaggerated. */
+const RELIEF_RADIUS = 8
+const RELIEF_BOOST = 1.6
+/** Rolling toy hills added on land so flat plateaus (the Meseta) get playful bumps: height (m) and size (cells). */
+const HILLS_HEIGHT = 260
+const HILLS_SIZE = 30
+
+const smooth01 = (a: number, b: number, v: number) => {
+  const t = Math.min(1, Math.max(0, (v - a) / (b - a)))
+  return t * t * (3 - 2 * t)
+}
+
+/**
+ * Makes slopes noticeable everywhere, not only in the sierras (in place, land only):
+ * 1) unsharp mask: each land cell moves away from its local average, so real valleys get deeper
+ *    and real hills higher, and the Meseta's ups and downs cross terrace bands as ramps;
+ * 2) gentle fractal "toy hills" on top.
+ * Both fade out near the coast (by the share of land around each cell), so beaches and the
+ * coastline stay where they are. Sea cells are never touched and land never drops to <= 0.
+ */
+export function addRelief(a: Float32Array, w: number, h: number): Float32Array {
+  const n = a.length
+  const tmp = new Float32Array(n)
+  const weight = new Float32Array(n)
+  const land = new Float32Array(n)
+  const ones = new Float32Array(n).fill(1)
+  for (let i = 0; i < n; i++) {
+    weight[i] = a[i] > 0 ? 1 : 0
+    land[i] = weight[i] * a[i]
+  }
+  softBlur(weight, tmp, w, h, RELIEF_RADIUS)
+  softBlur(land, tmp, w, h, RELIEF_RADIUS)
+  softBlur(ones, tmp, w, h, RELIEF_RADIUS)
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = y * w + x
+      if (a[i] <= 0) continue
+      const local = land[i] / weight[i]
+      const inland = smooth01(0.6, 0.97, weight[i] / ones[i]) // 0 at the shore, 1 well inland
+      const hills = HILLS_HEIGHT * (fractalNoise(x / HILLS_SIZE, y / HILLS_SIZE) - 0.4)
+      a[i] = Math.max(1, a[i] + (RELIEF_BOOST * (a[i] - local) + hills) * inland)
+    }
+  }
   return a
 }

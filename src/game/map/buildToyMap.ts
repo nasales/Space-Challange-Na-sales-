@@ -3,7 +3,9 @@
 // La forma del relieve la pone la geometría 3D; aquí solo van los colores.
 import type { ZoneData } from './mapData'
 import type { Country } from './worldData'
-import { terraceIndex } from './terrace'
+import { terraceHeight, terraceIndex } from './terrace'
+import { HEIGHT_EXAGGERATION, metersToY } from './projection'
+import { SUN_DIRECTION } from '../scene/createSky'
 import { distanceTo } from './distanceField'
 import { computeExploredRegion } from './exploredRegion'
 import { UNITS_PER_DEG_LON, UNITS_PER_KM } from './projection'
@@ -17,6 +19,16 @@ const FIELD_SIZE = 28
 const FIELD_STRENGTH = 0.7
 /** Large, gentle brightness variation in the plains (0 = none). */
 const BRIGHTNESS_NOISE = 0.06
+/**
+ * Hillshade painted into the ground: slopes facing the sun get lighter, slopes facing away darker.
+ * The cel shading has only two tones, so without this gentle ramps are invisible from above.
+ * HILLSHADE = strength; the factor is clamped to [HILLSHADE_MIN, HILLSHADE_MAX].
+ */
+const HILLSHADE = 1.6
+const HILLSHADE_MIN = 0.72
+const HILLSHADE_MAX = 1.18
+/** Size of each hillshade tone step (banded comic look instead of a smooth gradient). */
+const HILLSHADE_STEP = 0.08
 /** Blur (texture pixels) of the satellite image that decides wet/mid/dry zones. */
 const ZONE_BLUR = 10
 
@@ -78,6 +90,8 @@ export function buildToyMap(
   const rivers = data.rivers?.length ? rasterizeRivers(data.rivers, bounds, width, height, pxPerKm, PAINT_REACH_KM) : null
 
   // 4) Pintar
+  const pxWorld = UNITS_PER_KM / pxPerKm // world units per texture pixel (for the hillshade)
+  const surfY = (m: number) => metersToY(terraceHeight(Math.max(m, 1)), HEIGHT_EXAGGERATION)
   const canvas = document.createElement('canvas')
   canvas.width = width
   canvas.height = height
@@ -114,6 +128,15 @@ export function buildToyMap(
           c = scale(c, 1 + (fractalNoise(x / 160 + 50, y / 160) - 0.5) * BRIGHTNESS_NOISE)
         }
         if (lv === 0 && distToSea[i] < 5) c = SAND // beach
+        // Hillshade from the terraced surface that is actually rendered (world units)
+        if (x > 0 && y > 0 && x < width - 1 && y < height - 1) {
+          const hx = (surfY(elev[i + 1]) - surfY(elev[i - 1])) / (2 * pxWorld)
+          const hz = (surfY(elev[i + width]) - surfY(elev[i - width])) / (2 * pxWorld)
+          const len = Math.hypot(hx, 1, hz)
+          const lit = (-hx * SUN_DIRECTION.x + SUN_DIRECTION.y - hz * SUN_DIRECTION.z) / len / SUN_DIRECTION.y
+          const shade = Math.min(HILLSHADE_MAX, Math.max(HILLSHADE_MIN, 1 + (lit - 1) * HILLSHADE))
+          c = scale(c, 1 + Math.round((shade - 1) / HILLSHADE_STEP) * HILLSHADE_STEP) // banded, like cel shading
+        }
         if (rivers) c = paintRiver(c, rivers.edge[i], rivers.halfWidth[i], pxPerKm)
         // (Ya no se pinta un borde oscuro entre pisos: los contornos de tinta marcan esos bordes)
       }
