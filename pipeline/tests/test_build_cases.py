@@ -58,7 +58,10 @@ def test_cases_index(tmp_path):
     assert index == build_index()
     assert [e["id"] for e in index] == [c["id"] for c in CASES]
     for entry in index:
-        assert set(entry) == {"id", "title", "place", "lat", "lon", "question", "context", "files"}
+        assert set(entry) == {"id", "title", "place", "lat", "lon", "question", "context", "files", "facts"}
+        assert set(entry["facts"]) == {f.rsplit("_", 1)[1][:-5] for f in entry["files"]}
+        for var, text in entry["facts"].items():
+            assert f"Variable: {var}" in text and "Mann-Kendall p-value:" in text
         assert entry["question"].endswith("?") and entry["context"] and "TODO" not in entry["context"]
         assert all(f.startswith("data/cache/case_") for f in entry["files"])
         assert all((ROOT / f).exists() for f in entry["files"])  # the committed case files
@@ -73,3 +76,14 @@ def test_featured_cases_cover_the_brief():
     files = [ROOT / f for entry in build_index() for f in entry["files"]]
     significant = [json.loads(f.read_text(encoding="utf-8"))["significant"] for f in files]
     assert False in significant
+
+
+def test_results_table_and_methods_doc():
+    from pipeline.results_table import END, START, replace_table, results_table
+
+    table = results_table()
+    assert len(table.splitlines()) == 2 + sum(len(c["variables"]) for c in CASES)
+    assert "| Valencia DANA | T2M | +0.272 °C |" in table
+    doc = (ROOT / "docs" / "methods.md").read_text(encoding="utf-8")
+    assert replace_table(doc, table) == doc  # the committed doc holds the current table
+    assert replace_table(f"a{START}old{END}b", "T") == f"a{START}\nT\n{END}b"
