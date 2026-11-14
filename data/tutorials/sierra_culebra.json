@@ -83,7 +83,7 @@
     {
       "id": "temperature_windows",
       "title": "Change the start year",
-      "text": "A trend is always measured over a period that someone chose. What if we start in 1990, or 2010, instead of 1980? Each bar is the trend from that start year to the end of the record, in °C per year (0.026 per year is 0.26 per decade). A filled bar means significant. From 1980 the slope is about +0.26 °C per decade; from 2010, about +1.05.",
+      "text": "A trend is always measured over a period that someone chose. What if we start in 1990, or 2010, instead of 1980? Each bar is the trend from that start year to the end of the record, in °C per decade. A filled bar means significant. From 1980 the slope is about +0.26 °C per decade; from 2010, about +1.05.",
       "chart": {
         "variable": "T2M",
         "view": "window_trends"
