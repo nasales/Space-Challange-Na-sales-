@@ -29,7 +29,7 @@
    "data/cache/case_donana_PRECIP.json"
   ],
   "facts": {
-   "SOILM": "Place: Doñana (37.000, -6.450)\nVariable: SOILM (kg/m² (0-10 cm)). Data: NASA GLDAS_NOAH025_M v2.1\nPeriod: 2000-01 to 2026-07, 319 valid months\nTrend: -0.0288 kg/m² (0-10 cm)/year (-0.288 kg/m² (0-10 cm)/decade), 95% CI -0.0585 to 0.000173 kg/m² (0-10 cm)/year\nTotal change over the period: -0.762 kg/m² (0-10 cm)\nMann-Kendall p-value: p = 0.0498, significant at the 5% level\nDirection: decreasing",
+   "SOILM": "Place: Doñana (37.000, -6.450)\nVariable: SOILM (kg/m² (0-10 cm)). Data: NASA GLDAS_NOAH025_M v2.1\nPeriod: 2000-01 to 2026-07, 319 valid months\nTrend: -0.0288 kg/m² (0-10 cm)/year (-0.288 kg/m² (0-10 cm)/decade), 95% CI -0.0585 to 0.000173 kg/m² (0-10 cm)/year\nTotal change over the period: -0.762 kg/m² (0-10 cm)\nMann-Kendall p-value: p = 0.0498, significant at the 5% level\nEvidence is weak: the p-value is close to the 0.05 threshold.\nDirection: decreasing",
    "PRECIP": "Place: Doñana (37.000, -6.450)\nVariable: PRECIP (mm/day). Data: NASA GPM_3IMERGM v07\nPeriod: 1998-01 to 2025-09, 333 valid months\nTrend: -0.00537 mm/day/year (-0.0537 mm/day/decade), 95% CI -0.0245 to 0.00793 mm/day/year\nTotal change over the period: -0.149 mm/day\nMann-Kendall p-value: p = 0.44, not significant at the 5% level\nDirection: no statistically significant trend\nA non-significant result means the data show no clear evidence of change, not proof that nothing changed."
   }
  },
@@ -47,7 +47,7 @@
   ],
   "facts": {
    "T2M": "Place: Sierra de la Culebra (Zamora) (41.900, -6.300)\nVariable: T2M (°C). Data: NASA M2TMNXSLV v5.12.4\nPeriod: 1980-01 to 2026-09, 561 valid months\nTrend: 0.0262 °C/year (0.262 °C/decade), 95% CI 0.0148 to 0.037 °C/year\nTotal change over the period: 1.22 °C\nMann-Kendall p-value: p < 0.001, significant at the 5% level\nDirection: increasing",
-   "SOILM": "Place: Sierra de la Culebra (Zamora) (41.900, -6.300)\nVariable: SOILM (kg/m² (0-10 cm)). Data: NASA GLDAS_NOAH025_M v2.1\nPeriod: 2000-01 to 2026-07, 319 valid months\nTrend: -0.053 kg/m² (0-10 cm)/year (-0.53 kg/m² (0-10 cm)/decade), 95% CI -0.107 to 0.00106 kg/m² (0-10 cm)/year\nTotal change over the period: -1.41 kg/m² (0-10 cm)\nMann-Kendall p-value: p = 0.0263, significant at the 5% level\nDirection: decreasing"
+   "SOILM": "Place: Sierra de la Culebra (Zamora) (41.900, -6.300)\nVariable: SOILM (kg/m² (0-10 cm)). Data: NASA GLDAS_NOAH025_M v2.1\nPeriod: 2000-01 to 2026-07, 319 valid months\nTrend: -0.053 kg/m² (0-10 cm)/year (-0.53 kg/m² (0-10 cm)/decade), 95% CI -0.107 to 0.00106 kg/m² (0-10 cm)/year\nTotal change over the period: -1.41 kg/m² (0-10 cm)\nMann-Kendall p-value: p = 0.0263, significant at the 5% level\nEvidence is weak: the p-value is close to the 0.05 threshold.\nDirection: decreasing"
   }
  },
  {
@@ -163,7 +163,7 @@
    "data/cache/case_daimiel_PRECIP.json"
   ],
   "facts": {
-   "SOILM": "Place: Tablas de Daimiel (39.130, -3.700)\nVariable: SOILM (kg/m² (0-10 cm)). Data: NASA GLDAS_NOAH025_M v2.1\nPeriod: 2000-01 to 2026-07, 319 valid months\nTrend: -0.0487 kg/m² (0-10 cm)/year (-0.487 kg/m² (0-10 cm)/decade), 95% CI -0.105 to 0.0082 kg/m² (0-10 cm)/year\nTotal change over the period: -1.29 kg/m² (0-10 cm)\nMann-Kendall p-value: p = 0.0466, significant at the 5% level\nDirection: decreasing",
+   "SOILM": "Place: Tablas de Daimiel (39.130, -3.700)\nVariable: SOILM (kg/m² (0-10 cm)). Data: NASA GLDAS_NOAH025_M v2.1\nPeriod: 2000-01 to 2026-07, 319 valid months\nTrend: -0.0487 kg/m² (0-10 cm)/year (-0.487 kg/m² (0-10 cm)/decade), 95% CI -0.105 to 0.0082 kg/m² (0-10 cm)/year\nTotal change over the period: -1.29 kg/m² (0-10 cm)\nMann-Kendall p-value: p = 0.0466, significant at the 5% level\nEvidence is weak: the p-value is close to the 0.05 threshold.\nDirection: decreasing",
    "PRECIP": "Place: Tablas de Daimiel (39.130, -3.700)\nVariable: PRECIP (mm/day). Data: NASA GPM_3IMERGM v07\nPeriod: 1998-01 to 2025-09, 333 valid months\nTrend: -0.000888 mm/day/year (-0.00888 mm/day/decade), 95% CI -0.0127 to 0.0107 mm/day/year\nTotal change over the period: -0.0246 mm/day\nMann-Kendall p-value: p = 0.828, not significant at the 5% level\nDirection: no statistically significant trend\nA non-significant result means the data show no clear evidence of change, not proof that nothing changed."
   }
  }
