@@ -1,0 +1,256 @@
+{
+  "case_id": "daimiel",
+  "title": "Tablas de Daimiel",
+  "place": "Tablas de Daimiel",
+  "intro": {
+    "headline": "2009: the wetland that caught fire",
+    "paragraphs": [
+      "The Tablas de Daimiel is a wetland in La Mancha, in the dry centre of Spain. It is a national park: shallow lakes and reed beds where rivers spread out and water rises from the ground below.",
+      "Much of that water comes from a large aquifer, a layer of rock and sand full of water underground. For decades farmers have pumped it to water their fields. In 2009 the wetland almost dried up completely, and the peat under it caught fire and burned underground.",
+      "A wetland does not empty in one bad month. It fills and drains over years. In this case file you will learn a way to read data that keeps track of water over the years, and then decide for yourself."
+    ],
+    "question": "The Tablas de Daimiel wetland keeps drying out. Is the sky sending less water?"
+  },
+  "steps": [
+    {
+      "id": "recap",
+      "title": "Quick recap: a wet and dry cycle",
+      "text": "Each point is one month of soil moisture: the water in the top 10 cm of the ground near the wetland, in kg per square metre (the same as millimetres of water). The record runs from January 2000 to July 2026. Time runs from left to right, and the same up-and-down cycle repeats every year. Later you will also see a trend: the long-term direction behind that cycle. Data: NASA GLDAS.",
+      "chart": {
+        "variable": "SOILM",
+        "view": "monthly"
+      },
+      "question": {
+        "prompt": "The line dips to a low point once every year. When does that happen?",
+        "options": [
+          {
+            "text": "In summer, when the ground is driest",
+            "correct": true,
+            "feedback": "Right: every summer the top soil dries out, and every winter it fills up again."
+          },
+          {
+            "text": "In winter",
+            "correct": false,
+            "feedback": "Pick one year on the time axis and follow the line through it. Does the low point fall at the start of the year or in the middle?"
+          },
+          {
+            "text": "Never: the line is flat",
+            "correct": false,
+            "feedback": "Look again: the line goes up and down like a saw. Find where the bottoms of the teeth are."
+          }
+        ]
+      },
+      "takeaway": "A monthly series has a yearly cycle; the trend is what is left over the long run."
+    },
+    {
+      "id": "noisy_anomalies",
+      "title": "One month at a time is not enough",
+      "text": "Now the clue is rain. Each point is an anomaly: how much more or less it rained than normal for that month, in mm/day. Zero means a normal month. The marked band is 2005, the driest year in this record. Month by month, the points look small and jumpy. But a wetland is not a rain gauge: it feels months adding up, one after another. Data: NASA GPM IMERG.",
+      "chart": {
+        "variable": "PRECIP",
+        "view": "anomaly",
+        "highlights": [
+          { "kind": "band", "from": "2005-01", "to": "2005-12", "label": "2005" }
+        ]
+      },
+      "question": {
+        "prompt": "Inside the 2005 band, where are most of the months?",
+        "options": [
+          {
+            "text": "Below zero: drier than normal",
+            "correct": true,
+            "feedback": "Yes: almost every month of 2005 was a bit drier than usual."
+          },
+          {
+            "text": "Above zero: wetter than normal",
+            "correct": false,
+            "feedback": "Look only inside the shaded band. Are the points there above the zero line or below it?"
+          },
+          {
+            "text": "Exactly on zero: perfectly normal",
+            "correct": false,
+            "feedback": "Look closely at the band: the points are close to zero, but most are not on the line. Which side of zero are they on?"
+          }
+        ]
+      },
+      "takeaway": "Small dry months one after another can matter more than one big storm."
+    },
+    {
+      "id": "running_sum",
+      "title": "Adding up: a water bank account",
+      "text": "Think of a bank account. A wetter-than-normal month is a deposit; a drier one is a withdrawal. This line is the balance: each month's anomaly added to all the months before it. This is a cumulative anomaly. When the line rises, wet months are piling up; when it falls, a dry run is draining the account. The marked stretch is late 2004 to May 2006.",
+      "chart": {
+        "variable": "PRECIP",
+        "view": "cumulative",
+        "highlights": [
+          { "kind": "band", "from": "2004-10", "to": "2006-05", "label": "Late 2004 to May 2006" }
+        ]
+      },
+      "question": {
+        "prompt": "The line falls steeply inside the marked stretch. What does that tell you?",
+        "options": [
+          {
+            "text": "Many drier-than-normal months came one after another",
+            "correct": true,
+            "feedback": "Exactly: a long fall means a long run of withdrawals, a drought."
+          },
+          {
+            "text": "It rained more and more during that time",
+            "correct": false,
+            "feedback": "Remember the bank account: wet months are deposits and push the balance up. Is the line going up or down here?"
+          },
+          {
+            "text": "It did not rain at all in those months",
+            "correct": false,
+            "feedback": "The line shows rain compared with normal, not rain itself. A falling balance means less than normal, not zero."
+          }
+        ]
+      },
+      "takeaway": "In a cumulative anomaly, rising stretches are wet runs and falling stretches are dry runs."
+    },
+    {
+      "id": "before_2009",
+      "title": "The empty account before 2009",
+      "text": "Zoom in on 2004 to 2011. The dry run bottoms out in May 2006. Then, for three years, the line never climbs back: no long run of wet months refilled the account. In 2009 the wetland almost dried up. Then came December 2009, the wettest month in this record, and the line jumps. Rain alone does not explain the fire: the pumped aquifer is not in this chart.",
+      "chart": {
+        "variable": "PRECIP",
+        "view": "cumulative",
+        "range": ["2004-01", "2011-12"],
+        "highlights": [
+          { "kind": "point", "date": "2006-05", "label": "Lowest point (May 2006)" },
+          { "kind": "band", "from": "2006-06", "to": "2009-11", "label": "No recovery" },
+          { "kind": "point", "date": "2009-12", "label": "December 2009" }
+        ]
+      },
+      "question": {
+        "prompt": "Between mid 2006 and late 2009, what does the line do?",
+        "options": [
+          {
+            "text": "It stays low: the dry years were never made up",
+            "correct": true,
+            "feedback": "Right: the balance stays near its lowest level until the wet winter of 2009-2010."
+          },
+          {
+            "text": "It climbs back to where it was in 2004",
+            "correct": false,
+            "feedback": "Compare the height of the line inside the band with its height in 2004. Does it get back up there before December 2009?"
+          },
+          {
+            "text": "It keeps falling steeply every month",
+            "correct": false,
+            "feedback": "Look at the band again: the line wobbles, but the steep fall ended at the marked lowest point."
+          }
+        ]
+      },
+      "takeaway": "Turning points mark where a drought starts and ends; a flat low stretch means no recovery."
+    },
+    {
+      "id": "soil_vs_rain",
+      "title": "Soil and rain: two balances",
+      "text": "Now the same bank account for soil moisture. It climbs for years, peaks in May 2016, then falls until 2023. The rain balance peaked in February 2014 and also fell until 2023. A hump like this means the middle years were wetter than the later ones. But soil rose in 2007-2008 while rain stayed low: the top 10 cm is a thin layer and cannot show the deep water underground.",
+      "chart": {
+        "variable": "SOILM",
+        "view": "cumulative",
+        "highlights": [
+          { "kind": "point", "date": "2016-05", "label": "Peak (May 2016)" },
+          { "kind": "band", "from": "2016-06", "to": "2023-05", "label": "Long fall" }
+        ]
+      },
+      "question": {
+        "prompt": "What happens to the soil balance after its peak in 2016?",
+        "options": [
+          {
+            "text": "A long fall that lasts until 2023",
+            "correct": true,
+            "feedback": "Yes: about seven years with more dry months than wet ones."
+          },
+          {
+            "text": "It keeps rising",
+            "correct": false,
+            "feedback": "Find the labelled peak and follow the line to the right. Does it go higher or lower?"
+          },
+          {
+            "text": "It drops for one month and recovers at once",
+            "correct": false,
+            "feedback": "Look at how wide the marked band is. Is the fall a single month or many years?"
+          }
+        ]
+      },
+      "takeaway": "Comparing two cumulative curves shows when two variables agree and when they do not."
+    },
+    {
+      "id": "ends_at_zero",
+      "title": "Ends at zero; so test the trend",
+      "text": "Both balances end exactly at zero. That is not a coincidence: normal is the average of the whole record, so all deposits and withdrawals cancel out by the end. Being above or below zero means little; only the shape matters. For a long-term change, use the trend test. Rain: almost flat, -0.009 mm/day every 10 years, p = 0.83. That could easily be chance.",
+      "chart": {
+        "variable": "PRECIP",
+        "view": "annual",
+        "show_trend": true
+      },
+      "question": {
+        "prompt": "With p = 0.83, what does the rain record say?",
+        "options": [
+          {
+            "text": "No clear trend: a slope this small could easily come from chance",
+            "correct": true,
+            "feedback": "Well done: wet and dry runs come and go, but there is no clear long-term change."
+          },
+          {
+            "text": "Rain is clearly falling",
+            "correct": false,
+            "feedback": "A trend counts as significant only when p is below 0.05. Is 0.83 below 0.05? Look at how flat the line is, too."
+          },
+          {
+            "text": "It proves rain here will never change",
+            "correct": false,
+            "feedback": "No clear evidence of change is not proof of no change. The test can only say what these years show."
+          }
+        ]
+      },
+      "takeaway": "A cumulative curve shows runs; a trend test says whether there is a long-term change."
+    },
+    {
+      "id": "borderline",
+      "title": "Soil: a borderline result",
+      "text": "Soil moisture tilts down: about -0.05 kg/m² per year, about -1.3 over the whole record, while a normal year averages about 20. Here p = 0.047, just under the 0.05 line. But the 95% confidence range, -0.105 to +0.008 per year, still includes zero, so no change is also possible. This is a borderline result: a weak hint of drying, not strong proof.",
+      "chart": {
+        "variable": "SOILM",
+        "view": "annual",
+        "show_trend": true
+      },
+      "question": {
+        "prompt": "p = 0.047 and the confidence range includes zero. How should the detective report it?",
+        "options": [
+          {
+            "text": "Weak evidence that the soil is drying: borderline",
+            "correct": true,
+            "feedback": "Exactly: a careful detective reports a borderline result as borderline."
+          },
+          {
+            "text": "Strong proof that the soil is drying fast",
+            "correct": false,
+            "feedback": "The line tilts only a little compared with the jumps between years, and the range includes zero. Is that strong proof?"
+          },
+          {
+            "text": "No change at all",
+            "correct": false,
+            "feedback": "The line does tilt down, and p is just below 0.05. Not strong, but not nothing either."
+          }
+        ]
+      },
+      "takeaway": "Borderline means a weak signal: report it, but do not overstate it."
+    }
+  ],
+  "conclusion": {
+    "prompt": "The Tablas de Daimiel wetland keeps drying out. Is the sky sending less water? Write your conclusion using what the charts showed you.",
+    "variable": "PRECIP",
+    "placeholder": "Looking at the rain data for Daimiel from 1998 to 2025, I think..."
+  },
+  "reveal": {
+    "by_variable": {
+      "PRECIP": "Rain at Daimiel (January 1998 to September 2025) shows no significant trend: about -0.009 mm/day per decade, p = 0.83, and the 95% confidence range (-0.013 to +0.011 mm/day per year) includes zero. The cumulative curve shows real dry runs (late 2004 to May 2006, and 2014 to 2023) and wet runs (the winter of 2009-2010), but no long-term change.",
+      "SOILM": "Soil moisture in the top 10 cm (January 2000 to July 2026) shows a borderline downward trend: about -0.49 kg/m² per decade, p = 0.047, but the 95% confidence range (-0.105 to +0.008 kg/m² per year) includes zero. Weak evidence of drying, not strong proof."
+    },
+    "lesson": "A wetland responds to water added up over years, not to single months. A cumulative anomaly shows dry and wet runs and their turning points, but it always ends at zero, so only its shape matters; a trend test is still needed to talk about long-term change. Here the sky shows dry and wet runs but no clear trend in rain. What drains a wetland can also be on the ground: these data cannot see the water pumped from the aquifer."
+  }
+}
