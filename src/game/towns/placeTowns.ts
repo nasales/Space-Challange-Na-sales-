@@ -29,7 +29,12 @@ export interface TownGround {
   isLand: (x: number, z: number) => boolean
   /** distancia al monumento más cercano (0 si está dentro) */
   landmarkDistance: (x: number, z: number) => number
+  /** true if (x, z) is in a river or within `margin` units of its water */
+  nearRiver: (x: number, z: number, margin: number) => boolean
 }
+
+/** Gap (world units) between a house footprint and river water. */
+const RIVER_CLEARANCE = 6
 
 /** Regiones con casas de piedra y tejado de pizarra. */
 const NORTH = new Set(['Galicia', 'Asturias', 'Cantabria', 'País Vasco', 'Navarra'])
@@ -128,6 +133,7 @@ export function placeTowns(places: Place[], ground: TownGround): HouseSpot[] {
       // Toda la planta en tierra y sin pendiente fuerte (centro + cuatro puntos alrededor)
       const pts = [[0, 0], [radius, 0], [-radius, 0], [0, radius], [0, -radius]].map(([dx, dz]) => [x + dx, z + dz])
       if (!pts.every(([px, pz]) => ground.isLand(px, pz))) continue
+      if (ground.nearRiver(x, z, radius * Math.SQRT2 + RIVER_CLEARANCE)) continue // whole square footprint dry
       const hs = pts.map(([px, pz]) => ground.heightAt(px, pz))
       if (Math.max(...hs) - Math.min(...hs) > MAX_SLOPE) continue
 

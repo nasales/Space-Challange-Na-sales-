@@ -8,7 +8,7 @@ import type { ZoneData } from '../map/mapData'
 import type { Country } from '../map/worldData'
 import { terraceHeight } from '../map/terrace'
 import { computeExploredRegion } from '../map/exploredRegion'
-import { riverCarveDepth } from '../map/rivers'
+import { riverCarveDepth, FIELD_REACH_KM } from '../map/rivers'
 import {
   lonLatToWorld,
   metersToY,
@@ -34,6 +34,8 @@ export interface Terrain {
   metersAt: (x: number, z: number) => number
   /** true si x,z está dentro del país explorado (tierra). */
   isExploredLand: (x: number, z: number) => boolean
+  /** true if (x, z) is in a river or within `margin` world units of its water. */
+  nearRiver: (x: number, z: number, margin: number) => boolean
   dispose: () => void
 }
 
@@ -53,7 +55,9 @@ export function createTerrain(
   const { countryLand, region } = computeExploredRegion(country, bounds, heights, gw, gh, cellsPerKm)
 
   // Shallow river beds: a small dip under the terraced surface, so water follows the terraces
-  const carve = riverCarveDepth(data.rivers, bounds, heights, gw, gh, cellsPerKm, countryLand)
+  const river = riverCarveDepth(data.rivers, bounds, heights, gw, gh, cellsPerKm, countryLand)
+  const carve = river?.carve
+  const unitsPerCell = UNITS_PER_KM / cellsPerKm
 
   const cellY = (i: number) => {
     if (!region[i]) return HIDDEN_Y
@@ -137,6 +141,14 @@ export function createTerrain(
     isExploredLand: (x, z) => {
       const { i, tx, tz } = cell(x, z)
       return countryLand[i + (tx > 0.5 ? 1 : 0) + (tz > 0.5 ? gw : 0)] === 1
+    },
+    nearRiver: (x, z, margin) => {
+      if (!river) return false
+      const { edge } = river
+      // edge is +Infinity beyond the field reach: clamp there so the bilinear blend stays a distance
+      // (margins must be smaller than the reach, ~32 units)
+      const reach = FIELD_REACH_KM * cellsPerKm
+      return bilinear((i) => Math.min(edge[i], reach), x, z) * unitsPerCell <= margin
     },
     dispose: () => {
       for (const chunk of group.children) (chunk as THREE.Mesh).geometry.dispose()

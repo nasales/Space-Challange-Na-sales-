@@ -28,6 +28,7 @@ import { createChaseCamera } from './camera/chaseCamera'
 import { createKeyboard } from './input/keyboard'
 import { nearestPlace } from './location/nearestPlace'
 import { createLandmarks, loadLandmarks } from './landmarks/createLandmarks'
+import { bendRiversAround } from './map/rivers'
 import type { GameCallbacks, GameStatus, HudState } from '../shared/events'
 import './GameView.css'
 
@@ -78,7 +79,10 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
 
         // País explorado: una maqueta por zona (p. ej. Península y Canarias).
         // Alturas suavizadas: las mismas para la textura y la malla, así encajan
-        const zones = explored.zones.map((zone) => {
+        // Rivers bend around the monuments so no plaza or model stands in the water
+        const clearings = landmarks.riverClearings(10)
+        const zones = explored.zones.map((z) => {
+          const zone = z.rivers ? { ...z, rivers: bendRiversAround(z.rivers, clearings) } : z
           // Smoothed heights plus extra relief (slopes everywhere): same grid for texture and mesh
           const heights = addRelief(smoothHeights(zone.heights, zone.heightWidth, zone.heightHeight), zone.heightWidth, zone.heightHeight)
           landmarks.flattenTerrain(zone, heights) // explanadas bajo los monumentos
@@ -114,6 +118,7 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
           heightAt: (x, z) => terrainAt(x, z)?.heightAt(x, z) ?? 0,
           isLand: (x, z) => terrainAt(x, z)?.isExploredLand(x, z) ?? false,
           landmarkDistance: landmarks.distance,
+          nearRiver: (x, z, m) => terrainAt(x, z)?.nearRiver(x, z, m) ?? false,
         })
         const towns = createTowns(houses)
         scene.add(towns.group)
@@ -125,6 +130,7 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
           isLand: (x, z) => terrainAt(x, z)?.isExploredLand(x, z) ?? false,
           nearHouse: towns.blocks,
           landmarkDistance: landmarks.distance,
+          nearRiver: (x, z, m) => terrainAt(x, z)?.nearRiver(x, z, m) ?? false,
         })
         const scenery = createScenery(sceneryItems)
         scene.add(scenery.group)
@@ -153,7 +159,7 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
         const keyboard = createKeyboard()
         const chase = createChaseCamera(camera, renderer.domElement)
         // Solo en desarrollo: acceso desde la consola/Playwright para depurar
-        if (import.meta.env.DEV) Object.assign(window, { __game: { carState, camera, chase, ground, detective, renderer, scene, towns, houses, scenery, sceneryItems, landmarks } })
+        if (import.meta.env.DEV) Object.assign(window, { __game: { carState, camera, chase, ground, detective, renderer, scene, towns, houses, scenery, sceneryItems, landmarks, main } })
 
         const fog = scene.fog as THREE.Fog
         const ink = createInkOutline(renderer) // contornos negros de cómic

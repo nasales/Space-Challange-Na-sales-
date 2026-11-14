@@ -8,7 +8,8 @@
 //   landmarks.place(terrain.heightAt)          // cuando el terreno ya existe
 import * as THREE from 'three'
 import type { ZoneData } from '../map/mapData'
-import { lonLatToWorld } from '../map/projection'
+import { lonLatToWorld, UNITS_PER_KM } from '../map/projection'
+import type { RiverClearing } from '../map/rivers'
 import { createKit } from './kit'
 import { LANDMARK_MODELS } from './models'
 
@@ -297,6 +298,15 @@ export function createLandmarks(list: LandmarkData[]) {
         }
       }
       return best?.data ?? null
+    },
+
+    /** Circles around each monument footprint that rivers bend around (keeps plazas dry). */
+    riverClearings(marginUnits: number): RiverClearing[] {
+      return placed.map((p) => ({
+        lon: p.data.lon,
+        lat: p.data.lat,
+        radiusKm: (Math.hypot(p.halfW, p.halfD) + marginUnits) / UNITS_PER_KM,
+      }))
     },
 
     /** Posición en el mundo de un monumento (para colocar el coche delante, p. ej.). */

@@ -27,6 +27,9 @@ const CARVE_PER_KM = 1.5
 /** The carve fades out this far (km) outside the water edge: gentle banks, no cliffs. */
 const CARVE_BANK_KM = 1.2
 
+/** Reach (km) of the grid edge field returned by riverCarveDepth: placement margins must stay below it. */
+export const FIELD_REACH_KM = 4
+
 export const riverHalfWidthKm = (rank: number) => HALF_WIDTH_KM[rank] ?? HALF_WIDTH_KM[3]
 
 /** Chaikin corner cutting: turns the coarse source polylines into smooth curves (ends kept). */
@@ -100,6 +103,66 @@ export function rasterizeRivers(
   return { edge, halfWidth }
 }
 
+/** A circle (e.g. a monument footprint) that rivers must flow around. */
+export interface RiverClearing {
+  lon: number
+  lat: number
+  radiusKm: number
+}
+
+/**
+ * Bends the rivers around the clearings: points inside (radius + river half width + bank) are
+ * pushed radially out, with a soft falloff so the bend is a gentle curve, not a kink. Segments
+ * near a clearing are densified first so long segments cannot cut through it.
+ */
+export function bendRiversAround(rivers: River[], clearings: RiverClearing[]): River[] {
+  if (clearings.length === 0) return rivers
+  const KM_LAT = 110.57
+  const STEP_KM = 0.3
+  return rivers.map((river) => {
+    const hw = riverHalfWidthKm(river.rank)
+    const zones = clearings.map((c) => {
+      const kmLon = 111.32 * Math.cos((c.lat * Math.PI) / 180)
+      const target = c.radiusKm + hw + BANK_KM
+      return { c, kmLon, target, outer: target * 1.6 }
+    })
+    const lines = river.lines.map((line) => {
+      // 1) densify segments that pass near a clearing
+      const dense: [number, number][] = []
+      for (let s = 0; s < line.length; s++) {
+        const [lon, lat] = line[s]
+        dense.push([lon, lat])
+        if (s === line.length - 1) break
+        const [lon2, lat2] = line[s + 1]
+        for (const z of zones) {
+          const ex = (lon2 - lon) * z.kmLon, ey = (lat2 - lat) * KM_LAT
+          const len = Math.hypot(ex, ey)
+          const mx = ((lon + lon2) / 2 - z.c.lon) * z.kmLon, my = ((lat + lat2) / 2 - z.c.lat) * KM_LAT
+          if (Math.hypot(mx, my) > z.outer + len / 2) continue
+          const n = Math.ceil(len / STEP_KM)
+          for (let k = 1; k < n; k++) dense.push([lon + ((lon2 - lon) * k) / n, lat + ((lat2 - lat) * k) / n])
+          break
+        }
+      }
+      // 2) push points out: distance d in [0, outer] maps to [target, outer] (monotonic, smooth)
+      return dense.map(([lon, lat]): [number, number] => {
+        for (const z of zones) {
+          const dx = (lon - z.c.lon) * z.kmLon, dy = (lat - z.c.lat) * KM_LAT
+          const d = Math.hypot(dx, dy)
+          if (d >= z.outer) continue
+          const nd = z.target + (d / z.outer) * (z.outer - z.target)
+          const k = d > 1e-6 ? nd / d : 0
+          const ux = d > 1e-6 ? dx * k : nd, uy = d > 1e-6 ? dy * k : 0
+          lon = z.c.lon + ux / z.kmLon
+          lat = z.c.lat + uy / KM_LAT
+        }
+        return [lon, lat]
+      })
+    })
+    return { ...river, lines }
+  })
+}
+
 /** Reach (km) that `paintRiver` needs from the field. */
 export const PAINT_REACH_KM = BANK_KM + 0.4
 
@@ -121,7 +184,8 @@ export function paintRiver(land: RGB, e: number, hwPx: number, pxPerKm: number):
 }
 
 /**
- * How deep (world units) to carve the terrain under the rivers, per height-grid cell.
+ * How deep (world units) to carve the terrain under the rivers, per height-grid cell, plus the
+ * river edge field on the grid (cells; used to keep houses and trees out of the water).
  * Returns null when there are no rivers. Flattened landmark plazas (cells whose height is
  * exactly equal to their neighbours') are left untouched, so monuments never float.
  */
@@ -133,9 +197,9 @@ export function riverCarveDepth(
   gh: number,
   cellsPerKm: number,
   isLand: Uint8Array,
-): Float32Array | null {
+): { carve: Float32Array; edge: Float32Array } | null {
   if (!rivers || rivers.length === 0) return null
-  const { edge, halfWidth } = rasterizeRivers(rivers, bounds, gw, gh, cellsPerKm, CARVE_BANK_KM)
+  const { edge, halfWidth } = rasterizeRivers(rivers, bounds, gw, gh, cellsPerKm, FIELD_REACH_KM)
   const bank = CARVE_BANK_KM * cellsPerKm
   const carve = new Float32Array(gw * gh)
   const isFlat = (i: number) =>
@@ -161,5 +225,5 @@ export function riverCarveDepth(
       carve[i] = depth * smooth(bank, -hw * 0.5, e)
     }
   }
-  return carve
+  return { carve, edge }
 }
