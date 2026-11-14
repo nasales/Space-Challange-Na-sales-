@@ -1,0 +1,267 @@
+{
+  "case_id": "almeria_murcia",
+  "title": "Almería-Murcia drylands",
+  "place": "Almería-Murcia",
+  "intro": {
+    "headline": "The driest corner of mainland Europe",
+    "paragraphs": [
+      "The south-east of Spain, between Almería and Murcia, is the driest part of mainland Europe. It is home to the Tabernas desert, where many western films were shot because the landscape looks like the American Far West.",
+      "Here rain is rare, but when it comes it can fall all at once in a few violent storms. Many years are very dry, and a few are wet. Even so, the region grows a large share of Europe's winter vegetables in huge areas of greenhouses, and water is always scarce and precious.",
+      "People often say that the south-east is getting drier and drier. But in a place where every year is so different from the last, how can you tell a real change from a run of dry years? In this case file you will learn to smooth a noisy series, and to be careful with what the smooth line seems to say."
+    ],
+    "question": "Is south-east Spain becoming even drier?"
+  },
+  "steps": [
+    {
+      "id": "spiky_rain",
+      "title": "A series full of spikes",
+      "text": "Quick recap: this is a monthly time series, one point per month from January 1998 to September 2025, with time running left to right. Each point is the average rain per day in that month, in mm/day. A trend is the long-term direction under all the ups and downs. Here the average is below 1 mm/day, and many months get almost nothing. A few storms make tall, lonely spikes. Data: NASA GPM IMERG.",
+      "chart": {
+        "variable": "PRECIP",
+        "view": "monthly",
+        "highlight_max": true
+      },
+      "question": {
+        "prompt": "What does most of this line look like?",
+        "options": [
+          {
+            "text": "Many low months, with a few tall spikes",
+            "correct": true,
+            "feedback": "Right: in a dryland, a few wet months bring most of the rain."
+          },
+          {
+            "text": "A smooth wave that is the same every year",
+            "correct": false,
+            "feedback": "Look along the bottom of the chart: is the shape repeated neatly, or do some months shoot up far above all the others?"
+          },
+          {
+            "text": "Every month gets about the same amount of rain",
+            "correct": false,
+            "feedback": "Compare the labelled maximum with the months near zero. Are they anywhere close to each other?"
+          }
+        ]
+      },
+      "takeaway": "Dryland rain is spiky: with so much noise, you cannot see a trend by eye in the raw months."
+    },
+    {
+      "id": "twelve_month_average",
+      "title": "Smoothing over one year",
+      "text": "To tame the spikes, a detective can use a running mean. Each point of the bold line is the average of the 12 months around it. Summer and winter cancel out, and one storm is shared out over a whole year. What is left shows wet years and dry years. The wettest 12 months were centred on March 2010 (about 1.77 mm/day); the driest on April 2024 (about 0.44).",
+      "chart": {
+        "variable": "PRECIP",
+        "view": "running_mean",
+        "window": 12,
+        "highlights": [
+          { "kind": "point", "date": "2010-03", "label": "Wettest 12 months" },
+          { "kind": "point", "date": "2024-04", "label": "Driest 12 months" }
+        ]
+      },
+      "question": {
+        "prompt": "What does the 12-month line show more clearly than the raw months?",
+        "options": [
+          {
+            "text": "Which years were wet and which were dry",
+            "correct": true,
+            "feedback": "Yes: the line now rises in wet years and sinks in dry ones."
+          },
+          {
+            "text": "The exact day of each storm",
+            "correct": false,
+            "feedback": "The line is an average over 12 months. Can an average over a whole year point to one single day?"
+          },
+          {
+            "text": "That every year has the same rain",
+            "correct": false,
+            "feedback": "Follow the bold line: does it stay at one height, or go up and down between the two labelled points?"
+          }
+        ]
+      },
+      "takeaway": "A 12-month running mean removes the seasons and single storms, and shows wet and dry years."
+    },
+    {
+      "id": "five_year_average",
+      "title": "Smoothing over five years",
+      "text": "Now each point is the average of 60 months: five years. The line moves slowly in long swings: high in the late 2000s (about 1.23 mm/day, centred on July 2008), low in the mid-2010s (about 0.79, April 2014), up again around 2018-2020, and down again at the end. Notice the line starts in 2000 and stops in 2023: the first and last 2.5 years have no full five-year window around them.",
+      "chart": {
+        "variable": "PRECIP",
+        "view": "running_mean",
+        "window": 60,
+        "highlights": [
+          { "kind": "point", "date": "2008-07", "label": "Wet late 2000s" },
+          { "kind": "point", "date": "2014-04", "label": "Dry mid-2010s" }
+        ]
+      },
+      "question": {
+        "prompt": "Why does the five-year line not reach 1998 or 2025?",
+        "options": [
+          {
+            "text": "Near the ends there are not enough months to fill a five-year window",
+            "correct": true,
+            "feedback": "Exactly: a centred average needs 2.5 years on each side."
+          },
+          {
+            "text": "It did not rain at all in those years",
+            "correct": false,
+            "feedback": "Look at the thin monthly line behind the bold one: there are still months with rain at both ends. So why is only the bold line missing?"
+          },
+          {
+            "text": "The satellite data stop in 2023",
+            "correct": false,
+            "feedback": "Check the thin monthly line: it goes on until 2025. Only the five-year average stops earlier. Read the end of the text again."
+          }
+        ]
+      },
+      "takeaway": "A longer window shows multi-year swings, but it loses the ends, often the years people care about most."
+    },
+    {
+      "id": "the_trap",
+      "title": "The smooth-curve trap",
+      "text": "Here is the same five-year line, zoomed in on 2008 to 2015. It slides from about 1.23 to about 0.79 mm/day: roughly a third less rain. Seen like this, it looks like the region is drying fast. But this window starts at the wettest stretch of the whole record. A smooth line makes a swing look like a steady path, and choosing where to start can make a drop look much bigger than it is.",
+      "chart": {
+        "variable": "PRECIP",
+        "view": "running_mean",
+        "window": 60,
+        "range": ["2008-01", "2015-12"]
+      },
+      "question": {
+        "prompt": "In this zoom, where does the line start compared with the rest of the record?",
+        "options": [
+          {
+            "text": "At its highest point: the wettest stretch",
+            "correct": true,
+            "feedback": "Right: starting at a peak makes almost anything after it look like a fall."
+          },
+          {
+            "text": "At a normal, average point",
+            "correct": false,
+            "feedback": "Remember the full five-year line from the step before. Was 2008 an ordinary point, or the top of a swing?"
+          },
+          {
+            "text": "At its lowest point",
+            "correct": false,
+            "feedback": "Look at the left edge of this zoom: the line is high there and goes down. Is that a low point?"
+          }
+        ]
+      },
+      "takeaway": "Never judge a trend from a short window that starts at a peak (or ends at a dip)."
+    },
+    {
+      "id": "whole_record",
+      "title": "Back to the whole record",
+      "text": "Yearly averages, 1998 to 2024, with the trend line through all the months. 2023 and 2024 were very dry, but so were 2005, 2014 and 2017. The line falls only about 0.05 mm/day every 10 years. The test gives p = 0.23: 23 in 100, so a slope like this could easily appear by chance. The 95% confidence range, -0.015 to +0.005 mm/day per year, includes zero.",
+      "chart": {
+        "variable": "PRECIP",
+        "view": "annual",
+        "show_trend": true,
+        "highlights": [
+          { "kind": "point", "date": "2005", "label": "2005" },
+          { "kind": "point", "date": "2024", "label": "2024" }
+        ]
+      },
+      "question": {
+        "prompt": "Were the dry years at the end of the record something new?",
+        "options": [
+          {
+            "text": "No: years almost as dry appear earlier, such as 2005 and 2014",
+            "correct": true,
+            "feedback": "Yes: dry years come and go all along the record."
+          },
+          {
+            "text": "Yes: there were no dry years before 2020",
+            "correct": false,
+            "feedback": "Look at the labelled point for 2005, and at 2014 and 2017. Are they much higher than 2024?"
+          },
+          {
+            "text": "Yes: every year since 2010 has been drier than the year before",
+            "correct": false,
+            "feedback": "Follow the bars or points from 2010 to the end. Do they fall every year, or jump up and down?"
+          }
+        ]
+      },
+      "takeaway": "Over the whole record, rain shows no significant trend: dry spells are part of how this place works."
+    },
+    {
+      "id": "soil_moisture",
+      "title": "The soil tells the same story",
+      "text": "A second clue: water in the top 10 cm of soil, from 2000, with a 12-month running mean. Data: NASA GLDAS. The soil follows the rain: wet around 2008-2010 (highest about 28.2 kg/m², November 2008), drier in the mid-2010s, and lowest in April 2024 (about 22.4). Then it recovers a little. The test on the whole record gives p = 0.15: not significant. The confidence range includes zero.",
+      "chart": {
+        "variable": "SOILM",
+        "view": "running_mean",
+        "window": 12,
+        "highlights": [
+          { "kind": "point", "date": "2008-11", "label": "Wettest soil" },
+          { "kind": "point", "date": "2024-04", "label": "Driest soil" }
+        ]
+      },
+      "question": {
+        "prompt": "What does the soil line do after its lowest point in 2024?",
+        "options": [
+          {
+            "text": "It starts to climb again",
+            "correct": true,
+            "feedback": "Right: even the driest point was followed by a partial recovery."
+          },
+          {
+            "text": "It keeps falling to the end",
+            "correct": false,
+            "feedback": "Find the label \"Driest soil\" and follow the bold line to the right. Does it go further down?"
+          },
+          {
+            "text": "It jumps to the highest value of the record",
+            "correct": false,
+            "feedback": "Compare the end of the line with the label \"Wettest soil\" in 2008. Is the end anywhere near that high?"
+          }
+        ]
+      },
+      "takeaway": "Soil moisture swings with the rain; its recent low is real, but not yet a significant trend."
+    },
+    {
+      "id": "what_we_can_say",
+      "title": "What a detective can say",
+      "text": "Back to the 12-month rain line. Smoothing showed you real swings: wet years in the late 2000s, dry spells in the mid-2010s and early 2020s. Those swings matter for farmers and reservoirs. But a swing is not a trend. In a dryland, every year is very different from the last, so to say \"drier\" you need a test on the whole record, not the last few years of a curve.",
+      "chart": {
+        "variable": "PRECIP",
+        "view": "running_mean",
+        "window": 12,
+        "highlights": [
+          { "kind": "band", "from": "2008-07", "to": "2010-12", "label": "Wet spell" },
+          { "kind": "band", "from": "2013-07", "to": "2014-12", "label": "Dry spell" },
+          { "kind": "band", "from": "2023-01", "to": "2024-12", "label": "Dry spell" }
+        ]
+      },
+      "question": {
+        "prompt": "Which sentence is the best detective report for this place?",
+        "options": [
+          {
+            "text": "Rain swings between wet and dry spells of a few years; over the whole record there is no significant trend",
+            "correct": true,
+            "feedback": "Well done: you describe the swings and you respect the test."
+          },
+          {
+            "text": "The region is clearly drying, because the last years are dry",
+            "correct": false,
+            "feedback": "Look at the bands: there was a dry spell in the mid-2010s too, followed by wetter years. And remember the p-value of 0.23 from the whole record."
+          },
+          {
+            "text": "Nothing ever changes here: every year is the same",
+            "correct": false,
+            "feedback": "Look at how far the line moves between the wet and dry bands. Do the years look the same?"
+          }
+        ]
+      },
+      "takeaway": "Smoothing helps you see swings; only a test on the whole record can tell you if there is a trend."
+    }
+  ],
+  "conclusion": {
+    "prompt": "Is south-east Spain becoming even drier? Write your conclusion using what the charts and the tests showed you.",
+    "variable": "PRECIP",
+    "placeholder": "Looking at the rain and soil data for Almería-Murcia, I think..."
+  },
+  "reveal": {
+    "by_variable": {
+      "PRECIP": "Rain in Almería-Murcia (January 1998 to September 2025) shows no significant trend: the slope is about -0.05 mm/day per decade, p = 0.23, and the 95% confidence range (-0.015 to +0.005 mm/day per year) includes zero. The five-year average swings from about 1.23 mm/day (late 2000s) to about 0.79 (mid-2010s) and back.",
+      "SOILM": "Soil moisture in the top 10 cm (January 2000 to July 2026) shows no significant trend: about -0.36 kg/m² per decade, p = 0.15, with a 95% confidence range (-0.093 to +0.019 kg/m² per year) that includes zero. Its 12-month average was lowest in April 2024 and has partly recovered since."
+    },
+    "lesson": "Running means are a great tool to see wet and dry spells of several years, but a smooth curve can fool you: a window that starts at a wet peak turns a natural swing into what looks like a steady drop. Drylands are naturally very variable, so \"drier\" needs a test on the whole record. Here neither rain nor soil has a significant trend. That is a valid result: it means no clear evidence of change in these records, not proof that nothing is changing, and dry spells still matter for water."
+  }
+}
