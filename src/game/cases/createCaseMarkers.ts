@@ -41,9 +41,25 @@ const BOB_SPEED = 1.6
 /** Slow spin around the vertical axis (rad/s). */
 const SPIN_SPEED = 0.6
 
+/**
+ * Where to draw a case's marker and zone when its data point is hard to reach in the game
+ * (sea edge, map edge). Only the marker, ring and zoneAt move: the case data and its statistics
+ * stay on the real point in data/cases_index.json.
+ */
+const POSITION_OVERRIDE: Record<string, { lat: number; lon: number }> = {
+  // North bank of the Ebro, ~9 km from Deltebre: around Deltebre itself the river, the delta and the
+  // sea leave no dry land wide enough for a ring (data point: 40.70, 0.75, at the shore)
+  ebro_delta: { lat: 40.78, lon: 0.645 },
+  aneto_glacier: { lat: 42.58, lon: 0.66 }, // a few km south of the peak, away from the map edge
+}
+
 // ---- Trigger zone on the ground ----
 /** Radius of the zone (world units): the detective must stop inside it to open the case. */
 const ZONE_RADIUS = 60
+/** Smaller zone for cases whose dry land is narrow (so the whole ring is drivable). */
+const ZONE_RADIUS_OVERRIDE: Record<string, number> = {
+  ebro_delta: 35,
+}
 /** Width of the bright rim, as a fraction of the radius. */
 const ZONE_RIM = 0.12
 /** Glow colours of an open and of a solved case. */
@@ -124,12 +140,12 @@ interface ZoneLook {
  * The trigger zone: an inner glow disc and a bright rim, flat on y = 0 around (0, 0).
  * Geometries are per zone (they are bent to the terrain in place()), materials are shared.
  */
-function buildZoneMesh(look: ZoneLook) {
+function buildZoneMesh(look: ZoneLook, radius: number) {
   const zone = new THREE.Group()
   const flat = (g: THREE.BufferGeometry) => g.rotateX(-Math.PI / 2) // XY plane -> ground (XZ)
-  const fill = new THREE.Mesh(flat(new THREE.RingGeometry(0.01, ZONE_RADIUS * (1 - ZONE_RIM), 48, 6)), look.fill)
+  const fill = new THREE.Mesh(flat(new THREE.RingGeometry(0.01, radius * (1 - ZONE_RIM), 48, 6)), look.fill)
   fill.userData.part = 'fill'
-  const rim = new THREE.Mesh(flat(new THREE.RingGeometry(ZONE_RADIUS * (1 - ZONE_RIM), ZONE_RADIUS, 64, 1)), look.rim)
+  const rim = new THREE.Mesh(flat(new THREE.RingGeometry(radius * (1 - ZONE_RIM), radius, 64, 1)), look.rim)
   rim.userData.part = 'rim'
   zone.add(fill, rim)
   return zone
@@ -141,6 +157,7 @@ interface Marker {
   z: number
   holder: THREE.Group
   zone: THREE.Group
+  radius: number
   baseY: number
   phase: number
   done: boolean
@@ -159,18 +176,20 @@ export function createCaseMarkers(cases: CaseMarkerData[]) {
   const group = new THREE.Group()
   group.name = 'case-markers'
   const markers: Marker[] = cases.map((c, i) => {
-    const { x, z } = lonLatToWorld(c.lon, c.lat)
+    const at = POSITION_OVERRIDE[c.id] ?? c
+    const { x, z } = lonLatToWorld(at.lon, at.lat)
     const baseY = HOVER_OFFSET + (EXTRA_OFFSET[c.id] ?? 0)
     const holder = new THREE.Group()
     holder.name = c.title
     holder.userData.caseId = c.id
     holder.position.set(x, baseY, z)
     holder.add(buildMarkerMesh(open.marker))
-    const zone = buildZoneMesh(open.zone)
+    const radius = ZONE_RADIUS_OVERRIDE[c.id] ?? ZONE_RADIUS
+    const zone = buildZoneMesh(open.zone, radius)
     zone.userData.caseId = c.id
     zone.position.set(x, 0, z)
     group.add(holder, zone)
-    return { id: c.id, x, z, holder, zone, baseY, phase: i * 1.7, done: false } // own phase: no lockstep
+    return { id: c.id, x, z, holder, zone, radius, baseY, phase: i * 1.7, done: false } // own phase: no lockstep
   })
   let clock = 0
 
@@ -227,7 +246,7 @@ export function createCaseMarkers(cases: CaseMarkerData[]) {
 
     /** caseId of the zone that contains (x, z), or null. */
     zoneAt(x: number, z: number): string | null {
-      for (const m of markers) if (Math.hypot(x - m.x, z - m.z) <= ZONE_RADIUS) return m.id
+      for (const m of markers) if (Math.hypot(x - m.x, z - m.z) <= m.radius) return m.id
       return null
     },
 
