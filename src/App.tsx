@@ -71,7 +71,7 @@ function Game() {
 
   return (
     <main className="app">
-      <GameView onStatus={setStatus} onHud={setHud} focusLens={focusLens} onLensFocus={setLensState} />
+      <GameView onStatus={setStatus} onHud={setHud} focusLens={focusLens} onLensFocus={setLensState} outfit={outfit} />
       <Hud status={status} hud={hud} />
       <VariablePicker canOpen={status === 'ready' && !!hud?.stopped} lensState={lensState} onOpenChange={setFocusLens} />
     </main>

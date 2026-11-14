@@ -48,7 +48,7 @@ function makeTexture(canvas: HTMLCanvasElement, renderer: THREE.WebGLRenderer) {
 }
 
 /** Only the 3D canvas. The HUD and status messages live in src/ui, fed through the callbacks. */
-export default function GameView({ onStatus, onHud, onLensFocus, focusLens = false }: GameViewProps) {
+export default function GameView({ onStatus, onHud, onLensFocus, focusLens = false, outfit }: GameViewProps) {
   const container = useRef<HTMLDivElement>(null)
   // Latest callbacks (and pause flag), read from inside the animation loop without restarting the scene
   const callbacks = useRef({ onStatus, onHud, onLensFocus, focusLens })
@@ -57,6 +57,13 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
   })
   const setStatus = (status: GameStatus) => callbacks.current.onStatus?.(status)
   const setHud = (hud: HudState) => callbacks.current.onHud?.(hud)
+  // Wardrobe outfit: used when the detective is built, then applied live with setOutfit (no map rebuild)
+  const outfitRef = useRef(outfit)
+  const detectiveRef = useRef<ReturnType<typeof createDetective> | null>(null)
+  useEffect(() => {
+    outfitRef.current = outfit
+    if (outfit) detectiveRef.current?.setOutfit(outfit)
+  }, [outfit])
 
   useEffect(() => {
     const el = container.current!
@@ -169,7 +176,8 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
         const puerta = landmarks.positionOf('puerta-de-alcala') ?? madrid
         const start = { x: puerta.x - 30, z: puerta.z + 105 } // lo bastante lejos para verla entera
         const carState = createCarState(start.x, start.z, Math.atan2(-(puerta.x - start.x), -(puerta.z - start.z)), ground)
-        const detective = createDetective()
+        const detective = createDetective(outfitRef.current)
+        detectiveRef.current = detective
         scene.add(detective.root)
         // Efectos al correr: nubecitas de polvo en cada pisada y huellas en el suelo
         const dust = createDust()
@@ -264,6 +272,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
           keyboard.dispose()
           chase.dispose()
           detective.dispose()
+          detectiveRef.current = null
           dust.dispose()
           footprints.dispose()
           landmarks.dispose()
