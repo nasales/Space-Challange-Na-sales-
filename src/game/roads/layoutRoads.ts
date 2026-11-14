@@ -1,6 +1,7 @@
-// Road layout: turns the road lines of roads.json (today a single closed loop planned offline by
-// scripts/plan-road.mjs) into smooth world-space runs that sit on the terrain and respect
-// everything else on the map. A closed line (last point = first point) stays one seamless loop.
+// Road layout: turns the road lines of roads.json (a closed loop plus a few open roads that cross
+// it, planned offline by scripts/plan-road.mjs) into smooth world-space runs that sit on the
+// terrain and respect everything else on the map. A closed line (last point = first point) stays
+// one seamless loop.
 // The planner already keeps the route clear; the rules below are the safety net:
 // - monuments: roads bend around each footprint (the same idea as bendRiversAround), keeping to
 //   the side they already pass on;
@@ -8,11 +9,14 @@
 //   away from the water so it never runs inside a channel or along the water's edge;
 // - sea and border: roads only exist on explored land (both edges), clipped at the zone edges;
 // - relief: the deck height follows a smoothed upper envelope of the terrain across the whole
-//   width, so the road never sinks into a terrace and never stair-steps (it ramps gently instead).
+//   width, so the road never sinks into a terrace and never stair-steps (it ramps gently instead);
+// - junctions: where two runs cross, both decks are levelled to one flat height over the crossing
+//   (with a smooth ramp on each side) and a junction patch (junctions.ts) is laid on top.
 import type { River } from '../map/mapData'
 import { chaikin, riverHalfWidthKm, riverWidthScale } from '../map/rivers'
 import { lonLatToWorld, UNITS_PER_KM } from '../map/projection'
 import type { Road } from './roadData'
+import { junctionShape, type JunctionShape } from './junctions'
 
 export type XZ = [number, number]
 
@@ -51,6 +55,10 @@ const DECK_CLEAR = 1.6
 export const SLAB = 1.3
 /** Pieces of road shorter than this many cross sections are dropped. */
 const MIN_SAMPLES = 6
+/** Junctions: length (world units) of the ramp from the flat crossing back to each road's own
+ * profile, and the extra margin of the flat part past the patch opening. */
+const JUNCTION_RAMP = 24
+const JUNCTION_FLAT = 2
 
 export interface RoadGround {
   heightAt: (x: number, z: number) => number
@@ -61,6 +69,23 @@ export interface RoadGround {
   clearings: { x: number; z: number; r: number }[]
   /** Distance to the nearest monument footprint (0 inside). */
   landmarkDistance: (x: number, z: number) => number
+}
+
+/** Two runs crossing: both decks are flat at height y over the patch. */
+export interface RoadJunction {
+  x: number
+  z: number
+  /** Deck height of both roads over the patch. */
+  y: number
+  /** The two runs (indices into the layout's runs) and the crossing position along each. */
+  a: { run: number; at: number }
+  b: { run: number; at: number }
+  shape: JunctionShape
+}
+
+export interface RoadLayout {
+  runs: RoadRun[]
+  junctions: RoadJunction[]
 }
 
 export interface Bridge {
@@ -400,8 +425,16 @@ function envelope(raw: number[], r: number, closed = false): number[] {
   return y
 }
 
-/** Heights of one run: deck (with bridges), skirt bottom and the ground under the centre. */
-function profile(run: Omit<RoadRun, 'y' | 'bottom' | 'ground'>, ground: RoadGround): RoadRun {
+type RunBase = Omit<RoadRun, 'y' | 'bottom' | 'ground'>
+interface RawProfile {
+  /** Wanted deck height at each section (terrain envelope + lift, bridges arched). */
+  raw: number[]
+  low: number[]
+  centre: number[]
+}
+
+/** Wanted heights of one run before smoothing: terrain under the whole width, bridges arched. */
+function rawProfile(run: RunBase, ground: RoadGround): RawProfile {
   const { pts, hw, rank, bridges } = run
   const closed = isClosed(pts)
   const n = pts.length
@@ -444,15 +477,110 @@ function profile(run: Omit<RoadRun, 'y' | 'bottom' | 'ground'>, ground: RoadGrou
     }
   }
   if (closed) raw[n - 1] = raw[0] = Math.max(raw[0], raw[n - 1])
-  const y = envelope(raw, SMOOTH_R, closed)
+  return { raw, low, centre }
+}
+
+/** A junction seen from one run: flat at height y within `flat` units of section `at`. */
+interface Level {
+  at: number
+  flat: number
+  y: number
+}
+
+/** Distance (world units) between section i and position `at`, around the loop if closed. */
+const alongDist = (i: number, at: number, n: number, closed: boolean) => {
+  const d = Math.abs(i - at)
+  return (closed ? Math.min(d, n - 1 - d) : d) * STEP
+}
+
+/** Heights of one run: deck (smoothed, levelled at junctions), skirt bottom and ground. */
+function finishProfile(run: RunBase, { raw, low, centre }: RawProfile, levels: Level[]): RoadRun {
+  const closed = isClosed(run.pts)
+  const n = run.pts.length
+  const want = raw.slice()
+  for (const lv of levels) for (let i = 0; i < n; i++) if (alongDist(i, lv.at, n, closed) <= lv.flat) want[i] = lv.y
+  const y = envelope(want, SMOOTH_R, closed)
+  // Exactly flat over each junction, then a smooth ramp back to the road's own profile (never
+  // under the terrain the road needs)
+  for (const lv of levels) {
+    for (let i = 0; i < n; i++) {
+      const d = alongDist(i, lv.at, n, closed)
+      if (d <= lv.flat) y[i] = lv.y
+      else if (d < lv.flat + JUNCTION_RAMP) y[i] = Math.max(raw[i], lv.y + (y[i] - lv.y) * smooth(lv.flat, lv.flat + JUNCTION_RAMP, d))
+    }
+  }
+  if (closed) y[n - 1] = y[0]
   const bottom = y.map((yi, i) => (run.bridge[i] ? yi - SLAB : Math.min(low[i], yi) - 0.8))
   return { ...run, y, bottom, ground: centre }
 }
 
-/** Lays out every road of a zone. */
-export function layoutRoads(roads: Road[], ground: RoadGround): RoadRun[] {
+/**
+ * Crossings between different runs, each with its patch shape. A crossing too close to a bridge,
+ * to the open end of a run, to another junction, or at a very shallow angle gets no junction.
+ */
+function findJunctions(bases: RunBase[]): Omit<RoadJunction, 'y'>[] {
+  const CELLJ = 30
+  const grid = new Map<string, { r: number; i: number }[]>()
+  bases.forEach((run, r) => {
+    for (let i = 0; i < run.pts.length - 1; i++) {
+      const [ax, az] = run.pts[i], [bx, bz] = run.pts[i + 1]
+      const key = `${Math.floor((ax + bx) / 2 / CELLJ)},${Math.floor((az + bz) / 2 / CELLJ)}`
+      let list = grid.get(key)
+      if (!list) grid.set(key, (list = []))
+      list.push({ r, i })
+    }
+  })
+  const hits: { ra: number; atA: number; rb: number; atB: number; x: number; z: number }[] = []
+  for (const [key, list] of grid) {
+    const [gc, gr] = key.split(',').map(Number)
+    const near: { r: number; i: number }[] = []
+    for (let dc = -1; dc <= 1; dc++) for (let dr = -1; dr <= 1; dr++) near.push(...(grid.get(`${gc + dc},${gr + dr}`) ?? []))
+    for (const s of list) {
+      const [px, pz] = bases[s.r].pts[s.i], [qx, qz] = bases[s.r].pts[s.i + 1]
+      for (const o of near) {
+        if (o.r <= s.r) continue // each pair once, never a run with itself
+        const [ax, az] = bases[o.r].pts[o.i], [bx, bz] = bases[o.r].pts[o.i + 1]
+        const rx = qx - px, rz = qz - pz, sx = bx - ax, sz = bz - az
+        const den = rx * sz - rz * sx
+        if (Math.abs(den) < 1e-9) continue
+        const t = ((ax - px) * sz - (az - pz) * sx) / den
+        const u = ((ax - px) * rz - (az - pz) * rx) / den
+        if (t < 0 || t >= 1 || u < 0 || u >= 1) continue
+        hits.push({ ra: s.r, atA: s.i + t, rb: o.r, atB: o.i + u, x: px + rx * t, z: pz + rz * t })
+      }
+    }
+  }
+  hits.sort((p, q) => p.ra - q.ra || p.atA - q.atA)
+  const out: Omit<RoadJunction, 'y'>[] = []
+  const clearOf = (run: RunBase, at: number, reach: number) => {
+    const n = run.pts.length
+    const closed = isClosed(run.pts)
+    if (!closed && (at * STEP < reach || (n - 1 - at) * STEP < reach)) return false
+    for (const br of run.bridges) {
+      for (const i of [br.a, br.b]) if (alongDist(i, at, n, closed) < reach) return false
+      if (at >= br.a && at <= br.b) return false
+    }
+    return true
+  }
+  for (const hit of hits) {
+    const A = bases[hit.ra], B = bases[hit.rb]
+    const [ax, az] = tangent(A.pts, Math.round(hit.atA))
+    const [bx, bz] = tangent(B.pts, Math.round(hit.atB))
+    const shape = junctionShape(hit.x, hit.z, { tx: ax, tz: az, hw: A.hw }, { tx: bx, tz: bz, hw: B.hw })
+    if (!shape) continue
+    if (!clearOf(A, hit.atA, shape.extA + JUNCTION_FLAT + JUNCTION_RAMP)) continue
+    if (!clearOf(B, hit.atB, shape.extB + JUNCTION_FLAT + JUNCTION_RAMP)) continue
+    const reach = shape.radius + JUNCTION_FLAT + JUNCTION_RAMP
+    if (out.some((j) => Math.hypot(j.x - hit.x, j.z - hit.z) < reach + j.shape.radius + JUNCTION_FLAT + JUNCTION_RAMP)) continue
+    out.push({ x: hit.x, z: hit.z, a: { run: hit.ra, at: hit.atA }, b: { run: hit.rb, at: hit.atB }, shape })
+  }
+  return out
+}
+
+/** Lays out every road of a zone, with the junctions where two runs cross. */
+export function layoutRoads(roads: Road[], ground: RoadGround): RoadLayout {
   const rivers = riverIndex(ground.rivers)
-  const runs: RoadRun[] = []
+  const runs: RunBase[] = []
   for (const road of roads) {
     const hw = ROAD_HALF_WIDTH[road.rank]
     for (const line of road.lines) {
@@ -507,7 +635,7 @@ export function layoutRoads(roads: Road[], ground: RoadGround): RoadRun[] {
         }
         // Split into continuous runs (a closed loop without cuts stays one closed run)
         if (isClosed(pts) && keep.every((k) => k)) {
-          runs.push(profile({ rank: road.rank, name: road.name, hw, pts, bridge: onBridgeOk(okBridges, n), bridges: okBridges }, ground))
+          runs.push({ rank: road.rank, name: road.name, hw, pts, bridge: onBridgeOk(okBridges, n), bridges: okBridges })
           break
         }
         let s = -1
@@ -519,7 +647,7 @@ export function layoutRoads(roads: Road[], ground: RoadGround): RoadRun[] {
               const local = okBridges.filter((b) => b.a >= s && b.b < i).map((b) => ({ a: b.a - s, b: b.b - s }))
               const bridge = new Uint8Array(i - s)
               for (const b of local) bridge.fill(1, b.a, b.b + 1)
-              runs.push(profile({ rank: road.rank, name: road.name, hw, pts: pts.slice(s, i), bridge, bridges: local }, ground))
+              runs.push({ rank: road.rank, name: road.name, hw, pts: pts.slice(s, i), bridge, bridges: local })
             }
             s = -1
           }
@@ -528,7 +656,24 @@ export function layoutRoads(roads: Road[], ground: RoadGround): RoadRun[] {
       }
     }
   }
-  return runs
+  // Junctions: one flat height for both decks over each crossing, high enough for the terrain
+  // under the whole patch, then every run is smoothed with its junctions levelled
+  const raws = runs.map((run) => rawProfile(run, ground))
+  const found = findJunctions(runs)
+  const levels: Level[][] = runs.map(() => [])
+  const junctions: RoadJunction[] = found.map((j) => {
+    let y = -Infinity
+    for (const [end, ext] of [[j.a, j.shape.extA], [j.b, j.shape.extB]] as const) {
+      const n = runs[end.run].pts.length
+      const closed = isClosed(runs[end.run].pts)
+      for (let i = 0; i < n; i++) if (alongDist(i, end.at, n, closed) <= ext + JUNCTION_FLAT) y = Math.max(y, raws[end.run].raw[i])
+    }
+    for (const [px, pz] of j.shape.outline) y = Math.max(y, ground.heightAt(px, pz) + LIFT[2])
+    levels[j.a.run].push({ at: j.a.at, flat: j.shape.extA + JUNCTION_FLAT, y })
+    levels[j.b.run].push({ at: j.b.at, flat: j.shape.extB + JUNCTION_FLAT, y })
+    return { ...j, y }
+  })
+  return { runs: runs.map((run, r) => finishProfile(run, raws[r], levels[r])), junctions }
 }
 
 function onBridgeOk(bridges: Bridge[], n: number) {
@@ -538,7 +683,7 @@ function onBridgeOk(bridges: Bridge[], n: number) {
 }
 
 /** Checks of the laid-out roads (logged in development): the safety net must never be needed. */
-export function validateRoads(runs: RoadRun[], ground: RoadGround) {
+export function validateRoads({ runs, junctions }: RoadLayout, ground: RoadGround) {
   const rivers = riverIndex(ground.rivers)
   let wetWithoutBridge = 0, overSea = 0, closestMonument = Infinity, maxEmbankment = 0, bridges = 0, lengthKm = 0
   for (const run of runs) {
@@ -556,7 +701,8 @@ export function validateRoads(runs: RoadRun[], ground: RoadGround) {
   }
   return {
     runs: runs.length,
-    closedLoop: runs.length === 1 && isClosed(runs[0].pts),
+    closedLoop: runs.some((r) => isClosed(r.pts)),
+    junctions: junctions.length,
     lengthKm: Math.round(lengthKm),
     bridges,
     wetWithoutBridge,
