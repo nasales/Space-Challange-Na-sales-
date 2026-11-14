@@ -36,4 +36,10 @@ export interface GameCallbacks {
   onStatus?: (status: GameStatus) => void
   onHud?: (hud: HudState) => void
   onStop?: (stop: GameStop) => void
+  /** Featured-case marker the car is close to (id from src/shared/tutorial.ts), or null when it leaves */
+  onCaseNear?: (caseId: string | null) => void
+  /** The player opened a featured case (Enter near the marker, or click on it) */
+  onCaseOpen?: (caseId: string) => void
+  /** true while a UI overlay is open: the game must ignore driving keys */
+  paused?: boolean
 }
