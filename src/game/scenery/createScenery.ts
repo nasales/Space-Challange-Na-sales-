@@ -37,13 +37,17 @@ const ANIM_FPS = 12
  *   of each clump, Ben-Day halftone dots that grow with the shade, sparse ink hatching in the
  *   deepest shadow and a faint cyan / magenta misregistration rim on the silhouette.
  */
-function duckingMaterial() {
-  const material = toonMaterial(0xffffff, { vertexColors: true })
-  const uniforms = {
+function duckingMaterial(
+  shared = {
     uDuckA: { value: new THREE.Vector2() }, // detective
     uDuckB: { value: new THREE.Vector2() }, // cámara
     uTime: { value: 0 }, // stepped on twos
-  }
+  },
+  duckOn = true,
+) {
+  const material = toonMaterial(0xffffff, { vertexColors: true })
+  // uDuckOn = 0: flat things the detective drives over (wheat fields) never shrink
+  const uniforms = { ...shared, uDuckOn: { value: duckOn ? 1 : 0 } }
   const toon = material.onBeforeCompile
   material.onBeforeCompile = (shader, renderer) => {
     toon.call(material, shader, renderer)
@@ -93,7 +97,7 @@ function duckingMaterial() {
     shader.vertexShader = shader.vertexShader
       .replace(
         '#include <common>',
-        '#include <common>\nuniform vec2 uDuckA;\nuniform vec2 uDuckB;\nuniform float uTime;\nattribute float aSway;',
+        '#include <common>\nuniform vec2 uDuckA;\nuniform vec2 uDuckB;\nuniform float uTime;\nuniform float uDuckOn;\nattribute float aSway;',
       )
       .replace(
         '#include <begin_vertex>',
@@ -106,7 +110,7 @@ function duckingMaterial() {
         vec2 duckAB = uDuckB - uDuckA;
         float duckT = clamp(dot(duckOrigin - uDuckA, duckAB) / max(dot(duckAB, duckAB), 1e-3), 0.0, 1.0);
         float duckD = distance(duckOrigin, uDuckA + duckAB * duckT);
-        float duck = 1.0 - smoothstep(${DUCK_RADIUS.toFixed(1)}, ${(DUCK_RADIUS + DUCK_FADE).toFixed(1)}, duckD);
+        float duck = 1.0 - smoothstep(${DUCK_RADIUS.toFixed(1)}, ${(DUCK_RADIUS + DUCK_FADE).toFixed(1)}, duckD) * uDuckOn;
         transformed.y *= mix(1.0, 0.22, duck);
         transformed.xz *= mix(1.0, 0.7, duck);
         // Wind: a slow sway plus a quicker flutter, each tree with its own phase (stepped time)
@@ -117,12 +121,13 @@ function duckingMaterial() {
       )
   }
   material.customProgramCacheKey = () => 'scenery-duck-comic'
-  return { material, uniforms }
+  return { material, uniforms: shared }
 }
 
 export function createScenery(items: SceneryItem[]) {
   const group = new THREE.Group()
   const { material, uniforms } = duckingMaterial() // árboles y viñas
+  const flatMaterial = duckingMaterial(uniforms, false).material // wheat fields: same wind, no ducking
   const millMaterial = toonMaterial(0xffffff, { vertexColors: true }) // los molinos no se agachan
   const geometries = new Map<SceneryKind, THREE.BufferGeometry>()
   const geometryFor = (kind: SceneryKind) => {
@@ -149,7 +154,7 @@ export function createScenery(items: SceneryItem[]) {
   const scl = new THREE.Vector3()
   const chunks: THREE.InstancedMesh[] = []
   for (const list of buckets.values()) {
-    const mesh = new THREE.InstancedMesh(geometryFor(list[0].kind), material, list.length)
+    const mesh = new THREE.InstancedMesh(geometryFor(list[0].kind), list[0].kind === 'wheat' ? flatMaterial : material, list.length)
     list.forEach((it, i) => {
       pos.set(it.x, it.y, it.z)
       q.setFromAxisAngle(up, it.rot)
@@ -221,6 +226,7 @@ export function createScenery(items: SceneryItem[]) {
       geometries.forEach((g) => g.dispose())
       sailsGeo.dispose()
       material.dispose()
+      flatMaterial.dispose()
       millMaterial.dispose()
     },
   }
