@@ -196,6 +196,10 @@
   outline: none;
   pointer-events: none;
   isolation: isolate;
+  /* clues with data (ClueRing.tsx) can be picked */
+  &.clue--live {
+    cursor: pointer;
+  }
   -webkit-tap-highlight-color: transparent;
   transform-origin: 50% calc(var(--cr-m) / 2);
   transition:
