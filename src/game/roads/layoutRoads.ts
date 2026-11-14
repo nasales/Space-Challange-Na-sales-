@@ -1,5 +1,7 @@
-// Road layout: turns the coarse road lines of roads.json into smooth world-space runs that sit on
-// the terrain and respect everything else on the map:
+// Road layout: turns the road lines of roads.json (today a single closed loop planned offline by
+// scripts/plan-road.mjs) into smooth world-space runs that sit on the terrain and respect
+// everything else on the map. A closed line (last point = first point) stays one seamless loop.
+// The planner already keeps the route clear; the rules below are the safety net:
 // - monuments: roads bend around each footprint (the same idea as bendRiversAround), keeping to
 //   the side they already pass on;
 // - rivers: a road that crosses a river gets a bridge; a road that runs next to a river is pushed
@@ -112,10 +114,20 @@ export function resample(pts: XZ[]): XZ[] {
   return out
 }
 
-/** Unit tangent of a polyline at point i. */
+/** true if the polyline is a closed loop (its last point is its first point). */
+export function isClosed(pts: XZ[]): boolean {
+  const n = pts.length
+  return n > 3 && Math.hypot(pts[0][0] - pts[n - 1][0], pts[0][1] - pts[n - 1][1]) < 1e-6
+}
+
+/** Unit tangent of a polyline at point i (wrapping around on a closed loop). */
 export function tangent(pts: XZ[], i: number): XZ {
-  const [px, pz] = pts[Math.max(0, i - 1)]
-  const [nx, nz] = pts[Math.min(pts.length - 1, i + 1)]
+  const n = pts.length
+  const closed = isClosed(pts)
+  const pi = i > 0 ? i - 1 : closed ? n - 2 : 0
+  const ni = i < n - 1 ? i + 1 : closed ? 1 : n - 1
+  const [px, pz] = pts[pi]
+  const [nx, nz] = pts[ni]
   const tx = nx - px, tz = nz - pz
   const tl = Math.hypot(tx, tz) || 1
   return [tx / tl, tz / tl]
@@ -249,9 +261,12 @@ type RiverIndex = ReturnType<typeof riverIndex>
 // ---------------------------------------------------------------------------------------------
 
 /**
- * Bends a road around monument circles. Points closer than the clearing are pushed radially out
- * with a soft falloff (a gentle curve, not a kink), always to the side the road already passes on
- * (points on the other side are mirrored first), so the road never splits around a monument.
+ * Bends a road around monument circles, sideways only. For each circle the road is described
+ * around its closest point: `a` along the road, `b` across it, on the side the road already
+ * passes. Points are moved only across the road, out to b_need(a) = target * sqrt(1 - (a/outer)^2)
+ * (a smooth bump; a^2 + b_need^2 >= target^2, so the moved point is always outside the circle),
+ * blended with a smooth maximum so the curve never kinks. Moving only sideways means two
+ * neighbouring points can never be thrown to opposite sides, so no chord cuts a footprint.
  */
 function avoidMonuments(pts: XZ[], clearings: RoadGround['clearings'], hw: number): XZ[] {
   let out = pts
@@ -266,23 +281,20 @@ function avoidMonuments(pts: XZ[], clearings: RoadGround['clearings'], hw: numbe
         k = i
       }
     }
-    if (k < 0 || kd >= outer) continue
+    if (k < 0 || kd >= target + 1) continue // already clear
     const [tx, tz] = tangent(out, k)
     const vx = out[k][0] - c.x, vz = out[k][1] - c.z
     const side = -tz * vx + tx * vz >= 0 ? 1 : -1
     const nx = -tz * side, nz = tx * side // unit normal pointing to the road's side
     out = out.map(([x, z]): XZ => {
-      let dx = x - c.x, dz = z - c.z
-      if (Math.hypot(dx, dz) >= outer) return [x, z]
-      const dn = dx * nx + dz * nz
-      if (dn < 0) {
-        dx -= 2 * dn * nx
-        dz -= 2 * dn * nz
-      }
-      const d = Math.hypot(dx, dz)
-      const nd = target + (d / outer) * (outer - target)
-      if (d < 1e-6) return [c.x + nx * nd, c.z + nz * nd]
-      return [c.x + (dx / d) * nd, c.z + (dz / d) * nd]
+      const dx = x - c.x, dz = z - c.z
+      const a = dx * tx + dz * tz
+      if (Math.abs(a) >= outer) return [x, z]
+      const b = dx * nx + dz * nz
+      const need = target * Math.sqrt(1 - (a / outer) ** 2)
+      const soft = 6 * (need / target)
+      const nb = (b + need + Math.sqrt((b - need) ** 2 + soft * soft)) / 2 // smooth max(b, need)
+      return [x + nx * (nb - b), z + nz * (nb - b)]
     })
   }
   return out
@@ -356,7 +368,22 @@ function bridgeIntervals(pts: XZ[], rivers: RiverIndex, hw: number): Bridge[] {
  * stay where they are (a plain max filter would lift a long ramp by its grade times the radius),
  * dips and terrace kinks are filled with smooth curves, and the result never sinks under the input.
  */
-function envelope(raw: number[], r: number): number[] {
+function envelope(raw: number[], r: number, closed = false): number[] {
+  if (closed) {
+    // the last value repeats the first: smooth the ring of unique values with wrap-around
+    const m = raw.length - 1
+    const ring = raw.slice(0, m)
+    let yr = ring
+    for (let pass = 0; pass < ENVELOPE_PASSES; pass++) {
+      const prev = yr
+      yr = ring.map((v, i) => {
+        let s = 0
+        for (let k = -r; k <= r; k++) s += prev[(i + k + m) % m]
+        return Math.max(v, s / (2 * r + 1))
+      })
+    }
+    return [...yr, yr[0]]
+  }
   const n = raw.length
   let y = raw
   for (let pass = 0; pass < ENVELOPE_PASSES; pass++) {
@@ -376,6 +403,7 @@ function envelope(raw: number[], r: number): number[] {
 /** Heights of one run: deck (with bridges), skirt bottom and the ground under the centre. */
 function profile(run: Omit<RoadRun, 'y' | 'bottom' | 'ground'>, ground: RoadGround): RoadRun {
   const { pts, hw, rank, bridges } = run
+  const closed = isClosed(pts)
   const n = pts.length
   const raw: number[] = []
   const low: number[] = []
@@ -388,7 +416,7 @@ function profile(run: Omit<RoadRun, 'y' | 'bottom' | 'ground'>, ground: RoadGrou
     // straight between sections, the terrain is not), so slopes between sections cannot poke up
     let hi = -Infinity, lo = Infinity
     for (const along of [-0.5, 0, 0.5]) {
-      if ((i === 0 && along < 0) || (i === n - 1 && along > 0)) continue
+      if (!closed && ((i === 0 && along < 0) || (i === n - 1 && along > 0))) continue
       const cx = x + tx * along * STEP, cz = z + tz * along * STEP
       for (const k of ACROSS_PROBES) {
         const o = k * (hw + 0.6)
@@ -415,7 +443,8 @@ function profile(run: Omit<RoadRun, 'y' | 'bottom' | 'ground'>, ground: RoadGrou
       raw[i] = Math.max(deck, raw[i] + (i > a && i < b ? DECK_CLEAR : 0))
     }
   }
-  const y = envelope(raw, SMOOTH_R)
+  if (closed) raw[n - 1] = raw[0] = Math.max(raw[0], raw[n - 1])
+  const y = envelope(raw, SMOOTH_R, closed)
   const bottom = y.map((yi, i) => (run.bridge[i] ? yi - SLAB : Math.min(low[i], yi) - 0.8))
   return { ...run, y, bottom, ground: centre }
 }
@@ -434,54 +463,105 @@ export function layoutRoads(roads: Road[], ground: RoadGround): RoadRun[] {
         }),
       )
       if (pts.length < 2) continue
-      pts = resample(avoidMonuments(pts, ground.clearings, hw))
-      if (!rivers.empty) for (let pass = 0; pass < 2; pass++) pts = resample(avoidRivers(pts, rivers, hw))
-      pts = resample(avoidMonuments(pts, ground.clearings, hw)) // monuments always win
-      const n = pts.length
-      if (n < MIN_SAMPLES) continue
+      const closedLine = isClosed(pts)
+      // keeps a closed loop exactly closed after each step (both copies of the seam point agree)
+      const close = (q: XZ[]) => (closedLine && q.length > 1 ? [...q.slice(0, -1), q[0]] : q)
+      pts = close(resample(avoidMonuments(pts, ground.clearings, hw)))
+      if (!rivers.empty) for (let pass = 0; pass < 2; pass++) pts = close(resample(avoidRivers(pts, rivers, hw)))
+      pts = close(resample(avoidMonuments(pts, ground.clearings, hw))) // monuments always win
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const n = pts.length
+        if (n < MIN_SAMPLES) break
 
-      // Which cross sections may exist: both edges on explored land, off monuments, out of the water
-      const bridges = rivers.empty ? [] : bridgeIntervals(pts, rivers, hw)
-      const onBridge = new Uint8Array(n)
-      for (const { a, b } of bridges) onBridge.fill(1, a, b + 1)
-      const keep = new Uint8Array(n)
-      for (let i = 0; i < n; i++) {
-        const [x, z] = pts[i]
-        const [tx, tz] = tangent(pts, i)
-        const o = hw + 0.5
-        const land = ground.isExploredLand(x, z) && ground.isExploredLand(x - tz * o, z + tx * o) && ground.isExploredLand(x + tz * o, z - tx * o)
-        if (!land || ground.landmarkDistance(x, z) < hw + 1) continue
-        if (!onBridge[i] && !rivers.empty) {
-          const nr = rivers.nearest(x, z, hw)
-          if (nr && nr.edge < hw) continue // would run in the water: cut
-        }
-        keep[i] = 1
-      }
-      // A bridge must be complete with land at both ends; otherwise the road stops before it
-      const okBridges: Bridge[] = []
-      for (const br of bridges) {
-        let ok = br.a >= 2 && br.b <= n - 3
-        for (let i = Math.max(0, br.a - 2); ok && i <= Math.min(n - 1, br.b + 2); i++) if (!keep[i]) ok = false
-        if (ok) okBridges.push(br)
-        else keep.fill(0, Math.max(0, br.a - 2), Math.min(n, br.b + 3))
-      }
-
-      // Split into continuous runs
-      let s = -1
-      for (let i = 0; i <= n; i++) {
-        const k = i < n && keep[i] === 1
-        if (k && s < 0) s = i
-        if (!k && s >= 0) {
-          if (i - s >= MIN_SAMPLES) {
-            const local = okBridges.filter((b) => b.a >= s && b.b < i).map((b) => ({ a: b.a - s, b: b.b - s }))
-            const bridge = new Uint8Array(i - s)
-            for (const b of local) bridge.fill(1, b.a, b.b + 1)
-            runs.push(profile({ rank: road.rank, name: road.name, hw, pts: pts.slice(s, i), bridge, bridges: local }, ground))
+        // Which cross sections may exist: both edges on explored land, off monuments, out of the water
+        const bridges = rivers.empty ? [] : bridgeIntervals(pts, rivers, hw)
+        const onBridge = new Uint8Array(n)
+        for (const { a, b } of bridges) onBridge.fill(1, a, b + 1)
+        const keep = new Uint8Array(n)
+        for (let i = 0; i < n; i++) {
+          const [x, z] = pts[i]
+          const [tx, tz] = tangent(pts, i)
+          const o = hw + 0.5
+          const land = ground.isExploredLand(x, z) && ground.isExploredLand(x - tz * o, z + tx * o) && ground.isExploredLand(x + tz * o, z - tx * o)
+          if (!land || ground.landmarkDistance(x, z) < hw + 1) continue
+          if (!onBridge[i] && !rivers.empty) {
+            const nr = rivers.nearest(x, z, hw)
+            if (nr && nr.edge < hw) continue // would run in the water: cut
           }
-          s = -1
+          keep[i] = 1
         }
+        // A bridge must be complete with land at both ends; otherwise the road stops before it
+        const okBridges: Bridge[] = []
+        for (const br of bridges) {
+          let ok = br.a >= 2 && br.b <= n - 3
+          for (let i = Math.max(0, br.a - 2); ok && i <= Math.min(n - 1, br.b + 2); i++) if (!keep[i]) ok = false
+          if (ok) okBridges.push(br)
+          else keep.fill(0, Math.max(0, br.a - 2), Math.min(n, br.b + 3))
+        }
+
+        // A closed loop with a cut: start it at the first cut and lay it out again as an open line
+        if (attempt === 0 && isClosed(pts) && keep.some((k) => !k)) {
+          const f = keep.indexOf(0)
+          pts = [...pts.slice(f, n - 1), ...pts.slice(0, f + 1)]
+          continue
+        }
+        // Split into continuous runs (a closed loop without cuts stays one closed run)
+        if (isClosed(pts) && keep.every((k) => k)) {
+          runs.push(profile({ rank: road.rank, name: road.name, hw, pts, bridge: onBridgeOk(okBridges, n), bridges: okBridges }, ground))
+          break
+        }
+        let s = -1
+        for (let i = 0; i <= n; i++) {
+          const k = i < n && keep[i] === 1
+          if (k && s < 0) s = i
+          if (!k && s >= 0) {
+            if (i - s >= MIN_SAMPLES) {
+              const local = okBridges.filter((b) => b.a >= s && b.b < i).map((b) => ({ a: b.a - s, b: b.b - s }))
+              const bridge = new Uint8Array(i - s)
+              for (const b of local) bridge.fill(1, b.a, b.b + 1)
+              runs.push(profile({ rank: road.rank, name: road.name, hw, pts: pts.slice(s, i), bridge, bridges: local }, ground))
+            }
+            s = -1
+          }
+        }
+        break
       }
     }
   }
   return runs
+}
+
+function onBridgeOk(bridges: Bridge[], n: number) {
+  const mask = new Uint8Array(n)
+  for (const b of bridges) mask.fill(1, b.a, b.b + 1)
+  return mask
+}
+
+/** Checks of the laid-out roads (logged in development): the safety net must never be needed. */
+export function validateRoads(runs: RoadRun[], ground: RoadGround) {
+  const rivers = riverIndex(ground.rivers)
+  let wetWithoutBridge = 0, overSea = 0, closestMonument = Infinity, maxEmbankment = 0, bridges = 0, lengthKm = 0
+  for (const run of runs) {
+    bridges += run.bridges.length
+    lengthKm += ((run.pts.length - 1) * STEP) / UNITS_PER_KM
+    run.pts.forEach(([x, z], i) => {
+      if (!run.bridge[i] && !rivers.empty) {
+        const nr = rivers.nearest(x, z, run.hw)
+        if (nr && nr.edge < run.hw) wetWithoutBridge++
+      }
+      if (!ground.isExploredLand(x, z)) overSea++
+      closestMonument = Math.min(closestMonument, ground.landmarkDistance(x, z) - run.hw)
+      if (!run.bridge[i]) maxEmbankment = Math.max(maxEmbankment, run.y[i] - run.ground[i])
+    })
+  }
+  return {
+    runs: runs.length,
+    closedLoop: runs.length === 1 && isClosed(runs[0].pts),
+    lengthKm: Math.round(lengthKm),
+    bridges,
+    wetWithoutBridge,
+    overSea,
+    closestMonument: Math.round(closestMonument * 10) / 10,
+    maxEmbankment: Math.round(maxEmbankment * 10) / 10,
+  }
 }

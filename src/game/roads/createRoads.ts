@@ -12,7 +12,7 @@
 import * as THREE from 'three'
 import { toonMaterial } from '../scene/toonGradient'
 import type { Road } from './roadData'
-import { layoutRoads, tangent, STEP, SLAB, type RoadGround, type RoadRun } from './layoutRoads'
+import { layoutRoads, validateRoads, isClosed, tangent, STEP, SLAB, type RoadGround, type RoadRun } from './layoutRoads'
 
 /** Animation frame rate: comic "on twos" stepping, as the rivers. */
 const ANIM_FPS = 12
@@ -240,7 +240,7 @@ function buildRibbon(run: RoadRun, s: number, e: number, out: RibbonBuffers) {
   }
   // Squared ends of the run: close the skirt across the end so no hole shows
   for (const end of [s, e]) {
-    if (end !== 0 && end !== pts.length - 1) continue
+    if ((end !== 0 && end !== pts.length - 1) || isClosed(pts)) continue // a closed loop has no ends
     const [x, z] = pts[end]
     const [tx, tz] = tangent(pts, end)
     const nx = -tz, nz = tx
@@ -362,6 +362,8 @@ function buildBridgeParts(run: RoadRun, solid: ReturnType<typeof createSolidBuil
  */
 export function createRoads(roads: Road[], ground: RoadGround): Roads {
   const runs = layoutRoads(roads, ground)
+  // Development check: the planned route must need no safety net (no water, sea or monuments)
+  if (import.meta.env.DEV && runs.length) console.info('[roads]', validateRoads(runs, ground))
   const group = new THREE.Group()
 
   const material = new THREE.ShaderMaterial({

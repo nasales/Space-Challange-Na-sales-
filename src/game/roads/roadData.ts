@@ -1,12 +1,13 @@
-// Main roads of the explored country (Natural Earth, public domain), produced once by
-// scripts/fetch-roads.mjs and stored in public/maps/countries/<ID>/roads.json.
+// Roads of the explored country, stored in public/maps/countries/<ID>/roads.json. Today it holds a
+// single closed loop ("The Detective's Road") planned offline by scripts/plan-road.mjs from the
+// map data already in the repo (relief, border, rivers, landmarks, places).
 import type { Bounds } from '../map/mapData'
 
 /** A road as stored in roads.json. */
 export interface Road {
-  /** Route label, e.g. "A6" or "N432" (may be empty). */
+  /** Road name (may be empty). */
   name: string
-  /** 1 motorway / autovía, 2 primary national road. */
+  /** 1 motorway look (wide, median), 2 single carriageway with a centre dash. */
   rank: 1 | 2
   /** One or more polylines of [lon, lat] points. */
   lines: [number, number][][]
