@@ -1,4 +1,4 @@
-# QA agent — supervised by Person 4 (integration owner)
+# QA agent — supervised by Perry (integration owner)
 
 You do **not** build features. You test and review every change before its author merges it into `main`.
 
