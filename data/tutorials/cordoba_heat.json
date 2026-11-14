@@ -1,0 +1,255 @@
+{
+  "case_id": "cordoba_heat",
+  "title": "Córdoba heat",
+  "place": "Córdoba",
+  "intro": {
+    "headline": "August 2021: about 47 °C near Córdoba",
+    "paragraphs": [
+      "In August 2021 a weather station near Córdoba, in southern Spain, measured about 47 °C. It is the highest temperature ever officially recorded in Spain.",
+      "Córdoba sits in the valley of the Guadalquivir river. The valley is low and far from the cooling sea breeze, so in summer hot air gets trapped there for days. Locals call it one of the hottest corners of Europe.",
+      "Every few summers the news reports a new heat record. But a detective does not trust headlines alone. In this case file you will rank Córdoba's summers with NASA data, look for a pattern, and then decide for yourself."
+    ],
+    "question": "Córdoba keeps breaking heat records. Is every summer really hotter, or were those just bad years?"
+  },
+  "steps": [
+    {
+      "id": "yearly_cycle",
+      "title": "Hot summers, mild winters",
+      "text": "This is a monthly time series: one point per month, here zoomed to 2015-2024. Each point is the average air temperature of that month, day and night together, over the square of land that contains Córdoba. The line rises to a peak every summer and falls every winter: the yearly cycle. Because of it, we will compare summers only with other summers. Data: NASA MERRA-2.",
+      "chart": {
+        "variable": "T2M",
+        "view": "monthly",
+        "range": ["2015-01", "2024-12"]
+      },
+      "question": {
+        "prompt": "How many peaks does the line have between 2015 and 2024?",
+        "options": [
+          {
+            "text": "About one per year, every summer",
+            "correct": true,
+            "feedback": "Right: the line climbs to a top once a year, in summer."
+          },
+          {
+            "text": "Only one, in the hottest year",
+            "correct": false,
+            "feedback": "Follow the line from left to right. Does it go up and down only once, or again and again?"
+          },
+          {
+            "text": "One every month",
+            "correct": false,
+            "feedback": "Each point is a month, but the peaks are the tops of the waves. Count how many waves fit between two years on the time axis."
+          }
+        ]
+      },
+      "takeaway": "Temperature here follows a strong yearly cycle, so summers must be compared with summers."
+    },
+    {
+      "id": "summer_means",
+      "title": "One number per summer",
+      "text": "To compare summers, we take June, July and August of each year (called JJA, from their initials) and average them. That gives one point per summer, from 1980 to 2026. Now there is no yearly cycle to confuse us: every point is a summer, so each point can be compared directly with all the others.",
+      "chart": {
+        "variable": "T2M",
+        "view": "season",
+        "season": "JJA"
+      },
+      "question": {
+        "prompt": "What does one point on this chart show?",
+        "options": [
+          {
+            "text": "The average temperature of one summer (June to August)",
+            "correct": true,
+            "feedback": "Exactly: one point, one summer."
+          },
+          {
+            "text": "The hottest day of that year",
+            "correct": false,
+            "feedback": "Look at the values on the axis: they are around 23 to 29 °C, far below the hottest days in Córdoba. Read the text again: what is averaged?"
+          },
+          {
+            "text": "The average of the whole year",
+            "correct": false,
+            "feedback": "If winter were included, would the values be this high? Read the text again: which months are used?"
+          }
+        ]
+      },
+      "takeaway": "A seasonal mean turns each summer into one number that can be compared with every other summer."
+    },
+    {
+      "id": "top_ten",
+      "title": "The hottest summers, ranked",
+      "text": "A ranking sorts the summers from hottest to coolest. Here you see the top 10. Bars from the last 10 years (2017 to 2026) have a different colour. If nothing were changing, the top 10 could come from any part of the 47 years, and only about 2 of them would be recent. Some bars are very close: several summers differ by only a few hundredths of a degree.",
+      "chart": {
+        "variable": "T2M",
+        "view": "ranking",
+        "season": "JJA",
+        "top_n": 10,
+        "recent_years": 10
+      },
+      "question": {
+        "prompt": "How many of the 10 hottest summers are from the last 10 years?",
+        "options": [
+          {
+            "text": "6 of them",
+            "correct": true,
+            "feedback": "Yes: 2022, 2023, 2025, 2026, 2017 and 2024 are all in the top 10."
+          },
+          {
+            "text": "2 of them, as expected by chance",
+            "correct": false,
+            "feedback": "Count the bars with the recent-years colour. Are there only two?"
+          },
+          {
+            "text": "All 10 of them",
+            "correct": false,
+            "feedback": "Look for bars in the normal colour, such as 2003, 2005 or 2009. Are they recent years?"
+          }
+        ]
+      },
+      "takeaway": "When a series has a trend, records pile up at the end of the record."
+    },
+    {
+      "id": "ups_and_downs",
+      "title": "Is every summer hotter?",
+      "text": "Back to the summers in time order. If every summer were hotter than the one before, the points would climb like stairs. Look at 2017 and 2018: summer 2017 was about 28.0 °C, then summer 2018 dropped to about 26.1 °C, cooler than summer 1989 (about 27.7 °C). The ups and downs from year to year are still there. Weather still varies.",
+      "chart": {
+        "variable": "T2M",
+        "view": "season",
+        "season": "JJA",
+        "highlights": [
+          { "kind": "point", "date": "1989", "label": "1989" },
+          { "kind": "point", "date": "2017", "label": "2017" },
+          { "kind": "point", "date": "2018", "label": "2018" }
+        ]
+      },
+      "question": {
+        "prompt": "Is each recent summer hotter than the one before it?",
+        "options": [
+          {
+            "text": "No, some recent summers were cooler than the year before",
+            "correct": true,
+            "feedback": "Correct: 2018 is a clear drop after 2017."
+          },
+          {
+            "text": "Yes, every summer beats the previous one",
+            "correct": false,
+            "feedback": "Compare the 2017 point with the 2018 point. Which one is higher?"
+          },
+          {
+            "text": "Yes, and every recent summer beats all the old ones",
+            "correct": false,
+            "feedback": "Compare 2018 with 1989. Which of the two summers was hotter?"
+          }
+        ]
+      },
+      "takeaway": "A warming trend does not make every summer hotter; it makes hot summers more frequent."
+    },
+    {
+      "id": "summer_trend",
+      "title": "The trend of the summers",
+      "text": "The straight line is the trend of the summer means: about +0.47 °C every 10 years, about 2.2 °C from 1980 to 2026. The p-value is the chance of getting a slope this big if nothing were changing. Here p = 0.0002, 2 in 10,000, so chance is very unlikely. The 95% confidence range, +0.26 to +0.70 °C per decade, is all above zero.",
+      "chart": {
+        "variable": "T2M",
+        "view": "season",
+        "season": "JJA",
+        "show_trend": true
+      },
+      "question": {
+        "prompt": "How do the summer points sit around the trend line?",
+        "options": [
+          {
+            "text": "They are mixed: points jump above and below the line all along it",
+            "correct": true,
+            "feedback": "Yes: the line rises, and the summers scatter around it."
+          },
+          {
+            "text": "Every point sits exactly on the line",
+            "correct": false,
+            "feedback": "Look at the gap between the points and the straight line. Do they touch it everywhere?"
+          },
+          {
+            "text": "The line goes down, so the points fall below it",
+            "correct": false,
+            "feedback": "Follow the straight line from 1980 to 2026. Does it end higher or lower than it starts?"
+          }
+        ]
+      },
+      "takeaway": "The trend is the slow rise; the scatter around it is normal year-to-year weather."
+    },
+    {
+      "id": "hot_months",
+      "title": "Counting very hot months",
+      "text": "Another way to look: for each year, count the months whose average temperature was above 28 °C. In the 1980s this happened about 0.5 times per year on average. From 2016 to 2025 it happened about 1.9 times per year: two hot months in most years. Counting how often a line is crossed is a simple way to see extremes becoming common.",
+      "chart": {
+        "variable": "T2M",
+        "view": "threshold_count",
+        "threshold_id": "above_28"
+      },
+      "question": {
+        "prompt": "In which part of the record are years with 0 hot months most common?",
+        "options": [
+          {
+            "text": "In the early years, the 1980s and 1990s",
+            "correct": true,
+            "feedback": "Right: zero bars are common early on and rare at the end."
+          },
+          {
+            "text": "In the last ten years",
+            "correct": false,
+            "feedback": "Look at the bars on the far right of the chart. Are there gaps with no bar at all?"
+          },
+          {
+            "text": "They are spread evenly over the whole record",
+            "correct": false,
+            "feedback": "Compare the left half of the chart with the right half. Where do you see more empty years?"
+          }
+        ]
+      },
+      "takeaway": "Months that used to be rare extremes are now almost a normal part of summer."
+    },
+    {
+      "id": "record_vs_mean",
+      "title": "Why not 47 °C?",
+      "text": "The hottest month in this record is July 2022, at about 31.2 °C. August 2021, the month of the 47 °C record, is about 29.0 °C. Why so low? The 47 °C was one afternoon at one station. Each point here averages every hour of a month, nights included, over a square about 50 km wide. Averaging smooths away single hot afternoons.",
+      "chart": {
+        "variable": "T2M",
+        "view": "monthly",
+        "highlight_max": true,
+        "highlights": [
+          { "kind": "point", "date": "2021-08", "label": "August 2021 (47 °C record)" }
+        ]
+      },
+      "question": {
+        "prompt": "Is August 2021, the month of the 47 °C record, the highest point in this series?",
+        "options": [
+          {
+            "text": "No, the labelled maximum (July 2022) is higher",
+            "correct": true,
+            "feedback": "Correct: a record afternoon does not make a record month."
+          },
+          {
+            "text": "Yes, it is the highest point, at 47 °C",
+            "correct": false,
+            "feedback": "Read the values on the axis. Does any point here reach 47 °C? Compare August 2021 with the labelled maximum."
+          },
+          {
+            "text": "No, it is one of the coldest months",
+            "correct": false,
+            "feedback": "Look again: August 2021 is near the top of a summer peak. It is high, just not the highest."
+          }
+        ]
+      },
+      "takeaway": "A daily record at a station and a monthly mean of a big square measure different things."
+    }
+  ],
+  "conclusion": {
+    "prompt": "Córdoba keeps breaking heat records. Is every summer really hotter, or were those just bad years? Write your conclusion using what the charts showed you.",
+    "variable": "T2M",
+    "placeholder": "Looking at the summer temperatures in Córdoba from 1980 to 2026, I think..."
+  },
+  "reveal": {
+    "by_variable": {
+      "T2M": "Summer (June to August) temperature in Córdoba rises clearly from 1980 to 2026: about +0.47 °C per decade (95% range +0.26 to +0.70 °C per decade), p = 0.0002, and 6 of the 10 hottest summers are from 2017 to 2026. The full monthly record (January 1980 to September 2026) also rises: about +0.33 °C per decade, p < 0.001. Data: NASA MERRA-2."
+    },
+    "lesson": "Not every summer is hotter than the last: 2018 was cooler than 1989. But with a warming trend, hot summers become much more frequent and records pile up at the end of the series. And a daily record at one station is not the same thing as a monthly mean over a large square."
+  }
+}
