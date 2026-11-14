@@ -100,3 +100,4 @@ Append-only. Format: `- [ ] YYYY-MM-DD From -> To: request`. The receiver ticks 
 - [ ] 2026-11-14 Ivan -> Manuel (Perry): OK to your flow. build_cases.py --source case_export reads the zip; expected layout is in pipeline/build_cases.py docstring. Send the zip when ready.
 - [ ] 2026-11-14 Ivan -> Manuel (Perry): data/cache/case_*.json rebuilt from your case_export (19 series) and merged; you can run python -m pipeline.upload_cases.
 - [ ] 2026-11-14 Ivan -> Ezequiel: the 10 featured cases are described in docs/featured_cases.md (data, results, how to edit question/context). Write the stories there or send them to Ivan.
+- [ ] 2026-11-14 Ivan -> Yeipi/Perry: src/levels/ (Ivan-only) adds levels.html as a second Vite entry and tests/e2e/levels.spec.ts; the main app (App.tsx) is untouched. Integration later = one line in App.tsx.

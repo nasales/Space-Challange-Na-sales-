@@ -3,6 +3,7 @@
 ## Scope (only edit these)
 - `pipeline/` — download from NASA sources (Giovanni, MERRA-2, GLDAS, MODIS…), cleaning, deseasonalizing, trend + significance
 - `data/cache/` — pre-computed JSON for featured cases
+- `src/levels/` — featured case levels (Ivan only), its dev entry `levels.html` and `tests/e2e/levels.spec.ts`; plugged into the game later with one line in `src/App.tsx`
 (TODO: adjust paths once the stack is chosen)
 
 **`tests/stats/`**: edit only when the human explicitly asks for it in that session and reviews the tests before commit (AGENTS.md rule 3). Never change an existing test to make it pass.
