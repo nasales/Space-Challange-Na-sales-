@@ -250,6 +250,8 @@ function Bubble({ who, anchors, active, typing }: { who: Speaker; anchors?: Anch
       const x = Math.min(w - 40, Math.max(40, p.x))
       const y = Math.min(h * 0.6, Math.max(56, p.y))
       el.style.transform = `translate(${x}px, ${y}px)`
+      // In the game, hide the bubbles until the camera has framed both characters (anchors arrive)
+      el.style.visibility = anchors && !a ? 'hidden' : 'visible'
     }
     place(anchors?.get() ?? null)
     const off = anchors?.subscribe(place)
