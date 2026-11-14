@@ -8,7 +8,8 @@
 // ./analysis/ only display them (see ./analysis/analysis.ts for the derived display numbers).
 import { useEffect, useRef } from 'react'
 import type { PointVariable } from '../../shared/pointAnalysis'
-import { fmt, fmtP, fmtSigned, periodYears, testPeriod, totalChange, yearOf, type Period } from './analysis/analysis'
+import { fmt, fmtP, fmtSigned, mean, periodYears, testPeriod, totalChange, yearOf, type Period } from './analysis/analysis'
+import MonthlyPlot from './analysis/MonthlyPlot'
 import './ClueResult.css'
 
 interface Props {
@@ -46,6 +47,15 @@ export default function ClueResult({ variable, title, place, distanceKm, onBack 
   if (!data) return null
   const { extra } = variable
   const period = testPeriod(data.dates, data.values, extra.periodStart, extra.periodEnd)
+  const nums = data.values.filter((v): v is number => v != null)
+  const seriesMean = mean(nums)
+  const last = data.dates.length - 1
+  const years = last >= 0 ? `${yearOf(data.dates[0])}–${yearOf(data.dates[last])}` : ''
+  const seriesLabel =
+    seriesMean == null
+      ? `Monthly ${title}: no values`
+      : `Line chart of monthly ${title} in ${data.units} at ${place}, ${years}. ` +
+        `Lowest ${fmt(Math.min(...nums))}, highest ${fmt(Math.max(...nums))}, average ${fmt(seriesMean)}.`
 
   return (
     <section className="clue-result" aria-labelledby="clue-result-title">
@@ -59,10 +69,25 @@ export default function ClueResult({ variable, title, place, distanceKm, onBack 
 
       <Verdict variable={variable} title={title} place={place} period={period} />
 
-      <SeriesChart dates={data.dates} values={data.values} units={data.units} />
+      <section className="clue-result__section" aria-labelledby="clue-series-h">
+        <h4 id="clue-series-h" className="clue-result__h">
+          What do the measurements look like?
+        </h4>
+        <MonthlyPlot
+          dates={data.dates}
+          values={data.values}
+          units={data.units}
+          label={seriesLabel}
+          reference={seriesMean != null ? { value: seriesMean, className: 'clue-result__mean' } : undefined}
+        />
+        <p className="clue-result__caption">
+          Every month as measured{years && `, ${years}`}. The yearly up-and-down is the seasonal cycle.
+          {seriesMean != null && ` Dashed line: average of all months (${fmt(seriesMean)} ${data.units}).`}
+        </p>
+      </section>
+
       <p className="clue-result__meta">
-        Monthly values
-        {distanceKm > 20 && ` · nearest land cell ${distanceKm.toFixed(0)} km away`} · Data: NASA{' '}
+        {distanceKm > 20 && `Nearest land cell ${distanceKm.toFixed(0)} km away · `}Data: NASA{' '}
         {data.dataset.replace(/^NASA /, '')}
       </p>
 
@@ -157,51 +182,5 @@ function Verdict({
         less than 5 % of the time (p below 0.05).
       </p>
     </div>
-  )
-}
-
-/** Minimal monthly line chart (no library). Gaps (null) break the line. */
-function SeriesChart({ dates, values, units }: { dates: string[]; values: (number | null)[]; units: string }) {
-  const W = 560
-  const H = 190
-  const P = { l: 48, r: 10, t: 10, b: 24 }
-  const nums = values.filter((v): v is number => v != null)
-  if (nums.length === 0) return <p className="clue-result__meta">No values.</p>
-  const min = Math.min(...nums)
-  const max = Math.max(...nums)
-  const span = max - min || 1
-  const x = (i: number) => P.l + (i / Math.max(values.length - 1, 1)) * (W - P.l - P.r)
-  const y = (v: number) => P.t + (1 - (v - min) / span) * (H - P.t - P.b)
-  let d = ''
-  let pen = false
-  values.forEach((v, i) => {
-    if (v == null) {
-      pen = false
-      return
-    }
-    d += `${pen ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`
-    pen = true
-  })
-  return (
-    <svg className="clue-result__chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Monthly values in ${units}`}>
-      <line x1={P.l} x2={W - P.r} y1={H - P.b} y2={H - P.b} className="clue-result__axis" />
-      <line x1={P.l} x2={P.l} y1={P.t} y2={H - P.b} className="clue-result__axis" />
-      <text x={P.l - 6} y={P.t + 8} textAnchor="end">
-        {fmt(max)}
-      </text>
-      <text x={P.l - 6} y={H - P.b} textAnchor="end">
-        {fmt(min)}
-      </text>
-      <text x={P.l - 6} y={(H - P.b + P.t) / 2} textAnchor="end">
-        {units}
-      </text>
-      <text x={P.l} y={H - 6}>
-        {dates[0]?.slice(0, 4)}
-      </text>
-      <text x={W - P.r} y={H - 6} textAnchor="end">
-        {dates[dates.length - 1]?.slice(0, 4)}
-      </text>
-      <path d={d} className="clue-result__line" />
-    </svg>
   )
 }
