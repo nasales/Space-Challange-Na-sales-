@@ -23,8 +23,8 @@ from pipeline.build_cases import CACHE_DIR, ROOT, load_case_file  # noqa: E402
 from pipeline.cases import CASES  # noqa: E402
 
 OUT_PATH = ROOT / "docs" / "figures" / "featured_trends.png"
-TITLE = "Featured cases: trend per decade (95% CI), NASA POWER 1981-2024"
-FOOTER = "Data: NASA POWER (MERRA-2 based). Grey = not statistically significant (p >= 0.05)"
+TITLE = "Featured cases: trend per decade (95% CI)"
+GREY_NOTE = "Grey = not statistically significant (p >= 0.05)"
 
 # Panel order and labels; the key is the case file `variable`.
 PANELS = [
@@ -59,10 +59,29 @@ def collect(cache_dir: Path = CACHE_DIR) -> dict[str, list[dict]]:
             "hi": trend["slope_ci_high"] * 10,
             "significant": bool(trend["significant"]),
             "units": series.units,
+            "source": source_name(series.dataset, variable),
+            "first": series.dates[0],
+            "last": series.dates[-1],
         })
     for v in rows.values():
         v.sort(key=lambda r: r["order"])
     return rows
+
+
+def source_name(dataset: str, variable: str) -> str:
+    """Dataset without a trailing variable name ("NASA POWER (MERRA-2 based) T2M" -> "NASA POWER (MERRA-2 based)")."""
+    suffix = f" {variable}"
+    return dataset[: -len(suffix)] if dataset.endswith(suffix) else dataset
+
+
+def title_and_footer(rows: dict[str, list[dict]]) -> tuple[str, str]:
+    """Title with the source (if only one) and the year range; footer listing the data sources."""
+    all_rows = [r for v in rows.values() for r in v]
+    sources = sorted({r["source"] for r in all_rows})
+    years = f"{min(r['first'] for r in all_rows)[:4]}-{max(r['last'] for r in all_rows)[:4]}"
+    short = sources[0].split(" (")[0] if len(sources) == 1 else ""
+    title = f"{TITLE}, {short} {years}" if short else f"{TITLE}, {years}"
+    return title, f"Data: {', '.join(sources)}. {GREY_NOTE}"
 
 
 def make_figure(rows: dict[str, list[dict]]):
@@ -89,8 +108,9 @@ def make_figure(rows: dict[str, list[dict]]):
         ax.grid(axis="x", alpha=0.3)
         for side in ("top", "right"):
             ax.spines[side].set_visible(False)
-    fig.suptitle(TITLE, fontsize=22, fontweight="bold")
-    fig.text(0.5, 0.015, FOOTER, ha="center", fontsize=12, color="#555555")
+    title, footer = title_and_footer(rows)
+    fig.suptitle(title, fontsize=22, fontweight="bold")
+    fig.text(0.5, 0.015, footer, ha="center", fontsize=12 if len(footer) < 160 else 9, color="#555555")
     fig.subplots_adjust(left=0.155, right=0.98, top=0.86, bottom=0.12)
     return fig
 

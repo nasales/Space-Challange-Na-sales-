@@ -174,10 +174,10 @@ def test_case_export_builds_replaces_and_falls_back(tmp_path):
     for f in cache.glob("*.json"):
         assert _validator().check(str(f)) == []
     t2m = json.loads((cache / "case_dana_valencia_T2M.json").read_text(encoding="utf-8"))
-    assert (t2m["units"], t2m["dataset"], t2m["lat"], t2m["lon"]) == ("K", "NASA M2TMNXSLV v5.12.4", 39.4, -0.5)
+    assert (t2m["units"], t2m["dataset"], t2m["lat"], t2m["lon"]) == ("°C", "NASA M2TMNXSLV v5.12.4", 39.4, -0.5)
     assert t2m["dates"][0] == "2000-01" and t2m["values"][5] is None
     soil = json.loads((cache / "case_donana_SOILM.json").read_text(encoding="utf-8"))
-    assert soil["units"] == "kg/m2" and soil["variable"] == "SOILM"
+    assert soil["units"] == "kg/m² (0-10 cm)" and soil["variable"] == "SOILM"
 
     write_index(root / "data" / "cases_index.json", cases, root)
     index = json.loads((root / "data" / "cases_index.json").read_text(encoding="utf-8"))
@@ -204,3 +204,72 @@ def test_case_export_clear_errors(tmp_path):
                                                                  "west": 3, "east": 4, "data": {}}))
     with pytest.raises(ValueError, match=r"missing field 'vars'.*found fields: \['data', 'east'"):
         load_case(tmp_path, "donana")
+
+
+def test_convert_units():
+    import warnings
+
+    import pytest
+
+    from pipeline.build_cases import convert_units
+
+    assert convert_units("T2M", "K", [273.15, None, 300.0]) == ([0.0, None, pytest.approx(26.85)], "°C")
+    assert convert_units("LST", "kelvin", [283.15])[1] == "°C"
+    assert convert_units("PRECIP", "mm/hr", [0.5, None]) == ([12.0, None], "mm/day")
+    assert convert_units("SOILM", "kg/m2", [20.0]) == ([20.0], "kg/m² (0-10 cm)")
+    assert convert_units("NDVI", "", [0.4])[1] == "NDVI (0-1)"
+    assert convert_units("SNOW", "%", [50])[1] == "%"
+    with pytest.warns(UserWarning, match="unknown unit"):
+        assert convert_units("PRECIP", "inch/week", [1.0]) == ([1.0], "inch/week")
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        convert_units("T2M", "K", [280.0])
+
+
+def _export_with_units(path, unit_t, unit_p, t_values, p_values):
+    (path / "cases").mkdir(parents=True)
+    (path / "variables.json").write_text(json.dumps({
+        "T2M": {"unit": unit_t, "source": "S"}, "PRECIP": {"unit": unit_p, "source": "S"}}), encoding="utf-8")
+    case = {"case_id": "dana_valencia", "lat_min": 39.2, "lat_max": 39.6, "lon_min": -0.7, "lon_max": -0.3,
+            "vars": {"T2M": {"start_month": "2000-01", "values": t_values},
+                     "PRECIP": {"start_month": "2000-01", "values": p_values}}}
+    (path / "cases" / "dana_valencia.json").write_text(json.dumps(case), encoding="utf-8")
+
+
+def test_case_export_unit_conversion_scales_slopes(tmp_path):
+    """K -> °C leaves the slope unchanged; mm/hr -> mm/day multiplies it by 24."""
+    import pytest
+
+    rng = np.random.default_rng(3)
+    n = 240
+    t_c = [15 + 8 * np.sin(2 * np.pi * i / 12) + 0.003 * i + rng.normal(0, 0.5) for i in range(n)]
+    p_day = [max(0.0, 1.5 + np.sin(2 * np.pi * i / 12) + 0.002 * i + rng.normal(0, 0.3)) for i in range(n)]
+    case = next(c for c in CASES if c["id"] == "dana_valencia")
+
+    native, display = tmp_path / "native", tmp_path / "display"
+    _export_with_units(native, "K", "mm/hr", [v + 273.15 for v in t_c], [v / 24 for v in p_day])
+    with pytest.warns(UserWarning):  # "C/day-like" labels are unknown units: kept as they are
+        _export_with_units(display, "degC", "mm/d", t_c, p_day)
+        _, t_ref, _ = build_one(case, "T2M", cache_dir=tmp_path / "c1", source="case_export", export_dir=display)
+        _, p_ref, _ = build_one(case, "PRECIP", cache_dir=tmp_path / "c1", source="case_export", export_dir=display)
+
+    t_case, t_trend, _ = build_one(case, "T2M", cache_dir=tmp_path / "c2", source="case_export", export_dir=native)
+    p_case, p_trend, _ = build_one(case, "PRECIP", cache_dir=tmp_path / "c2", source="case_export", export_dir=native)
+    assert t_case["units"] == "°C" and p_case["units"] == "mm/day"
+    assert t_case["values"][0] == pytest.approx(t_c[0])
+    assert t_trend["slope"] == pytest.approx(t_ref["slope"], rel=1e-6)
+    assert p_trend["slope"] == pytest.approx(p_ref["slope"], rel=1e-6)
+
+    raw = tmp_path / "raw"
+    _export_with_units(raw, "K", "mm/hr", [v + 273.15 for v in t_c], [v / 24 for v in p_day])
+    from pipeline.sources.case_export import load_case
+    from pipeline.trend import analyze_trend
+    from pipeline.series import from_start_month
+    entry = load_case(raw, "dana_valencia")["vars"]["PRECIP"]
+    s = from_start_month(entry["start_month"], entry["values"], place="x", lat=0, lon=0, variable="PRECIP",
+                         units="mm/hr", dataset="S")
+    assert p_trend["slope"] == pytest.approx(24 * analyze_trend(s.dates, s.values)["slope"], rel=1e-6)
+    s = from_start_month(load_case(raw, "dana_valencia")["vars"]["T2M"]["start_month"],
+                         load_case(raw, "dana_valencia")["vars"]["T2M"]["values"], place="x", lat=0, lon=0,
+                         variable="T2M", units="K", dataset="S")
+    assert t_trend["slope"] == pytest.approx(analyze_trend(s.dates, s.values)["slope"], rel=1e-6)
