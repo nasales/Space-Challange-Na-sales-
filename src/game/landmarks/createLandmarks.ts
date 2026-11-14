@@ -305,13 +305,22 @@ export function createLandmarks(list: LandmarkData[]) {
       return best?.data ?? null
     },
 
-    /** Circles around each monument footprint that rivers bend around (keeps plazas dry). */
+    /**
+     * Each monument footprint as an area rivers flow around (keeps plazas dry): the bounding
+     * circle (roads use it) plus the real rotated rectangle, which rivers hug at `marginUnits`.
+     */
     riverClearings(marginUnits: number): RiverClearing[] {
       return placed.map((p) => ({
         lon: p.data.lon,
         lat: p.data.lat,
         radiusKm: (Math.hypot(p.halfW, p.halfD) + marginUnits) / UNITS_PER_KM,
         innerKm: Math.hypot(p.halfW, p.halfD) / UNITS_PER_KM,
+        rect: {
+          halfWKm: p.halfW / UNITS_PER_KM,
+          halfDKm: p.halfD / UNITS_PER_KM,
+          angle: (p.data.heading * Math.PI) / 180,
+          marginKm: marginUnits / UNITS_PER_KM,
+        },
       }))
     },
 
