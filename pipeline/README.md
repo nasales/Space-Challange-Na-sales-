@@ -150,7 +150,7 @@ Before starting, ask the human which person they are (Ivan or Diego) and which b
 - Each person merges their own branch into `main`, always after the QA checks pass (`./scripts/check.sh`, QA report in `docs/agents/qa.md`).
 - ✅ After Ivan's block 1 is merged: the real `analyze_trend` replaces the stub automatically (`get_analyze_trend()`); checked end to end.
 - If Perry runs the ETL with `--with-trends` (for `compare_db.py`), those trends are only for comparison: `fill_trends` then upserts the official `analyze_trend` rows over them.
-- Featured cases (Ivan): NASA POWER point data -> `pipeline/build_cases.py` -> `data/cache/case_*.json`, handed to Yeipi.
+- Featured cases (Ivan): native-pixel MERRA-2 / GPM IMERG / GLDAS series prepared by Perry (`export/case_export`, not in git) -> `pipeline/build_cases.py --source case_export` -> `data/cache/case_*.json`, handed to Yeipi. NASA POWER point data (`data/raw/power/`, `--source power`) is kept as offline fallback.
 - After the real export: Diego runs `fill_trends` + `check_trends`; Perry uploads the rows only if `check_trends` exits 0; `get_cell` then returns real trends to the game.
 - Before Sunday 13:00 (freeze): `trends` filled (Diego + Perry), all featured cases in `data/cache/` (Ivan), `check.sh` green, `AI_USAGE.md` and `REFERENCES.md` complete.
 

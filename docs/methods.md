@@ -19,6 +19,9 @@ pipeline (`pipeline/trend.py`) and in the database script (`archivos_preSupabase
 - **Cross tests between team members** (`tests/stats/`): one statistics owner tests the other's code, for example that a case built from a trend result passes the data contract validator.
 - **Data contract check** (`./scripts/check.sh`): every file in `data/cache/`, including the 19 featured series, is validated against `docs/contract.md`.
 
+## Test and confidence interval near p = 0.05
+Significance comes from the pre-whitened Mann-Kendall test (Yue and Wang 2002), and the 95 % CI of the slope from Gilbert's rank method with the variance inflated for lag-1 autocorrelation. They are computed differently, so near p = 0.05 the CI can touch zero while the test is significant. This happens in three soil-moisture series: Doñana (p = 0.050), Sierra de la Culebra (p = 0.026) and Tablas de Daimiel (p = 0.047). We report them as significant but as weak evidence, and the facts for the AI checker say so ("Evidence is weak: the p-value is close to the 0.05 threshold.").
+
 ## NASA data
 - **Featured cases (10 places, 19 series):** monthly values of the native pixel that contains each case point, prepared by Perry (`case_series` export) and built with `python -m pipeline.build_cases --source case_export`:
   - `T2M`: MERRA-2 `M2TMNXSLV` 5.12.4, 2 m air temperature, 1980-01 to 2026-09;
