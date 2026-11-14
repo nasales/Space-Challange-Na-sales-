@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Python
+__pycache__/
+
+# ETL output (large, regenerate with archivos_preSupabase/etl_espana.py)
+export/

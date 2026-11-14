@@ -129,6 +129,7 @@ Closed:
 - **Which trend does the game show?** Ivan's `analyze_trend`, written to `trends` by Diego's `fill_trends` (Perry's brief: statistics fills `trends`).
 - **Mann-Kendall variant:** `pymannkendall.pre_whitening_modification_test`, as in `trend_stats()`.
 
+- **How the trend rows reach Supabase** (Perry, 2026-11-14): Perry runs `py -m pipeline.fill_trends` himself on the real export and uploads the result (SQL upsert or rows with his DB connection). Diego never needs the database password. Diego's job: make sure `fill_trends.py` runs clean on the real export as soon as Perry shares it.
+
 Open:
 1. **Duplicated dates in a CSV:** error or average? Diego will decide; for now they raise `ValueError`.
-2. **How the trend rows reach Supabase:** Perry uploads a file from Diego (JSON or SQL upsert), or Diego uploads with a DB connection string from Perry. Never put the connection string in the repo.
