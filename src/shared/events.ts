@@ -22,6 +22,8 @@ export interface HudState {
   rush: number
   /** True while the detective stands still with the magnifier out (the "paused" moment) */
   stopped: boolean
+  /** Featured case whose trigger zone the detective stands in (case id), or null */
+  caseZone: string | null
 }
 
 export type GameStatus = 'loading' | 'ready' | 'error'
@@ -51,10 +53,6 @@ export interface GameCallbacks {
   onStatus?: (status: GameStatus) => void
   onHud?: (hud: HudState) => void
   onStop?: (stop: GameStop) => void
-  /** Featured-case marker the car is close to (id from src/shared/tutorial.ts), or null when it leaves */
-  onCaseNear?: (caseId: string | null) => void
-  /** The player opened a featured case (Enter near the marker, or click on it) */
-  onCaseOpen?: (caseId: string) => void
   /** The camera flight into (or out of) the hand lens has finished */
   onLensFocus?: (state: LensFocusState) => void
 }
@@ -66,6 +64,8 @@ export interface GameViewProps extends GameCallbacks {
    * While true, and until 'out' is reported, the game ignores keyboard input and the detective stays still.
    */
   focusLens?: boolean
-  /** true while a featured-case file is open: the game must ignore driving keys */
+  /** true while a featured case level is open: the game ignores keyboard input */
   paused?: boolean
+  /** Featured case ids already solved (their markers are drawn green) */
+  completedCases?: readonly string[]
 }
