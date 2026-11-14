@@ -285,6 +285,12 @@
   line-height: 1.45;
 }
 
+.flm__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
 .flm__toggle {
   align-self: flex-start;
 }

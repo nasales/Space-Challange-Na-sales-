@@ -7,7 +7,7 @@ import { useMemo, useState } from 'react'
 import { getCaseEntry } from '../data'
 import type { CaseLevelProps } from '../types'
 import AnomalyChart from './AnomalyChart'
-import { decimalYear, FIRST_YEAR, fmtSlope, LAST_YEAR, LEVEL, windowResult } from './data'
+import { decimalYear, FIRST_YEAR, fmtP, fmtSlope, LAST_YEAR, LEVEL, windowResult, type TrendResult } from './data'
 import { senLine } from './sen'
 import { S } from './strings'
 import TrendPanel from './TrendPanel'
@@ -16,7 +16,27 @@ import './filomena.css'
 
 type Answer = 'yes' | 'no' | 'cant'
 type Prediction = 'lot' | 'barely'
-const MIN_LONG_YEARS = 30
+
+/** The answer the evidence of a window supports. */
+function expectedAnswer(r: TrendResult): Answer {
+  if (r.too_short || !r.significant) return 'cant'
+  return r.slope_decade > 0 ? 'yes' : 'no'
+}
+
+function phase1Feedback(answer: Answer, r: TrendResult, years: number): string {
+  if (answer === expectedAnswer(r)) {
+    if (answer === 'yes') return S.fbYesSig
+    if (answer === 'no') return S.fbNoSig
+    return r.too_short ? S.fbCantTooShort(years) : S.fbCantNotSig
+  }
+  if (r.too_short) return S.fbTooShortClaim(years)
+  if (!r.significant) {
+    const p = fmtP(r.p_value)
+    if (answer === 'yes') return r.slope_decade > 0 ? S.fbYesNotSig(p) : S.fbYesDownNotSig(p)
+    return S.fbNoNotSig(p)
+  }
+  return r.slope_decade > 0 ? S.fbMissedSigUp : S.fbMissedSigDown
+}
 
 const T = LEVEL.anomalies.dates.map(decimalYear)
 const VALUES = LEVEL.anomalies.values
@@ -54,24 +74,14 @@ export default function FilomenaLevel({ caseId, onExit, onResult }: CaseLevelPro
   const result = windowResult(start, end)
   const windowLine = useMemo(() => sen((i) => T[i] >= start && T[i] < end + 1), [start, end])
 
-  const answerYears = answer ? answer.end - answer.start + 1 : 0
-  const phase1Correct = !!answer && answer.value === 'yes' && answerYears >= MIN_LONG_YEARS
+  const answerResult = answer ? windowResult(answer.start, answer.end) : null
+  const phase1Correct = !!answer && !!answerResult && answer.value === expectedAnswer(answerResult)
   const phase2Correct = prediction === 'barely'
   const score = Number(phase1Correct) + Number(phase2Correct)
 
   const fWith = LEVEL.filomena.with
   const fWithout = LEVEL.filomena.without
   const filomenaAnomaly = VALUES[FILOMENA_INDEX]
-
-  function phase1Feedback(): string {
-    if (!answer) return ''
-    if (answerYears < MIN_LONG_YEARS) return S.fbShort(answerYears)
-    if (answer.value === 'yes') {
-      const r = windowResult(answer.start, answer.end)
-      return !r.too_short && r.significant ? S.fbYesLong : S.fbYesLongWeak
-    }
-    return answer.value === 'no' ? S.fbNoLong : S.fbCantLong
-  }
 
   function finish() {
     setPhase(3)
@@ -108,13 +118,23 @@ export default function FilomenaLevel({ caseId, onExit, onResult }: CaseLevelPro
             ))}
           </fieldset>
 
-          {answer && (
+          {answer && answerResult && (
             <div className="flm__feedback" role="status" data-testid="phase1-feedback">
               <p>{S.answeredWith(`${answer.start}–${answer.end}`)}</p>
-              <p>{phase1Feedback()}</p>
-              <button type="button" className="lvl-button" onClick={() => setPhase(2)}>
-                {S.next}
-              </button>
+              <p>
+                {!phase1Correct && <strong>{S.fbWrong} </strong>}
+                {phase1Feedback(answer.value, answerResult, answer.end - answer.start + 1)}
+              </p>
+              <div className="flm__actions">
+                {(start !== FIRST_YEAR || end !== LAST_YEAR) && (
+                  <button type="button" className="lvl-button" onClick={() => setRange([FIRST_YEAR, LAST_YEAR])}>
+                    {S.showFull}
+                  </button>
+                )}
+                <button type="button" className="lvl-button" onClick={() => setPhase(2)}>
+                  {S.next}
+                </button>
+              </div>
             </div>
           )}
         </>

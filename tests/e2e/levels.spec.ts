@@ -48,17 +48,51 @@ test.describe('Filomena level', () => {
     expect(first).not.toBe('+0.37 °C per decade')
   })
 
-  test('short-window answer gets cherry-picking feedback', async ({ page }) => {
+  test('too-short window: claiming cooling is wrong (cherry-picking feedback)', async ({ page }) => {
     await page.getByRole('button', { name: 'No', exact: true }).click()
+    await expect(page.getByTestId('phase1-feedback')).toContainText('Not quite.')
     await expect(page.getByTestId('phase1-feedback')).toContainText('cherry-picking')
+  })
+
+  test("Can't tell on a non-significant window is right and offers the full record", async ({ page }) => {
+    const start = page.getByTestId('range-start')
+    await start.focus()
+    for (let i = 0; i < 8; i++) await start.press('ArrowLeft') // 2010-2021: positive but p = 0.143
+    await expect(page.getByTestId('range-value')).toContainText('2010 – 2021')
+    await expect(page.getByTestId('window-panel')).toContainText('Not significant')
+
+    await page.getByRole('button', { name: "Can't tell" }).click()
+    const feedback = page.getByTestId('phase1-feedback')
+    await expect(feedback).toContainText('Right: this window alone is not enough evidence. Try the full record.')
+    await expect(feedback).not.toContainText('Not quite.')
+    await feedback.getByRole('button', { name: 'Show 1980-2026' }).click()
+    await expect(page.getByTestId('range-value')).toContainText('1980 – 2026')
+    await expect(page.getByTestId('window-panel-slope')).toHaveText('+0.37 °C per decade')
+  })
+
+  test('"Yes" on a non-significant window is wrong and scores 1 of 2', async ({ page }) => {
+    const start = page.getByTestId('range-start')
+    await start.focus()
+    for (let i = 0; i < 8; i++) await start.press('ArrowLeft') // 2010-2021
+    await page.getByRole('button', { name: 'Yes', exact: true }).click()
+    const feedback = page.getByTestId('phase1-feedback')
+    await expect(feedback).toContainText('Not quite.')
+    await expect(feedback).toContainText('positive, but the p-value is 0.143 (not below 0.05)')
+
+    await feedback.getByRole('button', { name: 'Next' }).click()
+    await page.getByRole('button', { name: 'Barely change' }).click()
+    await page.getByTestId('filomena-toggle').click()
+    await page.getByRole('button', { name: 'See the summary' }).click()
+    await expect(page.getByTestId('filomena-score')).toHaveText('Score: 1 / 2')
+    await expect(page.getByTestId('last-result')).toHaveText('onResult filomena_madrid: wrong, score 1')
   })
 
   test('phase 2 toggle moves the line and onResult fires at the end', async ({ page }) => {
     const start = page.getByTestId('range-start')
     await start.focus()
     await start.press('Home')
-    await page.getByRole('button', { name: 'Yes', exact: true }).click()
-    await expect(page.getByTestId('phase1-feedback')).toContainText('Correct')
+    await page.getByRole('button', { name: 'Yes', exact: true }).click() // 1980-2021: significant increase
+    await expect(page.getByTestId('phase1-feedback')).toContainText('Right: in these years the warming is statistically significant')
     await page.getByRole('button', { name: 'Next' }).click()
 
     await expect(page.getByRole('heading', { name: 'Does Filomena break the trend?' })).toBeVisible()

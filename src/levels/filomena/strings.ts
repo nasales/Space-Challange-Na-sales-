@@ -28,15 +28,25 @@ export const S = {
   question: 'Is Madrid warming?',
   answers: { yes: 'Yes', no: 'No', cant: "Can't tell" },
   answeredWith: (years: string) => `You answered looking at ${years}.`,
-  fbShort: (n: number) =>
-    `Careful: you only looked at ${n} years. With a short window you can make the data say almost anything; picking the years that fit a story is called cherry-picking. Climate trends need at least 30 years.`,
-  fbYesLong: 'Correct. Over a long period the temperature in Madrid clearly goes up.',
-  fbYesLongWeak:
-    'Correct direction, but note that in the years you chose the test is not significant. Over the full record (1980-2026) the warming is significant.',
-  fbNoLong:
-    'Look again: over a long period the trend line goes up. One cold winter does not cancel decades of warming.',
-  fbCantLong:
-    'With 30 or more years we can tell: over the full record (1980-2026) the warming is statistically significant.',
+  // Phase 1 feedback: the right answer is the one the selected window supports
+  // (significant increase -> Yes, significant decrease -> No, not significant or too short -> Can't tell).
+  fbWrong: 'Not quite.',
+  fbYesSig: 'Right: in these years the warming is statistically significant (p < 0.05), so the data support "Yes".',
+  fbNoSig: 'Right: in these years the cooling is statistically significant (p < 0.05), so the data support "No". Now look at the full record.',
+  fbCantNotSig: 'Right: this window alone is not enough evidence. Try the full record.',
+  fbCantTooShort: (n: number) =>
+    `Right: ${n} year${n === 1 ? ' is' : 's are'} too short to judge a trend. With a short window you can make the data say almost anything (cherry-picking). Try the full record.`,
+  fbYesNotSig: (p: string) =>
+    `The slope in these years is positive, but the p-value is ${p} (not below 0.05), so the warming could be chance and we cannot claim it from this window alone.`,
+  fbYesDownNotSig: (p: string) =>
+    `In these years the line even goes down, and the p-value is ${p} (not below 0.05): this window cannot show warming.`,
+  fbNoNotSig: (p: string) =>
+    `The p-value is ${p} (not below 0.05), so this window cannot show cooling either: the honest answer is "Can't tell".`,
+  fbTooShortClaim: (n: number) =>
+    `${n} year${n === 1 ? ' is' : 's are'} too short to claim any trend: the honest answer is "Can't tell". Picking a short window that fits a story is called cherry-picking.`,
+  fbMissedSigUp: 'Here the evidence is clear: the slope is positive and p < 0.05, so the data support "Yes".',
+  fbMissedSigDown: 'Here the slope is negative and p < 0.05, so the data support "No".',
+  showFull: 'Show 1980-2026',
   next: 'Next',
 
   // Phase 2
