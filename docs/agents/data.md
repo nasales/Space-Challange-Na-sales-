@@ -7,6 +7,8 @@
 
 **Never edit `tests/stats/`** — the humans own them.
 
+**Read `pipeline/README.md` before any work.** It says who owns each file (Ivan or Diego), the agreed interfaces and the ordered work blocks. Ask the human which person they are and which block is next.
+
 ## Statistical rules
 - Use established libraries (`pymannkendall`, `scipy.stats`) instead of reimplementing tests.
 - Remove the seasonal cycle before testing monthly data.
