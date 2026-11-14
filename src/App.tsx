@@ -6,10 +6,12 @@ import GameView from './game/GameView'
 import DetectiveShowcase from './game/detective/DetectiveShowcase'
 import Hud from './ui/hud/Hud'
 import MainMenu from './ui/menu/MainMenu'
+import Wardrobe from './ui/wardrobe/Wardrobe'
 import DbTest from './ui/dbtest/DbTest'
 import type { GameStatus, HudState } from './shared/events'
+import { loadOutfit, type Outfit } from './shared/outfit'
 
-type Screen = 'menu' | 'game'
+type Screen = 'menu' | 'wardrobe' | 'game'
 
 // Temporary team page: open the site with ?dbtest to test the database connection.
 const DB_TEST = new URLSearchParams(window.location.search).has('dbtest')
@@ -29,11 +31,29 @@ function Game() {
   const [screen, setScreen] = useState<Screen>('menu')
   const [status, setStatus] = useState<GameStatus>('loading')
   const [hud, setHud] = useState<HudState | null>(null)
+  const [outfit, setOutfit] = useState<Outfit>(loadOutfit)
 
   if (screen === 'menu') {
     return (
       <main className="app">
-        <MainMenu onPlay={() => setScreen('game')} character={<DetectiveShowcase />} />
+        <MainMenu
+          onPlay={() => setScreen('game')}
+          onWardrobe={() => setScreen('wardrobe')}
+          character={<DetectiveShowcase outfit={outfit} />}
+        />
+      </main>
+    )
+  }
+
+  if (screen === 'wardrobe') {
+    return (
+      <main className="app">
+        <Wardrobe
+          outfit={outfit}
+          onChange={setOutfit}
+          onBack={() => setScreen('menu')}
+          preview={<DetectiveShowcase outfit={outfit} mode="turntable" />}
+        />
       </main>
     )
   }
