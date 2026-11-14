@@ -7,7 +7,7 @@ from pipeline.trend import analyze_trend
 
 KEYS = {
     "slope", "p_value", "significant", "test", "slope_ci_low", "slope_ci_high",
-    "mk_tau", "n_points", "start", "end", "total_change", "direction",
+    "mk_tau", "n_points", "start", "end", "total_change", "direction", "warnings",
 }
 
 
@@ -121,3 +121,30 @@ def test_output_types():
     assert 0 <= r["p_value"] <= 1
     assert r["test"] == "mann-kendall-prewhitening-yue-wang-2002"
     assert (r["start"], r["end"], r["n_points"]) == ("2000-01", "2019-12", 240)
+
+
+def test_warnings_empty_on_clean_series():
+    assert analyze_trend(*_make_series(trend=0.03, seed=1))["warnings"] == []
+
+
+def test_warning_many_gaps():
+    dates, values = _make_series(trend=0.03, seed=1)
+    clean = analyze_trend(dates, values)
+    rng = np.random.default_rng(9)
+    inner = np.arange(1, len(values) - 1)  # keep first and last month so start/end do not move
+    for k in rng.choice(inner, size=int(len(values) * 0.3), replace=False):
+        values[k] = None
+    r = analyze_trend(dates, values)
+    assert "many gaps" in r["warnings"]
+    assert "long gap" not in r["warnings"]
+    assert r["slope"] == pytest.approx(0.03, abs=0.01)
+    assert clean["warnings"] == []
+
+
+def test_warning_long_gap():
+    dates, values = _make_series(trend=0.03, seed=1)
+    values[100:118] = [None] * 18
+    r = analyze_trend(dates, values)
+    assert "long gap" in r["warnings"]
+    assert "many gaps" not in r["warnings"]
+

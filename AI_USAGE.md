@@ -12,3 +12,5 @@ Every agent adds one line per task.
 | 2026-11-14 | Claude Code (Opus 5.5) | Data | Translated docs/stats-data.md (stats data spec from database teammate) to English and committed it |
 | 2026-11-14 | Claude Code (Opus 5.5) | Data | Block 1: analyze_trend in pipeline/trend.py (anomalies, Sen slope, pre-whitened Mann-Kendall, Gilbert CI), tests in pipeline/tests/test_trend.py, pinned pipeline/requirements.txt |
 | 2026-11-14 | Claude Code (Opus 5.5) | Data | Block 1b: aligned analyze_trend CI (rho, var(S), ranks, z=1.96) with trend_stats in etl_espana.py; added pipeline/tests/test_trend_matches_db.py |
+| 2026-11-14 | Claude Code (Opus 5.5) | Data | Block 2 (partial): gap warnings ("many gaps", "long gap") in analyze_trend output; annual mode dropped (plain pre-whitening has low power on 20 annual means) |
+| 2026-11-14 | Claude Code (Opus 5.5) | Data | Block 4: explain(trend, series) in pipeline/explain.py (deterministic plain-English facts for the AI checker), tests in pipeline/tests/test_explain.py |
