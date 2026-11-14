@@ -4,10 +4,10 @@
 | Dataset | Version | Link | Used for |
 |---|---|---|---|
 | NASA GIBS — Blue Marble Next Generation | `BlueMarble_NextGeneration` layer (WMS, EPSG:4326, "best") | https://gibs.earthdata.nasa.gov | Satellite colour of the explored country on the 3D map (`scripts/fetch-map-data.mjs`) |
-| GLDAS Noah Land Surface Model L4 monthly 0.25° (`GLDAS_NOAH025_M`) | 2.1 | https://doi.org/10.5067/SXAVCZFAQLNO | `tair`, `wind`, `soilmoist`, `evap` and the land mask (Supabase `series`) |
-| GPM IMERG Final Precipitation L3 monthly 0.1° (`GPM_3IMERGM`) | V07 | https://doi.org/10.5067/GPM/IMERG/3B-MONTH/07 | `precip` (Supabase `series`) |
-| MERRA-2 tavgM_2d_slv_Nx monthly (`M2TMNXSLV`) | 5.12.4 | https://doi.org/10.5067/AP1B0BA5PD2K | `t2m_long` (Supabase `series`) |
-| NASA POWER (Prediction Of Worldwide Energy Resources) monthly point data, community AG: `T2M`, `PRECTOTCORR`, `GWETTOP`, 1981-2024. Data obtained from the NASA Langley Research Center (LaRC) POWER Project funded through the NASA Earth Science/Applied Science Program. Source: MERRA-2 | API v2.10.0 | https://power.larc.nasa.gov/ | Featured case studies (`data/raw/power/`, `data/cache/case_*.json`) |
+| GLDAS Noah Land Surface Model L4 monthly 0.25° (`GLDAS_NOAH025_M`) | 2.1 | https://doi.org/10.5067/SXAVCZFAQLNO | `tair`, `wind`, `soilmoist`, `evap` and the land mask (Supabase `series`); `SOILM` of the featured cases (`data/cache/case_*_SOILM.json`) |
+| GPM IMERG Final Precipitation L3 monthly 0.1° (`GPM_3IMERGM`) | V07 | https://doi.org/10.5067/GPM/IMERG/3B-MONTH/07 | `precip` (Supabase `series`); `PRECIP` of the featured cases (`data/cache/case_*_PRECIP.json`) |
+| MERRA-2 tavgM_2d_slv_Nx monthly (`M2TMNXSLV`) | 5.12.4 | https://doi.org/10.5067/AP1B0BA5PD2K | `t2m_long` (Supabase `series`); `T2M` of the featured cases (`data/cache/case_*_T2M.json`) |
+| NASA POWER (Prediction Of Worldwide Energy Resources) monthly point data, community AG: `T2M`, `PRECTOTCORR`, `GWETTOP`, 1981-2024. Data obtained from the NASA Langley Research Center (LaRC) POWER Project funded through the NASA Earth Science/Applied Science Program. Source: MERRA-2 | API v2.10.0 | https://power.larc.nasa.gov/ | Documented fallback for the featured case studies (`data/raw/power/`, `--source power`) |
 
 ## Other data, code, libraries, models, fonts and images
 | Name | License | Link | Used for |
@@ -34,3 +34,6 @@
 | h5netcdf / h5py | BSD-3-Clause | https://github.com/h5netcdf/h5netcdf | Reading NetCDF4/HDF5 files in the ETL |
 | psycopg 3.3.9 | LGPL-3.0 | https://www.psycopg.org | Uploading to Supabase (Postgres) in the ETL |
 | Supabase | Apache-2.0 (platform, hosted free plan) | https://supabase.com | Database for series and trends |
+| Big Shoulders Display font — Patric King / The Big Shoulders Project Authors (XO Type Co.) | SIL Open Font License 1.1 | https://github.com/xotypeco/big_shoulders (files from https://fonts.google.com/specimen/Big+Shoulders+Display) | Display type: titles, sheet labels, stamps (`src/ui/assets/fonts/`, self-hosted) |
+| Kalam font — Indian Type Foundry | SIL Open Font License 1.1 | https://github.com/itfoundry/kalam (files from https://fonts.google.com/specimen/Kalam) | Handwritten notes on pinned sheets (`src/ui/assets/fonts/`, self-hosted) |
+| Courier Prime font — Alan Dague-Greene for Quote-Unquote Apps / The Courier Prime Project Authors | SIL Open Font License 1.1 | https://github.com/quoteunquoteapps/CourierPrime (files from https://fonts.google.com/specimen/Courier+Prime) | Typewriter text in case files (`src/ui/assets/fonts/`, self-hosted) |

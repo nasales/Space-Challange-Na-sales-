@@ -1,111 +1,1345 @@
-/* Main menu: two columns (panel | character stage), stacked on narrow screens. */
+/* Main menu: two columns (comic detective wall | character stage), stacked on narrow screens.
+   Look: our own comic-book print style. Thick ink lines, Ben-Day halftone dots, offset-print
+   colour misregistration (cyan/magenta ghosts), caption boxes and lettered sound effects.
+   Hover/focus shows are CSS keyframes, mostly stepped ("on twos") for a hand-drawn rhythm. */
 .main-menu {
   --menu-ink: #3b4a6b;
+  --menu-ink-deep: #161b2e;
   --menu-sea: #5ea8c2;
   --menu-gold: #f2c14e;
   --menu-red: #e5322d;
   --menu-paper: #fff8e7;
+  --print-cyan: rgba(0, 164, 214, 0.85);
+  --print-magenta: rgba(226, 0, 122, 0.75);
+  --manila: #ecd29a;
+  --manila-dark: #d8b46e;
+  --sticky: #fde58a;
 
   position: absolute;
   inset: 0;
   display: grid;
-  grid-template-columns: minmax(300px, 2fr) 3fr;
+  grid-template-columns: minmax(320px, 2fr) 3fr;
   background: var(--menu-sea);
   color: var(--menu-ink);
   overflow: hidden;
 }
 
-/* ---- Left panel ---- */
+.main-menu ::selection {
+  background: var(--menu-gold);
+  color: var(--menu-ink-deep);
+}
+
+/* ---- Left panel: comic page gutter around the wall ---- */
 .main-menu__panel {
   position: relative;
   z-index: 1;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
-  gap: 18px;
-  padding: 48px clamp(24px, 5vw, 72px);
-  background: var(--menu-paper);
-  border-right: 6px solid var(--menu-ink);
-  box-shadow: 10px 0 0 rgba(59, 74, 107, 0.25);
+  padding: 12px;
+  background:
+    radial-gradient(circle, rgba(255, 248, 231, 0.12) 1.2px, transparent 1.6px) 0 0 / 7px 7px,
+    var(--menu-ink-deep);
+  border-right: 6px solid var(--menu-ink-deep);
 }
 
-.main-menu__kicker {
-  margin: 0;
-  padding: 4px 10px;
-  background: var(--menu-ink);
-  color: var(--menu-paper);
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  transform: rotate(-2deg);
+/* ---- The wall: one big ink-framed comic panel ---- */
+.board {
+  /* One layout unit: 1% of the page width, but never so big that a tall stack overflows a
+     short page. Sheets, pins and type are all sized in it, so the page scales as one piece. */
+  --u: min(1cqw, 0.64cqh);
+  --line: max(2px, calc(var(--u) * 0.55));
+  --halftone: radial-gradient(circle, var(--menu-ink-deep) 1.2px, transparent 1.7px) 0 0 / 5px 5px;
+
+  position: relative;
+  flex: 1;
+  container-type: size;
+  border: max(3px, calc(var(--u) * 0.8)) solid var(--menu-paper);
+  outline: 3px solid var(--menu-ink-deep);
+  background: var(--panel-bg) center / cover no-repeat, var(--menu-paper);
+  overflow: hidden;
+  isolation: isolate;
 }
 
-.main-menu__title {
+/* Ben-Day dots, densest in the corners, like a printed comic page. */
+.board::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(circle, rgba(22, 27, 46, 0.24) 1.4px, transparent 1.9px) 0 0 / 9px 9px;
+  mask-image: radial-gradient(ellipse at 50% 45%, transparent 30%, black 95%);
+  pointer-events: none;
+}
+
+/* Everything pinned hangs from (--x, --y); the pin sits --pin below the sheet's top edge,
+   at --px across its width. */
+.board__masthead,
+.board__sheet {
+  --pin: calc(var(--u) * 2.6);
+
+  position: absolute;
+  left: calc(var(--x) * 1%);
+  top: calc(var(--y) * 1%);
+  transform-origin: var(--px, 50%) var(--pin);
+  transform: translate(calc(var(--px, 50%) * -1), calc(var(--pin) * -1)) rotate(var(--r));
+}
+
+/* ---- Title: two stacked caption boxes ---- */
+.board__masthead {
+  --pin: 0px;
+  z-index: 1;
+  width: calc(var(--u) * 74);
+}
+
+.board__title {
+  position: relative;
   margin: 0;
-  font-size: clamp(2.4rem, 5.5vw, 4.6rem);
-  line-height: 0.95;
+  padding: calc(var(--u) * 1.6) calc(var(--u) * 3) calc(var(--u) * 1.8);
+  border: var(--line) solid var(--menu-ink-deep);
+  background:
+    radial-gradient(circle, rgba(229, 50, 45, 0.28) 1.3px, transparent 1.8px) 0 0 / 6px 6px,
+    var(--menu-gold);
+  color: var(--menu-ink-deep);
+  font-family: var(--font-display);
   font-weight: 900;
+  line-height: 0.86;
+  text-align: center;
   text-transform: uppercase;
-  letter-spacing: -0.01em;
+  filter: drop-shadow(calc(var(--u) * 1) calc(var(--u) * 1.1) 0 var(--menu-ink-deep));
 }
 
-.main-menu__title span {
+.board__title-top {
   display: block;
+  font-size: calc(var(--u) * 6.4);
+  letter-spacing: 0.06em;
+}
+
+.board__title-big {
+  display: block;
+  margin-top: calc(var(--u) * 0.6);
+  font-size: calc(var(--u) * 15);
+  letter-spacing: 0.01em;
   color: var(--menu-red);
-  text-shadow: 4px 4px 0 var(--menu-ink);
+  -webkit-text-stroke: calc(var(--u) * 0.45) var(--menu-ink-deep);
+  paint-order: stroke fill;
+  /* Offset-print misregistration: the cyan and magenta plates landed a little off. */
+  text-shadow:
+    calc(var(--u) * -0.6) calc(var(--u) * -0.2) 0 var(--print-cyan),
+    calc(var(--u) * 0.7) calc(var(--u) * 0.45) 0 var(--print-magenta);
 }
 
-.main-menu__tagline {
+.board__tagline {
+  position: relative;
+  width: fit-content;
+  max-width: 88%;
+  margin: calc(var(--u) * -0.4) 0 0 auto;
+  padding: calc(var(--u) * 1.2) calc(var(--u) * 2.2);
+  border: var(--line) solid var(--menu-ink-deep);
+  background: var(--menu-paper);
+  color: var(--menu-ink-deep);
+  font-family: var(--font-type);
+  font-size: max(12px, calc(var(--u) * 2.7));
+  font-weight: 700;
+  line-height: 1.3;
+  transform: rotate(1.6deg) translateX(calc(var(--u) * 2));
+}
+
+/* ---- Shared sheet: an ink-lined comic panel on the wall ---- */
+.board__sheet {
+  z-index: 1;
   margin: 0;
-  max-width: 28ch;
-  font-size: 1.1rem;
-  line-height: 1.4;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: var(--menu-ink-deep);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.main-menu__play {
-  margin-top: 12px;
-  padding: 16px 56px;
-  border: 4px solid var(--menu-ink);
-  border-radius: 14px;
-  background: var(--menu-gold);
-  color: var(--menu-ink);
-  font: inherit;
-  font-size: 1.8rem;
+/* Halftone shadow on the wall behind each sheet. */
+.board__sheet::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--halftone);
+  opacity: 0.5;
+  transform: translate(calc(var(--u) * 1.3), calc(var(--u) * 1.5));
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sheet {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 0.6);
+  border: var(--line) solid var(--menu-ink-deep);
+  background: var(--menu-paper);
+  transform-origin: var(--px, 50%) var(--pin);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sheet__art {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border: var(--line) solid var(--menu-ink-deep);
+  background: var(--menu-sea);
+  user-select: none;
+}
+
+.sheet__title {
+  font-family: var(--font-display);
+  font-size: max(16px, calc(var(--u) * 4.8));
   font-weight: 900;
+  line-height: 0.95;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+.sheet__note {
+  font-family: var(--font-hand);
+  font-size: max(13px, calc(var(--u) * 3.3));
+  line-height: 1.2;
+}
+
+/* Hover and keyboard focus run the same show. Lifted sheets come to the front. */
+:is(.board__sheet:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board__sheet:focus-visible) {
+  z-index: 2;
+}
+
+:is(.board__sheet:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board__sheet:focus-visible)::before {
+  transform: translate(calc(var(--u) * 2.4), calc(var(--u) * 2.8));
+}
+
+.board[data-kbd] .board__sheet:focus-visible {
+  outline: 3px solid var(--menu-ink-deep);
+  outline-offset: 7px;
+  box-shadow: 0 0 0 7px var(--menu-gold);
+}
+
+/* Press: the sheet squashes flat and an ink "POW!" bursts out. */
+.board__sheet:active .sheet {
+  transform: scale(1.05, 0.92);
+  transition-duration: 0.06s;
+}
+
+.board__sheet:active .sfx--pow {
+  opacity: 1;
+  transform: scale(1) rotate(-12deg);
+  transition-duration: 0s;
+}
+
+/* ---- Sound effects ---- */
+.sfx {
+  position: absolute;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-weight: 900;
+  line-height: 0.9;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--menu-gold);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sfx__word {
+  position: relative;
+  -webkit-text-stroke: calc(var(--u) * 0.6) var(--menu-ink-deep);
+  paint-order: stroke fill;
+  text-shadow:
+    calc(var(--u) * 0.7) calc(var(--u) * 0.7) 0 var(--menu-ink-deep),
+    calc(var(--u) * -0.4) 0 0 var(--print-cyan);
+}
+
+/* Starburst balloon: ink star with a gold star inside. */
+.sfx--burst {
+  --star: polygon(
+    50% 0%, 57.3% 17.8%, 70.4% 7.7%, 68.7% 26.5%, 89.1% 18.8%, 81.5% 34.8%, 92.9% 40.2%, 81% 50%,
+    97.8% 60.9%, 80.6% 64.8%, 86% 78.7%, 68.1% 72.7%, 71.7% 95%, 57.3% 82.2%, 50% 95%, 43.1% 80.2%,
+    29.2% 93.2%, 28.8% 76.6%, 13.3% 79.3%, 23% 63%, 1.3% 61.1%, 18% 50%, 7.1% 40.2%, 20.3% 35.7%,
+    11.7% 19.4%, 30.7% 25.8%, 30% 8.6%, 42.4% 16.9%
+  );
+  isolation: isolate;
+}
+
+.sfx--burst::before,
+.sfx--burst::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  clip-path: var(--star);
+  background: var(--menu-ink-deep);
+}
+
+.sfx--burst::after {
+  inset: calc(var(--u) * 1);
+  background: var(--menu-gold);
+}
+
+.sfx--burst .sfx__word {
+  color: var(--menu-red);
+  -webkit-text-stroke-color: var(--menu-ink-deep);
+  text-shadow: calc(var(--u) * 0.4) calc(var(--u) * 0.4) 0 var(--menu-ink-deep);
+}
+
+/* POW on press, shared by every sheet. */
+.sfx--pow {
+  left: calc(var(--u) * -6);
+  bottom: calc(var(--u) * -4);
+  width: calc(var(--u) * 17);
+  aspect-ratio: 1;
+  font-size: calc(var(--u) * 5);
+  transform: scale(0.4) rotate(-12deg);
+  transition:
+    opacity 0.2s ease-out,
+    transform 0.2s ease-out;
+}
+
+.sfx--pow::after {
+  background: var(--menu-paper);
+}
+
+/* ==== PLAY: a photo that pops out of its frame with a camera flash ==== */
+.board-play__body {
+  width: calc(var(--u) * 50);
+  padding: calc(var(--u) * 2.4) calc(var(--u) * 2.4) calc(var(--u) * 1.6);
+  gap: 0;
+  background: #fffdf6;
+}
+
+.board-play__photo {
+  position: relative;
+  z-index: 1;
+  display: block;
+  transform-origin: 50% 0%;
+}
+
+.board-play__art {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border: var(--line) solid var(--menu-ink-deep);
+  background: var(--menu-sea);
+  user-select: none;
+}
+
+.board-play__flash {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 70% 30%, #ffffff 0 20%, rgba(255, 248, 231, 0.85) 45%, transparent 75%);
+  opacity: 0;
+}
+
+/* Speed lines radiating behind the photo, hidden until the pop. */
+.board-play__speed {
+  position: absolute;
+  inset: calc(var(--u) * -3) calc(var(--u) * -9) calc(var(--u) * -8);
+  z-index: -2;
+  background:
+    repeating-conic-gradient(from 3deg, var(--menu-ink-deep) 0deg 1.4deg, transparent 1.4deg 7deg),
+    repeating-conic-gradient(from 0deg, var(--menu-ink-deep) 0deg 0.8deg, transparent 0.8deg 11deg);
+  mask-image: radial-gradient(closest-side, transparent 58%, black 66%, black 82%, transparent 100%);
+  opacity: 0;
+  transform: scale(0.85);
+  pointer-events: none;
+}
+
+.board-play__word {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: 49%;
+  translate: -50% -50%;
+  font-family: var(--font-display);
+  font-size: calc(var(--u) * 15);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--menu-paper);
+  -webkit-text-stroke: calc(var(--u) * 0.6) var(--menu-ink-deep);
+  paint-order: stroke fill;
+  text-shadow:
+    calc(var(--u) * 0.9) calc(var(--u) * 0.9) 0 var(--menu-ink-deep),
+    calc(var(--u) * -0.6) 0 0 var(--print-cyan),
+    calc(var(--u) * 1.4) calc(var(--u) * 0.6) 0 var(--print-magenta);
+  pointer-events: none;
+}
+
+.board-play__caption {
+  display: block;
+  padding-top: calc(var(--u) * 1.4);
+  font-family: var(--font-hand);
+  font-size: max(16px, calc(var(--u) * 5));
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: center;
+  color: var(--menu-ink-deep);
+}
+
+.sfx--click {
+  right: calc(var(--u) * -4);
+  top: calc(var(--u) * 0.5);
+  width: calc(var(--u) * 21);
+  aspect-ratio: 1;
+  font-size: calc(var(--u) * 5.4);
+  transform: scale(0) rotate(-30deg);
+}
+
+:is(.board-play:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board-play:focus-visible) .board-play__body {
+  transform: none;
+}
+
+:is(.board-play:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board-play:focus-visible) .board-play__photo {
+  animation: play-pop 0.5s steps(2, end) forwards;
+}
+
+:is(.board-play:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board-play:focus-visible) .board-play__flash {
+  animation: play-flash 0.45s ease-out forwards;
+}
+
+:is(.board-play:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board-play:focus-visible) .board-play__speed {
+  animation: play-speed 0.5s steps(3, end) forwards;
+}
+
+:is(.board-play:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board-play:focus-visible) .board-play__word {
+  animation: play-word 0.5s steps(2, end) forwards;
+}
+
+:is(.board-play:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board-play:focus-visible) .sfx--click {
+  animation: sfx-burst 0.45s steps(2, end) 0.1s forwards;
+}
+
+@keyframes play-pop {
+  0% {
+    transform: none;
+  }
+  45% {
+    transform: scale(1.15) rotate(3.5deg);
+  }
+  100% {
+    transform: scale(1.1) rotate(2deg);
+  }
+}
+
+@keyframes play-flash {
+  0% {
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes play-speed {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08) rotate(4deg);
+  }
+  100% {
+    opacity: 0.9;
+    transform: scale(1) rotate(6deg);
+  }
+}
+
+@keyframes play-word {
+  0% {
+    scale: 1;
+  }
+  45% {
+    scale: 1.32;
+    rotate: -6deg;
+  }
+  100% {
+    scale: 1.2;
+    rotate: -4deg;
+  }
+}
+
+@keyframes sfx-burst {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(-30deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.25) rotate(8deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(4deg);
+  }
+}
+
+/* ==== WARDROBE: the card swings like a coat on a hanger ==== */
+.board-card {
+  --pin: calc(var(--u) * 1.6);
+}
+
+.board-card__body {
+  width: calc(var(--u) * 30);
+  margin-top: calc(var(--u) * 5);
+  padding: calc(var(--u) * 2) calc(var(--u) * 2) calc(var(--u) * 2.4);
+  background: #ffffff;
+  transform-origin: 50% calc(var(--u) * -3.4);
+}
+
+/* Hanger drawn in ink; its hook goes over the pin. */
+.board-card__hanger {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% - var(--line));
+  width: 76%;
+  height: auto;
+  translate: -50% 0;
+  overflow: visible;
+}
+
+.board-card__hanger path {
+  fill: none;
+  stroke: var(--menu-ink-deep);
+  stroke-width: 4.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.board-card::before {
+  top: calc(var(--u) * 5);
+}
+
+.board-card__note {
+  color: #a8231f;
+}
+
+.sfx--swish {
+  left: calc(var(--u) * -1);
+  top: calc(var(--u) * 10);
+  padding-left: calc(var(--u) * 6);
+  font-size: calc(var(--u) * 7);
+  color: var(--menu-sea);
+  transform: translateX(calc(var(--u) * 8)) skewX(-12deg);
+}
+
+/* Motion lines trailing the swish. */
+.sfx--swish::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 18%;
+  width: calc(var(--u) * 7);
+  height: 64%;
+  background: linear-gradient(
+    var(--menu-ink-deep) 0 14%,
+    transparent 14% 43%,
+    var(--menu-ink-deep) 43% 57%,
+    transparent 57% 86%,
+    var(--menu-ink-deep) 86%
+  );
+}
+
+:is(.board-card:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board-card:focus-visible) .board-card__body {
+  animation: card-swing 1s steps(3, end) forwards;
+}
+
+:is(.board-card:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board-card:focus-visible) .sfx--swish {
+  animation: swish 0.6s steps(3, end) forwards;
+}
+
+@keyframes card-swing {
+  0% {
+    rotate: 0deg;
+  }
+  18% {
+    rotate: 15deg;
+  }
+  42% {
+    rotate: -10deg;
+  }
+  64% {
+    rotate: 6deg;
+  }
+  84% {
+    rotate: -3deg;
+  }
+  100% {
+    rotate: 2deg;
+  }
+}
+
+@keyframes swish {
+  0% {
+    opacity: 0;
+    transform: translateX(calc(var(--u) * 8)) skewX(-12deg);
+  }
+  40% {
+    opacity: 1;
+    transform: translateX(calc(var(--u) * -2)) skewX(-12deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) skewX(-12deg) rotate(-6deg);
+  }
+}
+
+/* ==== FEATURED CASES: the folder flap drops open and case papers jump out ==== */
+.board-folder {
+  perspective: calc(var(--u) * 70);
+}
+
+.board-folder__body {
+  width: calc(var(--u) * 33);
+  margin-top: calc(var(--u) * 3.6);
+  background: var(--manila-dark);
+  gap: 0;
+}
+
+.board-folder::before {
+  top: calc(var(--u) * 3.6);
+}
+
+.board-folder__tab {
+  position: absolute;
+  bottom: 100%;
+  right: 22%;
+  padding: calc(var(--u) * 0.7) calc(var(--u) * 2.2) calc(var(--u) * 0.3);
+  border: var(--line) solid var(--menu-ink-deep);
+  border-bottom: none;
+  background: var(--manila-dark);
+  font-family: var(--font-type);
+  font-size: max(11px, calc(var(--u) * 2.5));
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+/* Case papers tucked inside, behind the front flap. */
+.board-folder__paper {
+  position: absolute;
+  top: calc(var(--u) * 1.6);
+  height: 55%;
+  border: var(--line) solid var(--menu-ink-deep);
+  background:
+    linear-gradient(var(--menu-ink) 0 0) calc(var(--u) * 2) calc(var(--u) * 2) / 55% max(2px, calc(var(--u) * 0.5)) no-repeat,
+    linear-gradient(var(--menu-ink) 0 0) calc(var(--u) * 2) calc(var(--u) * 4) / 70% max(1px, calc(var(--u) * 0.3)) no-repeat,
+    linear-gradient(var(--menu-ink) 0 0) calc(var(--u) * 2) calc(var(--u) * 5.6) / 62% max(1px, calc(var(--u) * 0.3)) no-repeat,
+    #ffffff;
+}
+
+.board-folder__paper--back {
+  left: 8%;
+  right: 16%;
+  rotate: -4deg;
+}
+
+.board-folder__paper--front {
+  left: 18%;
+  right: 6%;
+  rotate: 3deg;
+  background-color: var(--menu-paper);
+}
+
+.board-folder__front {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 0.6);
+  margin: calc(var(--u) * 1.4) 0 0;
+  padding: calc(var(--u) * 2) calc(var(--u) * 2.2) calc(var(--u) * 2.4);
+  border-top: var(--line) solid var(--menu-ink-deep);
+  background: linear-gradient(175deg, #f4dfaf, var(--manila) 55%, #e3c483);
+  transform-origin: 50% 100%;
+}
+
+.board-folder__note {
+  color: #5a4220;
+}
+
+.sfx--files {
+  left: calc(var(--u) * -4);
+  top: calc(var(--u) * 12);
+  padding: calc(var(--u) * 1) calc(var(--u) * 2);
+  border: var(--line) solid var(--menu-ink-deep);
+  background: var(--menu-red);
+  font-size: calc(var(--u) * 5.6);
+  transform: scale(0) rotate(-8deg);
+}
+
+.sfx--files .sfx__word {
+  color: var(--menu-paper);
+  text-shadow: calc(var(--u) * 0.5) calc(var(--u) * 0.5) 0 var(--menu-ink-deep);
+}
+
+:is(.board-folder:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board-folder:focus-visible) .board-folder__front {
+  animation: folder-flap 0.55s steps(3, end) forwards;
+}
+
+:is(.board-folder:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board-folder:focus-visible) .board-folder__paper--back {
+  animation: paper-out-back 0.6s steps(3, end) 0.08s forwards;
+}
+
+:is(.board-folder:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board-folder:focus-visible) .board-folder__paper--front {
+  animation: paper-out-front 0.6s steps(3, end) 0.14s forwards;
+}
+
+:is(.board-folder:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board-folder:focus-visible) .sfx--files {
+  animation: sfx-burst 0.45s steps(2, end) 0.2s forwards;
+}
+
+@keyframes folder-flap {
+  0% {
+    transform: none;
+  }
+  50% {
+    transform: perspective(calc(var(--u) * 130)) rotateX(-48deg) translateY(calc(var(--u) * 0.6));
+  }
+  100% {
+    transform: perspective(calc(var(--u) * 130)) rotateX(-40deg) translateY(calc(var(--u) * 0.4));
+  }
+}
+
+@keyframes paper-out-back {
+  0% {
+    translate: 0 0;
+  }
+  55% {
+    translate: calc(var(--u) * -3) calc(var(--u) * -13);
+    rotate: -12deg;
+  }
+  100% {
+    translate: calc(var(--u) * -2) calc(var(--u) * -10);
+    rotate: -9deg;
+  }
+}
+
+@keyframes paper-out-front {
+  0% {
+    translate: 0 0;
+  }
+  55% {
+    translate: calc(var(--u) * 3) calc(var(--u) * -11);
+    rotate: 10deg;
+  }
+  100% {
+    translate: calc(var(--u) * 2) calc(var(--u) * -8);
+    rotate: 7deg;
+  }
+}
+
+/* ==== HOW IT WORKS: a lightbulb pops on above the note — AHA! ==== */
+.board-note__body {
+  width: calc(var(--u) * 30);
+  padding: calc(var(--u) * 3.4) calc(var(--u) * 2) calc(var(--u) * 2.6);
+  background:
+    radial-gradient(circle, rgba(229, 50, 45, 0.18) 1.2px, transparent 1.7px) 0 0 / 6px 6px,
+    var(--sticky);
+}
+
+.board-note__bulb {
+  position: absolute;
+  left: calc(var(--u) * 0.5);
+  top: calc(var(--u) * -3);
+  width: calc(var(--u) * 11);
+  aspect-ratio: 48 / 64;
+  transform-origin: 50% 100%;
+  transform: scale(0);
+  pointer-events: none;
+}
+
+.board-note__bulb-art {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.board-note__glass {
+  fill: var(--menu-paper);
+  stroke: var(--menu-ink-deep);
+  stroke-width: 3.5;
+}
+
+.board-note__filament {
+  fill: none;
+  stroke: var(--menu-ink-deep);
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+
+.board-note__base {
+  fill: var(--menu-ink);
+  stroke: var(--menu-ink-deep);
+  stroke-width: 3;
+}
+
+/* Glow rays, drawn as an ink-edged gold burst behind the bulb. */
+.board-note__rays {
+  position: absolute;
+  left: 50%;
+  top: 36%;
+  width: 150%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  background: repeating-conic-gradient(
+    var(--menu-ink-deep) 0deg 1.6deg,
+    var(--menu-gold) 1.6deg 8deg,
+    var(--menu-ink-deep) 8deg 9.6deg,
+    transparent 9.6deg 30deg
+  );
+  mask-image: radial-gradient(closest-side, transparent 34%, black 36%, black 92%, transparent 100%);
+  opacity: 0;
+}
+
+.sfx--aha {
+  right: calc(var(--u) * -19);
+  top: calc(var(--u) * -7);
+  padding: calc(var(--u) * 1.2) calc(var(--u) * 3);
+  border: var(--line) solid var(--menu-ink-deep);
+  border-radius: 50%;
+  background: var(--menu-paper);
+  font-size: calc(var(--u) * 6.4);
+  transform: scale(0);
+  transform-origin: 10% 110%;
+}
+
+/* Speech balloon tail. */
+.sfx--aha::after {
+  content: '';
+  position: absolute;
+  left: 18%;
+  top: 86%;
+  width: calc(var(--u) * 3.4);
+  height: calc(var(--u) * 3.4);
+  border-right: var(--line) solid var(--menu-ink-deep);
+  border-bottom: var(--line) solid var(--menu-ink-deep);
+  background: var(--menu-paper);
+  transform: rotate(35deg) skewX(20deg);
+}
+
+.sfx--aha .sfx__word {
+  color: var(--menu-red);
+}
+
+:is(.board-note:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board-note:focus-visible) .board-note__body {
+  animation: note-hop 0.4s steps(2, end) forwards;
+}
+
+:is(.board-note:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board-note:focus-visible) .board-note__bulb {
+  animation: bulb-pop 0.45s steps(2, end) forwards;
+}
+
+:is(.board-note:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board-note:focus-visible) .board-note__glass {
+  fill: var(--menu-gold);
+  transition: fill 0s linear 0.2s;
+}
+
+:is(.board-note:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board-note:focus-visible) .board-note__rays {
+  animation: bulb-rays 0.6s steps(3, end) 0.18s forwards;
+}
+
+:is(.board-note:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board-note:focus-visible) .sfx--aha {
+  animation: sfx-burst-flat 0.4s steps(2, end) 0.28s forwards;
+}
+
+@keyframes note-hop {
+  0% {
+    translate: 0 0;
+  }
+  40% {
+    translate: 0 calc(var(--u) * -2.2);
+  }
+  100% {
+    translate: 0 calc(var(--u) * -0.8);
+  }
+}
+
+@keyframes bulb-pop {
+  0% {
+    transform: scale(0) rotate(-20deg);
+  }
+  50% {
+    transform: scale(1.25) rotate(8deg);
+  }
+  100% {
+    transform: scale(1) rotate(6deg);
+  }
+}
+
+@keyframes bulb-rays {
+  0% {
+    opacity: 0;
+    transform: scale(0.5) rotate(0deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.1) rotate(10deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(15deg);
+  }
+}
+
+@keyframes sfx-burst-flat {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(-6deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2) rotate(-6deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(-6deg);
+  }
+}
+
+/* ==== CREDITS: the tag spins on its string, then a stamp slams down ==== */
+.board-tag {
+  perspective: calc(var(--u) * 60);
+}
+
+.board-tag__body {
+  flex-direction: row;
+  align-items: center;
+  gap: calc(var(--u) * 1.6);
+  width: calc(var(--u) * 34);
+  padding: calc(var(--u) * 4.6) calc(var(--u) * 2.2) calc(var(--u) * 2);
+  background: var(--menu-paper);
+  transform-style: preserve-3d;
+}
+
+.board-tag__eyelet {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--pin) - var(--line));
+  width: calc(var(--u) * 5);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border: var(--line) solid var(--menu-ink-deep);
+  border-radius: 50%;
+  background: var(--menu-gold);
+}
+
+.board-tag__art {
+  width: 40%;
+  flex: none;
+}
+
+.board-tag__title {
+  font-family: var(--font-type);
+  font-size: max(13px, calc(var(--u) * 3.4));
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.board-tag__stamp {
+  position: absolute;
+  z-index: 5;
+  left: 50%;
+  top: 56%;
+  padding: calc(var(--u) * 0.6) calc(var(--u) * 1.8);
+  border: max(3px, calc(var(--u) * 0.7)) solid var(--menu-red);
+  outline: max(1px, calc(var(--u) * 0.3)) solid var(--menu-red);
+  outline-offset: max(1px, calc(var(--u) * 0.35));
+  background: rgba(255, 248, 231, 0.9);
+  color: var(--menu-red);
+  font-family: var(--font-display);
+  font-size: calc(var(--u) * 5.2);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translate(-50%, -50%) rotate(-14deg) scale(2.4);
+  pointer-events: none;
+}
+
+:is(.board-tag:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board-tag:focus-visible) .board-tag__body {
+  animation: tag-spin 0.7s steps(8, end) forwards;
+}
+
+:is(.board-tag:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board-tag:focus-visible) .board-tag__stamp {
+  animation: stamp-slam 0.3s steps(2, end) 0.62s forwards;
+}
+
+@keyframes tag-spin {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(360deg);
+  }
+}
+
+@keyframes stamp-slam {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(-14deg) scale(2.4);
+  }
+  60% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(-10deg) scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(-10deg) scale(1);
+  }
+}
+
+/* ---- Red string and ink pins ---- */
+.board__strings {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.board__string,
+.board__string-ink {
+  fill: none;
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
+}
+
+.board__string-ink {
+  stroke: var(--menu-ink-deep);
+  stroke-width: 5.5;
+}
+
+.board__string {
+  stroke: var(--menu-red);
+  stroke-width: 2.6;
+}
+
+.board__pin {
+  position: absolute;
+  z-index: 4;
+  left: calc(var(--x) * 1%);
+  top: calc(var(--y) * 1%);
+  width: max(14px, calc(var(--u) * 3.6));
+  aspect-ratio: 1;
+  border: max(2px, calc(var(--u) * 0.5)) solid var(--menu-ink-deep);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background:
+    radial-gradient(circle at 34% 32%, #ffffff 0 16%, transparent 18%),
+    var(--menu-red);
+  pointer-events: none;
+}
+
+.board__pin--play {
+  width: max(16px, calc(var(--u) * 4.4));
+  background:
+    radial-gradient(circle at 34% 32%, #ffffff 0 16%, transparent 18%),
+    var(--menu-gold);
+}
+
+/* ---- Data credit: small caption box in the corner ---- */
+.board__credit {
+  position: absolute;
+  z-index: 4;
+  left: 3%;
+  bottom: 2.5%;
+  margin: 0;
+  padding: calc(var(--u) * 0.9) calc(var(--u) * 1.8);
+  border: max(2px, calc(var(--u) * 0.4)) solid var(--menu-paper);
+  outline: 2px solid var(--menu-ink-deep);
+  background: var(--menu-ink-deep);
+  color: var(--menu-paper);
+  font-family: var(--font-type);
+  font-size: max(11px, calc(var(--u) * 2.5));
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+/* ---- Case file overlay: a comic panel with a caption header ---- */
+.case-file {
+  width: min(640px, calc(100vw - 32px));
+  max-height: calc(100dvh - 48px);
+  margin: auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--menu-ink-deep, #161b2e);
+  overflow: visible;
+}
+
+.case-file::backdrop {
+  background:
+    radial-gradient(circle, rgba(255, 248, 231, 0.1) 1.3px, transparent 1.8px) 0 0 / 8px 8px,
+    rgba(16, 20, 34, 0.78);
+}
+
+.case-file[open] {
+  animation: case-file-pop 0.36s steps(3, end);
+}
+
+.case-file__sheet {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 48px);
+  margin-top: 18px;
+  padding: 34px clamp(20px, 5vw, 44px) 30px;
+  border: 4px solid #161b2e;
+  outline: 6px solid #fff8e7;
+  background:
+    radial-gradient(circle, rgba(22, 27, 46, 0.16) 1.3px, transparent 1.8px) 100% 0 / 8px 8px no-repeat,
+    #fff8e7;
+  background-size: 8px 8px, auto;
+  box-shadow: 0 0 0 10px #161b2e;
+}
+
+/* Halftone corner on the panel, like a printed shading tone. */
+.case-file__sheet::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 46%;
+  height: 160px;
+  background: radial-gradient(circle, rgba(94, 168, 194, 0.55) 1.4px, transparent 1.9px) 0 0 / 8px 8px;
+  mask-image: linear-gradient(225deg, black, transparent 70%);
+  pointer-events: none;
+}
+
+.case-file__head {
+  position: absolute;
+  top: -22px;
+  left: -8px;
+  right: -8px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.case-file__label {
+  margin: 0;
+  padding: 8px 14px;
+  border: 3px solid #161b2e;
+  background: #f2c14e;
+  color: #161b2e;
+  font-family: var(--font-type);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  transform: rotate(-1.5deg);
+}
+
+.case-file__close {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px 7px 10px;
+  border: 3px solid #161b2e;
+  border-radius: 0;
+  background: #fff8e7;
+  color: #161b2e;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   cursor: pointer;
-  box-shadow: 6px 6px 0 var(--menu-ink);
+  transform: rotate(2deg);
   transition:
-    transform 0.12s ease,
-    box-shadow 0.12s ease,
-    background-color 0.12s ease;
-  animation: main-menu-nudge 2.4s ease-in-out infinite;
+    background-color 0.12s ease-out,
+    color 0.12s ease-out,
+    transform 0.12s ease-out;
 }
 
-.main-menu__play:hover {
-  background: #ffd76a;
-  transform: translate(-2px, -2px);
-  box-shadow: 8px 8px 0 var(--menu-ink);
-  animation: none;
+.case-file__close-icon {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 4;
+  stroke-linecap: round;
 }
 
-.main-menu__play:active {
-  transform: translate(4px, 4px);
-  box-shadow: 2px 2px 0 var(--menu-ink);
+.case-file__close:hover {
+  background: #161b2e;
+  color: #f2c14e;
+  transform: rotate(-3deg) scale(1.06);
 }
 
-.main-menu__play:focus-visible {
-  outline: 4px solid var(--menu-red);
+.case-file__close:active {
+  transform: rotate(-3deg) scale(1.06, 0.9);
+}
+
+.case-file__close:focus-visible {
+  outline: 3px solid #161b2e;
   outline-offset: 4px;
+  box-shadow: 0 0 0 4px #f2c14e;
 }
 
-.main-menu__credit {
-  margin: auto 0 0;
-  font-size: 0.8rem;
-  opacity: 0.7;
+.case-file__title {
+  position: relative;
+  margin: 8px 0 16px;
+  font-family: var(--font-display);
+  font-size: clamp(1.9rem, 5vw, 2.7rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  text-wrap: balance;
+  color: #161b2e;
+  text-shadow:
+    -2px -1px 0 rgba(0, 164, 214, 0.7),
+    3px 2px 0 rgba(226, 0, 122, 0.55);
+}
+
+.case-file__body {
+  position: relative;
+  overflow-y: auto;
+  padding-right: 6px;
+  font-family: var(--font-type);
+  font-size: 1rem;
+  line-height: 1.55;
+  color: #1f2740;
+  scrollbar-color: #161b2e transparent;
+  scrollbar-width: thin;
+}
+
+.case-file__body p,
+.case-file__body ol,
+.case-file__body ul {
+  max-width: 68ch;
+  margin: 0 0 14px;
+}
+
+.case-file__body h3 {
+  margin: 22px 0 8px;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: #161b2e;
+}
+
+.case-file__body strong {
+  color: #161b2e;
+  background: linear-gradient(transparent 58%, rgba(242, 193, 78, 0.75) 58%);
+}
+
+.case-file__steps,
+.case-file__notes {
+  padding-left: 2.4em;
+}
+
+.case-file__steps li,
+.case-file__notes li {
+  margin-bottom: 8px;
+}
+
+.case-file__steps li::marker {
+  font-family: var(--font-display);
+  font-weight: 900;
+  color: #e5322d;
+}
+
+/* Thought-balloon aside. */
+.case-file__aside {
+  padding: 12px 18px;
+  border: 3px solid #161b2e;
+  border-radius: 22px;
+  background: #ffffff;
+  font-family: var(--font-hand);
+  font-size: 1.05rem;
+}
+
+.case-file__cases {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.case-file__case {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px;
+  padding: 14px 0;
+  border-top: 2px solid #161b2e;
+}
+
+.case-file__case h3 {
+  margin: 0;
+}
+
+.case-file__case-no {
+  display: grid;
+  place-items: center;
+  min-width: 2.4em;
+  height: 2.4em;
+  border: 3px solid #161b2e;
+  background: #e5322d;
+  color: #fff8e7;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  transform: rotate(-4deg);
+}
+
+.case-file__body .case-file__place {
+  margin: 2px 0 6px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #3b4a6b;
+}
+
+.case-file__body .case-file__question {
+  margin: 0;
+  font-family: var(--font-hand);
+  font-size: 1.1rem;
+  line-height: 1.35;
+}
+
+.case-file__credits {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 8px 20px;
+  margin: 0 0 18px;
+}
+
+.case-file__credits dt {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.85rem;
+  padding-top: 2px;
+}
+
+.case-file__credits dd {
+  margin: 0;
 }
 
 /* ---- Right stage ---- */
@@ -147,28 +1381,28 @@
   }
 }
 
-@keyframes main-menu-nudge {
-  0%,
-  80%,
+@keyframes case-file-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.86) rotate(-3deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.03) rotate(1deg);
+  }
   100% {
+    opacity: 1;
     transform: none;
-  }
-  85% {
-    transform: rotate(-3deg) scale(1.04);
-  }
-  90% {
-    transform: rotate(3deg) scale(1.04);
-  }
-  95% {
-    transform: rotate(-1deg);
   }
 }
 
-/* ---- Narrow screens: character on top, panel below ---- */
+/* ---- Narrow screens: character on top, wall below (the page scrolls) ---- */
 @media (max-width: 760px) {
   .main-menu {
     grid-template-columns: 1fr;
-    grid-template-rows: 1fr auto;
+    grid-template-rows: minmax(280px, 1fr) auto;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .main-menu__stage {
@@ -176,23 +1410,79 @@
   }
 
   .main-menu__panel {
-    align-items: center;
-    text-align: center;
-    gap: 12px;
-    padding: 24px 16px;
+    height: 640px;
+    padding: 10px;
     border-right: none;
-    border-top: 6px solid var(--menu-ink);
-    box-shadow: 0 -10px 0 rgba(59, 74, 107, 0.25);
+    border-top: 6px solid var(--menu-ink-deep);
   }
 
-  .main-menu__credit {
-    margin-top: 4px;
+  .case-file__credits {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .case-file__credits dd {
+    margin-bottom: 10px;
   }
 }
 
+/* ---- Reduced motion: no movement; hover/focus still shows a clear static highlight ---- */
 @media (prefers-reduced-motion: reduce) {
   .main-menu__rays,
-  .main-menu__play {
-    animation: none;
+  .case-file[open],
+  .board__sheet *,
+  :is(.board__sheet:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board__sheet:focus-visible) * {
+    animation: none !important;
+  }
+
+  .board__sheet::before,
+  .sheet,
+  .sfx,
+  .board-tag__stamp,
+  .board-note__bulb {
+    transition: opacity 0.15s linear;
+  }
+
+  :is(.board__sheet:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board__sheet:focus-visible) .sheet {
+    outline: max(3px, calc(var(--u) * 0.8)) solid var(--menu-gold);
+  }
+
+  :is(.board__sheet:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board__sheet:focus-visible) .board-play__body,
+  :is(.board__sheet:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board__sheet:focus-visible)::before,
+  .board__sheet:active .sheet {
+    transform: none;
+  }
+
+  :is(.board-play:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board-play:focus-visible) .board-play__speed,
+  :is(.board-play:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board-play:focus-visible) .sfx--click,
+  :is(.board-card:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board-card:focus-visible) .sfx--swish,
+  :is(.board-folder:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board-folder:focus-visible) .sfx--files,
+  :is(.board-note:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board-note:focus-visible) .sfx--aha,
+  :is(.board-note:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board-note:focus-visible) .board-note__rays,
+  :is(.board-tag:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board-tag:focus-visible) .board-tag__stamp {
+    opacity: 1;
+  }
+
+  :is(.board-play:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board-play:focus-visible) .sfx--click,
+  :is(.board-folder:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board-folder:focus-visible) .sfx--files,
+  :is(.board-note:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board-note:focus-visible) .sfx--aha,
+  :is(.board-note:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board-note:focus-visible) .board-note__bulb {
+    transform: none;
+  }
+
+  :is(.board-card:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board-card:focus-visible) .sfx--swish {
+    transform: skewX(-12deg);
+  }
+
+  :is(.board-tag:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board-tag:focus-visible) .board-tag__stamp {
+    transform: translate(-50%, -50%) rotate(-10deg);
+  }
+
+  :is(.board-note:hover, .board[data-kbd]:not(:has(.board__sheet:hover)) .board-note:focus-visible) .board-note__glass {
+    transition: none;
+  }
+
+  .board__sheet:active .sfx--pow {
+    transform: rotate(-12deg);
   }
 }

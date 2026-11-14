@@ -65,8 +65,9 @@ def test_cases_index(tmp_path):
         assert entry["question"].endswith("?") and entry["context"] and "TODO" not in entry["context"]
         assert all(f.startswith("data/cache/case_") for f in entry["files"])
         assert all((ROOT / f).exists() for f in entry["files"])  # the committed case files
-    assert index[0]["files"] == ["data/cache/case_dana_valencia_PRECTOTCORR.json",
+    assert index[0]["files"] == ["data/cache/case_dana_valencia_PRECIP.json",
                                  "data/cache/case_dana_valencia_T2M.json"]
+    assert sum(len(e["files"]) for e in index) == 19
 
 
 def test_featured_cases_cover_the_brief():
@@ -82,23 +83,34 @@ def test_results_table_and_methods_doc():
     from pipeline.results_table import END, START, replace_table, results_table
 
     table = results_table()
-    assert len(table.splitlines()) == 2 + sum(len(c["variables"]) for c in CASES)
-    assert "| Valencia DANA | T2M | +0.272 °C |" in table
+    assert len(table.splitlines()) == 2 + 19  # featured series in data/cache/
+    assert "| Valencia DANA | T2M | +0.312 °C |" in table
     doc = (ROOT / "docs" / "methods.md").read_text(encoding="utf-8")
     assert replace_table(doc, table) == doc  # the committed doc holds the current table
     assert replace_table(f"a{START}old{END}b", "T") == f"a{START}\nT\n{END}b"
 
 
-def test_power_source_reproduces_committed_case_files(tmp_path):
-    """--source power (default) rebuilds every committed case file byte for byte from data/raw/power/."""
-    from pipeline.build_cases import RAW_DIR, case_file, case_vars
+def _power_cache(cache_dir, cases=CASES):
+    """Build the POWER fallback files of `cases` from data/raw/power/ into cache_dir."""
+    from pipeline.build_cases import RAW_DIR
 
-    for case in CASES:
+    for case in cases:
         for variable in case["variables"]:
-            build_one(case, variable, raw_dir=RAW_DIR, cache_dir=tmp_path, source="power")
-        for name in case_vars(case):
-            committed = ROOT / case_file(case["id"], name)
-            assert (tmp_path / committed.name).read_bytes() == committed.read_bytes()
+            build_one(case, variable, raw_dir=RAW_DIR, cache_dir=cache_dir, source="power")
+
+
+def test_power_fallback_rebuilds_from_raw_files(tmp_path):
+    """--source power still rebuilds the 18 POWER series offline, valid and deterministic."""
+    _power_cache(tmp_path / "a")
+    _power_cache(tmp_path / "b")
+    files = sorted((tmp_path / "a").glob("*.json"))
+    assert len(files) == 18
+    assert {f.stem.rsplit("_", 1)[1] for f in files} == {"T2M", "PRECTOTCORR", "GWETTOP"}
+    for f in files:
+        assert f.read_bytes() == (tmp_path / "b" / f.name).read_bytes()
+        assert _validator().check(str(f)) == []
+    valencia = json.loads((tmp_path / "a" / "case_dana_valencia_T2M.json").read_text(encoding="utf-8"))
+    assert round(valencia["slope"] * 10, 3) == 0.272  # the published POWER result
 
 
 def test_variable_ids_and_sources():
@@ -156,9 +168,7 @@ def test_case_export_builds_replaces_and_falls_back(tmp_path):
     cache = root / "data" / "cache"
     cache.mkdir(parents=True)
     cases = [c for c in CASES if c["id"] in ("dana_valencia", "donana")]
-    for c in cases:  # start from the committed POWER files
-        for name in case_vars(c):
-            shutil.copy(ROOT / "data" / "cache" / f"case_{c['id']}_{name}.json", cache)
+    _power_cache(cache, cases)  # start from the POWER fallback files
     donana_precip_before = (cache / "case_donana_PRECTOTCORR.json").read_bytes()
 
     report = build_from_export(export, cases, cache_dir=cache, log=lambda *_: None)
@@ -204,6 +214,23 @@ def test_case_export_clear_errors(tmp_path):
                                                                  "west": 3, "east": 4, "data": {}}))
     with pytest.raises(ValueError, match=r"missing field 'vars'.*found fields: \['data', 'east'"):
         load_case(tmp_path, "donana")
+    (tmp_path / "cases" / "donana.json").write_text(json.dumps({"case_id": "donana", "vars": {}}))
+    with pytest.raises(ValueError, match="missing the location"):
+        load_case(tmp_path, "donana")
+
+
+def test_case_export_point_layout(tmp_path):
+    """Perry's real layout: lat / lon point, start_month YYYY-MM-01, ids t2m_long / precip / soilmoist."""
+    from pipeline.sources.case_export import load_case
+
+    (tmp_path / "cases").mkdir()
+    entry = {"start_month": "1980-01-01", "values": [1.0, None], "climatology": [0.0] * 12}
+    (tmp_path / "cases" / "cordoba_heat.json").write_text(json.dumps(
+        {"case_id": "cordoba_heat", "lat": 37.88, "lon": -4.78,
+         "vars": {"t2m_long": entry, "precip": entry, "soilmoist": entry}}))
+    case = load_case(tmp_path, "cordoba_heat")
+    assert (case["lat"], case["lon"]) == (37.88, -4.78)
+    assert sorted(case["vars"]) == ["PRECIP", "SOILM", "T2M"] and case["ignored"] == []
 
 
 def test_convert_units():
@@ -224,6 +251,10 @@ def test_convert_units():
     with warnings.catch_warnings():
         warnings.simplefilter("error")
         convert_units("T2M", "K", [280.0])
+        # Perry's export units are already display units: no conversion, no warning.
+        assert convert_units("T2M", "°C", [15.5, None]) == ([15.5, None], "°C")
+        assert convert_units("PRECIP", "mm/day", [2.0]) == ([2.0], "mm/day")
+        assert convert_units("SOILM", "kg/m²", [21.0]) == ([21.0], "kg/m² (0-10 cm)")
 
 
 def _export_with_units(path, unit_t, unit_p, t_values, p_values):
@@ -248,10 +279,9 @@ def test_case_export_unit_conversion_scales_slopes(tmp_path):
 
     native, display = tmp_path / "native", tmp_path / "display"
     _export_with_units(native, "K", "mm/hr", [v + 273.15 for v in t_c], [v / 24 for v in p_day])
-    with pytest.warns(UserWarning):  # "C/day-like" labels are unknown units: kept as they are
-        _export_with_units(display, "degC", "mm/d", t_c, p_day)
-        _, t_ref, _ = build_one(case, "T2M", cache_dir=tmp_path / "c1", source="case_export", export_dir=display)
-        _, p_ref, _ = build_one(case, "PRECIP", cache_dir=tmp_path / "c1", source="case_export", export_dir=display)
+    _export_with_units(display, "°C", "mm/day", t_c, p_day)  # already display units: kept as they are
+    _, t_ref, _ = build_one(case, "T2M", cache_dir=tmp_path / "c1", source="case_export", export_dir=display)
+    _, p_ref, _ = build_one(case, "PRECIP", cache_dir=tmp_path / "c1", source="case_export", export_dir=display)
 
     t_case, t_trend, _ = build_one(case, "T2M", cache_dir=tmp_path / "c2", source="case_export", export_dir=native)
     p_case, p_trend, _ = build_one(case, "PRECIP", cache_dir=tmp_path / "c2", source="case_export", export_dir=native)

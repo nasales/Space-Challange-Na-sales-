@@ -9,6 +9,8 @@ CAVEAT = (
     "A non-significant result means the data show no clear evidence of change, "
     "not proof that nothing changed."
 )
+WEAK = "Evidence is weak: the p-value is close to the 0.05 threshold."
+NEAR = "Not significant at 5%, but close (p < 0.10)."
 
 
 def explain(trend: dict, series) -> str:
@@ -67,6 +69,11 @@ def explain(trend: dict, series) -> str:
         if significant is not None:
             line += ", significant at the 5% level" if significant else ", not significant at the 5% level"
         lines.append(line)
+        p_value = trend["p_value"]
+        if significant is True and 0.01 <= p_value < 0.05:
+            lines.append(WEAK)
+        elif significant is False and 0.05 <= p_value < 0.10:
+            lines.append(NEAR)
 
     direction = _direction(trend)
     if direction is not None:

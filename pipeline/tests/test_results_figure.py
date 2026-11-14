@@ -13,15 +13,18 @@ def test_figure_png_is_created(tmp_path):
 
 def test_rows_cover_every_series():
     rows = collect()
-    assert set(rows) == {"T2M", "PRECTOTCORR", "GWETTOP"}
-    assert sum(len(v) for v in rows.values()) == 18
+    assert set(rows) == {"T2M", "PRECIP", "SOILM"}
+    assert sum(len(v) for v in rows.values()) == 19
     assert all(r["lo"] <= r["slope"] <= r["hi"] for v in rows.values() for r in v)
 
 
 def test_title_and_footer_from_case_files():
     title, footer = title_and_footer(collect())
-    assert title == "Featured cases: trend per decade (95% CI), NASA POWER 1981-2024"
-    assert footer == "Data: NASA POWER (MERRA-2 based). Grey = not statistically significant (p >= 0.05)"
+    assert title == "Featured cases: trend per decade (95% CI), 1980-2026"
+    assert footer == ("Data: NASA GLDAS_NOAH025_M v2.1, NASA GPM_3IMERGM v07, NASA M2TMNXSLV v5.12.4. "
+                      "Grey = not statistically significant (p >= 0.05)")
+    power = {"T2M": [{"source": "NASA POWER (MERRA-2 based)", "first": "1981-01", "last": "2024-12"}]}
+    assert title_and_footer(power)[0] == "Featured cases: trend per decade (95% CI), NASA POWER 1981-2024"
     mixed = {"T2M": [{"source": "NASA POWER (MERRA-2 based)", "first": "1981-01", "last": "2024-12"}],
              "NDVI": [{"source": "NASA MOD13A3 v061", "first": "2000-02", "last": "2025-10"}]}
     title, footer = title_and_footer(mixed)
