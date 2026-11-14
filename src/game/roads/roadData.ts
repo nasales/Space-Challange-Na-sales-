@@ -1,6 +1,7 @@
-// Roads of the explored country, stored in public/maps/countries/<ID>/roads.json. Today it holds a
-// single closed loop ("The Detective's Road") planned offline by scripts/plan-road.mjs from the
-// map data already in the repo (relief, border, rivers, landmarks, places).
+// Roads of the explored country, stored in public/maps/countries/<ID>/roads.json. It holds a
+// closed loop ("The Detective's Road") and a few open roads that cross it, planned offline by
+// scripts/plan-road.mjs from the map data already in the repo (relief, border, rivers, landmarks,
+// places). Where two roads cross, createRoads.ts lays a junction.
 import type { Bounds } from '../map/mapData'
 
 /** A road as stored in roads.json. */

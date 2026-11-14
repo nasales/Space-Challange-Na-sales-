@@ -7,12 +7,15 @@
 // - Each side has a skirt: an earthy embankment where the road is raised over the terrain, and
 //   the stone fascia of the deck slab on a bridge.
 // - Bridges get white parapets with red posts and stone piers standing in the river bed.
+// - Junctions: where two roads cross, a flat patch (junctions.ts) covers the crossing, with the
+//   kerb and the edge line turning each corner; the lines of both ribbons stop under it.
 // The road also answers placement and walking queries: nearRoad (houses, trees) and surfaceAt
-// (the detective walks on the deck and over bridges).
+// (the detective walks on the deck, over bridges and across junctions).
 import * as THREE from 'three'
 import { toonMaterial } from '../scene/toonGradient'
 import type { Road } from './roadData'
-import { layoutRoads, validateRoads, isClosed, tangent, STEP, SLAB, type RoadGround, type RoadRun } from './layoutRoads'
+import { layoutRoads, validateRoads, isClosed, tangent, STEP, SLAB, ROAD_HALF_WIDTH, type RoadGround, type RoadRun, type RoadJunction } from './layoutRoads'
+import { insidePolygon, KERB_STRIP } from './junctions'
 
 /** Animation frame rate: comic "on twos" stepping, as the rivers. */
 const ANIM_FPS = 12
@@ -34,6 +37,8 @@ const COLORS = {
 }
 /** Grid cell (world units) of the road lookup used by nearRoad / surfaceAt. */
 const LOOKUP_CELL = 24
+/** Junction patches sit this far over the two levelled decks (plus a stronger polygon offset). */
+const PATCH_LIFT = 0.03
 
 export interface Roads {
   group: THREE.Group
@@ -43,6 +48,8 @@ export interface Roads {
   nearRoad: (x: number, z: number, margin: number) => boolean
   /** Every laid-out run (debug and tests). */
   runs: RoadRun[]
+  /** Every junction where two runs cross (debug and tests). */
+  junctions: RoadJunction[]
   update: (dt: number) => void
   dispose: () => void
 }
@@ -253,6 +260,50 @@ function buildRibbon(run: RoadRun, s: number, e: number, out: RibbonBuffers) {
   }
 }
 
+/**
+ * Builds the patch of one junction into the ribbon buffers, painted by the road shader as a
+ * single carriageway: plain asphalt in the middle (no lines), a kerb strip along each corner
+ * (edge line, halftone dots and the dark kerb, exactly as on the road) and a skirt under the
+ * rounded corners down into the ground.
+ */
+function buildJunction(j: RoadJunction, heightAt: (x: number, z: number) => number, out: RibbonBuffers) {
+  const y = j.y + PATCH_LIFT
+  const acrossIn = 1 - KERB_STRIP / ROAD_HALF_WIDTH[2]
+  let vc = out.pos.length / 3
+  const vertex = (x: number, yy: number, z: number, across: number, along: number, skirt: number) => {
+    out.pos.push(x, yy, z)
+    out.across.push(across)
+    out.along.push(along)
+    out.rank.push(2)
+    out.skirt.push(skirt)
+    out.bridge.push(0)
+    return vc++
+  }
+  // Middle: the inner outline, triangulated
+  const inner = j.shape.inner
+  const base = vc
+  for (const [x, z] of inner) vertex(x, y, z, acrossIn, 0, 0)
+  for (const [a, b, c] of THREE.ShapeUtils.triangulateShape(inner.map(([x, z]) => new THREE.Vector2(x, z)), [])) {
+    out.index.push(base + a, base + b, base + c)
+  }
+  // Kerb strips and the skirt under each corner
+  for (const { outer, inner: inn } of j.shape.kerbs) {
+    let prev: number[] | null = null
+    let along = 0
+    for (let k = 0; k < outer.length; k++) {
+      const [ox, oz] = outer[k], [ix, iz] = inn[k]
+      if (k > 0) along += Math.hypot(ox - outer[k - 1][0], oz - outer[k - 1][1])
+      const bottom = Math.min(heightAt(ox, oz), j.y) - 0.8
+      const ids = [vertex(ox, y, oz, 1, along, 0), vertex(ix, y, iz, acrossIn, along, 0), vertex(ox, y, oz, 0, along, 1), vertex(ox, bottom, oz, 1, along, 1)]
+      if (prev) {
+        out.index.push(prev[0], prev[1], ids[0], prev[1], ids[1], ids[0])
+        out.index.push(prev[2], ids[2], prev[3], prev[3], ids[2], ids[3])
+      }
+      prev = ids
+    }
+  }
+}
+
 interface RibbonBuffers {
   pos: number[]
   across: number[]
@@ -361,9 +412,10 @@ function buildBridgeParts(run: RoadRun, solid: ReturnType<typeof createSolidBuil
  * @param ground terrain queries, the zone's drawn rivers and the monuments to avoid
  */
 export function createRoads(roads: Road[], ground: RoadGround): Roads {
-  const runs = layoutRoads(roads, ground)
+  const layout = layoutRoads(roads, ground)
+  const { runs, junctions } = layout
   // Development check: the planned route must need no safety net (no water, sea or monuments)
-  if (import.meta.env.DEV && runs.length) console.info('[roads]', validateRoads(runs, ground))
+  if (import.meta.env.DEV && runs.length) console.info('[roads]', validateRoads(layout, ground))
   const group = new THREE.Group()
 
   const material = new THREE.ShaderMaterial({
@@ -420,6 +472,29 @@ export function createRoads(roads: Road[], ground: RoadGround): Roads {
     group.add(mesh)
   }
 
+  // Junction patches: same shader, drawn after the ribbons and pulled a little more towards the
+  // camera, so they always cover the two crossing decks (no z-fighting, no lines across)
+  const junctionMaterial = material.clone()
+  junctionMaterial.polygonOffsetFactor = -2
+  junctionMaterial.polygonOffsetUnits = -4
+  if (junctions.length) {
+    const buf = newBuffers()
+    for (const j of junctions) buildJunction(j, ground.heightAt, buf)
+    const g = new THREE.BufferGeometry()
+    g.setAttribute('position', new THREE.Float32BufferAttribute(buf.pos, 3))
+    g.setAttribute('aAcross', new THREE.Float32BufferAttribute(buf.across, 1))
+    g.setAttribute('aAlong', new THREE.Float32BufferAttribute(buf.along, 1))
+    g.setAttribute('aRank', new THREE.Float32BufferAttribute(buf.rank, 1))
+    g.setAttribute('aSkirt', new THREE.Float32BufferAttribute(buf.skirt, 1))
+    g.setAttribute('aBridge', new THREE.Float32BufferAttribute(buf.bridge, 1))
+    g.setIndex(buf.index)
+    g.computeBoundingSphere()
+    geometries.push(g)
+    const mesh = new THREE.Mesh(g, junctionMaterial)
+    mesh.renderOrder = 2
+    group.add(mesh)
+  }
+
   // Bridge parts: one merged toon mesh (full ink outlines, like the other objects)
   const solid = createSolidBuilder()
   for (const run of runs) buildBridgeParts(run, solid)
@@ -454,6 +529,22 @@ export function createRoads(roads: Road[], ground: RoadGround): Roads {
       }
     }
   }
+  // Junctions by lookup cell (their patch reaches past both decks at the rounded corners)
+  const junctionLookup = new Map<string, RoadJunction[]>()
+  for (const j of junctions) {
+    const r = j.shape.radius
+    for (let c = Math.floor((j.x - r) / LOOKUP_CELL); c <= Math.floor((j.x + r) / LOOKUP_CELL); c++) {
+      for (let rr = Math.floor((j.z - r) / LOOKUP_CELL); rr <= Math.floor((j.z + r) / LOOKUP_CELL); rr++) {
+        const key = `${c},${rr}`
+        let list = junctionLookup.get(key)
+        if (!list) junctionLookup.set(key, (list = []))
+        list.push(j)
+      }
+    }
+  }
+  const junctionAt = (x: number, z: number) =>
+    junctionLookup.get(`${Math.floor(x / LOOKUP_CELL)},${Math.floor(z / LOOKUP_CELL)}`)?.find((j) => insidePolygon(j.shape.outline, x, z))
+
   /** Calls fn(distance to centre line, deck y, half width) for each segment near (x, z). */
   const visit = (x: number, z: number, reach: number, fn: (d: number, y: number, hw: number) => boolean | void) => {
     const c0 = Math.floor((x - reach) / LOOKUP_CELL), c1 = Math.floor((x + reach) / LOOKUP_CELL)
@@ -472,12 +563,16 @@ export function createRoads(roads: Road[], ground: RoadGround): Roads {
     }
   }
 
-  const geometryAndMaterials = { geometries, material, bridgeMaterial }
+  const geometryAndMaterials = { geometries, material, bridgeMaterial, junctionMaterial }
   let clock = 0
   return {
     group,
     runs,
+    junctions,
     surfaceAt(x, z) {
+      // on a junction both decks and the patch share one height (the patch's tiny lift ignored)
+      const j = junctionAt(x, z)
+      if (j) return j.y
       let top = -Infinity
       visit(x, z, 0, (d, yy, hw) => {
         if (d <= hw && yy > top) top = yy
@@ -487,7 +582,7 @@ export function createRoads(roads: Road[], ground: RoadGround): Roads {
     nearRoad(x, z, margin) {
       let hit = false
       visit(x, z, margin, (d, _y, hw) => (hit = d <= hw + margin))
-      return hit
+      return hit || junctions.some((j) => Math.hypot(x - j.x, z - j.z) <= j.shape.radius + margin)
     },
     update(dt) {
       clock += dt
@@ -497,6 +592,7 @@ export function createRoads(roads: Road[], ground: RoadGround): Roads {
       for (const g of geometryAndMaterials.geometries) g.dispose()
       geometryAndMaterials.material.dispose()
       geometryAndMaterials.bridgeMaterial.dispose()
+      geometryAndMaterials.junctionMaterial.dispose()
     },
   }
 }

@@ -877,6 +877,7 @@ export default function DetectiveShowcase({ outfit, mode = 'investigate' }: Dete
       detectiveRef.current = null
       disposables.forEach((d) => d.dispose())
       renderer.dispose()
+      renderer.forceContextLoss() // free the WebGL context now (menu <-> game switches add up)
       canvas.remove()
     }
   }, [mode])

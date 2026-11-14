@@ -1,6 +1,7 @@
 // Bridge between the game (src/game) and the interface (src/ui).
 // The game never imports from src/ui and the UI never imports from src/game:
 // both only import these types. Changing this file needs agreement from both areas.
+import type { Outfit } from './outfit'
 
 /** Where the detective is right now. */
 export interface LocationInfo {
@@ -26,7 +27,8 @@ export interface HudState {
   caseZone: string | null
 }
 
-export type GameStatus = 'loading' | 'ready' | 'error'
+/** 'intro': the map is drawn and the camera is swooping down to the detective (no control, no HUD yet). */
+export type GameStatus = 'loading' | 'intro' | 'ready' | 'error'
 
 /** Sent when the player stops at a place to investigate (not emitted yet). */
 export interface GameStop {
@@ -55,6 +57,8 @@ export interface GameCallbacks {
   onStop?: (stop: GameStop) => void
   /** The camera flight into (or out of) the hand lens has finished */
   onLensFocus?: (state: LensFocusState) => void
+  /** Map loading progress, 0 to 1 (1 just before status 'ready'), for the loading bar */
+  onProgress?: (progress: number) => void
 }
 
 /** Props of the game view: the callbacks plus what the app shell tells the game. */
@@ -64,7 +68,9 @@ export interface GameViewProps extends GameCallbacks {
    * While true, and until 'out' is reported, the game ignores keyboard input and the detective stays still.
    */
   focusLens?: boolean
-  /** true while a featured case level is open: the game ignores keyboard input */
+  /** Detective clothes picked in the Wardrobe; changing it recolors him live (the map is not rebuilt). */
+  outfit?: Outfit
+  /** true while the pause panel or a featured case level is open: the game ignores driving input */
   paused?: boolean
   /** Featured case ids already solved (their markers are drawn green) */
   completedCases?: readonly string[]

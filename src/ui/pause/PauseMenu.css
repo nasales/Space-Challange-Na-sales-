@@ -1,0 +1,217 @@
+/* Pause panel: same comic print look as the main menu's case files (MainMenu.css): thick ink frame
+   on cream paper, halftone tones, caption-box label, offset-print title, stepped pop-in. */
+.pause-menu {
+  --menu-ink: #3b4a6b;
+  --menu-ink-deep: #161b2e;
+  --menu-sea: #5ea8c2;
+  --menu-gold: #f2c14e;
+  --menu-red: #e5322d;
+  --menu-paper: #fff8e7;
+  --print-cyan: rgba(0, 164, 214, 0.7);
+  --print-magenta: rgba(226, 0, 122, 0.55);
+
+  position: absolute;
+  inset: 0;
+  z-index: 40; /* over the HUD and the magnifier, under the database badge */
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background:
+    radial-gradient(circle, rgba(255, 248, 231, 0.1) 1.3px, transparent 1.8px) 0 0 / 8px 8px,
+    rgba(16, 20, 34, 0.72);
+  animation: pause-menu-fade 0.18s steps(2, end);
+}
+
+.pause-menu__sheet {
+  position: relative;
+  width: min(420px, 100%);
+  margin-top: 18px;
+  padding: 38px clamp(20px, 6vw, 40px) 24px;
+  border: 4px solid var(--menu-ink-deep);
+  outline: 6px solid var(--menu-paper);
+  background: var(--menu-paper);
+  box-shadow: 0 0 0 10px var(--menu-ink-deep);
+  color: var(--menu-ink-deep);
+  text-align: center;
+  animation: pause-menu-pop 0.36s steps(3, end);
+}
+
+.pause-menu__sheet:focus {
+  outline: 6px solid var(--menu-paper);
+}
+
+/* Halftone tones in two corners, like printed shading */
+.pause-menu__sheet::before,
+.pause-menu__sheet::after {
+  content: '';
+  position: absolute;
+  width: 55%;
+  height: 120px;
+  pointer-events: none;
+}
+
+.pause-menu__sheet::before {
+  top: 0;
+  right: 0;
+  background: radial-gradient(circle, rgba(94, 168, 194, 0.55) 1.4px, transparent 1.9px) 0 0 / 8px 8px;
+  mask-image: linear-gradient(225deg, black, transparent 70%);
+}
+
+.pause-menu__sheet::after {
+  bottom: 0;
+  left: 0;
+  background: radial-gradient(circle, rgba(229, 50, 45, 0.35) 1.4px, transparent 1.9px) 0 0 / 8px 8px;
+  mask-image: linear-gradient(45deg, black, transparent 70%);
+}
+
+/* Caption box that sits on the frame */
+.pause-menu__label {
+  position: absolute;
+  top: -22px;
+  left: -8px;
+  margin: 0;
+  padding: 8px 14px;
+  border: 3px solid var(--menu-ink-deep);
+  background: var(--menu-gold);
+  color: var(--menu-ink-deep);
+  font-family: var(--font-type);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  transform: rotate(-1.5deg);
+}
+
+.pause-menu__title {
+  position: relative;
+  z-index: 1;
+  margin: 0 0 22px;
+  font-family: var(--font-display);
+  font-size: clamp(2.6rem, 9vw, 3.6rem);
+  font-weight: 900;
+  line-height: var(--font-display-leading, 0.95);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--menu-ink-deep);
+  text-shadow:
+    -2px -1px 0 var(--print-cyan),
+    3px 2px 0 var(--print-magenta);
+  transform: rotate(-2deg);
+}
+
+.pause-menu__actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Lettered comic buttons: ink outline, hard offset shadow, a tilt that swaps on hover */
+.pause-menu__button {
+  display: block;
+  width: 100%;
+  padding: 10px 18px;
+  border: 4px solid var(--menu-ink-deep);
+  border-radius: 0;
+  background: var(--menu-paper);
+  color: var(--menu-ink-deep);
+  box-shadow: 5px 5px 0 var(--menu-ink-deep);
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background-color 0.12s ease-out,
+    color 0.12s ease-out,
+    box-shadow 0.12s ease-out,
+    transform 0.12s ease-out;
+}
+
+.pause-menu__button--resume {
+  background:
+    radial-gradient(circle, rgba(22, 27, 46, 0.18) 1.2px, transparent 1.7px) 0 0 / 6px 6px,
+    var(--menu-gold);
+  transform: rotate(-1deg);
+}
+
+.pause-menu__button--menu {
+  transform: rotate(1deg);
+}
+
+.pause-menu__button:hover,
+.pause-menu__button:focus-visible {
+  background: var(--menu-ink-deep);
+  color: var(--menu-gold);
+  transform: rotate(-2deg) scale(1.04);
+}
+
+.pause-menu__button--menu:hover,
+.pause-menu__button--menu:focus-visible {
+  color: var(--menu-paper);
+  background: var(--menu-red);
+  transform: rotate(2deg) scale(1.04);
+}
+
+.pause-menu__button:focus-visible {
+  outline: 3px solid var(--menu-ink-deep);
+  outline-offset: 5px;
+}
+
+.pause-menu__button:active {
+  box-shadow: 2px 2px 0 var(--menu-ink-deep);
+  transform: translate(3px, 3px) scale(1.02, 0.94);
+}
+
+.pause-menu__hint {
+  position: relative;
+  z-index: 1;
+  margin: 18px 0 0;
+  font-family: var(--font-hand);
+  font-size: var(--font-hand-size-min, 1.125rem);
+  color: var(--menu-ink);
+}
+
+.pause-menu__hint kbd {
+  display: inline-block;
+  padding: 0 6px;
+  border: 2px solid var(--menu-ink-deep);
+  background: var(--menu-paper);
+  box-shadow: 2px 2px 0 var(--menu-ink-deep);
+  font-family: var(--font-type);
+  font-size: 0.85em;
+  font-weight: 700;
+  color: var(--menu-ink-deep);
+}
+
+@keyframes pause-menu-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes pause-menu-pop {
+  0% {
+    transform: scale(0.6) rotate(-6deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.08) rotate(2deg);
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pause-menu,
+  .pause-menu__sheet {
+    animation: none;
+  }
+  .pause-menu__button {
+    transition: none;
+  }
+}

@@ -258,13 +258,71 @@ export function rasterizeRivers(
   return { edge, halfWidth }
 }
 
-/** A circle (e.g. a monument footprint) that rivers must flow around. */
+/**
+ * An area (e.g. a monument footprint) that rivers must flow around: a circle, or, when `rect` is
+ * given, the real rotated rectangle of the footprint plus a margin (rivers then hug its edge).
+ */
 export interface RiverClearing {
   lon: number
   lat: number
   radiusKm: number
   /** Radius (km) of the object itself (without margin): the ground there is never carved. */
   innerKm?: number
+  /** Rotated rectangle: half sizes (km) and turn (radians, as the monument's holder.rotation.y). */
+  rect?: { halfWKm: number; halfDKm: number; angle: number; marginKm: number }
+}
+
+/** How far (km) beyond the target distance a rectangular clearing still nudges a river. */
+const RECT_FALLOFF_KM = 1.2
+
+/** Same equirectangular projection as map/projection.ts (km per degree, reference latitude 40). */
+const KM_PER_DEG_LON = 111.32 * Math.cos((40 * Math.PI) / 180)
+const KM_PER_DEG_LAT = 110.57
+
+/**
+ * Point (lon, lat) in the rectangle's own frame (km; u along its width, v along its depth), and
+ * back. Same rotation as createLandmarks (east = +x, south = +z).
+ */
+function toRect(c: RiverClearing, lon: number, lat: number) {
+  const a = c.rect!.angle
+  const dx = (lon - c.lon) * KM_PER_DEG_LON, dz = -(lat - c.lat) * KM_PER_DEG_LAT
+  return { u: dx * Math.cos(a) - dz * Math.sin(a), v: dx * Math.sin(a) + dz * Math.cos(a) }
+}
+function fromRect(c: RiverClearing, u: number, v: number): [number, number] {
+  const a = c.rect!.angle
+  const dx = u * Math.cos(a) + v * Math.sin(a), dz = -u * Math.sin(a) + v * Math.cos(a)
+  return [c.lon + dx / KM_PER_DEG_LON, c.lat - dz / KM_PER_DEG_LAT]
+}
+
+/** Distance (km) from (lon, lat) to the edge of a rectangular clearing's footprint (0 inside). */
+export function rectClearingDistanceKm(c: RiverClearing, lon: number, lat: number) {
+  const { u, v } = toRect(c, lon, lat)
+  return Math.hypot(Math.max(0, Math.abs(u) - c.rect!.halfWKm), Math.max(0, Math.abs(v) - c.rect!.halfDKm))
+}
+
+/**
+ * Pushes a point out of a rectangular clearing: a point whose distance d to the footprint edge is
+ * below `outer` slides along the ray from the centre until its distance is
+ * target + (d / outer) * (outer - target). Rays from the centre of a convex shape cross every
+ * distance contour once, so the map is continuous (a river passing beside the centre wraps around
+ * the near side, it never jumps across) and keeps the order of the points.
+ */
+function pushOutOfRect(c: RiverClearing, lon: number, lat: number, target: number, outer: number): [number, number] {
+  const { halfWKm: a, halfDKm: b } = c.rect!
+  const dist = (u: number, v: number) => Math.hypot(Math.max(0, Math.abs(u) - a), Math.max(0, Math.abs(v) - b))
+  const { u, v } = toRect(c, lon, lat)
+  const d = dist(u, v)
+  if (d >= outer) return [lon, lat]
+  const nd = target + (d / outer) * (outer - target)
+  const len = Math.hypot(u, v)
+  const du = len > 1e-9 ? u / len : 0, dv = len > 1e-9 ? v / len : 1
+  let lo = 0, hi = Math.hypot(a, b) + nd + 1
+  for (let i = 0; i < 32; i++) {
+    const t = (lo + hi) / 2
+    if (dist(du * t, dv * t) < nd) lo = t
+    else hi = t
+  }
+  return fromRect(c, du * hi, dv * hi)
 }
 
 /**
@@ -280,8 +338,14 @@ export function bendRiversAround(rivers: River[], clearings: RiverClearing[]): R
     const hw = riverHalfWidthKm(river.rank)
     const zones = clearings.map((c) => {
       const kmLon = 111.32 * Math.cos((c.lat * Math.PI) / 180)
+      if (c.rect) {
+        // Distances measured from the footprint edge: the river hugs the plaza with a short falloff
+        const target = c.rect.marginKm + hw + BANK_KM
+        const outer = target + RECT_FALLOFF_KM
+        return { c, kmLon, target, outer, reach: Math.hypot(c.rect.halfWKm, c.rect.halfDKm) + outer }
+      }
       const target = c.radiusKm + hw + BANK_KM
-      return { c, kmLon, target, outer: target * 1.6 }
+      return { c, kmLon, target, outer: target * 1.6, reach: target * 1.6 }
     })
     const lines = river.lines.map((line) => {
       // 1) densify segments that pass near a clearing
@@ -295,7 +359,7 @@ export function bendRiversAround(rivers: River[], clearings: RiverClearing[]): R
           const ex = (lon2 - lon) * z.kmLon, ey = (lat2 - lat) * KM_LAT
           const len = Math.hypot(ex, ey)
           const mx = ((lon + lon2) / 2 - z.c.lon) * z.kmLon, my = ((lat + lat2) / 2 - z.c.lat) * KM_LAT
-          if (Math.hypot(mx, my) > z.outer + len / 2) continue
+          if (Math.hypot(mx, my) > z.reach + len / 2) continue
           const n = Math.ceil(len / STEP_KM)
           for (let k = 1; k < n; k++) dense.push([lon + ((lon2 - lon) * k) / n, lat + ((lat2 - lat) * k) / n])
           break
@@ -304,6 +368,10 @@ export function bendRiversAround(rivers: River[], clearings: RiverClearing[]): R
       // 2) push points out: distance d in [0, outer] maps to [target, outer] (monotonic, smooth)
       return dense.map(([lon, lat]): [number, number] => {
         for (const z of zones) {
+          if (z.c.rect) {
+            ;[lon, lat] = pushOutOfRect(z.c, lon, lat, z.target, z.outer)
+            continue
+          }
           const dx = (lon - z.c.lon) * z.kmLon, dy = (lat - z.c.lat) * KM_LAT
           const d = Math.hypot(dx, dy)
           if (d >= z.outer) continue
@@ -366,6 +434,7 @@ export function riverCarveDepth(
   const sx = (gw - 1) / (bounds.east - bounds.west)
   const sy = (gh - 1) / (bounds.north - bounds.south)
   const dry = keepDry.map((k) => ({
+    k,
     c: (k.lon - bounds.west) * sx,
     r: (bounds.north - k.lat) * sy,
     inner: (k.innerKm ?? k.radiusKm) * cellsPerKm,
@@ -379,7 +448,12 @@ export function riverCarveDepth(
       let keep = 1
       for (const d of dry) {
         const dist = Math.hypot(c - d.c, r - d.r)
-        if (dist < d.outer) keep = Math.min(keep, smooth(d.inner, d.outer, dist))
+        if (dist >= d.outer) continue
+        if (d.k.rect) {
+          // Rectangle: dry over the footprint itself, carving ramps in across the margin
+          const km = rectClearingDistanceKm(d.k, bounds.west + c / sx, bounds.north - r / sy)
+          if (km < d.k.rect.marginKm) keep = Math.min(keep, smooth(0, d.k.rect.marginKm, km))
+        } else keep = Math.min(keep, smooth(d.inner, d.outer, dist))
       }
       if (keep === 0) continue
       const hw = halfWidth[i]
