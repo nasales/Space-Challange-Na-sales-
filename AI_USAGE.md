@@ -15,3 +15,4 @@ Every agent adds one line per task.
 | 2026-11-14 | Claude Code (Opus 5.5) | Data | Block 2 (partial): gap warnings ("many gaps", "long gap") in analyze_trend output; annual mode dropped (plain pre-whitening has low power on 20 annual means) |
 | 2026-11-14 | Claude Code (Opus 5.5) | Data | Block 4: explain(trend, series) in pipeline/explain.py (deterministic plain-English facts for the AI checker), tests in pipeline/tests/test_explain.py |
 | 2026-11-14 | Claude Code (Opus 5.5) | Data | Block 5a: pipeline/compare_db.py CLI comparing analyze_trend with the DB trends in the JSON export (per-field tolerances for 4-decimal rounding), tests in pipeline/tests/test_compare_db.py |
+| 2026-11-14 | Claude Code (Opus 5.5) | Data | AGENTS.md: SYNC CHECK step to read open requests, "Open requests for me" report line, and new "Open requests between areas" section with Ivan's requests to Perry and Diego |
