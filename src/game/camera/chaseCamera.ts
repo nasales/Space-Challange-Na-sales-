@@ -14,6 +14,8 @@ const MIN_ZOOM = 0.7
 const MAX_ZOOM = 30
 /** Altura a la que mira la cámara sobre el suelo: el cuerpo del detective. */
 const LOOK_HEIGHT = 4.5
+/** An obstacle this much above the camera is a wall to stay in front of, not a roof to rise over. */
+const TALL_OBSTACLE = 20
 
 export function createChaseCamera(camera: THREE.PerspectiveCamera, dom: HTMLElement) {
   let zoom = 1.9 // distancia inicial: se ve bien al detective y lo que tiene delante
@@ -58,7 +60,17 @@ export function createChaseCamera(camera: THREE.PerspectiveCamera, dom: HTMLElem
     const back = BASE_DISTANCE * zoom * (1 + speed01 * 0.22)
     const up = BASE_HEIGHT * zoom * (1 + Math.max(0, zoom - 1) * 0.08) * (1 - speed01 * 0.2) * (1 + inspect * 0.9)
     const bx = Math.sin(camHeading), bz = Math.cos(camHeading) // "detrás" del coche
-    const want = new THREE.Vector3(car.x + bx * back, car.y + up, car.z + bz * back)
+    // Something much taller than the camera behind the detective (a monument): pull the camera in
+    // on his side instead of lifting it over the top, where it would end up stuck to the surface.
+    // Lower obstacles (house roofs) keep the old behaviour: the camera rises over them.
+    let reach = back
+    for (let d = 2; d < back; d += 2) {
+      if (obstacleAt(car.x + bx * d, car.z + bz * d) > car.y + up + TALL_OBSTACLE) {
+        reach = Math.max(0, d - 3)
+        break
+      }
+    }
+    const want = new THREE.Vector3(car.x + bx * reach, car.y + up, car.z + bz * reach)
     // Nunca por debajo del terreno ni dentro de una casa
     want.y = Math.max(want.y, heightAt(want.x, want.z) + 2, obstacleAt(want.x, want.z) + 3)
     // Que ninguna loma tape al coche: miramos varios puntos entre cámara y coche y,

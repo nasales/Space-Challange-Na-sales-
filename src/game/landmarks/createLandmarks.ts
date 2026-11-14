@@ -1,5 +1,6 @@
-// Monumentos del país: se construyen, se allana el terreno debajo de cada uno (como una explanada)
-// y se colocan sobre una losa de piedra. También dicen cuál tienes cerca y bloquean el paso del coche.
+// Country landmarks: each one is built, the terrain under it is flattened (like a plaza) and it
+// sits on a stone slab or its own garden. They also tell which one is nearby.
+// The detective can climb them like house roofs (see surfaceAt / bakeHeightMap).
 //
 // Orden de uso (el terreno se allana ANTES de crear su malla y su textura):
 //   const landmarks = createLandmarks(list)
@@ -52,6 +53,69 @@ interface Placed {
   sin: number
   halfW: number
   halfD: number
+  /** Height map of the monument's top surface (holder-local, see bakeHeightMap). */
+  heights: HeightMap
+}
+
+/** Cell size of the height maps (world units). */
+const HEIGHT_CELL = 1.5
+
+interface HeightMap {
+  cols: number
+  rows: number
+  /** Height above the holder origin of each cell (row-major from -halfD, -halfW); -Infinity = empty. */
+  data: Float32Array
+}
+
+/**
+ * Height of the highest surface of the monument (and its floor) over each cell of its footprint,
+ * in the holder's own frame (unrotated, world units, origin at the holder). Every triangle is
+ * rasterised onto the grid once at load time, so later lookups are a single array read.
+ * The detective uses it as ground, so he climbs monuments the same way he climbs house roofs.
+ */
+function bakeHeightMap(holder: THREE.Object3D, halfW: number, halfD: number): HeightMap {
+  const cols = Math.max(1, Math.ceil((halfW * 2) / HEIGHT_CELL))
+  const rows = Math.max(1, Math.ceil((halfD * 2) / HEIGHT_CELL))
+  const data = new Float32Array(cols * rows).fill(-Infinity)
+  holder.updateMatrixWorld(true)
+  const toHolder = new THREE.Matrix4().copy(holder.matrixWorld).invert()
+  const rel = new THREE.Matrix4()
+  const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3()
+  holder.traverse((o) => {
+    const m = o as THREE.Mesh
+    if (!m.isMesh) return
+    rel.multiplyMatrices(toHolder, m.matrixWorld)
+    const pos = m.geometry.getAttribute('position')
+    const index = m.geometry.index
+    const count = index ? index.count : pos.count
+    for (let t = 0; t + 2 < count; t += 3) {
+      const ia = index ? index.getX(t) : t, ib = index ? index.getX(t + 1) : t + 1, ic = index ? index.getX(t + 2) : t + 2
+      a.fromBufferAttribute(pos, ia).applyMatrix4(rel)
+      b.fromBufferAttribute(pos, ib).applyMatrix4(rel)
+      c.fromBufferAttribute(pos, ic).applyMatrix4(rel)
+      // Barycentric set-up in XZ; vertical triangles (walls) have no area and are skipped
+      const det = (b.z - c.z) * (a.x - c.x) + (c.x - b.x) * (a.z - c.z)
+      if (Math.abs(det) < 1e-6) continue
+      const c0 = Math.max(0, Math.floor((Math.min(a.x, b.x, c.x) + halfW) / HEIGHT_CELL))
+      const c1 = Math.min(cols - 1, Math.floor((Math.max(a.x, b.x, c.x) + halfW) / HEIGHT_CELL))
+      const r0 = Math.max(0, Math.floor((Math.min(a.z, b.z, c.z) + halfD) / HEIGHT_CELL))
+      const r1 = Math.min(rows - 1, Math.floor((Math.max(a.z, b.z, c.z) + halfD) / HEIGHT_CELL))
+      for (let r = r0; r <= r1; r++) {
+        const pz = -halfD + (r + 0.5) * HEIGHT_CELL
+        for (let col = c0; col <= c1; col++) {
+          const px = -halfW + (col + 0.5) * HEIGHT_CELL
+          const wa = ((b.z - c.z) * (px - c.x) + (c.x - b.x) * (pz - c.z)) / det
+          const wb = ((c.z - a.z) * (px - c.x) + (a.x - c.x) * (pz - c.z)) / det
+          const wc = 1 - wa - wb
+          if (wa < -1e-4 || wb < -1e-4 || wc < -1e-4) continue // cell centre outside the triangle
+          const y = wa * a.y + wb * b.y + wc * c.y
+          const i = r * cols + col
+          if (y > data[i]) data[i] = y
+        }
+      }
+    }
+  })
+  return { cols, rows, data }
 }
 
 export function createLandmarks(list: LandmarkData[]) {
@@ -90,7 +154,8 @@ export function createLandmarks(list: LandmarkData[]) {
     holder.add(model)
     group.add(holder)
     const { x, z } = lonLatToWorld(data.lon, data.lat)
-    placed.push({ data, holder, x, z, cos: Math.cos(angle), sin: Math.sin(angle), halfW, halfD })
+    const heights = bakeHeightMap(holder, halfW, halfD)
+    placed.push({ data, holder, x, z, cos: Math.cos(angle), sin: Math.sin(angle), halfW, halfD, heights })
   }
 
   /** Coordenadas de (x, z) en el sistema del monumento (sin giro, centrado). */
@@ -148,9 +213,22 @@ export function createLandmarks(list: LandmarkData[]) {
       for (const p of placed) p.holder.position.set(p.x, heightAt(p.x, p.z), p.z)
     },
 
-    /** ¿Este punto choca con algún monumento? */
-    blocks(x: number, z: number) {
-      return placed.some((p) => outside(p, x, z) === 0)
+    /**
+     * Height of the monuments' surface at (x, z), or -Infinity if there is none. It is part of the
+     * detective's ground (he climbs monuments like house roofs) and keeps the camera above them.
+     */
+    surfaceAt(x: number, z: number) {
+      let top = -Infinity
+      for (const p of placed) {
+        if (outside(p, x, z) > 0) continue
+        const { lx, lz } = local(p, x, z)
+        const { cols, rows, data } = p.heights
+        const col = Math.min(cols - 1, Math.max(0, Math.floor((lx + p.halfW) / HEIGHT_CELL)))
+        const row = Math.min(rows - 1, Math.max(0, Math.floor((lz + p.halfD) / HEIGHT_CELL)))
+        const h = data[row * cols + col]
+        if (h > -Infinity) top = Math.max(top, p.holder.position.y + h)
+      }
+      return top
     },
 
     /** Distancia desde (x, z) hasta el monumento más cercano (0 si está dentro de su planta). */

@@ -100,7 +100,7 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
         const clouds = createClouds({ minX: nw.x, maxX: se.x, minZ: nw.z, maxZ: se.z })
         scene.add(clouds.mesh)
 
-        landmarks.place(main.heightAt) // sobre sus explanadas (el detective no los puede atravesar)
+        landmarks.place(main.heightAt) // on their flattened plazas (the detective can climb them, like houses)
 
         // Pueblos y ciudades: casitas en las poblaciones reales. Cada punto se consulta en la
         // zona (Península o Canarias) que lo contiene
@@ -129,12 +129,14 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
         scene.add(scenery.group)
 
         // El detective: empieza en Madrid, mirando hacia la Puerta de Alcalá
-        // El "suelo" que pisa el detective: el terreno o, si está sobre una casa, su tejado.
-        // Así escala las casas igual que los escalones de las montañas (no chocan)
-        const surfaceAt = (x: number, z: number) => Math.max(main.heightAt(x, z), towns.surfaceAt(x, z))
+        // Ground under the detective: the terrain or, over a house or a monument, its roof.
+        // So he climbs houses and monuments like mountain steps (no collisions)
+        const surfaceAt = (x: number, z: number) => Math.max(main.heightAt(x, z), towns.surfaceAt(x, z), landmarks.surfaceAt(x, z))
+        // What the camera must stay above: house roofs and monuments
+        const obstacleAt = (x: number, z: number) => Math.max(towns.topAt(x, z), landmarks.surfaceAt(x, z))
         const ground: Ground = {
           heightAt: surfaceAt,
-          isDrivable: (x, z) => main.isExploredLand(x, z) && !landmarks.blocks(x, z) && !scenery.blocks(x, z),
+          isDrivable: (x, z) => main.isExploredLand(x, z) && !scenery.blocks(x, z),
         }
         const madrid = lonLatToWorld(-3.7038, 40.4168)
         const puerta = landmarks.positionOf('puerta-de-alcala') ?? madrid
@@ -150,7 +152,7 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
         const keyboard = createKeyboard()
         const chase = createChaseCamera(camera, renderer.domElement)
         // Solo en desarrollo: acceso desde la consola/Playwright para depurar
-        if (import.meta.env.DEV) Object.assign(window, { __game: { carState, camera, chase, ground, detective, renderer, scene, towns, houses, scenery, sceneryItems } })
+        if (import.meta.env.DEV) Object.assign(window, { __game: { carState, camera, chase, ground, detective, renderer, scene, towns, houses, scenery, sceneryItems, landmarks } })
 
         const fog = scene.fog as THREE.Fog
         const ink = createInkOutline(renderer) // contornos negros de cómic
@@ -186,7 +188,7 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
           dust.update(carState, surfaceAt, detective.stridePhase, dt)
           footprints.update(carState, surfaceAt, detective.stridePhase)
           magnifier.update(detective.inspect, detective.lensPosition(), carState.heading, surfaceAt, dt)
-          chase.update(carState, surfaceAt, dt, detective.inspect, towns.topAt)
+          chase.update(carState, surfaceAt, dt, detective.inspect, obstacleAt)
           clouds.update(dt)
           scenery.update(dt, carState.x, carState.z, camera.position, chase.distance)
           // La niebla y el plano cercano de la cámara se adaptan a la distancia:

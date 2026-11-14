@@ -5,6 +5,7 @@ import type { Kit } from '../kit'
 import { buildPuertaDeAlcala, buildPuertaDeAlcalaBase } from './puertaDeAlcala'
 import { buildAcueductoSegovia } from './acueductoSegovia'
 import { buildSagradaFamilia } from './sagradaFamilia'
+import { buildGiralda, buildGiraldaBase } from './giralda'
 
 export interface LandmarkModel {
   /** El monumento en sí (unidades del modelo, base en y = 0). */
@@ -22,4 +23,5 @@ export const LANDMARK_MODELS: Record<string, LandmarkModel> = {
   'puerta-de-alcala': { build: buildPuertaDeAlcala, base: buildPuertaDeAlcalaBase, margin: 3 },
   'acueducto-segovia': { build: buildAcueductoSegovia },
   'sagrada-familia': { build: buildSagradaFamilia },
+  giralda: { build: buildGiralda, base: buildGiraldaBase, margin: 6 },
 }

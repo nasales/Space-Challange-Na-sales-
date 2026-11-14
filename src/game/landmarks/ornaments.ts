@@ -168,3 +168,96 @@ export function bush(kit: Kit, size: number, leaf: number, trunk: number) {
   g.add(kit.mesh(new THREE.IcosahedronGeometry(size * 0.5, 1), leaf, 0, size * 0.75, 0))
   return g
 }
+
+/**
+ * Blind horseshoe arch (Islamic style): a flat arch-shaped plate facing +Z, base at y = 0.
+ * w: width at the springing line; h: height of the straight part. The arc is a bit more than
+ * half a circle, so it closes in at the bottom like a horseshoe. Total height = h + w * 0.93.
+ */
+export function horseshoeArch(kit: Kit, w: number, h: number, depth: number, color: number) {
+  const R = (w / 2) * 1.15
+  const t0 = Math.acos(w / 2 / R) // angle where the circle meets the jambs
+  const cy = h + R * Math.sin(t0)
+  const s = new THREE.Shape()
+  s.moveTo(-w / 2, 0)
+  s.lineTo(w / 2, 0)
+  s.lineTo(w / 2, h)
+  s.absarc(0, cy, R, -t0, Math.PI + t0, false)
+  s.lineTo(-w / 2, 0)
+  const geo = new THREE.ExtrudeGeometry(s, { depth, bevelEnabled: false, curveSegments: 10 })
+  geo.translate(0, 0, -depth / 2)
+  return kit.mesh(geo, color)
+}
+
+/**
+ * Sebka panel: lattice of diamonds in relief (Almohad brickwork), facing +Z, base at y = 0.
+ * Diamonds touch at their tips, so their outlines form a continuous diagonal net.
+ */
+export function sebkaPanel(kit: Kit, w: number, h: number, cols: number, rows: number, bar: number, depth: number, color: number) {
+  const cw = w / cols, ch = h / rows
+  const shapes: THREE.Shape[] = []
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const x = -w / 2 + cw * (c + 0.5), y = ch * (r + 0.5)
+      const outer = new THREE.Shape()
+      outer.moveTo(x, y - ch / 2)
+      outer.lineTo(x + cw / 2, y)
+      outer.lineTo(x, y + ch / 2)
+      outer.lineTo(x - cw / 2, y)
+      outer.closePath()
+      // Inner hole: same diamond shrunk so the frame is roughly `bar` thick
+      const k = Math.max(0.2, 1 - (bar * 2) / Math.min(cw, ch))
+      const hole = new THREE.Path()
+      hole.moveTo(x, y - (ch / 2) * k)
+      hole.lineTo(x - (cw / 2) * k, y)
+      hole.lineTo(x, y + (ch / 2) * k)
+      hole.lineTo(x + (cw / 2) * k, y)
+      hole.closePath()
+      outer.holes.push(hole)
+      shapes.push(outer)
+    }
+  }
+  const geo = new THREE.ExtrudeGeometry(shapes, { depth, bevelEnabled: false })
+  geo.translate(0, 0, -depth / 2)
+  return kit.mesh(geo, color)
+}
+
+/** Stone balustrade around a w x d rectangle: base rail, small balusters and a top rail. */
+export function balustrade(kit: Kit, w: number, d: number, h: number, color: number) {
+  const g = new THREE.Group()
+  const rail = h * 0.18, step = h * 0.55
+  for (const z of [-d / 2, d / 2]) {
+    g.add(kit.box(w, rail, rail * 1.6, color, 0, 0, z))
+    g.add(kit.box(w + rail, rail, rail * 2, color, 0, h - rail, z))
+  }
+  for (const x of [-w / 2, w / 2]) {
+    g.add(kit.box(rail * 1.6, rail, d, color, x, 0, 0))
+    g.add(kit.box(rail * 2, rail, d + rail, color, x, h - rail, 0))
+  }
+  const baluster = (x: number, z: number) =>
+    g.add(kit.mesh(new THREE.CylinderGeometry(rail * 0.4, rail * 0.65, h - rail * 2, 6), color, x, h / 2, z))
+  for (let x = -w / 2 + step; x < w / 2 - step / 2; x += step) for (const z of [-d / 2, d / 2]) baluster(x, z)
+  for (let z = -d / 2 + step; z < d / 2 - step / 2; z += step) for (const x of [-w / 2, w / 2]) baluster(x, z)
+  return g
+}
+
+/** Pinnacle / urn for corners: small pedestal, body and ball on top. */
+export function pinnacle(kit: Kit, h: number, color: number, ball = color) {
+  const g = new THREE.Group()
+  g.add(kit.box(h * 0.4, h * 0.3, h * 0.4, color))
+  g.add(kit.mesh(new THREE.CylinderGeometry(h * 0.08, h * 0.16, h * 0.45, 8), color, 0, h * 0.3 + h * 0.225, 0))
+  g.add(kit.mesh(new THREE.IcosahedronGeometry(h * 0.14, 1), ball, 0, h * 0.86, 0))
+  return g
+}
+
+/** Seville orange tree: trunk, round crown and a few oranges on its surface. */
+export function orangeTree(kit: Kit, size: number) {
+  const g = bush(kit, size, 0x2f9a45, 0x6b4426)
+  const cy = size * 0.75, r = size * 0.5
+  for (let i = 0; i < 7; i++) {
+    const a = i * 2.4, y = 0.55 - (i % 3) * 0.35 // spread around and up/down the crown
+    const ring = Math.sqrt(1 - y * y)
+    g.add(kit.mesh(new THREE.IcosahedronGeometry(size * 0.07, 0), 0xff8a1e, Math.cos(a) * ring * r, cy + y * r, Math.sin(a) * ring * r))
+  }
+  return g
+}
