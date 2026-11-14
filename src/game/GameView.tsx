@@ -54,6 +54,13 @@ function makeTexture(canvas: HTMLCanvasElement, renderer: THREE.WebGLRenderer) {
   return texture
 }
 
+// Loading bar weights follow the measured time of each step (about 10 s in total without a GPU):
+// data files 4 %, scene + world + monuments 11 %, terrain zones 73 % (map texture and mesh of the
+// mainland are most of it), sky + towns + scenery 8 %, detective and effects the rest.
+/** Part of the loading bar used by the terrain zones (the slowest step by far). */
+const ZONES_FROM = 0.15
+const ZONES_TO = 0.88
+
 /** Only the 3D canvas. The HUD and status messages live in src/ui, fed through the callbacks. */
 export default function GameView({ onStatus, onHud, onLensFocus, onProgress, focusLens = false, outfit, paused = false, completedCases }: GameViewProps) {
   const container = useRef<HTMLDivElement>(null)
@@ -90,13 +97,13 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
       })
       if (cancelled) throw CANCELLED
     }
-    // Data files: the first 35 % of the bar, one slice per file as it arrives
+    // Data files: the first 4 % of the bar, one slice per file as it arrives
     const FILES = 5
     let filesDone = 0
     const fetched = <T,>(promise: Promise<T>) =>
       promise.then((value) => {
         filesDone++
-        if (!cancelled) callbacks.current.onProgress?.((0.35 * filesDone) / FILES)
+        if (!cancelled) callbacks.current.onProgress?.((0.04 * filesDone) / FILES)
         return value
       })
     callbacks.current.onProgress?.(0)
@@ -104,23 +111,26 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
     Promise.all([fetched(loadCountryData(EXPLORED_COUNTRY)), fetched(loadWorldData()), fetched(loadLandmarks(EXPLORED_COUNTRY)), fetched(loadScenery(EXPLORED_COUNTRY)), fetched(loadRoads(EXPLORED_COUNTRY))])
       .then(async ([explored, world, landmarkList, sceneryRegions, roadList]) => {
         if (cancelled) return
-        await progress(0.36)
+        await progress(0.04)
         const country = world.countries.find((c) => c.id === EXPLORED_COUNTRY)!
         // The other countries: ground that no country outline covers goes to the nearest one
         const neighbours = world.countries.filter((c) => c !== country)
         const { renderer, scene, camera, dispose } = createScene(el)
         disposePartial = dispose
+        await progress(0.05)
 
         // Mundo gris sin explorar
         const worldTexture = makeTexture(buildWorldTexture(world), renderer)
+        await progress(0.09)
         const zoneBounds = explored.zones.map((z) => z.bounds)
         const worldMesh = createWorldTerrain(world, worldTexture, { country, zones: zoneBounds })
         scene.add(worldMesh)
+        await progress(0.11)
 
         // Monumentos: se construyen ya para poder allanar el terreno debajo de ellos
         const landmarks = createLandmarks(landmarkList)
         scene.add(landmarks.group)
-        await progress(0.4)
+        await progress(0.15)
 
         // País explorado: una maqueta por zona (p. ej. Península y Canarias).
         // Alturas suavizadas: las mismas para la textura y la malla, así encajan
@@ -134,20 +144,28 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
           water: ReturnType<typeof createRivers>
           roads: ReturnType<typeof createRoads>
         }[] = []
+        // Each zone gets a slice of the bar in proportion to its height grid (the mainland is most of the work)
+        const zoneCells = explored.zones.map((z) => z.heightWidth * z.heightHeight)
+        const totalCells = zoneCells.reduce((a, b) => a + b, 0) || 1
+        const zoneShare = zoneCells.map((c) => c / totalCells)
+        const zoneStart = zoneShare.map((_, i) => zoneShare.slice(0, i).reduce((a, b) => a + b, 0))
         for (const [i, z] of explored.zones.entries()) {
-          const zoneProgress = (part: number) => progress(0.4 + (0.35 * (i + part)) / explored.zones.length)
+          const zoneProgress = (part: number) => progress(ZONES_FROM + (ZONES_TO - ZONES_FROM) * (zoneStart[i] + zoneShare[i] * part))
           // Rivers: gaps closed, ends labelled (spring / mouth / confluence), then bent around monuments
           const zone = z.rivers ? { ...z, rivers: bendRiversAround(prepareRivers(z.rivers, z), clearings) } : z
           // Smoothed heights plus extra relief (slopes everywhere): same grid for texture and mesh
           const heights = addRelief(smoothHeights(zone.heights, zone.heightWidth, zone.heightHeight), zone.heightWidth, zone.heightHeight)
           landmarks.flattenTerrain(zone, heights) // explanadas bajo los monumentos
+          await zoneProgress(0.07)
           const textureWidth = Math.min(4096, zone.heightWidth * 2)
           const texture = makeTexture(buildToyMap(zone, heights, country, textureWidth, neighbours), renderer)
+          await zoneProgress(0.7)
           const terrain = createTerrain(zone, heights, country, texture, clearings, neighbours)
           scene.add(terrain.group)
+          await zoneProgress(0.92)
           const water = createRivers(zone.rivers, terrain) // animated water inside the carved channels
           scene.add(water.mesh)
-          await zoneProgress(0.6)
+          await zoneProgress(0.94)
           // Main roads: bridges over the rivers above, around the monuments, only on explored land
           const roads = createRoads(roadsInBounds(roadList, zone.bounds), {
             heightAt: terrain.heightAt,
@@ -176,7 +194,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
         const se = lonLatToWorld(mb.east + 3, mb.south - 3)
         const clouds = createClouds({ minX: nw.x, maxX: se.x, minZ: nw.z, maxZ: se.z })
         scene.add(clouds.mesh)
-        await progress(0.78)
+        await progress(0.89)
 
         landmarks.place(main.heightAt) // on their flattened plazas (the detective can climb them, like houses)
         // Featured cases: a floating "!" over each one (prototype, no interaction yet)
@@ -203,7 +221,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
         // Night lights of houses and landmarks: their own scene, drawn after the ink pass
         const nightLights = createNightLights()
         nightLights.scene.add(towns.lights, landmarks.lights)
-        await progress(0.85)
+        await progress(0.92)
 
         // Paisaje por regiones: olivares, viñedos, bosques, dehesa, palmeras y molinos (scenery.json)
         const sceneryItems = placeScenery(sceneryRegions, {
@@ -217,7 +235,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
         })
         const scenery = createScenery(sceneryItems)
         scene.add(scenery.group)
-        await progress(0.95)
+        await progress(0.96)
 
         // El detective: empieza en Madrid, mirando hacia la Puerta de Alcalá
         // Ground under the detective: the terrain or, over a house or a monument, its roof.
@@ -237,6 +255,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
         const detective = createDetective(outfitRef.current)
         detectiveRef.current = detective
         scene.add(detective.root)
+        await progress(0.965)
         // Rowing boat: he sits in it and rows on the shallow sea (along the coast and across to the islands)
         const boat = createRowBoat()
         scene.add(boat.root)
@@ -245,14 +264,17 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
         const dust = createDust()
         const footprints = createFootprints()
         scene.add(dust.mesh, footprints.group)
+        await progress(0.97)
         const keyboard = createKeyboard()
         const chase = createChaseCamera(camera, renderer.domElement)
+        await progress(0.975)
         chase.startIntro() // swoop from far above Spain down to the detective; control starts when it lands
         // Solo en desarrollo: acceso desde la consola/Playwright para depurar
         if (import.meta.env.DEV) Object.assign(window, { __game: { carState, camera, chase, ground, detective, boat, renderer, scene, day, nightLights, towns, houses, scenery, sceneryItems, landmarks, caseMarkers, main } })
 
         const fog = scene.fog as THREE.Fog
         const ink = createInkOutline(renderer) // contornos negros de cómic
+        await progress(0.98)
         let hudClock = HUD_INTERVAL
         // Pasa a la interfaz dónde está el detective y a qué velocidad va
         const updateHud = (turbo: boolean) => {
