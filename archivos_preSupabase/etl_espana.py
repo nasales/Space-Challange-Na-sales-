@@ -1,28 +1,29 @@
 """
-Earth System Trend Detective — ETL España → Supabase
-=====================================================
-1. Descarga (por streaming, solo el recorte de España) los productos mensuales de NASA:
-     - GLDAS-2.1 Noah mensual 0,25°   (GLDAS_NOAH025_M v2.1)   2000 → hoy
-     - GPM IMERG Final mensual 0,1°    (GPM_3IMERGM v07)        1998 → hoy
-     - MERRA-2 mensual 0,5°×0,625°     (M2TMNXSLV v5.12.4)      1980 → hoy
-2. Los lleva a una rejilla común de 0,25° (centros de GLDAS) y se queda SOLO con las
-   celdas de tierra (máscara de GLDAS): el mapa del juego no tiene mar.
-3. Guarda por celda la serie mensual y su climatología (12 medias, para gráficos).
-   Tendencias y significancia NO: las calcula el equipo de estadística y rellena
-   la tabla `trends`. (Hay un cálculo opcional con --with-trends, desactivado.)
-4. Sube todo a Supabase (o exporta JSON estático como plan B).
+Earth System Trend Detective — ETL Spain → Supabase
+====================================================
+1. Downloads (streaming, only the Spain subset) the monthly NASA products:
+     - GLDAS-2.1 Noah monthly 0.25°    (GLDAS_NOAH025_M v2.1)   2000 → today
+     - GPM IMERG Final monthly 0.1°    (GPM_3IMERGM v07)        1998 → today
+     - MERRA-2 monthly 0.5°×0.625°     (M2TMNXSLV v5.12.4)      1980 → today
+2. Moves them to a common 0.25° grid (GLDAS cell centres) and keeps ONLY the land
+   cells (GLDAS mask): the game map has no sea.
+3. Stores, per cell, the monthly series and its climatology (12 means, for charts).
+   Trends and significance are NOT computed here: the statistics team fills the
+   `trends` table (pipeline/fill_trends.py). There is an optional --with-trends
+   computation, used only as an independent reference for pipeline/compare_db.py.
+4. Uploads everything to Supabase (or exports static JSON as plan B).
 
-Requisitos:
-    pip install earthaccess xarray h5netcdf netCDF4 scipy numpy pymannkendall "psycopg[binary]"
-    Cuenta gratuita de NASA Earthdata (https://urs.earthdata.nasa.gov) y haber
-    autorizado la app "NASA GESDISC DATA ARCHIVE" en el perfil.
+Requirements:
+    pip install earthaccess xarray h5netcdf h5py netCDF4 scipy numpy pymannkendall "psycopg[binary]"
+    A free NASA Earthdata account (https://urs.earthdata.nasa.gov) with the
+    "NASA GESDISC DATA ARCHIVE" app authorized in the profile.
 
-Uso:
-    python etl_espana.py --export-dir export              # solo calcula y exporta JSON
+Usage:
+    python etl_espana.py --export-dir export              # compute and export JSON only
     SUPABASE_DB_URL="postgresql://..." python etl_espana.py --upload
-    python etl_espana.py --upload --only tair precip      # solo algunas variables
+    python etl_espana.py --upload --only tair precip      # only some variables
 
-Este script se ha escrito con ayuda de IA (Claude, Anthropic). Declararlo en el README.
+This script was written with AI help (Claude, Anthropic). Declared in AI_USAGE.md.
 """
 from __future__ import annotations
 
@@ -36,14 +37,14 @@ from pathlib import Path
 import numpy as np
 import xarray as xr
 
-GRID = 0.25  # grados; rejilla común (la de GLDAS)
+GRID = 0.25  # degrees; common grid (the GLDAS one)
 
-# Cajas (lon_min, lat_min, lon_max, lat_max)
+# Boxes (lon_min, lat_min, lon_max, lat_max)
 REGIONS = {
     "peninsula_baleares": (-9.5, 35.75, 4.5, 44.0),
     "canarias": (-18.25, 27.5, -13.25, 29.5),
 }
-MIN_MONTHS = 120  # mínimo 10 años de datos válidos para calcular tendencia
+MIN_MONTHS = 120  # at least 10 years of valid data to compute a trend
 
 
 @dataclass
@@ -56,9 +57,9 @@ class VarSpec:
     unit: str
     definition_en: str
     temporal_start: str
-    group: str | None = None   # grupo HDF5 (IMERG usa "Grid")
-    scale: float = 1.0         # multiplicar...
-    offset: float = 0.0        # ...y después sumar
+    group: str | None = None   # HDF5 group (IMERG uses "Grid")
+    scale: float = 1.0         # multiply...
+    offset: float = 0.0        # ...then add
     regrid: str = "nearest"    # "nearest" | "linear"
 
 
@@ -91,9 +92,9 @@ VARS = [
 ]
 
 
-# ---------------------------------------------------------------- rejilla ---
+# ------------------------------------------------------------------- grid ---
 def target_cells() -> list[dict]:
-    """Centros de celda de 0,25° dentro de cada región, con su cell_id global."""
+    """0.25° cell centres inside each region, with their global cell_id."""
     cells = []
     for region, (lon0, lat0, lon1, lat1) in REGIONS.items():
         rows = range(math.floor((lat0 + 90) / GRID), math.ceil((lat1 + 90) / GRID))
@@ -114,10 +115,10 @@ def union_bbox() -> tuple[float, float, float, float]:
     return (b[:, 0].min() - 1, b[:, 1].min() - 1, b[:, 2].max() + 1, b[:, 3].max() + 1)
 
 
-# ------------------------------------------------------------- descarga ---
+# --------------------------------------------------------------- download ---
 def fetch_dataset(specs: list[VarSpec], end: str, start: str | None = None) -> xr.Dataset:
-    """Abre cada fichero mensual por HTTPS una sola vez y se queda con el recorte
-    de España y las variables pedidas (todas del mismo producto)."""
+    """Opens each monthly file over HTTPS once and keeps the Spain subset and the
+    requested variables (all from the same product)."""
     import earthaccess
 
     s0 = specs[0]
@@ -127,43 +128,49 @@ def fetch_dataset(specs: list[VarSpec], end: str, start: str | None = None) -> x
         short_name=s0.short_name, version=s0.version,
         temporal=(start or s0.temporal_start, end), bounding_box=(lon0, lat0, lon1, lat1),
     )
-    print(f"[{s0.short_name}] {len(results)} ficheros mensuales")
+    print(f"[{s0.short_name}] {len(results)} monthly files")
     names = [s.nc_var for s in specs]
     parts = []
-    for i, f in enumerate(earthaccess.open(results)):
+    files = earthaccess.open(results)
+    for i in range(len(files)):
+        f = files[i]
         kw = {"group": s0.group} if s0.group else {}
         with xr.open_dataset(f, engine="h5netcdf", **kw) as ds:
             parts.append(ds[names].sel(lat=slice(lat0, lat1), lon=slice(lon0, lon1)).load())
+        # Close each remote file and drop the reference: otherwise every file keeps its
+        # read cache in memory (~14 MB per GLDAS file) until the whole product is read.
+        f.close()
+        files[i] = None
         if i % 24 == 0:
             print(f"  {s0.short_name}: {i + 1}/{len(results)}")
     return xr.concat(parts, dim="time").sortby("time")
 
 
 def land_cells(cells: list[dict]) -> list[dict]:
-    """El mapa del juego no tiene mar: nos quedamos con las celdas que GLDAS considera
-    tierra (las que tienen dato). Basta con un mes. Todas las variables, también
-    IMERG y MERRA-2, se calculan solo en estas celdas."""
+    """The game map has no sea: keep the cells that GLDAS considers land (the ones
+    with data). One month is enough. All variables, IMERG and MERRA-2 included,
+    are computed only on these cells."""
     gldas = next(s for s in VARS if s.short_name == "GLDAS_NOAH025_M")
     ds = fetch_dataset([gldas], end="2020-01-31", start="2020-01-01")
     grid = to_grid(prepare(ds[gldas.nc_var], gldas), cells, "nearest")
     has_data = grid.notnull().any("time").values
     land = [c for c, ok in zip(cells, has_data) if ok]
     for r in REGIONS:
-        print(f"Tierra en {r}: {sum(c['region'] == r for c in land)} celdas")
+        print(f"Land in {r}: {sum(c['region'] == r for c in land)} cells")
     return land
 
 
 def prepare(da: xr.DataArray, spec: VarSpec) -> xr.DataArray:
-    """Unidades, tiempo al primer día del mes y orden (time, lat, lon)."""
+    """Units, time set to the first day of the month, and (time, lat, lon) order."""
     da = da * spec.scale + spec.offset
     da = da.transpose("time", "lat", "lon")
     t = da["time"].values.astype("datetime64[M]")
     da = da.assign_coords(time=t.astype("datetime64[ns]"))
-    return da.groupby("time").mean()  # por si hubiera meses duplicados
+    return da.groupby("time").mean()  # in case of duplicated months
 
 
 def to_grid(da: xr.DataArray, cells: list[dict], method: str) -> xr.DataArray:
-    """Lleva la variable a los centros de celda: (time, cell)."""
+    """Moves the variable to the cell centres: (time, cell)."""
     lats = xr.DataArray([c["lat"] for c in cells], dims="cell")
     lons = xr.DataArray([c["lon"] for c in cells], dims="cell")
     if method == "linear":
@@ -173,14 +180,14 @@ def to_grid(da: xr.DataArray, cells: list[dict], method: str) -> xr.DataArray:
     return out.assign_coords(cell=[c["cell_id"] for c in cells])
 
 
-# ---------------------------------------------------------- estadística ---
+# ------------------------------------------------------------- statistics ---
 def trend_stats(values: np.ndarray, months: np.ndarray) -> dict | None:
-    """Tendencia sobre anomalías (sin ciclo estacional).
+    """Trend on anomalies (seasonal cycle removed).
 
-    - Pendiente de Sen con el tiempo real (tolera huecos).
-    - Mann-Kendall con pre-blanqueo: corrige la autocorrelación, que en series
-      mensuales infla la significancia.
-    - IC 95 % de la pendiente (Gilbert, 1987) corregido por autocorrelación.
+    - Sen slope on real time (tolerates gaps).
+    - Mann-Kendall with pre-whitening: corrects the autocorrelation that inflates
+      significance in monthly series.
+    - 95 % CI of the slope (Gilbert, 1987) corrected for autocorrelation.
     """
     import pymannkendall as mk
 
@@ -194,16 +201,16 @@ def trend_stats(values: np.ndarray, months: np.ndarray) -> dict | None:
     t_years = months.astype("datetime64[M]").astype(int) / 12.0
     y, t = anom[valid], t_years[valid]
 
-    # p-valor: Mann-Kendall con pre-blanqueo (Yue y Wang, 2002). Con series AR(1)
-    # simuladas como las nuestras mantiene ~5 % de falsos positivos; el test clásico
-    # da ~26 % y la variante Hamed-Rao de pymannkendall ~16 %.
+    # p-value: Mann-Kendall with pre-whitening (Yue and Wang, 2002). On simulated AR(1)
+    # series like ours it keeps ~5 % false positives; the classic test gives ~26 % and
+    # the Hamed-Rao variant in pymannkendall ~16 %.
     res = mk.pre_whitening_modification_test(y)
 
     i, j = np.triu_indices(len(y), k=1)
     slopes = np.sort((y[j] - y[i]) / (t[j] - t[i]))
     n_sl, n = len(slopes), len(y)
-    # IC 95 % de Sen (Gilbert, 1987) con la varianza inflada por la autocorrelación
-    # de lag 1 de los residuos: factor (1+rho)/(1-rho). Cobertura simulada: ~95 %.
+    # 95 % CI of Sen's slope (Gilbert, 1987) with the variance inflated by the lag-1
+    # autocorrelation of the residuals: factor (1+rho)/(1-rho). Simulated coverage: ~95 %.
     resid = y - np.median(slopes) * t
     resid = resid - resid.mean()
     rho = float(np.clip(np.corrcoef(resid[:-1], resid[1:])[0, 1], 0, 0.95))
@@ -229,7 +236,7 @@ def trend_stats(values: np.ndarray, months: np.ndarray) -> dict | None:
 
 
 def climatology(values: np.ndarray, months: np.ndarray) -> np.ndarray:
-    """12 medias mensuales (ene..dic). Descriptivo, para los gráficos."""
+    """12 monthly means (Jan..Dec). Descriptive, for the charts."""
     moy = months.astype("datetime64[M]").astype(int) % 12
     return np.array([np.nanmean(values[moy == m]) if np.any(~np.isnan(values[moy == m]))
                      else np.nan for m in range(12)])
@@ -242,7 +249,7 @@ def build_rows(spec: VarSpec, grid: xr.DataArray, with_trends: bool) -> tuple[li
     for k, cell_id in enumerate(grid["cell"].values):
         v = grid.isel(cell=k).values.astype(float)
         if np.all(np.isnan(v)):
-            continue  # celda sin ningún dato
+            continue  # cell without any data
         series_rows.append({
             "cell_id": int(cell_id), "var_id": spec.id,
             "start_month": str(months[0])[:10],
@@ -263,7 +270,7 @@ def build_rows(spec: VarSpec, grid: xr.DataArray, with_trends: bool) -> tuple[li
     return series_rows, trend_rows
 
 
-# ------------------------------------------------------------- salida ---
+# ----------------------------------------------------------------- output ---
 def upload(db_url: str, cells: list, specs: list, series: list, trends: list) -> None:
     import psycopg
 
@@ -290,7 +297,7 @@ def upload(db_url: str, cells: list, specs: list, series: list, trends: list) ->
              for r in series])
         if not trends:
             conn.commit()
-            print(f"Subido: {len(used)} celdas, {len(series)} series (sin tendencias)")
+            print(f"Uploaded: {len(used)} cells, {len(series)} series (no trends)")
             return
         cols = ["cell_id", "var_id", "period_start", "period_end", "n_months", "mean_value",
                 "slope_per_decade", "slope_ci_low", "slope_ci_high", "mk_tau", "p_value",
@@ -301,11 +308,11 @@ def upload(db_url: str, cells: list, specs: list, series: list, trends: list) ->
                 on conflict (cell_id, var_id) do update set {upd}""",
             [tuple(r[c] for c in cols) for r in trends])
         conn.commit()
-    print(f"Subido: {len(used)} celdas, {len(series)} series, {len(trends)} tendencias")
+    print(f"Uploaded: {len(used)} cells, {len(series)} series, {len(trends)} trends")
 
 
 def export_json(out: Path, cells: list, specs: list, series: list, trends: list) -> None:
-    """Plan B estático (GitHub Pages, Storage...): un JSON por celda + un JSON de tendencias."""
+    """Static plan B (GitHub Pages, Storage...): one JSON per cell + one JSON of trends."""
     (out / "cells").mkdir(parents=True, exist_ok=True)
     meta = {s.id: {"name_en": s.name_en, "unit": s.unit,
                    "source": f"NASA {s.short_name} v{s.version}",
@@ -320,17 +327,17 @@ def export_json(out: Path, cells: list, specs: list, series: list, trends: list)
         d["vars"][s["var_id"]] = {**s, "trend": tr.get((s["cell_id"], s["var_id"]))}
     for cid, d in by_cell.items():
         (out / "cells" / f"{cid}.json").write_text(json.dumps(d))
-    print(f"Exportado: {len(by_cell)} celdas en {out}")
+    print(f"Exported: {len(by_cell)} cells to {out}")
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--end", default="2026-10-31", help="último mes a pedir")
-    ap.add_argument("--only", nargs="*", help="ids de variables a procesar")
+    ap.add_argument("--end", default="2026-10-31", help="last month to request")
+    ap.add_argument("--only", nargs="*", help="ids of the variables to process")
     ap.add_argument("--upload", action="store_true")
     ap.add_argument("--export-dir", type=Path)
     ap.add_argument("--with-trends", action="store_true",
-                    help="calcular también tendencias (por defecto no: lo hace estadística)")
+                    help="also compute trends (off by default: statistics fills `trends`)")
     args = ap.parse_args()
 
     specs = [s for s in VARS if not args.only or s.id in args.only]
@@ -347,7 +354,7 @@ def main() -> None:
             s_rows, t_rows = build_rows(spec, grid, args.with_trends)
             all_series += s_rows
             all_trends += t_rows
-            print(f"[{spec.id}] {len(s_rows)} celdas con serie")
+            print(f"[{spec.id}] {len(s_rows)} cells with a series")
 
     if args.export_dir:
         export_json(args.export_dir, cells, specs, all_series, all_trends)

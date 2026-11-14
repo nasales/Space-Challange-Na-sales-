@@ -1,127 +1,139 @@
-# Contexto: subir los datos de NASA a Supabase
+# Brief: loading the NASA data into Supabase
 
-> **Para el Claude que lea esto:** vas a ayudar a la persona responsable de la base de datos a cargar datos de NASA en Supabase. Este documento y los dos archivos adjuntos (`supabase_schema.sql` y `etl_espana.py`) son todo el contexto. Las decisiones de abajo ya están tomadas por el equipo: no las rediseñes sin avisar, porque el frontend y estadística dependen de ellas. Si algo falla, arréglalo sobre estos archivos.
+> **For the agent reading this:** you are helping the database owner (Perry) load NASA data into Supabase. This document and the two files next to it (`supabase_schema.sql` and `etl_espana.py`) are the whole context. The decisions below were taken by the team: do not redesign them without asking, because the frontend and statistics depend on them. If something fails, fix it in these files.
 
-## 1. Situación
+## 1. Situation
 
-- **Evento:** NASA Space Apps Challenge 2026, sede de Salamanca, reto *"Be An Earth System Trend Detective!"*.
-- **Plazos:** pitch el domingo 15/11 a las 17:30; la entrega cierra el domingo 15/11 a las 23:59 (hora de Salamanca).
-- **Proyecto:** un juego web de detectives. El jugador conduce un coche de policía por un mapa 3D de España y para en un punto. Elige una variable y ve gráficos de su evolución, sin la conclusión. Escribe su conclusión y una IA la corrige.
-- **Stack:** Supabase (base de datos), Vite (frontend), Vercel (despliegue).
-- **Reparto:**
-  - **Tú (este chat):** cargar los datos en Supabase.
-  - **Un compañero:** Vite y Vercel.
-  - **Yeipi:** la interfaz.
-  - **Dos de estadística:** calculan las tendencias y la significancia y verifican los resultados.
+- **Event:** NASA Space Apps Challenge 2026, Salamanca site, challenge *"Be An Earth System Trend Detective!"*.
+- **Deadlines:** pitch on Sunday 15/11 at 17:30; submission closes on Sunday 15/11 at 23:59 (Salamanca time). Feature freeze on Sunday at 13:00.
+- **Project:** a web detective game. The player drives a police car over a 3D map of Spain and stops at a place, picks a variable and sees charts of its evolution, without the conclusion. The player writes a conclusion and an AI checks it.
+- **Stack:** Supabase (database), Vite (frontend), Vercel (deployment).
+- **Split:**
+  - **Perry (database owner):** load the series into Supabase and run the scripts that write to it.
+  - **Diego (statistics):** `pipeline/fill_trends.py`, which computes the trends that fill the `trends` table, and the featured cases in `data/cache/`.
+  - **Ivan (statistics):** `pipeline/trend.py` (`analyze_trend`, the official method) and `pipeline/compare_db.py`.
+  - **Yeipi:** the interface.
+  - **A teammate:** Vite and Vercel.
 
-## 2. Alcance de esta tarea
+## 2. Scope
 
-**Sí:**
-1. Crear el esquema en Supabase.
-2. Descargar de NASA las series mensuales de España.
-3. Cargarlas.
-4. Comprobar que la carga está completa y bien.
-5. Pasar al frontend lo que necesita para leerla.
+**Perry does:**
+1. Create the schema in Supabase. ✅ Done (2026-11-14).
+2. Download the monthly series for Spain from NASA and load them (`series`, `cells`, `variables`).
+3. Check that the load is complete and correct (section 6).
+4. Give the frontend what it needs to read the data (section 5, step 6).
+5. Run Diego's `fill_trends.py` on the JSON export and upload its rows to `trends`. Only Perry holds the database password, so Diego never needs it.
 
-**No:**
-- Ni tendencias, ni significancia, ni validación estadística: eso lo hacen los de estadística.
-- El script **no** rellena la tabla `trends`. Se queda vacía para ellos.
-- El cálculo opcional `--with-trends` existe, pero **no se usa**.
+**Not in this task:**
+- Trend method and statistical validation: that is statistics (Ivan + Diego), see `pipeline/README.md`.
+- The ETL does **not** fill `trends` in production. The official rows come from `fill_trends.py` (Ivan's `analyze_trend`).
+- `--with-trends` is used only to get an independent reference copy of the trends for Ivan's `compare_db.py` check. Those rows are overwritten by `fill_trends.py`.
 
-## 3. Decisiones ya tomadas
+## 3. Decisions already taken
 
-| Decisión | Valor |
+| Decision | Value |
 |---|---|
-| Zona | Península y Baleares (lon −9,5 a 4,5; lat 35,75 a 44) y Canarias (lon −18,25 a −13,25; lat 27,5 a 29,5) |
-| Mar | **No hay mar** en el mapa: solo celdas de tierra, según la máscara de GLDAS |
-| Rejilla | 0,25° (unos 28 km), la nativa de GLDAS. Estimación: ~1170 celdas en Península y Baleares y ~10 en Canarias |
-| Paso temporal | Mensual |
-| Fuente | Solo NASA, de GES DISC, con la librería `earthaccess` (necesita cuenta de Earthdata) |
+| Area | Peninsula and Balearic Islands (lon −9.5 to 4.5; lat 35.75 to 44) and Canary Islands (lon −18.25 to −13.25; lat 27.5 to 29.5) |
+| Sea | **No sea** on the map: only land cells, from the GLDAS mask |
+| Grid | 0.25° (about 28 km), native GLDAS grid. Measured: 1174 cells in the Peninsula and Balearics + 10 in the Canaries = 1184 |
+| Time step | Monthly |
+| Source | NASA only, from GES DISC, with the `earthaccess` library (needs an Earthdata account) |
 
-**Las 6 variables:**
+**The 6 variables:**
 
-| id | Variable | Producto NASA (short_name, versión) | Variable original | Unidad final | Desde | Paso a 0,25° |
+| id | Variable | NASA product (short_name, version) | Original variable | Final unit | From | To 0.25° |
 |---|---|---|---|---|---|---|
-| `tair` | Temperatura del aire | `GLDAS_NOAH025_M` 2.1 | `Tair_f_inst` | °C | 2000 | Nativa |
-| `wind` | Velocidad del viento | `GLDAS_NOAH025_M` 2.1 | `Wind_f_inst` | m/s | 2000 | Nativa |
-| `soilmoist` | Humedad del suelo 0–10 cm | `GLDAS_NOAH025_M` 2.1 | `SoilMoi0_10cm_inst` | kg/m² | 2000 | Nativa |
-| `evap` | Evapotranspiración | `GLDAS_NOAH025_M` 2.1 | `Evap_tavg` | mm/día | 2000 | Nativa |
-| `precip` | Precipitación | `GPM_3IMERGM` 07 | `precipitation` (grupo `Grid`) | mm/día | 1998 | Interpolación lineal desde 0,1° |
-| `t2m_long` | Temperatura a 2 m (serie larga) | `M2TMNXSLV` 5.12.4 | `T2M` | °C | 1980 | Punto más cercano desde 0,5° × 0,625° |
+| `tair` | Air temperature | `GLDAS_NOAH025_M` 2.1 | `Tair_f_inst` | °C | 2000 | Native |
+| `wind` | Wind speed | `GLDAS_NOAH025_M` 2.1 | `Wind_f_inst` | m/s | 2000 | Native |
+| `soilmoist` | Soil moisture 0–10 cm | `GLDAS_NOAH025_M` 2.1 | `SoilMoi0_10cm_inst` | kg/m² | 2000 | Native |
+| `evap` | Evapotranspiration | `GLDAS_NOAH025_M` 2.1 | `Evap_tavg` | mm/day | 2000 | Native |
+| `precip` | Precipitation | `GPM_3IMERGM` 07 | `precipitation` (group `Grid`) | mm/day | 1998 | Linear interpolation from 0.1° |
+| `t2m_long` | 2 m temperature (long series) | `M2TMNXSLV` 5.12.4 | `T2M` | °C | 1980 | Nearest point from 0.5° × 0.625° |
 
-**DOIs para citar:**
+**DOIs to cite:**
 - GLDAS: 10.5067/SXAVCZFAQLNO
 - IMERG: 10.5067/GPM/IMERG/3B-MONTH/07
 - MERRA-2: 10.5067/AP1B0BA5PD2K
 
-## 4. Cómo es la base de datos (`supabase_schema.sql`)
+## 4. The database (`supabase_schema.sql`)
 
-- `variables`: id, `name_en`, unidad, fuente y `definition_en`. Va en inglés porque lo ve el jugador.
-- `cells`: `cell_id`, lat, lon y región. Solo hay celdas de tierra.
-  - `cell_id = floor((lat+90)/0.25) * 1440 + floor((lon+180)/0.25)`.
-- `series`: una fila por celda y variable.
-  - `start_month`
-  - `values`: `real[]`, un valor por mes; `null` es que no hay dato.
-  - `climatology`: `real[12]`, las medias de enero a diciembre.
-- `trends`: vacía; la rellena estadística.
-- **Permisos:** RLS activo. Cualquiera puede leer, nadie puede escribir desde el navegador.
-- **Función `get_cell(p_lat, p_lon)`:** devuelve las variables de la celda de tierra más cercana (a menos de ~0,5°) y la distancia en `distance_km`. Un punto en mar abierto devuelve vacío. Mientras `trends` esté vacía, sus columnas salen a `null`.
+- `variables`: id, `name_en`, unit, source and `definition_en`. In English because the player sees them.
+- `cells`: `cell_id`, lat, lon and region. Land cells only.
+  - `cell_id = floor((lat+90)/0.25) * 1440 + floor((lon+180)/0.25)`. Salamanca = `753817`.
+- `series`: one row per cell and variable.
+  - `start_month`: date `YYYY-MM-01` of `values[1]`.
+  - `values`: `real[]`, one value per month; `null` = no data.
+  - `climatology`: `real[12]`, the January to December means.
+- `trends`: filled by `pipeline/fill_trends.py` (statistics), run by Perry.
+- **Permissions:** RLS on. Anyone can read; nobody can write from the browser.
+- **Function `get_cell(p_lat, p_lon)`:** returns the variables of the nearest land cell (within ~0.5°) and the distance in `distance_km`. A point in open sea returns nothing. While `trends` is empty, its columns come back as `null`.
 
-## 5. Pasos
+## 5. Steps
 
-1. **Cuenta de NASA Earthdata:** https://urs.earthdata.nasa.gov. En el perfil, *Applications → Authorized Apps*, autorizar **"NASA GESDISC DATA ARCHIVE"**.
-2. **Proyecto en Supabase** (plan gratuito, región de la UE). En el *SQL Editor*, pegar `supabase_schema.sql` y ejecutarlo.
-3. **Instalar las dependencias** (Python 3.10 o superior):
+1. **NASA Earthdata account:** https://urs.earthdata.nasa.gov. In the profile, *Applications → Authorized Apps*, authorize **"NASA GESDISC DATA ARCHIVE"**. Then save the credentials once:
    ```bash
-   pip install earthaccess xarray h5netcdf netCDF4 scipy numpy "psycopg[binary]"
+   python -c "import earthaccess; earthaccess.login(strategy='interactive', persist=True)"
    ```
-4. **Prueba pequeña:**
+2. **Supabase project** (free plan, EU region). In the *SQL Editor*, paste `supabase_schema.sql` and run it.
+3. **Install the dependencies** (Python 3.10 or later; tested on 3.14):
+   ```bash
+   pip install earthaccess xarray h5netcdf h5py netCDF4 scipy numpy pymannkendall "psycopg[binary]"
+   ```
+   `h5py` is required: recent `h5netcdf` versions no longer install it.
+4. **Small test:**
    ```bash
    python etl_espana.py --only tair --export-dir export
    ```
-   La primera vez pide el usuario y la contraseña de Earthdata. Primero lee un mes de GLDAS para la máscara de tierra y muestra "Tierra en … celdas". Después muestra "[tair] N celdas con serie".
-5. **Carga completa:**
+   It first reads one GLDAS month for the land mask and prints "Land in … cells", then "[tair] N cells with a series". About 30 minutes (≈10 monthly files per minute).
+5. **Full load** (several hours: ~1200 monthly files):
    ```bash
    export SUPABASE_DB_URL="postgresql://postgres.xxxx:PASSWORD@aws-0-eu-....pooler.supabase.com:5432/postgres"
    python etl_espana.py --upload --export-dir export
    ```
-   La cadena está en el botón **Connect** del proyecto. Usad la del **Session pooler**, porque la directa suele ir solo por IPv6.
-6. **Entregar al frontend** (en Vercel → *Settings → Environment Variables*):
-   - `VITE_SUPABASE_URL` = la Project URL.
-   - `VITE_SUPABASE_ANON_KEY` = la clave pública (anon o publishable).
+   Get the string from the project's **Connect** button → *Connection String* → Type `URI`, Method **Session pooler** (the direct one is usually IPv6 only). Replace `[YOUR-PASSWORD]` **including the brackets**. Keep it in `.env.local` at the repo root (ignored by git); never commit it.
+6. **Hand over to the frontend** (Vercel → *Settings → Environment Variables*):
+   - `VITE_SUPABASE_URL` = the Project URL.
+   - `VITE_SUPABASE_ANON_KEY` = the public key (anon or publishable).
 
-   **Nunca** la contraseña de la base de datos ni la clave `service_role`. Uso en el frontend:
+   **Never** the database password or the `service_role` key. Frontend usage:
    ```js
    const { data } = await supabase.rpc('get_cell', { p_lat: 40.96, p_lon: -5.66 })
    ```
-7. **Plan B:** la carpeta `export/` (un JSON por celda más `variables.json`) se copia en `public/data/` del proyecto Vite.
+7. **Trends:** give Diego the `export/` folder, or run his script yourself:
+   ```bash
+   py -m pipeline.fill_trends --export-dir export --out trends_rows.json --sql trends_upsert.sql --update-export
+   ```
+   Then paste `trends_upsert.sql` into the Supabase SQL editor (or upload the rows with the DB connection). Keep a copy of the export made with `--with-trends` if Ivan wants to run `compare_db.py`.
+8. **Plan B:** the `export/` folder (one JSON per cell plus `variables.json`) can be copied into `public/data/` of the Vite project. Featured cases must work offline from `data/cache/` (AGENTS.md rule 10).
 
-## 6. Comprobar que la carga está bien (solo la carga, no la estadística)
+## 6. Load checks (the load only, not the statistics)
 
-- [ ] `select var_id, count(*) from series group by var_id;` devuelve 6 variables, todas con el mismo número de celdas (unas 1180).
+- [ ] `select var_id, count(*) from series group by var_id;` returns 6 variables, all with the same number of cells (1184).
 - [ ] `select var_id, start_month, array_length(values,1) from series where cell_id = 753817;` (Salamanca):
-  - `tair`, `wind`, `soilmoist` y `evap` empiezan en 2000;
-  - `precip` empieza en 1998;
-  - `t2m_long` empieza en 1980.
-- [ ] `select * from get_cell(40.96, -5.66);` devuelve 6 filas, con la celda centrada en 40,875 / −5,625.
-- [ ] `get_cell(36.53, -6.29)` (Cádiz, en la costa) devuelve una celda cercana con `distance_km` pequeño; un punto en pleno mar devuelve vacío.
-- [ ] Las unidades tienen sentido: en Salamanca, una temperatura media de unos 12 °C (no unos 285, que serían Kelvin) y una precipitación de 1–2 mm/día.
-- [ ] En *Settings → Usage*, la base de datos ocupa decenas de MB, lejos del límite de 500 MB del plan gratuito.
+  - `tair`, `wind`, `soilmoist` and `evap` start in 2000;
+  - `precip` starts in 1998;
+  - `t2m_long` starts in 1980.
+- [ ] `select * from get_cell(40.96, -5.66);` returns 6 rows, with the cell centred at 40.875 / −5.625.
+- [ ] `get_cell(36.53, -6.29)` (Cádiz, on the coast) returns a nearby cell with a small `distance_km`; a point in open sea returns nothing.
+- [ ] Units make sense: in Salamanca, a mean temperature of about 12 °C (not about 285, which would be Kelvin) and precipitation of 1–2 mm/day.
+- [ ] In *Settings → Usage*, the database uses tens of MB, far from the 500 MB limit of the free plan.
 
-## 7. Lo que no está probado y puede fallar
+## 7. Test results and known risks
 
-- **La conexión real con NASA no se ha ejecutado nunca.** Lo que sí se probó con datos simulados y un Postgres local: el esquema, la carga, el filtro de tierra, `get_cell` y los permisos.
-- **Puntos probables de ajuste:**
-  - el nombre exacto de alguna variable: compruébalo con `print(ds.data_vars)`;
-  - las dimensiones de IMERG, que vienen como (time, lon, lat);
-  - la velocidad de lectura por HTTPS desde Europa. Si va muy lento, usa `earthaccess.download` y recorta en local.
-- **Canarias:** solo hay unas 10 celdas de tierra. La Gomera y El Hierro pueden no tener celda propia; en ese caso, `get_cell` devuelve la de la isla vecina.
-- **MERRA-2 en la costa:** es grueso, y su punto más cercano a una celda costera puede caer en el mar.
-- **Supabase gratis se pausa** tras 7 días sin actividad, y los jueces miran el proyecto en diciembre y enero. Por eso existe el plan B en JSON.
+Already tested against the real NASA servers (2026-11-14):
+- GLDAS `tair`: 1184 cells; Salamanca 2000-01 → 2026-07, 319 months, no gaps, mean 12.2 °C.
+- IMERG `precip` (3 months): 1184 cells; Salamanca 1.0–1.8 mm/day. Variable names and the (time, lon, lat) order work as written.
+- MERRA-2 `t2m_long` (3 months): 1184 cells; Salamanca 3.6–6.8 °C in winter 1980.
+- Memory: each remote file is closed after reading (it used to grow ~14 MB per file).
 
-## 8. Normas del reto que afectan a esta tarea
+Known risks:
+- **Canaries:** only 10 land cells. La Gomera and El Hierro may not have their own cell; then `get_cell` returns the one of the neighbouring island.
+- **MERRA-2 on the coast:** it is coarse, and its nearest point to a coastal cell may fall in the sea.
+- **Free Supabase pauses** after 7 days without activity, and the judges look at the project in December and January. That is why the JSON plan B exists.
 
-- Todo lo que vea el jugador, en inglés. `name_en` y `definition_en` ya lo están.
-- Hay que citar los datos de NASA (DOIs de arriba).
-- El script se escribió con ayuda de IA: declararlo en el README y en el campo "Use of SI".
-- No usar logos de NASA en la interfaz.
+## 8. Challenge rules that affect this task
+
+- Everything the player sees is in English. `name_en` and `definition_en` already are.
+- NASA data must be cited (DOIs above) in `REFERENCES.md`.
+- The script was written with AI help: declared in `AI_USAGE.md` and in the "Use of AI" field of the submission.
+- No NASA logos in the interface.
