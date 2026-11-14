@@ -32,7 +32,10 @@ import { createRivers } from './scene/createRivers'
 import { loadRoads, roadsInBounds } from './roads/roadData'
 import { createRoads } from './roads/createRoads'
 import { createCaseMarkers } from './cases/createCaseMarkers'
+import { createWitnesses } from './witness/createWitnesses'
+import { createDialogue, type DialogueScene } from './witness/dialogueCamera'
 import { CASES } from '../levels/data'
+import { WITNESSES } from '../shared/witness'
 import type { GameStatus, GameViewProps, HudState } from '../shared/events'
 import './GameView.css'
 
@@ -50,12 +53,14 @@ function makeTexture(canvas: HTMLCanvasElement, renderer: THREE.WebGLRenderer) {
 }
 
 /** Only the 3D canvas. The HUD and status messages live in src/ui, fed through the callbacks. */
-export default function GameView({ onStatus, onHud, onLensFocus, focusLens = false, paused = false, completedCases }: GameViewProps) {
+export default function GameView({
+  onStatus, onHud, onLensFocus, onDialogueAnchors, focusLens = false, paused = false, completedCases, dialogueCase = null, speaking = null,
+}: GameViewProps) {
   const container = useRef<HTMLDivElement>(null)
   // Latest callbacks (and pause flag), read from inside the animation loop without restarting the scene
-  const callbacks = useRef({ onStatus, onHud, onLensFocus, focusLens, paused, completedCases })
+  const callbacks = useRef({ onStatus, onHud, onLensFocus, onDialogueAnchors, focusLens, paused, completedCases, dialogueCase, speaking })
   useEffect(() => {
-    callbacks.current = { onStatus, onHud, onLensFocus, focusLens, paused, completedCases }
+    callbacks.current = { onStatus, onHud, onLensFocus, onDialogueAnchors, focusLens, paused, completedCases, dialogueCase, speaking }
   })
   const setStatus = (status: GameStatus) => callbacks.current.onStatus?.(status)
   const setHud = (hud: HudState) => callbacks.current.onHud?.(hud)
@@ -183,8 +188,56 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
         scene.add(dust.mesh, footprints.group)
         const keyboard = createKeyboard()
         const chase = createChaseCamera(camera, renderer.domElement)
+
+        // Witnesses of the featured cases, inside their case zones (src/shared/witness.ts)
+        const witnesses = createWitnesses(WITNESSES, caseMarkers, {
+          surfaceAt,
+          heightAt: main.heightAt,
+          isLand: main.isExploredLand,
+          blocked: (x, z, extra) => towns.blocks(x, z, extra) || scenery.blocks(x, z),
+          nearRiver: main.nearRiver,
+          nearRoad,
+        })
+        scene.add(witnesses.group)
+        const dialogue = createDialogue(camera, {
+          obstacleAt: (x, z) => Math.max(groundNoLandmarks(x, z), towns.topAt(x, z), landmarks.surfaceAt(x, z)),
+          surfaceAt,
+          canStand: (x, z) => ground.isDrivable(x, z) && !towns.blocks(x, z, 2) && !main.nearRiver(x, z, 2),
+          occluders: [landmarks.group],
+        })
+        // What the dialogue camera frames (reused every frame)
+        const talk: DialogueScene = {
+          detective: new THREE.Vector3(),
+          witness: new THREE.Vector3(),
+          detectiveTop: new THREE.Vector3(),
+          witnessTop: new THREE.Vector3(),
+        }
+        /** Poses of the pair for the dialogue camera (feet and points just above the fedora / the witness's head). */
+        const poseTalk = (w: NonNullable<typeof talkWith>) => {
+          detective.root.updateMatrixWorld(true)
+          w.witness.root.updateMatrixWorld(true)
+          talk.detective.set(carState.x, carState.y, carState.z)
+          talk.witness.copy(w.witness.root.position)
+          talk.detectiveTop.copy(detective.parts.hat.localToWorld(hatTop.set(0, 0.6, 0)))
+          talk.detectiveTop.y += 1.5
+          w.witness.headTop(talk.witnessTop, 1.5)
+        }
+        const hatTop = new THREE.Vector3()
+        let talkWith: ReturnType<typeof witnesses.get> // witness of the current (or last) dialogue
+        let talkClock = 0
+        // Dev only: drive the dialogue from the console / Playwright, e.g. __game.setDialogue('dana_valencia', 'witness')
+        const devDialogue: { active: boolean; caseId: string | null; speaking: 'detective' | 'witness' | null; anchors: unknown } = {
+          active: false, caseId: null, speaking: null, anchors: null,
+        }
         // Solo en desarrollo: acceso desde la consola/Playwright para depurar
-        if (import.meta.env.DEV) Object.assign(window, { __game: { carState, camera, chase, ground, detective, renderer, scene, towns, houses, scenery, sceneryItems, landmarks, caseMarkers, main } })
+        if (import.meta.env.DEV) {
+          Object.assign(window, {
+            __game: {
+              carState, camera, chase, ground, detective, renderer, scene, towns, houses, scenery, sceneryItems, landmarks, caseMarkers, main, witnesses, dialogue, devDialogue,
+              setDialogue: (caseId: string | null, speaking: 'detective' | 'witness' | null = null) => Object.assign(devDialogue, { active: true, caseId, speaking }),
+            },
+          })
+        }
 
         const fog = scene.fog as THREE.Fog
         const ink = createInkOutline(renderer) // contornos negros de cómic
@@ -225,15 +278,49 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
           const wantLens = !!callbacks.current.focusLens
           if (wantLens) lensFlying = true
           else lensInReported = false
+          // Witness dialogue: the detective walks up to the witness and the camera frames both;
+          // the keyboard is ignored until the camera is back on the chase view
+          const dev = import.meta.env.DEV && devDialogue.active
+          const dialogueId = (dev ? devDialogue.caseId : callbacks.current.dialogueCase) ?? null
+          const speaker = (dev ? devDialogue.speaking : callbacks.current.speaking) ?? null
+          const dialogueWitness = dialogueId ? witnesses.get(dialogueId) : undefined
+          if (dialogueWitness && (!dialogue.wanted || dialogueWitness !== talkWith)) {
+            talkWith = dialogueWitness
+            poseTalk(talkWith) // the stand spot is chosen from these on the first frame
+          }
+          dialogue.step(!!dialogueWitness, dt)
+          chase.lockZoom(dialogue.busy)
           // A case level is open (paused): same as the lens flight, the keyboard is ignored
-          const input = lensFlying || callbacks.current.paused ? { throttle: 0, steer: 0, turbo: false } : keyboard.read()
+          const input = dialogue.busy && talkWith
+            ? dialogue.drive(carState, talk, dt)
+            : lensFlying || callbacks.current.paused ? { throttle: 0, steer: 0, turbo: false } : keyboard.read()
           stepCar(carState, input, ground, dt)
           detective.setFocus(chase.stepFocus(wantLens, dt))
           detective.update(carState, dt)
+          // In a dialogue the detective looks at the witness and nods while he talks
+          if (dialogue.wanted && talkWith) {
+            talkClock += dt
+            const k = Math.min(1, dialogue.progress * 2)
+            const { head } = detective.parts
+            const toWitness = Math.atan2(-(talkWith.x - carState.x), -(talkWith.z - carState.z)) - carState.heading
+            const gaze = Math.max(-0.9, Math.min(0.9, Math.atan2(Math.sin(toWitness), Math.cos(toWitness))))
+            const nod = speaker === 'detective' ? Math.sin(talkClock * 8) * 0.07 + Math.sin(talkClock * 3.1) * 0.04 : 0
+            head.rotation.y += (gaze - head.rotation.y) * k
+            head.rotation.x += (-0.06 + nod - head.rotation.x) * k
+          }
           dust.update(carState, surfaceAt, detective.stridePhase, dt)
           footprints.update(carState, surfaceAt, detective.stridePhase)
           const lens = chase.focus > 0 ? { center: detective.lensPosition(), normal: detective.lensNormal(), radius: detective.lensRadius() } : null
           chase.update(carState, groundNoLandmarks, dt, detective.inspect, towns.topAt, landmarks.surfaceAt, lens)
+          witnesses.update(dt, carState.x, carState.z, {
+            caseId: dialogue.wanted ? (talkWith?.caseId ?? null) : null,
+            speaking: speaker,
+            witnessHeading: dialogue.witnessHeading,
+          })
+          if (dialogue.busy && talkWith) {
+            poseTalk(talkWith)
+            dialogue.applyCamera(talk)
+          }
           if (wantLens && chase.focus === 1 && !lensInReported) {
             lensInReported = true
             callbacks.current.onLensFocus?.('in')
@@ -264,6 +351,12 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
           camera.near = Math.max(0.05, d / 300)
           camera.far = d * 20 + 1000 * UNITS_PER_KM
           camera.updateProjectionMatrix()
+          // Speech bubble anchors: every frame once framed (only real changes are sent), then null
+          const anchors = dialogue.anchors(dialogue.busy && talkWith ? talk : null, renderer.domElement)
+          if (anchors !== undefined) {
+            callbacks.current.onDialogueAnchors?.(anchors)
+            if (import.meta.env.DEV) devDialogue.anchors = anchors
+          }
           sky.update(camera)
           lighting.update(detective.root.position, Math.max(40, Math.min(d * 1.6, 3000 * UNITS_PER_KM)))
           ink.render(scene, camera, fog.near, fog.near + (fog.far - fog.near) * 0.5)
@@ -297,6 +390,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
           lighting.dispose()
           clouds.dispose()
           caseMarkers.dispose()
+          witnesses.dispose()
           ink.dispose()
           dispose()
         }
