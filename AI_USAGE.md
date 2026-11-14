@@ -17,3 +17,4 @@ Every agent adds one line per task.
 | 2026-11-14 | Claude Code (Data agent, Diego) | Data | QA follow-ups: `--update-export` merges into trends.json instead of overwriting; `trend_from_db` fixes float32 p-value rounding at 0.05 (6 tests) |
 | 2026-11-14 | Claude Code (Data agent, Diego) | Data | Checked fill_trends end to end with Ivan's real `analyze_trend`; aligned the database trend label with `trend.py` `TEST_NAME` |
 | 2026-11-14 | Claude Code (Data agent, Diego) | Data | Answered Ivan's open requests in AGENTS.md; struck the dropped annual mode from `pipeline/README.md` |
+| 2026-11-14 | Claude Code (Opus 5.5) | Data | Block 3: tests/stats/test_diego_cross.py (Ivan asked and reviewed, AGENTS.md rule 3 changed accordingly; docs/agents/data.md, docs/agents/qa.md, pipeline/README.md aligned); scripts/check.sh falls back to python when python3 is the Windows Store alias |

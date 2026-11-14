@@ -13,19 +13,22 @@ skip() { echo "  [SKIP] $1"; }
 
 echo "== Team check =="
 
+# Python interpreter: python3 if it really runs (on Windows it can be the Microsoft Store alias), else python.
+if python3 -c "" >/dev/null 2>&1; then PY=python3; else PY=python; fi
+
 # 1. Data contract
 if ls data/cache/*.json >/dev/null 2>&1; then
-  if python3 scripts/validate_contract.py data/cache/*.json; then pass "data contract"; else fail "data contract"; fi
+  if $PY scripts/validate_contract.py data/cache/*.json; then pass "data contract"; else fail "data contract"; fi
 else skip "data contract (no data/cache/*.json yet)"; fi
 
 # 2. Statistics tests (human-owned)
 if [ -d tests/stats ]; then
-  if python3 -m pytest tests/stats -q; then pass "stats tests"; else fail "stats tests"; fi
+  if $PY -m pytest tests/stats -q; then pass "stats tests"; else fail "stats tests"; fi
 else skip "stats tests (no tests/stats yet)"; fi
 
 # 3. Other Python tests
 if [ -d tests ] && ls tests/*.py >/dev/null 2>&1; then
-  if python3 -m pytest tests -q --ignore=tests/stats; then pass "python tests"; else fail "python tests"; fi
+  if $PY -m pytest tests -q --ignore=tests/stats; then pass "python tests"; else fail "python tests"; fi
 fi
 
 # 4. JS/TS frontend: tests + build

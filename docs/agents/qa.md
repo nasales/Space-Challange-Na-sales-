@@ -6,7 +6,7 @@ You do **not** build features. You test and review every change before its autho
 1. Check out the branch and run `./scripts/check.sh --e2e`.
 2. Review the diff for:
    - files edited outside the author's area;
-   - any change to `tests/stats/` or `docs/contract.md` (block it unless it was approved);
+   - any change to `docs/contract.md` (block it unless it was approved), and any change to an existing test in `tests/stats/` (new tests are fine only if the human asked for them and reviewed them, AGENTS.md rule 3);
    - Spanish text, NASA logos/branding, secrets or API keys in code;
    - missing lines in `AI_USAGE.md` / `REFERENCES.md`.
 3. Run the AI-checker test bank (`tests/ai_bank/`): correct, wrong, ambiguous and nonsense conclusions. The verdicts must make sense and must use the statistical result.
