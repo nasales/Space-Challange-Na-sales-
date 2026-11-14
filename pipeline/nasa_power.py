@@ -14,6 +14,8 @@ from pathlib import Path
 API_URL = "https://power.larc.nasa.gov/api/temporal/monthly/point"
 ANNUAL_MONTH = "13"  # POWER adds an annual value as month "13"; it is not a month
 DEFAULT_FILL = -999.0
+# POWER unit codes -> units shown to the player. Unknown units are kept as given.
+DISPLAY_UNITS = {"C": "°C", "1": "fraction (0-1)", "mm/day": "mm/day"}
 
 
 def download(lat: float, lon: float, param: str, start: int, end: int, path: str | Path,
@@ -37,11 +39,12 @@ def parse(raw: dict, param: str) -> tuple[list[str], list[float | None], str]:
     """Raw POWER JSON -> (dates "YYYY-MM", values with None for fill values, units).
 
     Keys "YYYYMM" are sorted; the annual month "13" is dropped; the header fill value
-    (-999) becomes None.
+    (-999) becomes None. Units are mapped for display with DISPLAY_UNITS.
     """
     data = raw["properties"]["parameter"][param]
     fill = float(raw.get("header", {}).get("fill_value", DEFAULT_FILL))
     units = raw.get("parameters", {}).get(param, {}).get("units", "")
+    units = DISPLAY_UNITS.get(units, units)
 
     dates, values = [], []
     for key in sorted(data):
