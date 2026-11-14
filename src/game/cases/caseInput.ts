@@ -1,5 +1,5 @@
 // How the player opens a featured case: Enter while the car is near its marker, or a click on
-// the marker. Nothing happens while the game is paused (a UI overlay is open).
+// that marker (only while near: a click on a far marker does nothing). Nothing happens while the game is paused (a UI overlay is open).
 //
 // The Space menu prototype (src/ui/probe) swallows every key in the capture phase while it is
 // open, so Enter never reaches this listener then. Enter inside a text field is ignored too.
@@ -50,7 +50,7 @@ export function createCaseInput(o: CaseInputOptions) {
     const ndcX = ((e.clientX - rect.left) / rect.width) * 2 - 1
     const ndcY = -((e.clientY - rect.top) / rect.height) * 2 + 1
     const id = o.pick(ndcX, ndcY)
-    if (id) o.open(id)
+    if (id && id === o.nearCase()) o.open(id)
   }
 
   window.addEventListener('keydown', onKey)
