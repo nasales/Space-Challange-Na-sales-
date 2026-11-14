@@ -9,6 +9,7 @@ import MainMenu from './ui/menu/MainMenu'
 import Wardrobe from './ui/wardrobe/Wardrobe'
 import DbTest from './ui/dbtest/DbTest'
 import DbStatus from './ui/status/DbStatus'
+import PointProbe from './ui/probe/PointProbe'
 import type { GameStatus, HudState } from './shared/events'
 import { loadOutfit, type Outfit } from './shared/outfit'
 
@@ -68,6 +69,8 @@ function Game() {
     <main className="app">
       <GameView onStatus={setStatus} onHud={setHud} />
       <Hud status={status} hud={hud} />
+      {/* PROTOTYPE variable menu on Space (Perry); remove this line when the magnifying glass is ready */}
+      <PointProbe location={hud?.location ?? null} />
     </main>
   )
 }
