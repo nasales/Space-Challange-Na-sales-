@@ -14,8 +14,8 @@ const MIN_ZOOM = 0.7
 const MAX_ZOOM = 30
 /** Altura a la que mira la cámara sobre el suelo: el cuerpo del detective. */
 const LOOK_HEIGHT = 4.5
-/** An obstacle this much above the camera is a wall to stay in front of, not a roof to rise over. */
-const TALL_OBSTACLE = 20
+/** How far a monument may rise above the sight line before the camera moves in front of it. */
+const WALL_MARGIN = 1.5
 
 export function createChaseCamera(camera: THREE.PerspectiveCamera, dom: HTMLElement) {
   let zoom = 1.9 // distancia inicial: se ve bien al detective y lo que tiene delante
@@ -39,6 +39,9 @@ export function createChaseCamera(camera: THREE.PerspectiveCamera, dom: HTMLElem
   /**
    * @param inspect 0..1: cuánto está investigando el detective (la cámara sube a mirar por encima de su hombro)
    * @param obstacleAt altura de los obstáculos (tejados): la cámara no se mete dentro, pero no los usa para "ver" al detective
+   * @param wallAt surface of the monuments: the camera never goes inside them and, if one stands
+   *   between it and the detective, it moves in front of it instead of climbing over the top
+   * heightAt is the ground without monuments (terrain and house roofs).
    */
   const update = (
     car: CarState,
@@ -46,6 +49,7 @@ export function createChaseCamera(camera: THREE.PerspectiveCamera, dom: HTMLElem
     dt: number,
     inspect = 0,
     obstacleAt: (x: number, z: number) => number = () => -Infinity,
+    wallAt: (x: number, z: number) => number = () => -Infinity,
   ) => {
     zoom = damp(zoom, targetZoom, 6, dt)
     const speed01 = Math.min(1, Math.abs(car.speed) / TUNING.turboSpeed) // 0 parado, 1 turbo a tope
@@ -60,19 +64,21 @@ export function createChaseCamera(camera: THREE.PerspectiveCamera, dom: HTMLElem
     const back = BASE_DISTANCE * zoom * (1 + speed01 * 0.22)
     const up = BASE_HEIGHT * zoom * (1 + Math.max(0, zoom - 1) * 0.08) * (1 - speed01 * 0.2) * (1 + inspect * 0.9)
     const bx = Math.sin(camHeading), bz = Math.cos(camHeading) // "detrás" del coche
-    // Something much taller than the camera behind the detective (a monument): pull the camera in
-    // on his side instead of lifting it over the top, where it would end up stuck to the surface.
-    // Lower obstacles (house roofs) keep the old behaviour: the camera rises over them.
+    // Walk the sight line from the detective back to the camera: at the first piece of monument
+    // that rises above it, the camera stays just in front of it (on the detective's side) instead
+    // of climbing over the top, where it would shoot up or end up inside the building.
+    // House roofs keep the old behaviour: the camera rises over them.
     let reach = back
-    for (let d = 2; d < back; d += 2) {
-      if (obstacleAt(car.x + bx * d, car.z + bz * d) > car.y + up + TALL_OBSTACLE) {
-        reach = Math.max(0, d - 3)
+    for (let d = 1.5; d < back; d += 1.5) {
+      const lineY = car.y + 2 + (up - 2) * (d / back)
+      if (wallAt(car.x + bx * d, car.z + bz * d) > lineY + WALL_MARGIN) {
+        reach = Math.max(0, d - 2.5)
         break
       }
     }
     const want = new THREE.Vector3(car.x + bx * reach, car.y + up, car.z + bz * reach)
-    // Nunca por debajo del terreno ni dentro de una casa
-    want.y = Math.max(want.y, heightAt(want.x, want.z) + 2, obstacleAt(want.x, want.z) + 3)
+    // Never below the ground nor inside a house or a monument
+    want.y = Math.max(want.y, heightAt(want.x, want.z) + 2, wallAt(want.x, want.z) + 2, obstacleAt(want.x, want.z) + 3)
     // Que ninguna loma tape al coche: miramos varios puntos entre cámara y coche y,
     // si el terreno corta la línea de visión, subimos la cámara lo justo para verlo
     const carY = car.y + 2
@@ -90,6 +96,13 @@ export function createChaseCamera(camera: THREE.PerspectiveCamera, dom: HTMLElem
     offset.y = damp(offset.y, want.y, 8, dt)
     offset.z = damp(offset.z, want.z - car.z, 8, dt)
     camera.position.set(car.x + offset.x, offset.y, car.z + offset.z)
+    // Hard floor: while the smoothing catches up (e.g. right after the detective climbs a monument
+    // in one step), the camera never sinks into a monument or below the ground
+    const floor = Math.max(heightAt(camera.position.x, camera.position.z) + 1, wallAt(camera.position.x, camera.position.z) + 1.5)
+    if (camera.position.y < floor) {
+      camera.position.y = floor
+      offset.y = floor
+    }
 
     // Mira un poco por delante del coche (también como desplazamiento suavizado)
     const ahead = 6 + Math.abs(car.speed) * 0.15 + inspect * 5 // investigando: mira a la zona de la lupa

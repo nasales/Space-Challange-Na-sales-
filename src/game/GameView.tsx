@@ -132,8 +132,8 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
         // Ground under the detective: the terrain or, over a house or a monument, its roof.
         // So he climbs houses and monuments like mountain steps (no collisions)
         const surfaceAt = (x: number, z: number) => Math.max(main.heightAt(x, z), towns.surfaceAt(x, z), landmarks.surfaceAt(x, z))
-        // What the camera must stay above: house roofs and monuments
-        const obstacleAt = (x: number, z: number) => Math.max(towns.topAt(x, z), landmarks.surfaceAt(x, z))
+        // For the camera: ground without monuments (it treats monuments as walls, see chaseCamera)
+        const groundNoLandmarks = (x: number, z: number) => Math.max(main.heightAt(x, z), towns.surfaceAt(x, z))
         const ground: Ground = {
           heightAt: surfaceAt,
           isDrivable: (x, z) => main.isExploredLand(x, z) && !scenery.blocks(x, z),
@@ -188,7 +188,7 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
           dust.update(carState, surfaceAt, detective.stridePhase, dt)
           footprints.update(carState, surfaceAt, detective.stridePhase)
           magnifier.update(detective.inspect, detective.lensPosition(), carState.heading, surfaceAt, dt)
-          chase.update(carState, surfaceAt, dt, detective.inspect, obstacleAt)
+          chase.update(carState, groundNoLandmarks, dt, detective.inspect, towns.topAt, landmarks.surfaceAt)
           clouds.update(dt)
           scenery.update(dt, carState.x, carState.z, camera.position, chase.distance)
           // La niebla y el plano cercano de la cámara se adaptan a la distancia:

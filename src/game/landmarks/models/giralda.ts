@@ -6,7 +6,7 @@
 // Units are roughly metres; the main face looks toward +Z.
 import * as THREE from 'three'
 import type { Kit } from '../kit'
-import { balustrade, horseshoeArch, orangeTree, pinnacle, sebkaPanel, statue } from '../ornaments'
+import { balustrade, horseshoeArch, openStorey, orangeTree, pinnacle, sebkaPanel, statue } from '../ornaments'
 
 const BRICK = 0xd9a066 // ochre brick of the shaft
 const RELIEF = 0xb97a45 // darker brick of the sebka and frames
@@ -78,31 +78,6 @@ function shaftFace(kit: Kit) {
   return g
 }
 
-/**
- * One storey of the belfry: four walls with an arched opening each, white pilasters at the
- * corners and a cornice on top. Returns the group; the storey sits on y = 0.
- */
-function belfryStorey(kit: Kit, w: number, h: number, holeW: number, holeH: number, holeBottom: number, wall: number) {
-  const g = new THREE.Group()
-  const t = 0.8
-  const opening = [{ x: 0, width: holeW, height: holeH, arch: true, bottom: holeBottom }]
-  for (let k = 0; k < 4; k++) {
-    // Walls on ±Z are full width; walls on ±X fit between them (no overlapping faces)
-    const width = k % 2 === 0 ? w : w - t * 2
-    const f = kit.facade(width, h, t, opening, wall)
-    const face = new THREE.Group()
-    f.position.z = w / 2 - t / 2
-    face.add(f)
-    // Pilasters on both sides of the opening
-    for (const px of [-(holeW / 2 + 0.6), holeW / 2 + 0.6]) face.add(kit.box(0.5, h, 0.3, TRIM, px, 0, w / 2 + 0.1))
-    face.rotation.y = (k * Math.PI) / 2
-    g.add(face)
-  }
-  for (const x of [-w / 2, w / 2]) for (const z of [-w / 2, w / 2]) g.add(kit.box(0.9, h, 0.9, TRIM, x, 0, z)) // corners
-  g.add(kit.box(w * 0.45, h, w * 0.45, HOLE)) // dark core so the openings read as deep
-  return g
-}
-
 export function buildGiralda(kit: Kit): THREE.Group {
   const g = new THREE.Group()
 
@@ -133,7 +108,7 @@ export function buildGiralda(kit: Kit): THREE.Group {
 
   // ---- Bell body: big arches with a bell in each ----
   const BELL_W = 10.4, BELL_H = 11
-  const bells = belfryStorey(kit, BELL_W, BELL_H, 5, 5.6, 1.4, BRICK)
+  const bells = openStorey(kit, BELL_W, BELL_H, 5, 5.6, 1.4, BRICK, TRIM, HOLE)
   bells.position.y = y
   g.add(bells)
   for (let k = 0; k < 4; k++) {
@@ -158,7 +133,7 @@ export function buildGiralda(kit: Kit): THREE.Group {
 
   // ---- "Azucenas" body ----
   const AZ_W = 8, AZ_H = 8
-  const az = belfryStorey(kit, AZ_W, AZ_H, 3, 2.8, 1.6, TRIM)
+  const az = openStorey(kit, AZ_W, AZ_H, 3, 2.8, 1.6, TRIM, TRIM, HOLE)
   az.position.y = y
   g.add(az)
   y += AZ_H

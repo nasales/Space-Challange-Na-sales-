@@ -81,6 +81,24 @@ function bakeHeightMap(holder: THREE.Object3D, halfW: number, halfD: number): He
   const toHolder = new THREE.Matrix4().copy(holder.matrixWorld).invert()
   const rel = new THREE.Matrix4()
   const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3()
+  /** Writes y into the cell under (x, z) if it is higher than what is there. */
+  const splat = (x: number, z: number, y: number) => {
+    const col = Math.floor((x + halfW) / HEIGHT_CELL), row = Math.floor((z + halfD) / HEIGHT_CELL)
+    if (col < 0 || col >= cols || row < 0 || row >= rows) return
+    const i = row * cols + col
+    if (y > data[i]) data[i] = y
+  }
+  /**
+   * Walks an edge in half-cell steps. Thin pieces (columns, trunks, posts, ribs) and wall tops
+   * narrower than a cell never cover a cell centre, so without this the detective walks through them.
+   */
+  const edge = (p: THREE.Vector3, q: THREE.Vector3) => {
+    const steps = Math.max(1, Math.ceil(Math.hypot(q.x - p.x, q.z - p.z) / (HEIGHT_CELL * 0.5)))
+    for (let s = 0; s <= steps; s++) {
+      const t = s / steps
+      splat(p.x + (q.x - p.x) * t, p.z + (q.z - p.z) * t, p.y + (q.y - p.y) * t)
+    }
+  }
   holder.traverse((o) => {
     const m = o as THREE.Mesh
     if (!m.isMesh) return
@@ -93,7 +111,10 @@ function bakeHeightMap(holder: THREE.Object3D, halfW: number, halfD: number): He
       a.fromBufferAttribute(pos, ia).applyMatrix4(rel)
       b.fromBufferAttribute(pos, ib).applyMatrix4(rel)
       c.fromBufferAttribute(pos, ic).applyMatrix4(rel)
-      // Barycentric set-up in XZ; vertical triangles (walls) have no area and are skipped
+      edge(a, b)
+      edge(b, c)
+      edge(c, a)
+      // Barycentric fill in XZ; vertical triangles (walls) have no area: their edges did the job
       const det = (b.z - c.z) * (a.x - c.x) + (c.x - b.x) * (a.z - c.z)
       if (Math.abs(det) < 1e-6) continue
       const c0 = Math.max(0, Math.floor((Math.min(a.x, b.x, c.x) + halfW) / HEIGHT_CELL))
@@ -115,7 +136,34 @@ function bakeHeightMap(holder: THREE.Object3D, halfW: number, halfD: number): He
       }
     }
   })
-  return { cols, rows, data }
+  return { cols, rows, data: closeGaps(data, cols, rows) }
+}
+
+/**
+ * Morphological closing (3x3 max filter, then 3x3 min filter): fills gaps up to about two cells
+ * wide between merlons, balusters or ribs, so their tops form one walkable surface instead of a
+ * comb of spikes that makes the detective hop up and down. Larger shapes keep their outline.
+ */
+function closeGaps(src: Float32Array, cols: number, rows: number) {
+  const pass = (from: Float32Array, pick: (a: number, b: number) => number, start: number, outside: number) => {
+    const out = new Float32Array(from.length)
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        let v = start
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            const rr = r + dr, cc = c + dc
+            // Outside the grid is ignored (it neither spreads nor eats the footprint edge)
+            const n = rr < 0 || rr >= rows || cc < 0 || cc >= cols ? outside : from[rr * cols + cc]
+            v = pick(v, n)
+          }
+        }
+        out[r * cols + c] = v
+      }
+    }
+    return out
+  }
+  return pass(pass(src, Math.max, -Infinity, -Infinity), Math.min, Infinity, Infinity)
 }
 
 export function createLandmarks(list: LandmarkData[]) {

@@ -2,6 +2,7 @@
 // Lleva la cuenta de geometrías y materiales para poder liberarlos después.
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
+import { ConvexGeometry } from 'three/examples/jsm/geometries/ConvexGeometry.js'
 import { toonMaterial } from '../scene/toonGradient'
 
 /** Hueco de una fachada: rectangular o en arco (medio punto). */
@@ -14,6 +15,61 @@ export interface Opening {
   arch?: boolean
   /** altura a la que empieza el hueco (0 = suelo de la fachada) */
   bottom?: number
+}
+
+/** Bevel of the chunky boxes, as a fraction of their smallest side (cartoon toy look). */
+const BEVEL = 0.14
+const MAX_BEVEL = 1.5
+
+/**
+ * Box with bevelled edges and corners (44 triangles instead of 12): soft, chunky "toy" edges
+ * that catch the cel light and give the ink outline a rounder silhouette. Centred at the origin.
+ */
+const chamferCache = new Map<string, THREE.BufferGeometry>()
+function chamferBox(w: number, h: number, d: number) {
+  const r = Math.min(MAX_BEVEL, Math.min(w, h, d) * BEVEL)
+  if (r < 0.03) return new THREE.BoxGeometry(w, h, d)
+  const key = `${w.toFixed(3)},${h.toFixed(3)},${d.toFixed(3)}`
+  let geo = chamferCache.get(key)
+  if (!geo) {
+    const pts: THREE.Vector3[] = []
+    const hw = w / 2, hh = h / 2, hd = d / 2
+    for (const sx of [-1, 1]) {
+      for (const sy of [-1, 1]) {
+        for (const sz of [-1, 1]) {
+          pts.push(
+            new THREE.Vector3(sx * (hw - r), sy * hh, sz * (hd - r)),
+            new THREE.Vector3(sx * hw, sy * (hh - r), sz * (hd - r)),
+            new THREE.Vector3(sx * (hw - r), sy * (hh - r), sz * hd),
+          )
+        }
+      }
+    }
+    geo = new ConvexGeometry(pts)
+    chamferCache.set(key, geo)
+  }
+  return geo.clone()
+}
+
+/** Small deterministic pseudo-random numbers (same model every time). */
+export function seeded(seed: number) {
+  let s = seed * 9301 + 49297
+  return () => {
+    s = (s * 9301 + 49297) % 233280
+    return s / 233280
+  }
+}
+
+/**
+ * Hand-drawn wobble: a tiny tilt and squash so towers and spires are not ruler-straight,
+ * like in a cartoon. Deterministic for a given seed.
+ */
+export function wonk<T extends THREE.Object3D>(obj: T, seed: number, amount = 0.025): T {
+  const rand = seeded(seed)
+  obj.rotation.x += (rand() - 0.5) * amount
+  obj.rotation.z += (rand() - 0.5) * amount
+  obj.scale.y *= 1 + (rand() - 0.5) * amount * 2
+  return obj
 }
 
 export function createKit() {
@@ -35,8 +91,27 @@ export function createKit() {
     return m
   }
 
+  /** Chunky bevelled box; y = height of its base. */
   const box = (w: number, h: number, d: number, color: number, x = 0, y = 0, z = 0) =>
-    mesh(new THREE.BoxGeometry(w, h, d), color, x, y + h / 2, z) // y = altura de la base
+    mesh(chamferBox(w, h, d), color, x, y + h / 2, z)
+
+  /** Sharp flat box for thin panels laid on a façade (windows, glass, plaques); y = base. */
+  const slab = (w: number, h: number, d: number, color: number, x = 0, y = 0, z = 0) =>
+    mesh(new THREE.BoxGeometry(w, h, d), color, x, y + h / 2, z)
+
+  /**
+   * Tapered block (wider at the feet than at the top), base at y. Cartoon towers and walls stand
+   * on wide feet. wb x db: bottom size; wt x dt: top size.
+   */
+  const taper = (wb: number, db: number, wt: number, dt: number, h: number, color: number, x = 0, y = 0, z = 0) => {
+    const pts: THREE.Vector3[] = []
+    for (const sx of [-1, 1]) {
+      for (const sz of [-1, 1]) {
+        pts.push(new THREE.Vector3((sx * wb) / 2, 0, (sz * db) / 2), new THREE.Vector3((sx * wt) / 2, h, (sz * dt) / 2))
+      }
+    }
+    return mesh(new ConvexGeometry(pts), color, x, y, z)
+  }
 
   /**
    * Fachada con huecos de verdad: se dibuja la silueta (con agujeros en arco o rectangulares)
@@ -121,7 +196,7 @@ export function createKit() {
     materials.forEach((m) => m.dispose())
   }
 
-  return { mat, mesh, box, facade, pediment, merge, dispose }
+  return { mat, mesh, box, slab, taper, facade, pediment, merge, dispose }
 }
 
 export type Kit = ReturnType<typeof createKit>

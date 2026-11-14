@@ -1,6 +1,7 @@
 // Detective noir corriendo (personaje original, estilo chibi de cabeza grande).
-// Todo de negro "rollo superhéroe": fedora, gabardina, guantes y antifaz, con bufanda roja que
-// ondea al correr y cinturón dorado. Cejas serias y una lupa en la mano.
+// Classic noir look: beige double-breasted trench coat with belt, brown fedora with a dark band,
+// leather gloves, an expressive face (big eyes, thick brows, a confident smirk), a red scarf
+// whose two tails flow behind like cloth, and a magnifying glass in the hand.
 // Mira hacia -Z (el "norte" del mundo cuando no está girado), igual que hacía el coche.
 //
 // Jerarquía:  root (posición y giro) → tilt (un poco de inclinación del terreno)
@@ -13,25 +14,26 @@ import { createSquash } from '../car/createSquash'
 import { DETECTIVE_SCALE } from './detectiveSize'
 
 
-// Todo negro "de superhéroe", con un solo acento de color: bufanda roja y cinturón dorado.
-// Negros algo azulados (no negro puro) para que se siga notando el sombreado cartoon.
-const COAT = 0x2a2833 // gabardina negra
-const COAT_DARK = 0x1c1a23 // cuello y faldones
-const TROUSERS = 0x23212b
-const SHOES = 0x121116
-const GLOVES = 0x23212b
+// Classic noir palette: tan trench coat, brown hat and leather, dark trousers, red scarf accent.
+const COAT = 0xd2a868 // beige trench coat
+const COAT_DARK = 0xb08548 // collar, lapels and coat tails
+const TROUSERS = 0x3a3f58
+const SHOES = 0x4a3020
+const GLOVES = 0x6b4126 // brown leather
 const SKIN = 0xffcfa0
 const NOSE = 0xffa978
-const HAIR = 0x15131a
-const HAT = 0x24222c
-const HAT_BAND = 0x121116
-const MASK = 0x121116 // antifaz
-const EYES = 0xffffff // ojos blancos del antifaz, como en los cómics de superhéroes
-const DARK = 0x121116
+const HAIR = 0x4a2f1f
+const HAT = 0x7a5235 // brown fedora
+const HAT_BAND = 0x2b2540
+const EYES = 0xffffff
+const PUPIL = 0x2b2540
+const DARK = 0x2b2540
+const BROWS = 0x3b2516
 const GOLD = 0xf2c14e
-const BELT = GOLD
-const BUCKLE = 0xffe28a
+const BELT = 0x9a7040 // coat belt, same fabric a bit darker
+const BUCKLE = GOLD
 const SCARF = 0xe5322d // bufanda roja
+const SCARF_DARK = 0xb8231f // fringe at the scarf ends
 /** Por debajo de esta velocidad se considera que está parado. */
 const STILL_SPEED = 0.8
 /** Segundos parado antes de sacar la lupa. */
@@ -39,7 +41,7 @@ const INSPECT_DELAY = 0.35
 /** Rapidez del barrido de la lupa de un lado a otro (rad/s). */
 const SWEEP_SPEED = 1.4
 /** Intensidad de la sombra violeta en el personaje (1 = como el resto de objetos). */
-const DETECTIVE_SHADOW = 0.35
+const DETECTIVE_SHADOW = 0.55
 const GLASS = 0xbdf3ff
 const WOOD = 0x7a4a2c
 
@@ -88,7 +90,9 @@ export function createDetective() {
   add(body, new THREE.CylinderGeometry(0.4, 0.52, 0.95, 12), COAT, 0, HIP + 0.47, 0)
   add(body, new THREE.CylinderGeometry(0.53, 0.53, 0.12, 12), BELT, 0, HIP + 0.25, 0)
   box(body, 0.16, 0.12, 0.05, BUCKLE, 0, HIP + 0.25, -0.53) // hebilla
-  for (const y of [HIP + 0.5, HIP + 0.7]) ball(body, 0.045, DARK, 0.12, y, -0.46)
+  // Double-breasted: two columns of buttons
+  for (const y of [HIP + 0.48, HIP + 0.7]) for (const x of [-0.13, 0.13]) ball(body, 0.05, DARK, x, y, -0.45 + (y - HIP) * 0.04)
+  for (const side of [-1, 1]) box(body, 0.16, 0.05, 0.3, COAT_DARK, side * 0.42, HIP + 0.92, 0) // epaulettes
   for (const side of [-1, 1]) {
     const collar = box(body, 0.34, 0.32, 0.1, COAT_DARK, side * 0.22, HIP + 1.0, -0.2)
     collar.rotation.set(-0.25, side * 0.6, side * -0.25) // levantado y abierto, muy noir
@@ -113,12 +117,23 @@ export function createDetective() {
   })
 
   // ---- Bufanda roja: vuelta al cuello y dos puntas que ondean detrás al correr ----
-  add(body, new THREE.TorusGeometry(0.33, 0.1, 8, 16).rotateX(Math.PI / 2), SCARF, 0, SHOULDER + 0.02, 0)
-  const scarfTails = [-1, 1].map((side) => {
-    const tail = pivot(body, side * 0.1, SHOULDER, 0.32)
-    box(tail, 0.17, 0.62, 0.05, SCARF, 0, -0.31, 0)
-    tail.rotation.y = side * 0.2
-    return tail
+  // Each tail is a chain of segments hanging from the back of the neck, outside the coat, so it
+  // never cuts through the body; every segment follows the previous one with a delay, like cloth.
+  add(body, new THREE.TorusGeometry(0.36, 0.13, 8, 18).rotateX(Math.PI / 2), SCARF, 0, SHOULDER + 0.02, 0)
+  const SEG = 0.26
+  const scarfTails = [-1, 1].map((side, t) => {
+    const segments: THREE.Group[] = []
+    let parent: THREE.Object3D = pivot(body, side * 0.12, SHOULDER - 0.02, 0.46)
+    const count = t === 0 ? 3 : 2 // two tails of different length
+    for (let i = 0; i < count; i++) {
+      const seg = pivot(parent, 0, i === 0 ? 0 : -SEG, 0)
+      box(seg, 0.2 - i * 0.015, SEG + 0.02, 0.06, SCARF, 0, -SEG / 2, 0)
+      segments.push(seg)
+      parent = seg
+    }
+    box(parent, 0.19, 0.06, 0.065, SCARF_DARK, 0, -SEG - 0.02, 0) // fringe
+    segments[0].rotation.y = side * 0.15
+    return segments
   })
   const lupa = pivot(arms[1], 0, -0.75, -0.05)
   add(lupa, new THREE.CylinderGeometry(0.04, 0.05, 0.36, 8), WOOD, 0, -0.16, 0) // mango
@@ -130,18 +145,19 @@ export function createDetective() {
   const head = pivot(body, 0, SHOULDER + 0.05, 0)
   ball(head, 0.55, SKIN, 0, 0.5, 0)
   ball(head, 0.14, NOSE, 0, 0.42, -0.54)
-  // Antifaz: una banda negra que rodea la parte delantera de la cabeza a la altura de los ojos,
-  // con dos ojos blancos achinados (cara de "aquí pasa algo")
-  const mask = new THREE.CylinderGeometry(0.575, 0.575, 0.24, 24, 1, true, Math.PI - 1.45, 2.9)
-  add(head, mask, MASK, 0, 0.6, 0)
+  // Big cartoon eyes (white with a dark pupil and a highlight), thick brows with one raised
+  // ("hmm, interesting...") and a confident lopsided smirk
   for (const side of [-1, 1]) {
-    const eye = ball(head, 0.09, EYES, side * 0.2, 0.6, -0.54)
-    eye.scale.set(1.2, 0.7, 0.35)
-    eye.rotation.z = -side * 0.35
-    const brow = box(head, 0.26, 0.07, 0.07, DARK, side * 0.2, 0.76, -0.5)
-    brow.rotation.z = side * 0.3 // cejas fruncidas, inclinadas hacia dentro
+    const eye = ball(head, 0.13, EYES, side * 0.2, 0.6, -0.48)
+    eye.scale.set(0.9, 1.15, 0.5)
+    const pupil = ball(head, 0.07, PUPIL, side * 0.19, 0.58, -0.545)
+    pupil.scale.set(1, 1.2, 0.5)
+    ball(head, 0.025, EYES, side * 0.19 + 0.03, 0.62, -0.575) // highlight
+    const brow = box(head, 0.28, 0.08, 0.08, BROWS, side * 0.21, side > 0 ? 0.82 : 0.78, -0.47)
+    brow.rotation.z = side > 0 ? -0.15 : 0.3 // left brow frowns, right brow is raised
   }
-  box(head, 0.2, 0.04, 0.04, DARK, 0.05, 0.24, -0.5) // boca torcida
+  const smirk = box(head, 0.22, 0.045, 0.05, DARK, 0.05, 0.25, -0.5)
+  smirk.rotation.z = 0.18
   // Pelo: casquete oscuro en la nuca y las sienes (si no, visto desde atrás parece calvo)
   const hair = ball(head, 0.56, HAIR, 0, 0.56, 0.08)
   hair.scale.set(1.02, 0.78, 1)
@@ -153,7 +169,8 @@ export function createDetective() {
   const hat = pivot(head, 0, 0.88, 0)
   add(hat, new THREE.CylinderGeometry(0.78, 0.78, 0.06, 20), HAT, 0, 0, 0)
   add(hat, new THREE.CylinderGeometry(0.46, 0.52, 0.42, 16), HAT, 0, 0.23, 0)
-  add(hat, new THREE.CylinderGeometry(0.53, 0.53, 0.1, 16), HAT_BAND, 0, 0.07, 0)
+  add(hat, new THREE.CylinderGeometry(0.53, 0.53, 0.12, 16), HAT_BAND, 0, 0.08, 0)
+  add(hat, new THREE.BoxGeometry(0.08, 0.1, 0.6), HAT_BAND, 0, 0.45, 0) // dent on the crown
   hat.rotation.x = -0.12 // calado hacia delante
 
   // ---- Animación ----
@@ -197,11 +214,16 @@ export function createDetective() {
     // Faldones: vuelan hacia atrás y aletean
     for (const [i, f] of flaps.entries()) f.rotation.x = -(0.15 + run * 0.6 + sprint * 0.6) + Math.sin(phase * 2 + i) * 0.15 * run
     front.rotation.x = -swing * 0.3 * run
-    // Bufanda: las puntas se levantan hacia atrás con la velocidad y ondean (y se mecen un poco parado)
-    for (const [i, t] of scarfTails.entries()) {
-      const wave = Math.sin(time * (3 + run * 9) + i * 1.3)
-      t.rotation.x = -(0.1 + run * 0.9 + sprint * 0.6) + wave * (0.08 + 0.25 * run)
-      t.rotation.z = (i ? 1 : -1) * (0.1 + wave * 0.1 * run)
+    // Scarf: the first segment lifts back with speed; each next segment repeats the wave a bit
+    // later and stronger, so the tail ripples like cloth (and sways gently when standing still)
+    for (const [i, tail] of scarfTails.entries()) {
+      const freq = 3 + run * 9
+      tail.forEach((seg, k) => {
+        const wave = Math.sin(time * freq + i * 1.3 - k * 0.9)
+        const lift = k === 0 ? 0.3 + run * 0.65 + sprint * 0.3 : run * 0.14 // back and down, never flat
+        seg.rotation.x = -lift + wave * (0.06 + 0.22 * run) * (1 + k * 0.6)
+        seg.rotation.z = (i ? 1 : -1) * wave * 0.04 * (k + 1) * (0.3 + run)
+      })
     }
 
     // Parado: respira y mira a los lados de vez en cuando (como buscando pistas)

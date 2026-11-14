@@ -6,6 +6,12 @@ import { buildPuertaDeAlcala, buildPuertaDeAlcalaBase } from './puertaDeAlcala'
 import { buildAcueductoSegovia } from './acueductoSegovia'
 import { buildSagradaFamilia } from './sagradaFamilia'
 import { buildGiralda, buildGiraldaBase } from './giralda'
+import { buildAlhambra, buildAlhambraBase } from './alhambra'
+import { buildCatedralSantiago, buildCatedralSantiagoBase } from './catedralSantiago'
+import { buildGuggenheim, buildGuggenheimBase } from './guggenheim'
+import { buildCiudadArtes, buildCiudadArtesBase } from './ciudadArtes'
+import { buildTorreHercules, buildTorreHerculesBase } from './torreHercules'
+import { buildMezquitaCordoba, buildMezquitaCordobaBase } from './mezquitaCordoba'
 
 export interface LandmarkModel {
   /** El monumento en sí (unidades del modelo, base en y = 0). */
@@ -24,4 +30,10 @@ export const LANDMARK_MODELS: Record<string, LandmarkModel> = {
   'acueducto-segovia': { build: buildAcueductoSegovia },
   'sagrada-familia': { build: buildSagradaFamilia },
   giralda: { build: buildGiralda, base: buildGiraldaBase, margin: 6 },
+  alhambra: { build: buildAlhambra, base: buildAlhambraBase, margin: 8 },
+  'catedral-santiago': { build: buildCatedralSantiago, base: buildCatedralSantiagoBase, margin: 5 },
+  guggenheim: { build: buildGuggenheim, base: buildGuggenheimBase, margin: 8 },
+  'ciudad-artes': { build: buildCiudadArtes, base: buildCiudadArtesBase, margin: 6 },
+  'torre-hercules': { build: buildTorreHercules, base: buildTorreHerculesBase, margin: 9 },
+  'mezquita-cordoba': { build: buildMezquitaCordoba, base: buildMezquitaCordobaBase, margin: 6 },
 }

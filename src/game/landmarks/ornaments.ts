@@ -261,3 +261,143 @@ export function orangeTree(kit: Kit, size: number) {
   }
   return g
 }
+
+/**
+ * One open storey of a tower: four walls with an arched opening each, trim pilasters at the
+ * corners and beside each opening, and a dark core so the openings read as deep. Base at y = 0.
+ */
+export function openStorey(kit: Kit, w: number, h: number, holeW: number, holeH: number, holeBottom: number, wall: number, trim: number, core: number) {
+  const g = new THREE.Group()
+  const t = 0.8
+  const opening = [{ x: 0, width: holeW, height: holeH, arch: true, bottom: holeBottom }]
+  for (let k = 0; k < 4; k++) {
+    // Walls on ±Z are full width; walls on ±X fit between them (no overlapping faces)
+    const f = kit.facade(k % 2 === 0 ? w : w - t * 2, h, t, opening, wall)
+    f.position.z = w / 2 - t / 2
+    const face = new THREE.Group()
+    face.add(f)
+    for (const px of [-(holeW / 2 + 0.6), holeW / 2 + 0.6]) face.add(kit.box(0.5, h, 0.3, trim, px, 0, w / 2 + 0.1))
+    face.rotation.y = (k * Math.PI) / 2
+    g.add(face)
+  }
+  for (const x of [-w / 2, w / 2]) for (const z of [-w / 2, w / 2]) g.add(kit.box(0.9, h, 0.9, trim, x, 0, z))
+  g.add(kit.box(w * 0.45, h, w * 0.45, core))
+  return g
+}
+
+/** Row of stepped Islamic merlons along X (centred), sitting on y = 0. */
+export function merlons(kit: Kit, length: number, size: number, color: number) {
+  const g = new THREE.Group()
+  const n = Math.max(1, Math.floor(length / (size * 1.7)))
+  const step = length / n
+  for (let i = 0; i < n; i++) {
+    const x = -length / 2 + step * (i + 0.5)
+    g.add(kit.box(size, size * 0.8, size * 0.6, color, x, 0, 0))
+    g.add(kit.box(size * 0.5, size * 0.45, size * 0.6, color, x, size * 0.8, 0)) // stepped top
+  }
+  return g
+}
+
+/** Merlons along the four edges of a w x d rectangle (centred), sitting on y = 0. */
+export function merlonRing(kit: Kit, w: number, d: number, size: number, color: number) {
+  const g = new THREE.Group()
+  for (const z of [-d / 2, d / 2]) {
+    const row = merlons(kit, w, size, color)
+    row.position.z = z
+    g.add(row)
+  }
+  for (const x of [-w / 2, w / 2]) {
+    const row = merlons(kit, d - size * 2, size, color)
+    row.rotation.y = Math.PI / 2
+    row.position.x = x
+    g.add(row)
+  }
+  return g
+}
+
+/** Cartoon cypress: short trunk and a plump teardrop of dark green (round belly, pointy tip). */
+export function cypress(kit: Kit, h: number, color = 0x2f8a46) {
+  const g = new THREE.Group()
+  g.add(kit.box(h * 0.08, h * 0.14, h * 0.08, 0x7a4a2c))
+  const r = h * 0.2
+  const profile = [
+    new THREE.Vector2(0, 0), new THREE.Vector2(r * 0.7, h * 0.04), new THREE.Vector2(r, h * 0.22),
+    new THREE.Vector2(r * 0.92, h * 0.45), new THREE.Vector2(r * 0.6, h * 0.68), new THREE.Vector2(r * 0.25, h * 0.82), new THREE.Vector2(0, h * 0.88),
+  ]
+  g.add(kit.mesh(new THREE.LatheGeometry(profile, 8), color, 0, h * 0.1, 0))
+  return g
+}
+
+/** Fat bulbous dome (onion-like, cartoon Baroque), radius r at its widest; base at y = 0. */
+export function onionDome(kit: Kit, r: number, color: number, tip = color) {
+  const g = new THREE.Group()
+  const profile = [
+    new THREE.Vector2(r * 0.8, 0), new THREE.Vector2(r, r * 0.35), new THREE.Vector2(r * 0.95, r * 0.75),
+    new THREE.Vector2(r * 0.65, r * 1.1), new THREE.Vector2(r * 0.25, r * 1.35), new THREE.Vector2(0.001, r * 1.5),
+  ]
+  g.add(kit.mesh(new THREE.LatheGeometry(profile, 10), color))
+  g.add(kit.mesh(new THREE.IcosahedronGeometry(r * 0.22, 1), tip, 0, r * 1.6, 0))
+  return g
+}
+
+/**
+ * Scallop shell (symbol of the Way of St. James), facing +Z: a fan of rounded ribs over a
+ * small hinge. size = overall width. Centre of the hinge at (0, 0).
+ */
+export function scallopShell(kit: Kit, size: number, color: number, rib = color) {
+  const g = new THREE.Group()
+  const fan = new THREE.Shape()
+  fan.moveTo(0, 0)
+  fan.absarc(0, 0, size / 2, Math.PI * 0.08, Math.PI * 0.92, false)
+  fan.closePath()
+  const geo = new THREE.ExtrudeGeometry(fan, { depth: size * 0.08, bevelEnabled: true, bevelSize: size * 0.03, bevelThickness: size * 0.03, bevelSegments: 2, curveSegments: 14 })
+  g.add(kit.mesh(geo, color))
+  for (let k = 0; k < 7; k++) {
+    const a = Math.PI * (0.16 + (0.68 * k) / 6)
+    const ribGeo = new THREE.CylinderGeometry(size * 0.03, size * 0.05, size * 0.46, 5)
+    ribGeo.translate(0, size * 0.23, 0)
+    const m = kit.mesh(ribGeo, rib, 0, 0, size * 0.13)
+    m.rotation.z = a - Math.PI / 2
+    g.add(m)
+  }
+  g.add(kit.box(size * 0.3, size * 0.12, size * 0.12, color, 0, -size * 0.1, size * 0.04)) // hinge
+  return g
+}
+
+/** Chunky beam from point p to point q (square section t), e.g. a ramp wrapping a tower. */
+export function beam(kit: Kit, p: THREE.Vector3, q: THREE.Vector3, t: number, color: number) {
+  const dir = new THREE.Vector3().subVectors(q, p)
+  const m = kit.box(dir.length() + t, t, t, color)
+  m.position.copy(p).add(q).multiplyScalar(0.5)
+  m.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), dir.normalize())
+  return m
+}
+
+/**
+ * Horseshoe arch ring of alternating voussoirs (red and cream wedges, as in Córdoba), facing +Z.
+ * Centre of the arc at (0, 0); r: inner radius; band: thickness of the ring.
+ */
+export function voussoirArch(kit: Kit, r: number, band: number, depth: number, colors: number[], count = 11) {
+  const g = new THREE.Group()
+  const from = -0.3, to = Math.PI + 0.3 // a bit past half a circle: horseshoe
+  for (let i = 0; i < count; i++) {
+    const a0 = from + ((to - from) * i) / count, a1 = from + ((to - from) * (i + 1)) / count
+    const s = new THREE.Shape()
+    s.absarc(0, 0, r + band, a0, a1, false)
+    s.lineTo(Math.cos(a1) * r, Math.sin(a1) * r)
+    s.absarc(0, 0, r, a1, a0, true)
+    s.closePath()
+    const geo = new THREE.ExtrudeGeometry(s, { depth, bevelEnabled: false, curveSegments: 3 })
+    geo.translate(0, 0, -depth / 2)
+    g.add(kit.mesh(geo, colors[i % colors.length]))
+  }
+  return g
+}
+
+/** Straight wall between two points (x, z) on the ground, height h and thickness t. */
+export function wallBetween(kit: Kit, ax: number, az: number, bx: number, bz: number, h: number, t: number, color: number) {
+  const len = Math.hypot(bx - ax, bz - az)
+  const m = kit.box(len + t, h, t, color, (ax + bx) / 2, 0, (az + bz) / 2)
+  m.rotation.y = Math.atan2(-(bz - az), bx - ax) // align the box's X axis with the wall
+  return m
+}
