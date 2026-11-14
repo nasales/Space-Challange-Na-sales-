@@ -51,3 +51,4 @@ Every agent adds one line per task.
 | 2026-11-14 | Claude Code (Opus 5.5) | Data | data/cases_index.json gets "facts" (explain() per variable); docs/methods.md (method, validation, NASA data, results table) with pipeline/results_table.py to regenerate the table; tests |
 | 2026-11-14 | Claude Code (Data agent, Diego) | Data | Block 3: `tests/stats/test_ivan_cross.py`, 3 cross tests of Ivan's `analyze_trend` (written at Diego's request and reviewed by Diego, AGENTS.md rule 3); found the one-rank asymmetry of the conservative Gilbert CI (intended, matches the database) |
 | 2026-11-14 | Claude Code (Data agent, Diego) | Data | AGENTS.md open request to Ivan: add the dry-run validation results to docs/methods.md |
+| 2026-11-14 | Claude Code (Interface agent) | Integration (asked by Yeipi) | Merged origin/main into Yeipi_dev (resolved 8 conflicts), ran QA (check.sh --e2e) and merged PR #23 into main |
