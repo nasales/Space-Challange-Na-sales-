@@ -62,3 +62,121 @@ Generated from `data/cases_index.json` and the case files (slope per decade, Man
 - No precipitation trend is significant: do not say it rains more or less.
 - A non-significant result means no clear evidence of change, not proof that nothing changed.
 - Data credit in text only: "Data: NASA MERRA-2, GPM IMERG, GLDAS". No NASA logos.
+
+## Case stories (Ezequiel, for pipeline/cases.py)
+Proposed `context` for each case: one paragraph about the place, then one about the phenomenon.
+Both go into the same `context` field, separated by a blank line (`\n\n`); the intro screen shows
+each paragraph separately. The `question` of each case stays as it is. The texts describe places and
+events only and never state the trend the player has to find. A ready-to-paste line is under each case.
+
+### 1. Valencia DANA (`dana_valencia`)
+
+**Place.** Valencia is Spain's third-largest city, on the Mediterranean coast next to the Albufera lagoon and the farmland of l'Horta. South of the city, many towns are built on flat land crossed by dry riverbeds that can turn into torrents in a few hours.
+
+**Phenomenon.** On 29 October 2024 a DANA, a pocket of cold air high in the atmosphere, stalled over the region. In the town of Turís more than 600 litres of rain per square metre fell in one day, more than a normal year of rain. The Poyo ravine overflowed and more than 220 people died.
+
+```python
+"context": "Valencia is Spain's third-largest city, on the Mediterranean coast next to the Albufera lagoon and the farmland of l'Horta. South of the city, many towns are built on flat land crossed by dry riverbeds that can turn into torrents in a few hours.\n\nOn 29 October 2024 a DANA, a pocket of cold air high in the atmosphere, stalled over the region. In the town of Turís more than 600 litres of rain per square metre fell in one day, more than a normal year of rain. The Poyo ravine overflowed and more than 220 people died.",
+```
+
+### 2. Doñana wetlands (`donana`)
+
+**Place.** Doñana, where the Guadalquivir river meets the Atlantic in Andalusia, is one of the most important wetlands in Europe and a UNESCO World Heritage Site since 1994. Its marshes, dunes and lagoons host around 360 bird species, many of them resting on their migration between Europe and Africa.
+
+**Phenomenon.** In August 2023 Santa Olalla, the largest permanent lagoon in the park, dried up completely for the second summer in a row, something scientists had never recorded before. Under the park lies an aquifer that also supplies nearby farms, such as strawberry fields, and towns.
+
+```python
+"context": "Doñana, where the Guadalquivir river meets the Atlantic in Andalusia, is one of the most important wetlands in Europe and a UNESCO World Heritage Site since 1994. Its marshes, dunes and lagoons host around 360 bird species, many of them resting on their migration between Europe and Africa.\n\nIn August 2023 Santa Olalla, the largest permanent lagoon in the park, dried up completely for the second summer in a row, something scientists had never recorded before. Under the park lies an aquifer that also supplies nearby farms, such as strawberry fields, and towns.",
+```
+
+### 3. Sierra de la Culebra fire (`sierra_culebra`)
+
+**Place.** Sierra de la Culebra is a range of low mountains in Zamora, near the border with Portugal, covered by pine forest, heath and oak. It is famous for its Iberian wolves and played a key role in their recovery in Spain.
+
+**Phenomenon.** In June 2022, during an early heatwave, lightning started a fire that burned about 25,000 hectares in a few days, one of the largest wildfires in Spain in decades. A month later another large fire hit the same province. Temperature and soil moisture both affect how easily vegetation burns.
+
+```python
+"context": "Sierra de la Culebra is a range of low mountains in Zamora, near the border with Portugal, covered by pine forest, heath and oak. It is famous for its Iberian wolves and played a key role in their recovery in Spain.\n\nIn June 2022, during an early heatwave, lightning started a fire that burned about 25,000 hectares in a few days, one of the largest wildfires in Spain in decades. A month later another large fire hit the same province. Temperature and soil moisture both affect how easily vegetation burns.",
+```
+
+### 4. Galicia fires (`galicia_fires`)
+
+**Place.** Ourense is the only inland province of Galicia, in north-west Spain: a land of mountains, forests and deep river valleys such as the Miño and the Sil. Galicia is one of the rainiest regions of Spain, yet wildfires are a frequent threat.
+
+**Phenomenon.** Large fires swept the province in October 2017 and again in August 2025. In August 2025 the Larouco fire alone burned about 44,000 hectares, the largest wildfire ever recorded in Galicia. Temperature and soil moisture both affect how easily forests burn.
+
+```python
+"context": "Ourense is the only inland province of Galicia, in north-west Spain: a land of mountains, forests and deep river valleys such as the Miño and the Sil. Galicia is one of the rainiest regions of Spain, yet wildfires are a frequent threat.\n\nLarge fires swept the province in October 2017 and again in August 2025. In August 2025 the Larouco fire alone burned about 44,000 hectares, the largest wildfire ever recorded in Galicia. Temperature and soil moisture both affect how easily forests burn.",
+```
+
+### 5. Ebro Delta (`ebro_delta`)
+
+**Place.** The Ebro Delta is the land the Ebro, one of the largest rivers in Spain, has built where it reaches the Mediterranean. Its roughly 320 km² are mostly rice fields, beaches and lagoons full of birds such as flamingos, and much of it lies barely above sea level.
+
+**Phenomenon.** In January 2020 storm Gloria hit the coast with strong winds, huge waves and heavy rain. The sea pushed about 3 km inland and covered around 3,000 hectares of rice fields with salt water.
+
+```python
+"context": "The Ebro Delta is the land the Ebro, one of the largest rivers in Spain, has built where it reaches the Mediterranean. Its roughly 320 km² are mostly rice fields, beaches and lagoons full of birds such as flamingos, and much of it lies barely above sea level.\n\nIn January 2020 storm Gloria hit the coast with strong winds, huge waves and heavy rain. The sea pushed about 3 km inland and covered around 3,000 hectares of rice fields with salt water.",
+```
+
+### 6. Storm Filomena (`filomena_madrid`)
+
+**Place.** Madrid, the capital of Spain, sits in the centre of the Iberian Peninsula at about 650 m above sea level, with hot summers and cold winters. More than three million people live in the city.
+
+**Phenomenon.** On 8 and 9 January 2021 storm Filomena buried the city under up to about 50 cm of snow, its heaviest snowfall in about 50 years. Roads, trains and the airport stopped, and at least 150,000 trees fell under the weight of the snow. A week of intense cold followed.
+
+```python
+"context": "Madrid, the capital of Spain, sits in the centre of the Iberian Peninsula at about 650 m above sea level, with hot summers and cold winters. More than three million people live in the city.\n\nOn 8 and 9 January 2021 storm Filomena buried the city under up to about 50 cm of snow, its heaviest snowfall in about 50 years. Roads, trains and the airport stopped, and at least 150,000 trees fell under the weight of the snow. A week of intense cold followed.",
+```
+
+### 7. Almería-Murcia drylands (`almeria_murcia`)
+
+**Place.** Almería and Murcia, in south-east Spain, are the driest part of mainland Europe. Here lies the Tabernas desert, where many western films were shot.
+
+**Phenomenon.** Near the coast, more than 40,000 hectares of greenhouses, a "sea of plastic" visible from space, grow vegetables for much of Europe. They depend on groundwater and on water transferred from other river basins, so every drop of rain and every bit of soil moisture counts.
+
+```python
+"context": "Almería and Murcia, in south-east Spain, are the driest part of mainland Europe. Here lies the Tabernas desert, where many western films were shot.\n\nNear the coast, more than 40,000 hectares of greenhouses, a \"sea of plastic\" visible from space, grow vegetables for much of Europe. They depend on groundwater and on water transferred from other river basins, so every drop of rain and every bit of soil moisture counts.",
+```
+
+### 8. Córdoba heat (`cordoba_heat`)
+
+**Place.** Córdoba lies on the Guadalquivir river in Andalusia and is famous for its Mosque-Cathedral. The Guadalquivir valley is one of the hottest places in Europe in summer.
+
+**Phenomenon.** On 14 August 2021, during a heatwave, La Rambla, a town in the province of Córdoba, reached 47.6 °C, the highest temperature ever officially recorded in Spain. The same afternoon, nearby Montoro reached 47.4 °C.
+
+```python
+"context": "Córdoba lies on the Guadalquivir river in Andalusia and is famous for its Mosque-Cathedral. The Guadalquivir valley is one of the hottest places in Europe in summer.\n\nOn 14 August 2021, during a heatwave, La Rambla, a town in the province of Córdoba, reached 47.6 °C, the highest temperature ever officially recorded in Spain. The same afternoon, nearby Montoro reached 47.4 °C.",
+```
+
+### 9. Aneto glacier (`aneto_glacier`)
+
+**Place.** Aneto, at 3,404 m, is the highest peak of the Pyrenees, the mountains between Spain and France. On its northern side lies the largest glacier of the whole range.
+
+**Phenomenon.** Between 1981 and 2022 the Aneto glacier lost about two thirds of its surface, shrinking from about 136 to 48 hectares, and scientists expect it to disappear within a few decades. A glacier lives on the balance between the snow that falls in winter and the ice that melts in summer.
+
+```python
+"context": "Aneto, at 3,404 m, is the highest peak of the Pyrenees, the mountains between Spain and France. On its northern side lies the largest glacier of the whole range.\n\nBetween 1981 and 2022 the Aneto glacier lost about two thirds of its surface, shrinking from about 136 to 48 hectares, and scientists expect it to disappear within a few decades. A glacier lives on the balance between the snow that falls in winter and the ice that melts in summer.",
+```
+
+### 10. Tablas de Daimiel (`daimiel`)
+
+**Place.** The Tablas de Daimiel, on the flat plain of La Mancha, is a wetland formed where the Guadiana and Gigüela rivers spread out and flood the land. It is a national park and a wetland of international importance for water birds.
+
+**Phenomenon.** Under it lies a large aquifer that also waters the farms of La Mancha. After years of drying, in August 2009 the peat under the wetland caught fire and burned underground, and in 2010 the area had to be flooded to put the fire out.
+
+```python
+"context": "The Tablas de Daimiel, on the flat plain of La Mancha, is a wetland formed where the Guadiana and Gigüela rivers spread out and flood the land. It is a national park and a wetland of international importance for water birds.\n\nUnder it lies a large aquifer that also waters the farms of La Mancha. After years of drying, in August 2009 the peat under the wetland caught fire and burned underground, and in 2010 the area had to be flooded to put the fire out.",
+```
+
+### Sources for the stories
+- Valencia DANA: [Copernicus EMS / FloodList](https://european-flood.emergency.copernicus.eu/en/node/1115), [Valencia Plaza](https://valenciaplaza.com/llovio-dia-dana-turis-registra-3-horas-misma-cantidad-agua-21-meses)
+- Doñana: [UNESCO](https://whc.unesco.org/en/list/685), [CSIC press release, 10 Aug 2023](https://www.csic.es/sites/default/files/d7/noticias/10agosto2023_lagunasantaolalla_donana.docx.pdf), [UNEP](https://www.unep.org/en/news-and-stories/story/understanding-ecosystems-spains-donana-national-park)
+- Sierra de la Culebra: [El Debate (24,737 ha)](https://www.eldebate.com/sociedad/sociedad-medio-ambiente/20220704/peor-ano-decenio-fuego-arrasa-espana-69-859-hectareas-seis-primeros-meses-2022.html), [phys.org](https://phys.org/news/2022-07-wildfires-ravage-spanish-region-month.html)
+- Galicia fires: [Euronews](https://www.euronews.com/2025/08/21/spains-sees-worst-wildfire-season-since-1994-with-382000-hectares-burned-so-far-in-2025), [Kure Encyclopedia (Larouco, 44,424 ha)](https://kureansiklopedi.com/en/detay/spain-forest-fires-august-2025-044db)
+- Ebro Delta: [Catalan News](https://www.catalannews.com/society-science/item/ebre-delta-shell-shocked-by-effects-of-storm-gloria), [Euronews](https://www.euronews.com/2020/01/22/interactive-see-how-storm-gloria-ravaged-this-spanish-river-delta), [Geography Fieldwork](https://geographyfieldwork.com/Ebro-Delta-Storm-Gloria.htm)
+- Storm Filomena: [AEMET blog](https://aemetblog.es/2023/02/26/la-excepcionalidad-de-la-tempestad-de-nieve-filomena-desde-el-punto-de-vista-meteorologico-y-climatologico/), [AccuWeather](https://www.accuweather.com/en/winter-weather/storm-filomena-breaks-snowfall-record-in-madrid/879423), [phys.org / AP](https://phys.org/news/2021-01-spain-rare-snowfall.pdf)
+- Almería-Murcia: [NASA Earth Observatory](https://earthobservatory.nasa.gov/images/150070/almerias-sea-of-greenhouses)
+- Córdoba heat: [AEMET blog, record revised to 47.6 °C at La Rambla](https://aemetblog.es/2022/08/02/14-de-agosto-de-2021se-batio-el-record-de-temperatura-mas-alta-registrada-en-espana/)
+- Aneto glacier: [The Cryosphere, 2023](https://tc.copernicus.org/articles/17/3177/2023/), [Zientzia.eus](https://zientzia.eus/artikuluak/anetoko-glaziarrak-azaleraren-647-galdu-du-azken-4/en/)
+- Tablas de Daimiel: [Fire Technology, 2011](https://link.springer.com/doi/10.1007/s10694-010-0172-y), [phys.org, Jan 2010](https://phys.org/news/2010-01-spain-peat.html)
