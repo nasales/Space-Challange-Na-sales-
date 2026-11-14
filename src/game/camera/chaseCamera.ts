@@ -6,6 +6,8 @@
 //   de la velocidad ni de lo que dure cada fotograma, y no da tirones a toda velocidad.
 // - Con la rueda del ratón te alejas hasta una vista aérea para "inspeccionar la zona".
 // - Lens focus: the camera flies into the detective's hand lens (stepFocus + the lens param of update).
+// - Intro: when the map has loaded, the camera starts high above Spain and swoops down to the
+//   detective, landing exactly on the chase pose (startIntro / introActive).
 import * as THREE from 'three'
 import { damp, TUNING, type CarState } from '../car/carPhysics'
 import { LENS_SCREEN_FRACTION } from '../../shared/events'
@@ -31,6 +33,17 @@ const FOCUS_PUSH = 0.07
 const FOCUS_FOV_MAX = 70
 /** Points checked along the lens axis for roofs, monuments and ground in the way. */
 const FREE_SAMPLES = 16
+/** Intro: zoom at the start (far and high, a wide view of Spain) and length of the swoop (s). */
+const INTRO_ZOOM = 75
+const INTRO_TIME = 3.2
+/** Intro skipped (key, click or wheel): the rest of the flight is squeezed into this time (s). */
+const INTRO_SKIP_TIME = 0.35
+/** Intro: the camera starts this far round the detective (rad) and spirals in behind him. */
+const INTRO_SPIN = 0.75
+/** Intro: how far past the final pose the swoop punches in before it settles (fraction of the zoom path). */
+const INTRO_OVERSHOOT = 0.035
+/** Fraction of the intro used by the main swoop; the rest is the small settle back. */
+const INTRO_SWOOP = 0.84
 
 /** The hand lens as the camera needs it: glass centre, glass normal (towards the camera) and glass radius, in world units. */
 export interface LensTarget {
@@ -40,6 +53,18 @@ export interface LensTarget {
 }
 
 const easeInOutCubic = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
+
+/**
+ * Intro progress 0..1 -> eased path 0..1: an ease-in-out swoop that goes a little past the end
+ * (1 + INTRO_OVERSHOOT) and then settles back to exactly 1. Both pieces have zero speed where they
+ * meet and at the very end, so the landing is smooth.
+ */
+function introEase(t: number) {
+  if (t >= 1) return 1
+  if (t < INTRO_SWOOP) return easeInOutCubic(t / INTRO_SWOOP) * (1 + INTRO_OVERSHOOT)
+  const q = (t - INTRO_SWOOP) / (1 - INTRO_SWOOP)
+  return 1 + INTRO_OVERSHOOT * (1 - q * q * (3 - 2 * q))
+}
 
 /**
  * Distance from the glass at which its diameter covers LENS_SCREEN_FRACTION of
@@ -72,8 +97,23 @@ export function createChaseCamera(camera: THREE.PerspectiveCamera, dom: HTMLElem
   const focusPos = new THREE.Vector3()
   const focusLook = new THREE.Vector3()
 
+  // Intro: progress 0..1 while it plays, -1 when there is none (or it has landed)
+  let introT = -1
+  let introSkip = false
+  const skipIntro = () => {
+    introSkip = true
+  }
+  const stopIntroListeners = () => {
+    window.removeEventListener('keydown', skipIntro)
+    window.removeEventListener('pointerdown', skipIntro)
+  }
+
   const onWheel = (e: WheelEvent) => {
     e.preventDefault()
+    if (introT >= 0) {
+      skipIntro() // the wheel skips the intro instead of zooming
+      return
+    }
     if (focusWanted || focusProgress > 0) return // no zooming while flying into the lens
     targetZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, targetZoom * Math.exp(e.deltaY * 0.0012)))
   }
@@ -97,6 +137,18 @@ export function createChaseCamera(camera: THREE.PerspectiveCamera, dom: HTMLElem
   }
 
   /**
+   * Start the intro swoop: from far above Spain down to the chase pose. Any key, click or wheel
+   * skips it (fast blend to the end). With prefers-reduced-motion there is no flight at all.
+   */
+  const startIntro = () => {
+    if (reducedMotion?.matches) return
+    introT = 0
+    introSkip = false
+    window.addEventListener('keydown', skipIntro)
+    window.addEventListener('pointerdown', skipIntro)
+  }
+
+  /**
    * @param inspect 0..1: cuánto está investigando el detective (la cámara sube a mirar por encima de su hombro)
    * @param obstacleAt altura de los obstáculos (tejados): la cámara no se mete dentro, pero no los usa para "ver" al detective
    * @param wallAt surface of the monuments: the camera never goes inside them and, if one stands
@@ -113,6 +165,17 @@ export function createChaseCamera(camera: THREE.PerspectiveCamera, dom: HTMLElem
     lens: LensTarget | null = null,
   ) => {
     zoom = damp(zoom, targetZoom, 6, dt)
+    // Intro: the zoom (in log scale) and the angle round the detective follow the eased path.
+    // k goes 1 -> 0 (slightly below 0 in the overshoot); at k = 0 this is the plain chase pose
+    const intro = introT >= 0
+    let viewZoom = zoom
+    let spin = 0
+    if (intro) {
+      introT = Math.min(1, introT + dt / (introSkip ? INTRO_SKIP_TIME : INTRO_TIME))
+      const k = 1 - introEase(introT)
+      viewZoom = zoom * Math.exp(Math.log(INTRO_ZOOM / zoom) * k)
+      spin = INTRO_SPIN * k
+    }
     const speed01 = Math.min(1, Math.abs(car.speed) / TUNING.turboSpeed) // 0 parado, 1 turbo a tope
     // El ángulo de la cámara sigue al del coche con retraso
     if (camHeading === null) camHeading = car.heading
@@ -122,9 +185,9 @@ export function createChaseCamera(camera: THREE.PerspectiveCamera, dom: HTMLElem
 
     // Al alejarse, la cámara sube más que retrocede (vista más cenital)
     // Con velocidad, la cámara se retrasa y baja: el coche "se escapa" hacia delante
-    const back = BASE_DISTANCE * zoom * (1 + speed01 * 0.22)
-    const up = BASE_HEIGHT * zoom * (1 + Math.max(0, zoom - 1) * 0.08) * (1 - speed01 * 0.2) * (1 + inspect * 0.9)
-    const bx = Math.sin(camHeading), bz = Math.cos(camHeading) // "detrás" del coche
+    const back = BASE_DISTANCE * viewZoom * (1 + speed01 * 0.22)
+    const up = BASE_HEIGHT * viewZoom * (1 + Math.max(0, viewZoom - 1) * 0.08) * (1 - speed01 * 0.2) * (1 + inspect * 0.9)
+    const bx = Math.sin(camHeading + spin), bz = Math.cos(camHeading + spin) // "detrás" del coche
     // Walk the sight line from the detective back to the camera: at the first piece of monument
     // that rises above it, the camera stays just in front of it (on the detective's side) instead
     // of climbing over the top, where it would shoot up or end up inside the building.
@@ -152,7 +215,9 @@ export function createChaseCamera(camera: THREE.PerspectiveCamera, dom: HTMLElem
 
     // Suavizamos el desplazamiento coche→cámara, no la posición: a velocidad constante
     // la cámara va "pegada" al coche y no tiembla aunque cada fotograma dure distinto
-    if (first) Object.assign(offset, { x: want.x - car.x, y: want.y, z: want.z - car.z })
+    // During the intro the camera sits exactly on the path (no smoothing lag), so the landing frame
+    // is the exact chase pose and the smoothing afterwards starts from it: no jump
+    if (first || intro) Object.assign(offset,{ x: want.x - car.x, y: want.y, z: want.z - car.z })
     offset.x = damp(offset.x, want.x - car.x, 8, dt)
     offset.y = damp(offset.y, want.y, 8, dt)
     offset.z = damp(offset.z, want.z - car.z, 8, dt)
@@ -168,8 +233,12 @@ export function createChaseCamera(camera: THREE.PerspectiveCamera, dom: HTMLElem
     // Mira un poco por delante del coche (también como desplazamiento suavizado)
     const ahead = Math.min(MAX_AHEAD, 6 + Math.abs(car.speed) * 0.15) + inspect * 5 // investigando: mira a la zona de la lupa
     const aheadX = -Math.sin(car.heading) * ahead, aheadZ = -Math.cos(car.heading) * ahead
-    if (first) Object.assign(aheadOff, { x: aheadX, y: car.y + LOOK_HEIGHT, z: aheadZ })
+    if (first || intro) Object.assign(aheadOff, { x: aheadX, y: car.y + LOOK_HEIGHT, z: aheadZ })
     first = false
+    if (intro && introT >= 1) {
+      introT = -1 // landed: this frame was the chase pose
+      stopIntroListeners()
+    }
     aheadOff.x = damp(aheadOff.x, aheadX, 10, dt)
     aheadOff.y = damp(aheadOff.y, car.y + LOOK_HEIGHT, 10, dt)
     aheadOff.z = damp(aheadOff.z, aheadZ, 10, dt)
@@ -247,6 +316,14 @@ export function createChaseCamera(camera: THREE.PerspectiveCamera, dom: HTMLElem
     get distance() {
       return distance
     },
-    dispose: () => dom.removeEventListener('wheel', onWheel),
+    startIntro,
+    /** True while the intro swoop plays (the player has no control yet). */
+    get introActive() {
+      return introT >= 0
+    },
+    dispose: () => {
+      dom.removeEventListener('wheel', onWheel)
+      stopIntroListeners()
+    },
   }
 }

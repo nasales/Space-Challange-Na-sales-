@@ -24,7 +24,8 @@ export interface HudState {
   stopped: boolean
 }
 
-export type GameStatus = 'loading' | 'ready' | 'error'
+/** 'intro': the map is drawn and the camera is swooping down to the detective (no control, no HUD yet). */
+export type GameStatus = 'loading' | 'intro' | 'ready' | 'error'
 
 /** Sent when the player stops at a place to investigate (not emitted yet). */
 export interface GameStop {

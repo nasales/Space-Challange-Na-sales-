@@ -177,6 +177,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
         scene.add(dust.mesh, footprints.group)
         const keyboard = createKeyboard()
         const chase = createChaseCamera(camera, renderer.domElement)
+        chase.startIntro() // swoop from far above Spain down to the detective; control starts when it lands
         // Solo en desarrollo: acceso desde la consola/Playwright para depurar
         if (import.meta.env.DEV) Object.assign(window, { __game: { carState, camera, chase, ground, detective, renderer, scene, towns, houses, scenery, sceneryItems, landmarks, main } })
 
@@ -217,7 +218,9 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
           const wantLens = !!callbacks.current.focusLens
           if (wantLens) lensFlying = true
           else lensInReported = false
-          const input = lensFlying ? { throttle: 0, steer: 0, turbo: false } : keyboard.read()
+          // Intro swoop: no control (and no HUD) until the camera lands on the chase view
+          const introBefore = chase.introActive
+          const input = lensFlying || introBefore ? { throttle: 0, steer: 0, turbo: false } : keyboard.read()
           stepCar(carState, input, ground, dt)
           detective.setFocus(chase.stepFocus(wantLens, dt))
           detective.update(carState, dt)
@@ -225,6 +228,10 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
           footprints.update(carState, surfaceAt, detective.stridePhase)
           const lens = chase.focus > 0 ? { center: detective.lensPosition(), normal: detective.lensNormal(), radius: detective.lensRadius() } : null
           chase.update(carState, groundNoLandmarks, dt, detective.inspect, towns.topAt, landmarks.surfaceAt, lens)
+          if (introBefore && !chase.introActive) {
+            setStatus('ready')
+            hudClock = HUD_INTERVAL // show the HUD on the landing frame
+          }
           if (wantLens && chase.focus === 1 && !lensInReported) {
             lensInReported = true
             callbacks.current.onLensFocus?.('in')
@@ -253,12 +260,13 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
           lighting.update(detective.root.position, Math.max(40, Math.min(d * 1.6, 3000 * UNITS_PER_KM)))
           ink.render(scene, camera, fog.near, fog.near + (fog.far - fog.near) * 0.5)
           hudClock += dt
-          if (hudClock >= HUD_INTERVAL) {
+          if (hudClock >= HUD_INTERVAL && !chase.introActive) {
             hudClock = 0
             updateHud(input.turbo && input.throttle > 0)
           }
         })
-        setStatus('ready')
+        // 'intro' while the camera swoops in ('ready' when it lands); straight to 'ready' if there is no intro
+        setStatus(chase.introActive ? 'intro' : 'ready')
 
         cleanup = () => {
           keyboard.dispose()
