@@ -99,11 +99,10 @@ test('Space while stopped opens the magnifier with the six variables', async ({ 
   if ((await live.count()) > 0) {
     await live.first().click()
     const sheet = page.locator('.clue-result')
-    await expect(sheet.locator('svg.clue-result__chart path.clue-result__line')).toBeVisible()
-    // The chart comes first; the statistical result only when the player asks for it
-    await expect(sheet.locator('.clue-result__verdict')).toHaveCount(0)
-    await sheet.getByRole('button', { name: /show the result/ }).click()
+    // The full analysis is on the sheet from the start: verdict first, then the charts
+    await expect(sheet.locator('.clue-result__verdict')).toBeVisible()
     await expect(sheet.locator('.clue-result__verdict')).toContainText(/p [=<]/)
+    await expect(sheet.locator('svg.clue-result__chart path.clue-result__line').first()).toBeVisible()
     await page.screenshot({ path: 'test-results/magnifier-result.png' })
     // Esc goes back to the clues, the lens stays up
     await page.keyboard.press('Escape')
