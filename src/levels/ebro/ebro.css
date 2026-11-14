@@ -1,0 +1,112 @@
+/* Ebro Delta level: typical-year line, estimate slider and total scale. Only --lvl-* variables from ../theme.css. */
+.lve-chart__typical {
+  fill: none;
+  stroke: var(--lvl-gold);
+  stroke-width: 3;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: lve-draw 1.6s ease-out;
+}
+
+@keyframes lve-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.lve-guess {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 4px 0 0;
+  padding: 0;
+  border: none;
+}
+
+.lve-guess legend {
+  margin-bottom: 10px;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.lve-guess__label {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.lve-guess__label strong {
+  font-size: 1.2rem;
+}
+
+.lve-guess input[type='range'] {
+  width: 100%;
+  accent-color: var(--lvl-red);
+}
+
+.lve-guess input[type='range']:focus-visible {
+  outline: 3px solid var(--lvl-ink);
+  outline-offset: 3px;
+}
+
+.lve-guess__lock {
+  align-self: flex-start;
+}
+
+.lve-scale {
+  display: block;
+  width: 100%;
+  max-width: 620px;
+  height: auto;
+  background: var(--lvl-paper);
+  border: var(--lvl-border-panel);
+  border-radius: var(--lvl-radius-panel);
+}
+
+.lve-scale__axis {
+  stroke: var(--lvl-dark);
+  stroke-width: 2;
+}
+
+.lve-scale__range {
+  fill: var(--lvl-red);
+  opacity: 0.3;
+  stroke: var(--lvl-red);
+  stroke-dasharray: 4 3;
+}
+
+.lve-scale__total {
+  stroke: var(--lvl-red);
+  stroke-width: 3;
+}
+
+.lve-scale__guess polygon {
+  fill: var(--lvl-ink);
+}
+
+.lve-scale__label {
+  font: 700 12px var(--lvl-font);
+  fill: var(--lvl-dark);
+}
+
+.lve-total {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lve-total__main {
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lve-chart__typical {
+    animation: none;
+  }
+}

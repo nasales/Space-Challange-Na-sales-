@@ -1,0 +1,123 @@
+/* Tablas de Daimiel level: grid of the featured tests and chance histogram. Only --lvl-* variables from ../theme.css. */
+.lvdm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lvdm-grid__item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  font-size: 13px;
+  background: var(--lvl-panel-bg);
+  border: 1px solid var(--lvl-divider);
+  border-radius: var(--lvl-radius-panel);
+}
+
+.lvdm-grid__item--sig {
+  background: var(--lvl-gold);
+  border: var(--lvl-border-panel);
+  box-shadow: var(--lvl-shadow-panel);
+}
+
+.lvdm-grid__item--fails {
+  background: var(--lvl-paper);
+  border-style: dashed;
+  border-color: var(--lvl-red);
+  box-shadow: none;
+}
+
+.lvdm-grid__item--fails .lvdm-grid__p {
+  text-decoration: line-through;
+  text-decoration-color: var(--lvl-red);
+}
+
+.lvdm-grid__item--here {
+  outline: 3px solid var(--lvl-red);
+  outline-offset: 2px;
+}
+
+.lvdm-grid__name {
+  font-weight: 700;
+  color: var(--lvl-dark);
+}
+
+.lvdm-grid__p {
+  font-variant-numeric: tabular-nums;
+  color: var(--lvl-text-soft);
+}
+
+.lvdm-grid__tag {
+  align-self: flex-start;
+  padding: 0 6px;
+  font: var(--lvl-font-key);
+  background: var(--lvl-paper);
+  border: 1px solid var(--lvl-dark);
+  border-radius: var(--lvl-radius-key);
+}
+
+.lvdm-figure {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+}
+
+.lvdm-figure figcaption {
+  font-weight: 700;
+}
+
+.lvdm-hist {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: var(--lvl-paper);
+  border: var(--lvl-border-panel);
+  border-radius: var(--lvl-radius-panel);
+}
+
+.lvdm-hist__base {
+  stroke: var(--lvl-dark);
+  stroke-width: 1.2;
+}
+
+.lvdm-hist__bar {
+  fill: var(--lvl-sea-light);
+  stroke: var(--lvl-sea-dark);
+  stroke-width: 1;
+}
+
+.lvdm-hist__count {
+  font: 700 12px var(--lvl-font);
+  fill: var(--lvl-dark);
+}
+
+.lvdm-hist__tick {
+  font: 11px var(--lvl-font);
+  fill: var(--lvl-text-soft);
+}
+
+.lvdm-hist__mean {
+  stroke: var(--lvl-ink);
+  stroke-width: 2;
+  stroke-dasharray: 5 4;
+}
+
+.lvdm-hist__real line {
+  stroke: var(--lvl-red);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.lvdm-hist__real text {
+  font: 700 13px var(--lvl-font);
+  fill: var(--lvl-red);
+  paint-order: stroke;
+  stroke: var(--lvl-paper);
+  stroke-width: 3;
+}

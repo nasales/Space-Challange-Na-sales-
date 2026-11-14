@@ -1,0 +1,104 @@
+/*
+ * Theme of the featured case levels (src/levels/, Ivan).
+ * Values COPIED (not imported, originals unchanged) from the main game UI so the levels look the same:
+ *   src/styles/global.css, src/ui/menu/MainMenu.css, src/ui/hud/*.css
+ * Every variable is prefixed --lvl- so nothing collides with the game styles.
+ */
+:root {
+  /* Colors: src/ui/menu/MainMenu.css (.main-menu --menu-*) and src/styles/global.css (body) */
+  --lvl-ink: #3b4a6b; /* --menu-ink, body color */
+  --lvl-sea: #5ea8c2; /* --menu-sea, body background */
+  --lvl-gold: #f2c14e; /* --menu-gold, play button */
+  --lvl-gold-hover: #ffd76a; /* .main-menu__play:hover */
+  --lvl-red: #e5322d; /* --menu-red, pin, turbo */
+  --lvl-paper: #fff8e7; /* --menu-paper, menu panel */
+  --lvl-sea-light: #8fd0e3; /* .main-menu__stage gradient */
+  --lvl-sea-dark: #3f86a3; /* .main-menu__stage gradient */
+  --lvl-ink-shade: rgba(59, 74, 107, 0.25); /* .main-menu__panel box-shadow */
+
+  /* Colors: src/ui/hud/*.css (panels, speedometer, controls hint) */
+  --lvl-dark: #1c1f26; /* panel borders, shadows and text */
+  --lvl-text-soft: #3b4250; /* .location-panel__region, __description, __coords */
+  --lvl-muted: #5b6270; /* .location-panel__km */
+  --lvl-divider: #b9bec7; /* .location-panel__coords dashed border */
+  --lvl-pin-gold: #f2b632; /* .location-panel--landmark pin */
+  --lvl-panel-bg: rgb(255 255 255 / 0.9); /* .location-panel, .speedometer */
+  --lvl-panel-bg-soft: rgb(255 255 255 / 0.82); /* .controls-hint */
+
+  /* Fonts: src/styles/global.css (body), src/ui/hud/ControlsHint.css (kbd) */
+  --lvl-font: system-ui, sans-serif;
+  --lvl-font-key: 600 12px system-ui, sans-serif;
+
+  /* Radii */
+  --lvl-radius-panel: 10px; /* HUD panels */
+  --lvl-radius-button: 14px; /* .main-menu__play */
+  --lvl-radius-key: 5px; /* .controls-hint kbd */
+
+  /* Borders and hard "toy" shadows */
+  --lvl-border-panel: 2px solid var(--lvl-dark); /* HUD panels */
+  --lvl-shadow-panel: 3px 3px 0 var(--lvl-dark); /* HUD panels */
+  --lvl-border-button: 4px solid var(--lvl-ink); /* .main-menu__play */
+  --lvl-shadow-button: 6px 6px 0 var(--lvl-ink); /* .main-menu__play */
+  --lvl-shadow-button-hover: 8px 8px 0 var(--lvl-ink); /* .main-menu__play:hover */
+  --lvl-shadow-button-active: 2px 2px 0 var(--lvl-ink); /* .main-menu__play:active */
+}
+
+/* Panel: same box as .location-panel / .speedometer */
+.lvl-panel {
+  background: var(--lvl-panel-bg);
+  border: var(--lvl-border-panel);
+  border-radius: var(--lvl-radius-panel);
+  box-shadow: var(--lvl-shadow-panel);
+  color: var(--lvl-dark);
+  font-family: var(--lvl-font);
+}
+
+/* Kicker label: .main-menu__kicker */
+.lvl-kicker {
+  display: inline-block;
+  margin: 0;
+  padding: 4px 10px;
+  background: var(--lvl-ink);
+  color: var(--lvl-paper);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  transform: rotate(-2deg);
+}
+
+/* Button: .main-menu__play (without the idle nudge animation), in a smaller size */
+.lvl-button {
+  padding: 10px 28px;
+  border: var(--lvl-border-button);
+  border-radius: var(--lvl-radius-button);
+  background: var(--lvl-gold);
+  color: var(--lvl-ink);
+  font: inherit;
+  font-size: 1.1rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: var(--lvl-shadow-button);
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease,
+    background-color 0.12s ease;
+}
+
+.lvl-button:hover {
+  background: var(--lvl-gold-hover);
+  transform: translate(-2px, -2px);
+  box-shadow: var(--lvl-shadow-button-hover);
+}
+
+.lvl-button:active {
+  transform: translate(4px, 4px);
+  box-shadow: var(--lvl-shadow-button-active);
+}
+
+.lvl-button:focus-visible {
+  outline: 4px solid var(--lvl-red);
+  outline-offset: 4px;
+}
