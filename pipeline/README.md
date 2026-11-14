@@ -33,7 +33,7 @@ JSON export (`etl_espana.py --export-dir export`):
 ## Who owns what
 | File | Owner |
 |---|---|
-| `pipeline/__init__.py`, `pipeline/trend.py`, `pipeline/explain.py`, `pipeline/tests/test_trend.py`, `pipeline/tests/test_explain.py` | Ivan |
+| `pipeline/__init__.py`, `pipeline/trend.py`, `pipeline/explain.py`, `pipeline/tests/test_trend.py`, `pipeline/tests/test_explain.py`, `pipeline/compare_db.py`, `pipeline/tests/test_compare_db.py`, `tests/stats/test_diego_cross.py` | Ivan |
 | `pipeline/series.py`, `pipeline/sources/*.py`, `pipeline/build_case.py`, `pipeline/fill_trends.py`, `pipeline/tests/test_series.py`, `pipeline/tests/test_build_case.py`, `pipeline/tests/test_sources.py`, `pipeline/tests/test_fill_trends.py`, `data/raw/`, `data/cache/*.json` | Diego |
 | `pipeline/requirements.txt`, `pipeline/tests/__init__.py`, `AI_USAGE.md`, `REFERENCES.md` | Shared: append lines at the end only |
 
