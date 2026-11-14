@@ -1,0 +1,70 @@
+/* Database test page (?dbtest). Scrolls, unlike the game screen. */
+.dbtest {
+  height: 100%;
+  overflow: auto;
+  padding: 24px;
+  background: #f4f6fa;
+  color: #3b4a6b;
+}
+
+.dbtest h1 {
+  margin: 0 0 4px;
+}
+
+.dbtest h2 {
+  font-size: 1.05rem;
+  margin: 16px 0 6px;
+}
+
+.dbtest-note {
+  margin: 0 0 16px;
+  opacity: 0.75;
+}
+
+.dbtest-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.dbtest-controls input {
+  width: 90px;
+  margin-left: 4px;
+  padding: 4px 6px;
+}
+
+.dbtest-controls button {
+  padding: 8px 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dbtest-result {
+  margin-top: 20px;
+}
+
+.dbtest-ok {
+  color: #1d7a3a;
+  font-weight: 600;
+}
+
+.dbtest-bad {
+  color: #b3261e;
+  font-weight: 600;
+}
+
+.dbtest-errors {
+  color: #b3261e;
+}
+
+.dbtest table {
+  border-collapse: collapse;
+}
+
+.dbtest th,
+.dbtest td {
+  border: 1px solid #c9d1e0;
+  padding: 4px 10px;
+  text-align: left;
+}
