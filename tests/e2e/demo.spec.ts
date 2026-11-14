@@ -67,6 +67,7 @@ test('the detective moves and the speedometer reacts', async ({ page }) => {
 
 // Magnifier variable picker (src/ui/magnifier/): stopped -> Space -> lens with six clues -> Esc.
 test('Space while stopped opens the magnifier with the six variables', async ({ page }) => {
+  test.setTimeout(180_000) // map build + camera flight are slow when the level tests run in parallel
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(err.message))
 
@@ -78,7 +79,7 @@ test('Space while stopped opens the magnifier with the six variables', async ({ 
   await expect(async () => {
     await page.keyboard.press('Space')
     await expect(page.locator('.variable-picker')).toBeAttached({ timeout: 1_500 })
-  }).toPass({ timeout: 20_000 })
+  }).toPass({ timeout: 60_000 })
   const lens = page.locator('.variable-picker__lens[role="dialog"]')
   await expect(lens).toBeVisible({ timeout: 30_000 })
 
