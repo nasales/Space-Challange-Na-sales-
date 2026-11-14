@@ -9,12 +9,11 @@ test('levels preview lists the 10 featured cases and opens one', async ({ page }
   await expect(select.locator('option')).toHaveCount(11) // "Pick a case…" + 10 cases
   await expect(page.getByTestId('case-list').locator('li')).toHaveCount(10)
 
+  // Every case now has its own level (registry.ts); each level spec covers its Exit button.
   await select.selectOption('dana_valencia')
-  const level = page.getByTestId('case-level')
-  await expect(level.getByRole('heading', { name: 'Valencia DANA' })).toBeVisible()
-  await expect(level.locator('svg.lvl-chart path.lvl-chart__line')).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('heading', { name: 'Find the flood' })).toBeVisible()
 
-  await level.getByRole('button', { name: 'Exit' }).click()
+  await select.selectOption('')
   await expect(page.getByTestId('case-list')).toBeVisible()
 })
 
