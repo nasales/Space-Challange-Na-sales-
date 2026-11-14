@@ -9,6 +9,7 @@
 import { useEffect, useRef } from 'react'
 import type { PointVariable } from '../../shared/pointAnalysis'
 import {
+  annualMeans,
   anomalies,
   ciBand,
   fmt,
@@ -16,6 +17,7 @@ import {
   fmtSigned,
   mean,
   periodYears,
+  seasonalComparison,
   testPeriod,
   totalChange,
   trendLine,
@@ -23,6 +25,7 @@ import {
   type Period,
 } from './analysis/analysis'
 import AnomalyChart from './analysis/AnomalyChart'
+import { AnnualChart, SeasonalChart } from './analysis/SmallCharts'
 import MonthlyPlot from './analysis/MonthlyPlot'
 import './ClueResult.css'
 
@@ -144,6 +147,25 @@ export default function ClueResult({ variable, title, place, distanceKm, onBack 
           {band && ' The real trend is very likely inside the shaded range; if a flat line fits inside it, the trend is not clear.'}
         </p>
       </section>
+
+      <div className="clue-result__pair">
+        <section className="clue-result__section" aria-labelledby="clue-season-h">
+          <h4 id="clue-season-h" className="clue-result__h">
+            Did the seasons shift?
+          </h4>
+          <SeasonalChart
+            cmp={period ? seasonalComparison(data.dates, data.values, period) : null}
+            units={data.units}
+            title={title}
+          />
+        </section>
+        <section className="clue-result__section" aria-labelledby="clue-annual-h">
+          <h4 id="clue-annual-h" className="clue-result__h">
+            Which years stand out?
+          </h4>
+          <AnnualChart annual={annualMeans(data.dates, data.values)} units={data.units} title={title} />
+        </section>
+      </div>
 
       <p className="clue-result__meta">
         {distanceKm > 20 && `Nearest land cell ${distanceKm.toFixed(0)} km away · `}Data: NASA{' '}
