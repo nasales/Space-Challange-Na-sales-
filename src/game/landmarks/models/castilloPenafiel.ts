@@ -38,7 +38,10 @@ function curtain(kit: Kit, ax: number, az: number, bx: number, bz: number, gate 
   const g = new THREE.Group()
   g.add(kit.box(len, WALL_H, WALL_T, STONE))
   merlonRow(kit, g, len - TOWER_R * 2, WALL_H, 0, 1.7, WALL_T)
-  if (gate) g.add(kit.slab(3.4, 5.2, WALL_T + 0.4, DARK)) // main gate, visible on both faces
+  if (gate) {
+    g.add(kit.slab(3.4, 5.2, WALL_T + 0.4, DARK)) // main gate, visible on both faces
+    for (const side of [-1, 1]) g.add(kit.lightHalo(3, 0, 3, side * (WALL_T / 2 + 0.7), 0.8)) // night: lamp at the gate
+  }
   g.position.set((ax + bx) / 2, 0, (az + bz) / 2)
   g.rotation.y = Math.atan2(-(bz - az), bx - ax) // the group's X axis runs along the wall
   return g
@@ -98,6 +101,11 @@ export function buildCastilloPenafiel(kit: Kit): THREE.Group {
     face.add(kit.slab(1.6, 3, 0.3, DARK, 0, 15, zf(16)))
     face.add(kit.slab(1.6, 3, 0.3, DARK, k % 2 ? 2 : -2, 25, zf(26)))
     if (k % 2) face.add(kit.slab(2.6, 4.2, 0.3, DARK, 0, 0, zf(0)))
+    // Night: lit windows, a glow at the doors and a soft floodlight on every face of the keep
+    face.add(kit.lightPanel(1.2, 2.5, 0, 15.25, zf(16) + 0.25))
+    if (k % 2 === 0) face.add(kit.lightPanel(1.2, 2.5, -2, 25.25, zf(26) + 0.25))
+    else face.add(kit.lightHalo(2.6, 0, 2.4, zf(0) + 0.8, 0.7))
+    face.add(kit.lightHalo(8, 0, 17, KEEP_W / 2 + 2.5, 0.35))
     face.rotation.y = (k * Math.PI) / 2
     keep.add(face)
   }
@@ -112,6 +120,8 @@ export function buildCastilloPenafiel(kit: Kit): THREE.Group {
     }
   }
   g.add(wonk(keep, 11, 0.02))
+  // Night: small floodlights along both long walls
+  for (const x of [-24, -12, 12, 24]) for (const side of [-1, 1]) g.add(kit.lightHalo(4.5, x, 4, side * (halfWidthAt(x) + 2.2), 0.35))
   return g
 }
 

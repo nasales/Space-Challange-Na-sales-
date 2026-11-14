@@ -29,6 +29,7 @@ function bellTower(kit: Kit, seed: number) {
   for (const x of [-T_W / 2, T_W / 2]) for (const z of [-T_W / 2, T_W / 2]) g.add(kit.box(1.3, T_H, 1.3, TRIM, x, 0, z)) // corner pilasters
   for (const y of [13, 22, 31]) {
     g.add(kit.slab(1.8, 3.6, 0.3, GLASS, 0, y, T_W / 2 + 0.2))
+    g.add(kit.lightPanel(1.4, 3, 0, y + 0.3, T_W / 2 + 0.45)) // lit at night
     g.add(kit.box(2.6, 0.6, 0.7, TRIM, 0, y + 3.6, T_W / 2 + 0.3))
   }
   let y = T_H
@@ -48,6 +49,7 @@ function bellTower(kit: Kit, seed: number) {
     const s = openStorey(kit, w, h, holeW, holeH, 1.2, GRANITE, TRIM, DARK)
     s.position.y = y
     g.add(s)
+    g.add(kit.lightHalo(w * 0.6, 0, y + h / 2, 0, 0.8)) // night: the open storey glows from inside
     y += h
   }
   storey(7.8, 11, 3.6, 5.4)
@@ -89,6 +91,7 @@ export function buildCatedralSantiago(kit: Kit): THREE.Group {
     for (let z = -10; z > -64; z -= 7) {
       if (Math.abs(z - TR_Z) < 9) continue
       g.add(kit.slab(0.3, 5, 2.2, GLASS, side * 9.1, 15.5, z)) // tall windows
+      g.add(kit.lightPanel(1.8, 4.4, side * 9.35, 15.8, z, (side * Math.PI) / 2, 0.85))
     }
   }
   // Crossing dome: drum, fat dome, lantern
@@ -107,6 +110,7 @@ export function buildCatedralSantiago(kit: Kit): THREE.Group {
   const cs = openStorey(kit, 7, 8.5, 3, 4.4, 1, GRANITE, TRIM, DARK)
   cs.position.y = 33
   clock.add(cs)
+  clock.add(kit.lightHalo(4, 0, 37.2, 0, 0.8), kit.lightHalo(3, 0, 26, 4.8, 0.6)) // night: belfry and clock face
   const clockDome = onionDome(kit, 3.8, DOME, GOLD)
   clockDome.position.y = 41.5
   clock.add(clockDome)
@@ -125,6 +129,9 @@ export function buildCatedralSantiago(kit: Kit): THREE.Group {
   for (const y of [15.3, 19.6, 23.9]) g.add(kit.box(11, 0.5, 0.5, TRIM, 0, y, front + 0.5))
   // Door and, above the window, the scallop shell of the pilgrims
   g.add(kit.slab(4.4, 5.4, 0.3, DARK, 0, 5, front + 0.2))
+  // Night: the great window is lit from inside and the door has a warm glow
+  g.add(kit.lightPanel(10.4, 16.4, 0, 11.3, front + 0.9, 0, 0.55))
+  g.add(kit.lightHalo(4, 0, 7, front + 2, 0.5))
   g.add(kit.box(6, 0.9, 1, TRIM, 0, 10.2, front + 0.5))
   const shell = scallopShell(kit, 6, GOLD, TRIM)
   shell.position.set(0, 29.5, front + 0.6)

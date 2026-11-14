@@ -2,6 +2,7 @@
 // Se usa un InstancedMesh: todas las bolas se dibujan de una vez (mucho más rápido que una a una).
 import * as THREE from 'three'
 import { UNITS_PER_KM, metersToY, HEIGHT_EXAGGERATION } from '../map/projection'
+import type { DayPalette } from './dayCycle'
 
 interface Cloud {
   x: number
@@ -50,8 +51,12 @@ export function createClouds(area: { minX: number; maxX: number; minZ: number; m
   const w = area.maxX - area.minX, d = area.maxZ - area.minZ
   const wrap = (v: number, min: number, size: number) => ((((v - min) % size) + size) % size) + min
 
-  /** Mueve las nubes (llamar en cada fotograma con los segundos transcurridos). */
-  const update = (dt: number) => {
+  /** Mueve las nubes (llamar en cada fotograma con los segundos transcurridos). `palette`: time-of-day tint. */
+  const update = (dt: number, palette?: DayPalette) => {
+    if (palette) {
+      material.color.copy(palette.cloud)
+      material.emissive.copy(palette.cloudShade)
+    }
     let k = 0
     for (const c of clouds) {
       c.x = wrap(c.x + WIND.x * dt, area.minX, w)

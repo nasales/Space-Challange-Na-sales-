@@ -1,7 +1,9 @@
 // Luces: luz ambiente de cielo/suelo + sol cálido que proyecta sombras.
 // La "cámara de sombras" sigue al punto que miras, así las sombras se ven nítidas donde importa.
+// Colours, intensities and direction come from the day/night palette (dayCycle.ts): the same
+// shadow-casting light is the sun by day and the moon by night.
 import * as THREE from 'three'
-import { SUN_DIRECTION } from './createSky'
+import type { DayPalette } from './dayCycle'
 
 const SHADOW_MAP_SIZE = 4096
 
@@ -19,10 +21,16 @@ export function createLighting() {
   /**
    * @param focus punto al que mira la cámara
    * @param radius tamaño de la zona con sombras (unidades del mundo)
+   * @param palette current time-of-day palette
    */
-  const update = (focus: THREE.Vector3, radius: number) => {
+  const update = (focus: THREE.Vector3, radius: number, palette: DayPalette) => {
+    hemi.color.copy(palette.hemiSky)
+    hemi.groundColor.copy(palette.hemiGround)
+    hemi.intensity = palette.hemiIntensity
+    sun.color.copy(palette.lightColor)
+    sun.intensity = palette.lightIntensity
     sun.target.position.copy(focus)
-    sun.position.copy(focus).addScaledVector(SUN_DIRECTION, radius * 3)
+    sun.position.copy(focus).addScaledVector(palette.lightDirection, radius * 3)
     const cam = sun.shadow.camera
     cam.left = cam.bottom = -radius
     cam.right = cam.top = radius
