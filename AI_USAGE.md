@@ -14,3 +14,4 @@ Every agent adds one line per task.
 | 2026-11-14 | Claude Code (Opus 5.5) | Data | Block 1b: aligned analyze_trend CI (rho, var(S), ranks, z=1.96) with trend_stats in etl_espana.py; added pipeline/tests/test_trend_matches_db.py |
 | 2026-11-14 | Claude Code (Opus 5.5) | Data | Block 2 (partial): gap warnings ("many gaps", "long gap") in analyze_trend output; annual mode dropped (plain pre-whitening has low power on 20 annual means) |
 | 2026-11-14 | Claude Code (Opus 5.5) | Data | Block 4: explain(trend, series) in pipeline/explain.py (deterministic plain-English facts for the AI checker), tests in pipeline/tests/test_explain.py |
+| 2026-11-14 | Claude Code (Opus 5.5) | Data | Block 5a: pipeline/compare_db.py CLI comparing analyze_trend with the DB trends in the JSON export (per-field tolerances for 4-decimal rounding), tests in pipeline/tests/test_compare_db.py |
