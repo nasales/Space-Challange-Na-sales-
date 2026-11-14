@@ -14,11 +14,11 @@ const OUTRO_MS = 700
 /** Caption under the title for each loading step (thresholds match the steps in GameView). */
 function stepCaption(p: number, done: boolean) {
   if (done) return 'Case open!'
-  if (p < 0.35) return 'Pulling the case files'
-  if (p < 0.4) return 'Rolling out the world'
-  if (p < 0.76) return 'Sketching coasts, rivers and roads'
-  if (p < 0.85) return 'Building the towns'
-  if (p < 0.95) return 'Planting groves and forests'
+  if (p < 0.04) return 'Pulling the case files'
+  if (p < 0.15) return 'Rolling out the world'
+  if (p < 0.89) return 'Sketching coasts, rivers and roads'
+  if (p < 0.92) return 'Building the towns'
+  if (p < 0.96) return 'Planting groves and forests'
   return 'Waking up the detective'
 }
 
