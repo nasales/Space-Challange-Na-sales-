@@ -19,8 +19,8 @@
 
 **Perry does:**
 1. Create the schema in Supabase. ✅ Done (2026-11-14).
-2. Download the monthly series for Spain from NASA and load them (`series`, `cells`, `variables`).
-3. Check that the load is complete and correct (section 6).
+2. Download the monthly series for Spain from NASA and load them (`series`, `cells`, `variables`). ✅ Done (2026-11-14): 6 variables, 1184 cells, 7090 series.
+3. Check that the load is complete and correct (section 6). ✅ Done (2026-11-14).
 4. Give the frontend what it needs to read the data (section 5, step 6).
 5. Run Diego's `fill_trends.py` on the JSON export and upload its rows to `trends`. Only Perry holds the database password, so Diego never needs it.
 
@@ -84,8 +84,8 @@
    ```bash
    python etl_espana.py --only tair --export-dir export
    ```
-   It first reads one GLDAS month for the land mask and prints "Land in … cells", then "[tair] N cells with a series". About 30 minutes (≈10 monthly files per minute).
-5. **Full load** (several hours: ~1200 monthly files):
+   It first reads one GLDAS month for the land mask and prints "Land in … cells", then "[tair] N cells with a series".
+5. **Full load** (~1200 monthly files; about 1 h with 4 parallel workers). It can be run per product (`--only tair wind soilmoist evap`, then `--only precip t2m_long`); each run upserts its own variables. Each monthly subset is cached in `etl_cache/` (or `ETL_CACHE_DIR`), so a crashed or stopped run resumes where it stopped; `ETL_WORKERS` sets the number of parallel readers (default 4):
    ```bash
    export SUPABASE_DB_URL="postgresql://postgres.xxxx:PASSWORD@aws-0-eu-....pooler.supabase.com:5432/postgres"
    python etl_espana.py --upload --export-dir export
@@ -125,6 +125,14 @@ Already tested against the real NASA servers (2026-11-14):
 - IMERG `precip` (3 months): 1184 cells; Salamanca 1.0–1.8 mm/day. Variable names and the (time, lon, lat) order work as written.
 - MERRA-2 `t2m_long` (3 months): 1184 cells; Salamanca 3.6–6.8 °C in winter 1980.
 - Memory: each remote file is closed after reading (it used to grow ~14 MB per file).
+- NASA returned a transient `502 Bad Gateway` once; the ETL now retries each file up to 6 times with backoff.
+
+Full load results (2026-11-14, in Supabase, 24 MB):
+- `tair`, `wind`, `precip`, `t2m_long`: 1184 cells; `soilmoist`, `evap`: 1177 cells. The 7 cells without soil variables are coastal cells where GLDAS has air data but no soil data, two of them in Lanzarote and Fuerteventura: `get_cell` returns 4 variables there, so the interface must handle missing variables.
+- Periods: GLDAS 2000-01 → 2026-07 (319 months), IMERG 1998-01 → 2025-09 (333), MERRA-2 1980-01 → 2026-09 (561). No gaps in Salamanca.
+- Salamanca means: `tair` 12.2 °C, `t2m_long` 12.4 °C, `precip` 1.78 mm/day, `wind` 3.6 m/s, `soilmoist` 21.6 kg/m², `evap` 1.43 mm/day.
+- `get_cell`: Salamanca 6 rows (cell at 9.9 km); Cádiz returns a land cell at 18 km; open sea returns nothing.
+- `variables.json` is now written as UTF-8 (before, Windows wrote it in cp1252).
 
 Known risks:
 - **Canaries:** only 10 land cells. La Gomera and El Hierro may not have their own cell; then `get_cell` returns the one of the neighbouring island.
