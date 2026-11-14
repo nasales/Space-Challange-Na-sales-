@@ -23,8 +23,18 @@ dist-ssr
 *.sln
 *.sw?
 
-# Python
+# Backend / Python
+.env
+.venv/
 __pycache__/
+*.pyc
+.pytest_cache/
+.vercel
+
+# Playwright
+test-results/
+playwright-report/
+# Python
 
 # ETL output (large, regenerate with archivos_preSupabase/etl_espana.py)
 export/

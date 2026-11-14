@@ -1,0 +1,102 @@
+{
+  "landmarks": [
+    {
+      "id": "puerta-de-alcala",
+      "name": "Puerta de Alcalá",
+      "city": "Madrid",
+      "lat": 40.41998,
+      "lon": -3.68873,
+      "heading": 0,
+      "description": "Monumental gate from 1778, the old entrance to Madrid on the road from Alcalá."
+    },
+    {
+      "id": "acueducto-segovia",
+      "name": "Acueducto de Segovia",
+      "city": "Segovia",
+      "lat": 40.94808,
+      "lon": -4.11815,
+      "heading": 35,
+      "description": "1st-century Roman aqueduct with more than 160 granite arches built without mortar."
+    },
+    {
+      "id": "sagrada-familia",
+      "name": "Sagrada Familia",
+      "city": "Barcelona",
+      "lat": 41.40363,
+      "lon": 2.17435,
+      "heading": 0,
+      "scale": 0.75,
+      "description": "Gaudí's basilica, under construction since 1882, with 18 planned towers."
+    },
+    {
+      "id": "giralda",
+      "name": "La Giralda",
+      "city": "Sevilla",
+      "lat": 37.38619,
+      "lon": -5.99259,
+      "heading": 0,
+      "scale": 0.5,
+      "description": "Bell tower of Seville Cathedral, once a 12th-century Almohad minaret."
+    },
+    {
+      "id": "alhambra",
+      "name": "La Alhambra",
+      "city": "Granada",
+      "lat": 37.17607,
+      "lon": -3.58807,
+      "heading": 0,
+      "scale": 0.5,
+      "description": "Nasrid palace city from the 13th and 14th centuries on the Sabika hill."
+    },
+    {
+      "id": "catedral-santiago",
+      "name": "Catedral de Santiago",
+      "city": "Santiago de Compostela",
+      "lat": 42.88059,
+      "lon": -8.54457,
+      "heading": -90,
+      "scale": 0.42,
+      "description": "End of the Way of St. James, with its Baroque Obradoiro façade."
+    },
+    {
+      "id": "guggenheim",
+      "name": "Museo Guggenheim",
+      "city": "Bilbao",
+      "lat": 43.26870,
+      "lon": -2.93402,
+      "heading": 0,
+      "scale": 0.45,
+      "description": "Frank Gehry's 1997 museum, clad in titanium beside the estuary."
+    },
+    {
+      "id": "ciudad-artes",
+      "name": "Ciudad de las Artes y las Ciencias",
+      "city": "Valencia",
+      "lat": 39.45475,
+      "lon": -0.35049,
+      "heading": 0,
+      "scale": 0.4,
+      "description": "Santiago Calatrava's complex in the old bed of the Turia river."
+    },
+    {
+      "id": "torre-hercules",
+      "name": "Torre de Hércules",
+      "city": "A Coruña",
+      "lat": 43.38592,
+      "lon": -8.40643,
+      "heading": 0,
+      "scale": 0.5,
+      "description": "1st-century Roman lighthouse, the oldest in the world still in use."
+    },
+    {
+      "id": "mezquita-cordoba",
+      "name": "Mezquita-Catedral",
+      "city": "Córdoba",
+      "lat": 37.87888,
+      "lon": -4.77938,
+      "heading": 0,
+      "scale": 0.42,
+      "description": "8th-century Umayyad mosque with its forest of red and white arches."
+    }
+  ]
+}

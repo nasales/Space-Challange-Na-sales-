@@ -1,0 +1,198 @@
+/* Main menu: two columns (panel | character stage), stacked on narrow screens. */
+.main-menu {
+  --menu-ink: #3b4a6b;
+  --menu-sea: #5ea8c2;
+  --menu-gold: #f2c14e;
+  --menu-red: #e5322d;
+  --menu-paper: #fff8e7;
+
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: minmax(300px, 2fr) 3fr;
+  background: var(--menu-sea);
+  color: var(--menu-ink);
+  overflow: hidden;
+}
+
+/* ---- Left panel ---- */
+.main-menu__panel {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 48px clamp(24px, 5vw, 72px);
+  background: var(--menu-paper);
+  border-right: 6px solid var(--menu-ink);
+  box-shadow: 10px 0 0 rgba(59, 74, 107, 0.25);
+}
+
+.main-menu__kicker {
+  margin: 0;
+  padding: 4px 10px;
+  background: var(--menu-ink);
+  color: var(--menu-paper);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  transform: rotate(-2deg);
+}
+
+.main-menu__title {
+  margin: 0;
+  font-size: clamp(2.4rem, 5.5vw, 4.6rem);
+  line-height: 0.95;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+}
+
+.main-menu__title span {
+  display: block;
+  color: var(--menu-red);
+  text-shadow: 4px 4px 0 var(--menu-ink);
+}
+
+.main-menu__tagline {
+  margin: 0;
+  max-width: 28ch;
+  font-size: 1.1rem;
+  line-height: 1.4;
+}
+
+.main-menu__play {
+  margin-top: 12px;
+  padding: 16px 56px;
+  border: 4px solid var(--menu-ink);
+  border-radius: 14px;
+  background: var(--menu-gold);
+  color: var(--menu-ink);
+  font: inherit;
+  font-size: 1.8rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 6px 6px 0 var(--menu-ink);
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease,
+    background-color 0.12s ease;
+  animation: main-menu-nudge 2.4s ease-in-out infinite;
+}
+
+.main-menu__play:hover {
+  background: #ffd76a;
+  transform: translate(-2px, -2px);
+  box-shadow: 8px 8px 0 var(--menu-ink);
+  animation: none;
+}
+
+.main-menu__play:active {
+  transform: translate(4px, 4px);
+  box-shadow: 2px 2px 0 var(--menu-ink);
+}
+
+.main-menu__play:focus-visible {
+  outline: 4px solid var(--menu-red);
+  outline-offset: 4px;
+}
+
+.main-menu__credit {
+  margin: auto 0 0;
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+/* ---- Right stage ---- */
+.main-menu__stage {
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 55%, #8fd0e3 0%, var(--menu-sea) 55%, #3f86a3 100%);
+}
+
+/* Comic sunburst rays, slowly turning */
+.main-menu__rays {
+  position: absolute;
+  left: 50%;
+  top: 55%;
+  width: 220vmax;
+  height: 220vmax;
+  translate: -50% -50%;
+  background: repeating-conic-gradient(rgba(255, 255, 255, 0.16) 0deg 9deg, transparent 9deg 18deg);
+  animation: main-menu-spin 40s linear infinite;
+}
+
+/* Halftone dots, fading towards the center */
+.main-menu__dots {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(59, 74, 107, 0.22) 1.6px, transparent 1.8px);
+  background-size: 14px 14px;
+  mask-image: radial-gradient(circle at 50% 55%, transparent 25%, black 75%);
+}
+
+.main-menu__character {
+  position: absolute;
+  inset: 0;
+}
+
+@keyframes main-menu-spin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+@keyframes main-menu-nudge {
+  0%,
+  80%,
+  100% {
+    transform: none;
+  }
+  85% {
+    transform: rotate(-3deg) scale(1.04);
+  }
+  90% {
+    transform: rotate(3deg) scale(1.04);
+  }
+  95% {
+    transform: rotate(-1deg);
+  }
+}
+
+/* ---- Narrow screens: character on top, panel below ---- */
+@media (max-width: 760px) {
+  .main-menu {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
+  }
+
+  .main-menu__stage {
+    order: -1;
+  }
+
+  .main-menu__panel {
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+    padding: 24px 16px;
+    border-right: none;
+    border-top: 6px solid var(--menu-ink);
+    box-shadow: 0 -10px 0 rgba(59, 74, 107, 0.25);
+  }
+
+  .main-menu__credit {
+    margin-top: 4px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .main-menu__rays,
+  .main-menu__play {
+    animation: none;
+  }
+}

@@ -1,9 +1,11 @@
 # Game agent — owner: Person 2
 
 ## Scope (only edit these)
-- `src/game/` — 3D tilted world map, police car, controls, stops, featured-case markers
+- `src/game/` — 3D tilted world map, player character, controls, stops, featured-case markers (`GameView.tsx`, `scene/`, `map/`, …)
+- `public/maps/` and `scripts/fetch-*.mjs` — map data and the scripts that download it
 - `src/game/assets/`
-(TODO: adjust paths once the stack is chosen)
+- Shared with Interface (change only with agreement): `src/shared/`, `src/App.tsx`
+- Stack: Vite + React + TypeScript + three.js. The game never imports from `src/ui/`; it only uses the types in `src/shared/`.
 
 ## Extra checks in every SYNC CHECK
 1. Drive to every featured case and stop: the correct place and coordinates are passed to the interface.

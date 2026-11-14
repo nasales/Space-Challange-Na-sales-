@@ -1,0 +1,43 @@
+.speed-lines {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transition: opacity 0.35s ease-out; /* fades in and out smoothly */
+}
+
+.speed-lines__line {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 3px;
+  height: var(--length);
+  margin-left: -1.5px;
+  background: linear-gradient(to top, rgb(255 255 255 / 0), rgb(255 255 255 / 0.95));
+  box-shadow: 0 0 3px rgb(255 255 255 / 0.6);
+  border-radius: 2px;
+  transform-origin: 50% 0;
+  animation: speed-line 0.42s linear infinite;
+  animation-delay: var(--delay);
+}
+
+/* Each line starts away from the centre (so the player stays visible) and runs to the edge */
+@keyframes speed-line {
+  from {
+    transform: rotate(var(--angle)) translateY(22vmax);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  to {
+    transform: rotate(var(--angle)) translateY(70vmax);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .speed-lines {
+    display: none;
+  }
+}
