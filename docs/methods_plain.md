@@ -10,7 +10,7 @@ in climate research all over the world.
 - **Temperature, wind, soil moisture and evaporation** (from 2000): NASA GLDAS.
 - **Rain** (from 1998): NASA GPM IMERG, satellites calibrated with rain gauges.
 - **Long temperature record** (from 1980): NASA MERRA-2.
-- **Featured cases** (1981-2024): NASA POWER, which is based on MERRA-2.
+- **Featured cases:** the same three NASA products, at the location of each case.
 
 Spain is divided into squares of about 28 km. For each square we have one value per month.
 
@@ -27,9 +27,9 @@ When you pick a place and a variable, the detective does three things:
 - **A trend is not a cause.** The data can say *that* something changed, not *why*.
 
 ## Good detectives know the limits
-- Some series start in 1998 or 2000, so they cover about 25 years.
+- Some series start in 1998 or 2000, so they cover only about 26 to 28 years.
 - Each square is an average over about 28 km. A single town can be different.
 - With so many squares, a few may look significant by chance. A pattern over a whole region is stronger evidence than one square.
 
 ## Data credits
-Data: NASA GLDAS, NASA GPM IMERG, NASA MERRA-2 and NASA POWER (NASA Langley Research Center POWER Project).
+Data: NASA GLDAS, NASA GPM IMERG and NASA MERRA-2.
