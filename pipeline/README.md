@@ -3,6 +3,15 @@
 This file is the agreement between the two owners of `pipeline/`.
 Change it only after telling the other person. Code follows this file, not the other way round.
 
+> **v4 (2026-11-14, Perry): who does what, in one line each.**
+> - **Diego — generic analysis:** the player can stop anywhere on the map and analyze it. That is
+>   the `trends` table: `fill_trends.py` computes every cell × variable from Perry's export; Perry
+>   uploads the rows. Diego does **not** build featured cases.
+> - **Ivan — featured cases:** about 10 places of interest marked in the game, as
+>   `data/cache/case_*.json` (`pipeline/cases.py`, `pipeline/build_cases.py`), at least one
+>   non-significant.
+> - **Both:** merge `main` into your branch now so you work on this version.
+>
 > **v3 (2026-11-14, Diego):** after Perry's database files landed in `main`
 > (`archivos_preSupabase/`): the `trends` table is filled by us (statistics), with Ivan's
 > `analyze_trend` as the official method; new Diego block "fill trends"; `start_month` is a date
@@ -13,7 +22,7 @@ Reference files: `archivos_preSupabase/encargo_base_de_datos.md` (brief), `supab
 - Grid of ~1180 land cells of 0.25° over Spain (plus Portugal, Andorra, south of France, north of Morocco/Algeria). `cell_id = floor((lat+90)/0.25) * 1440 + floor((lon+180)/0.25)`. Salamanca = `753817` (centre 40.875, −5.625).
 - 6 variables, **monthly means**, `null` for gaps. Stored in Supabase (`variables`, `cells`, `series`, `trends`).
 - **The ETL leaves `trends` empty: statistics (Ivan + Diego) fills it.**
-- The game reads Supabase live with `get_cell(lat, lon)`. Featured cases must also work offline from `data/cache/*.json` (AGENTS.md rule 10), which Diego builds from the JSON export.
+- The game reads Supabase live with `get_cell(lat, lon)`. Featured cases must also work offline from `data/cache/case_*.json` (AGENTS.md rule 10), which Ivan builds (`pipeline/build_cases.py`).
 
 | id | Variable | Units | Source (product, version) | From | DOI |
 |---|---|---|---|---|---|
@@ -113,8 +122,8 @@ Before starting, ask the human which person they are (Ivan or Diego) and which b
 | 4 | Diego | `diego_dev` | ✅ (fake export; recheck with the real one) Adapter `pipeline/sources/supabase_export.py` (`cell_id_for`, `find_cell`, `load_series`, `load_trend`, `iter_series`): reads `export/cells/<cell_id>.json` + `variables.json` into `Series` + trend dict | Returns a valid `Series` for cell `753817` (Salamanca) |
 | 4 | Ivan | `ivan_dev` | `explain(trend, series) -> str` in `explain.py`: plain-English facts for the AI checker | Correct text for one significant and one non-significant case |
 | 5 | Diego | `diego_dev` | ✅ (needs Ivan's `trend.py` to run for real) `fill_trends.py` (Interface 4): trends for all cells × variables, handed to Perry for upload | Rows file passes a schema check; skipped series listed with a reason |
-| 6 | Diego | `diego_dev` | Featured cases in `data/cache/`, at least one non-significant | `./scripts/check.sh` passes |
-| 6 | Ivan | `ivan_dev` | (a) Spot-check `analyze_trend` against `trend_stats()` on real cells (slope, p-value, significant). (b) Compare one featured case with Giovanni (direction and rough size) | Differences noted in the SYNC CHECK report; any mismatch in `significant` goes as a bug line |
+| 6 | Diego | `diego_dev` | Generic analysis: run `fill_trends.py` on Perry's real export (all cells × 6 variables) and report to Perry that it runs clean; Perry uploads the rows to `trends`. No featured cases (they are Ivan's) | Rows file passes the schema check on the real export; skipped series listed with a reason |
+| 6 | Ivan | `ivan_dev` | Featured cases: about 10 places of interest marked in the game, in `data/cache/case_*.json`, at least one non-significant. Then (a) Spot-check `analyze_trend` against `trend_stats()` on real cells (slope, p-value, significant). (b) Compare one featured case with Giovanni (direction and rough size) | Cases pass `./scripts/check.sh`; differences noted in the SYNC CHECK report; any mismatch in `significant` goes as a bug line |
 
 ## Integration
 - Each person merges their own branch into `main`, always after the QA checks pass (`./scripts/check.sh`, QA report in `docs/agents/qa.md`).
@@ -122,7 +131,7 @@ Before starting, ask the human which person they are (Ivan or Diego) and which b
 - If Perry runs the ETL with `--with-trends` (for `compare_db.py`), those trends are only for comparison: `fill_trends` then upserts the official `analyze_trend` rows over them.
 - After Diego's block 4: first real case end to end (JSON export -> `Series` + trend -> `data/cache/` JSON), handed to Yeipi.
 - After Diego's block 5: Perry uploads the trend rows; `get_cell` then returns real trends to the game.
-- Before Sunday 13:00 (freeze): `trends` filled, all featured cases in `data/cache/`, `check.sh` green, `AI_USAGE.md` and `REFERENCES.md` complete.
+- Before Sunday 13:00 (freeze): `trends` filled (Diego + Perry), all featured cases in `data/cache/` (Ivan), `check.sh` green, `AI_USAGE.md` and `REFERENCES.md` complete.
 
 ## Decisions
 Closed:
