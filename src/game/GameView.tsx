@@ -28,7 +28,7 @@ import { createChaseCamera } from './camera/chaseCamera'
 import { createKeyboard } from './input/keyboard'
 import { nearestPlace } from './location/nearestPlace'
 import { createLandmarks, loadLandmarks } from './landmarks/createLandmarks'
-import { bendRiversAround } from './map/rivers'
+import { bendRiversAround, prepareRivers } from './map/rivers'
 import { createRivers } from './scene/createRivers'
 import type { GameCallbacks, GameStatus, HudState } from '../shared/events'
 import './GameView.css'
@@ -83,13 +83,14 @@ export default function GameView({ onStatus, onHud }: GameCallbacks) {
         // Rivers bend around the monuments so no plaza or model stands in the water
         const clearings = landmarks.riverClearings(10)
         const zones = explored.zones.map((z) => {
-          const zone = z.rivers ? { ...z, rivers: bendRiversAround(z.rivers, clearings) } : z
+          // Rivers: gaps closed, ends labelled (spring / mouth / confluence), then bent around monuments
+          const zone = z.rivers ? { ...z, rivers: bendRiversAround(prepareRivers(z.rivers, z), clearings) } : z
           // Smoothed heights plus extra relief (slopes everywhere): same grid for texture and mesh
           const heights = addRelief(smoothHeights(zone.heights, zone.heightWidth, zone.heightHeight), zone.heightWidth, zone.heightHeight)
           landmarks.flattenTerrain(zone, heights) // explanadas bajo los monumentos
           const textureWidth = Math.min(4096, zone.heightWidth * 2)
           const texture = makeTexture(buildToyMap(zone, heights, country, textureWidth), renderer)
-          const terrain = createTerrain(zone, heights, country, texture)
+          const terrain = createTerrain(zone, heights, country, texture, clearings)
           scene.add(terrain.group)
           const water = createRivers(zone.rivers, terrain) // animated water inside the carved channels
           scene.add(water.mesh)

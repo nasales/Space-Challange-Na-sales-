@@ -8,7 +8,7 @@ import type { ZoneData } from '../map/mapData'
 import type { Country } from '../map/worldData'
 import { terraceHeight } from '../map/terrace'
 import { computeExploredRegion } from '../map/exploredRegion'
-import { riverCarveDepth, FIELD_REACH_KM } from '../map/rivers'
+import { riverCarveDepth, FIELD_REACH_KM, type RiverClearing } from '../map/rivers'
 import {
   lonLatToWorld,
   metersToY,
@@ -47,6 +47,8 @@ export function createTerrain(
   heights: Float32Array,
   country: Country,
   texture: THREE.Texture,
+  /** Objects (monuments) whose ground the river channels must never carve. */
+  keepDry: RiverClearing[] = [],
 ): Terrain {
   const { bounds, heightWidth: gw, heightHeight: gh } = data
   const width = (bounds.east - bounds.west) * UNITS_PER_DEG_LON
@@ -55,7 +57,7 @@ export function createTerrain(
   const { countryLand, region } = computeExploredRegion(country, bounds, heights, gw, gh, cellsPerKm)
 
   // Shallow river beds: a small dip under the terraced surface, so water follows the terraces
-  const river = riverCarveDepth(data.rivers, bounds, heights, gw, gh, cellsPerKm, countryLand)
+  const river = riverCarveDepth(data.rivers, bounds, gw, gh, cellsPerKm, countryLand, keepDry)
   const carve = river?.carve
   const unitsPerCell = UNITS_PER_KM / cellsPerKm
 
