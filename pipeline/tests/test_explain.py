@@ -95,3 +95,24 @@ def test_dataset_credit_does_not_repeat_nasa():
     text = explain(_trend(), FakeSeries(dataset="NASA POWER (MERRA-2 based) T2M"))
     assert "Data: NASA POWER (MERRA-2 based) T2M" in text
     assert "NASA NASA" not in text
+
+
+def test_weak_and_near_significance_lines():
+    from pipeline.explain import NEAR, WEAK
+
+    class S:
+        place, variable, units, dataset, lat, lon = "X", "SOILM", "kg/m²", "NASA GLDAS", 37.0, -6.45
+
+    def text(p, significant):
+        return explain({"slope": -0.03, "p_value": p, "significant": significant, "test": "mk"}, S())
+
+    for p in (0.01, 0.0498):  # significant, close to the threshold
+        assert WEAK in text(p, True) and NEAR not in text(p, True)
+    for p in (0.009, 0.001):  # significant, strong evidence
+        assert WEAK not in text(p, True)
+    for p in (0.05, 0.0999):  # not significant, but close
+        assert NEAR in text(p, False) and WEAK not in text(p, False)
+    for p in (0.10, 0.5):  # not significant, far from the threshold
+        assert NEAR not in text(p, False)
+    lines = text(0.03, True).splitlines()
+    assert lines[lines.index(WEAK) - 1].startswith("Mann-Kendall p-value: p = 0.03, significant")

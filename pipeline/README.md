@@ -42,8 +42,8 @@ JSON export (`etl_espana.py --export-dir export`):
 ## Who owns what
 | File | Owner |
 |---|---|
-| `pipeline/__init__.py`, `pipeline/trend.py`, `pipeline/explain.py`, `pipeline/tests/test_trend.py`, `pipeline/tests/test_explain.py`, `pipeline/compare_db.py`, `pipeline/tests/test_compare_db.py`, `tests/stats/test_diego_cross.py`, `pipeline/cases.py`, `pipeline/nasa_power.py`, `pipeline/build_cases.py`, `pipeline/tests/test_nasa_power.py`, `pipeline/tests/test_build_cases.py`, `data/raw/power/`, `data/cache/case_*.json` (featured case studies), `data/cases_index.json` | Ivan |
-| `pipeline/series.py`, `pipeline/sources/*.py`, `pipeline/build_case.py`, `pipeline/fill_trends.py`, `pipeline/check_trends.py`, `pipeline/dry_run.py`, `pipeline/tests/test_series.py`, `pipeline/tests/test_build_case.py`, `pipeline/tests/test_sources.py`, `pipeline/tests/test_fill_trends.py`, `pipeline/tests/test_check_trends.py`, `pipeline/tests/test_dry_run.py`, `data/raw/` (except `data/raw/power/`) | Diego |
+| `pipeline/__init__.py`, `pipeline/trend.py`, `pipeline/explain.py`, `pipeline/tests/test_trend.py`, `pipeline/tests/test_explain.py`, `pipeline/compare_db.py`, `pipeline/tests/test_compare_db.py`, `tests/stats/test_diego_cross.py`, `pipeline/cases.py`, `pipeline/nasa_power.py`, `pipeline/build_cases.py`, `pipeline/tests/test_nasa_power.py`, `pipeline/tests/test_build_cases.py`, `data/raw/power/`, `data/cache/case_*.json` (featured case studies), `data/cases_index.json`, `docs/featured_cases.md`, `pipeline/featured_doc.py`, `pipeline/sources/case_export.py` | Ivan |
+| `pipeline/series.py`, `pipeline/sources/*.py` (except `case_export.py`), `pipeline/build_case.py`, `pipeline/fill_trends.py`, `pipeline/check_trends.py`, `pipeline/dry_run.py`, `pipeline/tests/test_series.py`, `pipeline/tests/test_build_case.py`, `pipeline/tests/test_sources.py`, `pipeline/tests/test_fill_trends.py`, `pipeline/tests/test_check_trends.py`, `pipeline/tests/test_dry_run.py`, `data/raw/` (except `data/raw/power/`) | Diego |
 | `pipeline/requirements.txt`, `pipeline/tests/__init__.py`, `AI_USAGE.md`, `REFERENCES.md` | Shared: append lines at the end only |
 
 An agent working for one owner must not edit the other owner's files. Never edit `docs/contract.md`; edit `tests/stats/` only when the human asks and reviews (AGENTS.md rule 3).
@@ -150,7 +150,7 @@ Before starting, ask the human which person they are (Ivan or Diego) and which b
 - Each person merges their own branch into `main`, always after the QA checks pass (`./scripts/check.sh`, QA report in `docs/agents/qa.md`).
 - ✅ After Ivan's block 1 is merged: the real `analyze_trend` replaces the stub automatically (`get_analyze_trend()`); checked end to end.
 - If Perry runs the ETL with `--with-trends` (for `compare_db.py`), those trends are only for comparison: `fill_trends` then upserts the official `analyze_trend` rows over them.
-- Featured cases (Ivan): NASA POWER point data -> `pipeline/build_cases.py` -> `data/cache/case_*.json`, handed to Yeipi.
+- Featured cases (Ivan): native-pixel MERRA-2 / GPM IMERG / GLDAS series prepared by Perry (`export/case_export`, not in git) -> `pipeline/build_cases.py --source case_export` -> `data/cache/case_*.json`, handed to Yeipi. NASA POWER point data (`data/raw/power/`, `--source power`) is kept as offline fallback.
 - After the real export: Diego runs `fill_trends` + `check_trends`; Perry uploads the rows only if `check_trends` exits 0; `get_cell` then returns real trends to the game.
 - Before Sunday 13:00 (freeze): `trends` filled (Diego + Perry), all featured cases in `data/cache/` (Ivan), `check.sh` green, `AI_USAGE.md` and `REFERENCES.md` complete.
 
