@@ -300,8 +300,45 @@ function BarrelFilter({ lens }: { lens: RefObject<HTMLDivElement | null> }) {
 
 /* ------------------------------------------------------------------------------------------------
    Glass surface: chromatic fringe, thickness shading, curved highlight, secondary reflection, dust.
-   One SVG in a 100 x 100 box that scales with the lens.
+   One SVG in a 100 x 100 box that scales with the lens. Every ring and arc is drawn around the
+   glass centre (50, 50) with a radius given as a fraction of the glass radius (50), so nothing has
+   a centre of its own that could sit off the bezel's.
 ------------------------------------------------------------------------------------------------ */
+
+/** Centre and radius of the glass in the SVG box */
+const G_C = 50
+const G_R = 50
+
+/** Point on the circle of radius f * G_R at angle deg (SVG angles: 0 = right, 90 = down) */
+function glassPoint(f: number, deg: number): string {
+  const a = (deg * Math.PI) / 180
+  return `${(G_C + f * G_R * Math.cos(a)).toFixed(3)} ${(G_C + f * G_R * Math.sin(a)).toFixed(3)}`
+}
+
+/** Open arc on the circle of radius f * G_R, clockwise from a0 to a1 (degrees, a1 > a0, < 180 apart) */
+function glassArc(f: number, a0: number, a1: number): string {
+  const r = (f * G_R).toFixed(3)
+  return `M ${glassPoint(f, a0)} A ${r} ${r} 0 0 1 ${glassPoint(f, a1)}`
+}
+
+/** Ring sector between radii fIn and fOut (fractions of G_R), from a0 to a1 */
+function glassBand(fIn: number, fOut: number, a0: number, a1: number): string {
+  const rIn = (fIn * G_R).toFixed(3)
+  const rOut = (fOut * G_R).toFixed(3)
+  return (
+    `M ${glassPoint(fOut, a0)} A ${rOut} ${rOut} 0 0 1 ${glassPoint(fOut, a1)} ` +
+    `L ${glassPoint(fIn, a1)} A ${rIn} ${rIn} 0 0 0 ${glassPoint(fIn, a0)} Z`
+  )
+}
+
+// Reflections, all concentric with the glass. The light comes from the upper left (180-270 deg).
+/** Main specular band along the upper-left of the glass */
+const SPEC_BAND = glassBand(0.67, 0.76, 192, 262)
+/** Short bright stroke just inside the band, lower on the same side */
+const SPEC_STROKE = glassArc(0.61, 176, 190)
+/** Soft secondary reflection, lower right (the opposite side) */
+const SECONDARY_BAND = glassBand(0.62, 0.72, 30, 62)
+const SECONDARY_STROKE = glassArc(0.74, 34, 58)
 
 function GlassSurface() {
   return (
@@ -327,23 +364,20 @@ function GlassSurface() {
         </defs>
 
         {/* thickness: the glass gets darker and denser towards the rim */}
-        <circle cx="50" cy="50" r="50" fill="url(#vp-thickness)" />
+        <circle cx={G_C} cy={G_C} r={G_R} fill="url(#vp-thickness)" />
 
-        {/* chromatic fringe: warm on one side of the rim, cool on the other */}
-        <circle cx="50.35" cy="50.2" r="49.1" fill="none" stroke="#ff5a7a" strokeOpacity="0.32" strokeWidth="0.9" filter="url(#vp-soft)" />
-        <circle cx="49.65" cy="49.8" r="49.1" fill="none" stroke="#3fc8ff" strokeOpacity="0.32" strokeWidth="0.9" filter="url(#vp-soft)" />
+        {/* chromatic fringe: two concentric rings just inside the rim, cool inside and warm outside
+            (red bends least, so it lands nearest the edge) */}
+        <circle cx={G_C} cy={G_C} r={G_R * 0.966} fill="none" stroke="#3fc8ff" strokeOpacity="0.3" strokeWidth="0.8" filter="url(#vp-soft)" />
+        <circle cx={G_C} cy={G_C} r={G_R * 0.984} fill="none" stroke="#ff5a7a" strokeOpacity="0.3" strokeWidth="0.8" filter="url(#vp-soft)" />
 
         {/* curved specular highlight along the upper-left of the glass */}
-        <path
-          d="M 13 44 A 38 38 0 0 1 44 13 L 45.5 17.5 A 33.5 33.5 0 0 0 17.5 45.5 Z"
-          fill="url(#vp-spec)"
-          filter="url(#vp-soft)"
-        />
-        <path d="M 19.5 52 A 31 31 0 0 1 20.3 46" stroke="#fff" strokeOpacity="0.7" strokeWidth="1.3" strokeLinecap="round" fill="none" />
+        <path d={SPEC_BAND} fill="url(#vp-spec)" filter="url(#vp-soft)" />
+        <path d={SPEC_STROKE} stroke="#fff" strokeOpacity="0.7" strokeWidth="1.3" strokeLinecap="round" fill="none" />
 
         {/* soft secondary reflection, lower right */}
-        <ellipse cx="72" cy="76" rx="11" ry="5" transform="rotate(-38 72 76)" fill="#fff" fillOpacity="0.22" filter="url(#vp-softer)" />
-        <path d="M 80 70 A 33 33 0 0 1 70 81" stroke="#fff" strokeOpacity="0.4" strokeWidth="0.9" strokeLinecap="round" fill="none" />
+        <path d={SECONDARY_BAND} fill="#fff" fillOpacity="0.2" filter="url(#vp-softer)" />
+        <path d={SECONDARY_STROKE} stroke="#fff" strokeOpacity="0.4" strokeWidth="0.9" strokeLinecap="round" fill="none" />
 
         {/* faint dust on the glass */}
         <g fill="#fff">

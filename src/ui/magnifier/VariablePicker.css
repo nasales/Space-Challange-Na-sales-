@@ -1,5 +1,11 @@
 /* Clear glass of the detective's hand lens, drawn over the 3D lens once the camera has flown in.
-   Comic/toy style of the game: gold #f2c14e, ink #1a1423 outlines, hard offset shadows.
+   Comic/toy style of the game: gold #f2c14e, ink #1a1423 outlines.
+
+   Geometry: every ring (spotlight edge, ink outline, bezel, knurl, glass edge, surface shading,
+   SVG fringe and highlights) is derived from ONE source, --vp-r (glass radius) plus --vp-bezel
+   and --vp-ink-w, and drawn around the same centre: the centre of .variable-picker__lens, which
+   the grid puts at the centre of the screen (where the game frames the 3D glass). Nothing has an
+   offset centre, so no ring can drift against another.
 
    Layer order inside .variable-picker__lens (bottom to top):
      bezel (brushed brass ring outside the glass) -> optics (backdrop filters: colour lift,
@@ -16,7 +22,14 @@
   --vp-sea: #5ea8c2;
   /* --lens-screen-d is set inline from LENS_SCREEN_DIAMETER (src/shared/events.ts) */
   --lens-d: var(--lens-screen-d, min(72vh, 72vw));
-  --vp-bezel: calc(var(--lens-d) * 0.075);
+  /* Single geometry source. Radius and bezel are rounded to whole pixels where round() exists
+     (below), so the rings derived from them cannot drift by sub-pixel amounts against each other. */
+  --vp-r: calc(var(--lens-d) / 2);
+  --vp-bezel: calc(var(--vp-r) * 0.15);
+  --vp-ink-w: 4px;
+  /* derived radii, all measured from the lens centre */
+  --vp-r-brass: calc(var(--vp-r) + var(--vp-bezel));
+  --vp-r-outer: calc(var(--vp-r-brass) + var(--vp-ink-w));
   --vp-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 
   position: absolute;
@@ -27,15 +40,23 @@
   overflow: hidden;
 }
 
-/* Spotlight: dims the world around the lens so the eye goes to the glass */
+@supports (width: round(1px, 1px)) {
+  .variable-picker {
+    --vp-r: round(calc(var(--lens-d) / 2), 1px);
+    --vp-bezel: round(calc(var(--vp-r) * 0.15), 1px);
+  }
+}
+
+/* Spotlight: dims the world around the lens so the eye goes to the glass. Its clear disc ends
+   exactly at the outer ink edge, on the same centre as the lens (both at the screen centre). */
 .variable-picker::before {
   content: '';
   position: absolute;
   inset: 0;
   background: radial-gradient(
     circle at 50% 50%,
-    transparent calc(var(--lens-d) / 2 + var(--vp-bezel)),
-    rgb(26 20 35 / 0.18) calc(var(--lens-d) / 2 + var(--vp-bezel) + 40px),
+    transparent var(--vp-r-outer),
+    rgb(26 20 35 / 0.18) calc(var(--vp-r-outer) + 40px),
     rgb(26 20 35 / 0.42) 100%
   );
   opacity: 0;
@@ -59,14 +80,17 @@
 /* ---- The lens: exactly the 3D glass, centred ---- */
 .variable-picker__lens {
   position: relative;
-  width: var(--lens-d);
-  height: var(--lens-d);
+  width: calc(var(--vp-r) * 2);
+  height: calc(var(--vp-r) * 2);
   border-radius: 50%;
   outline: none;
-  /* ink outline just outside the bezel and the hard comic shadow (painted under the bezel) */
+  /* Ink outline just outside the bezel (a spread ring on the same centre), then the lens's depth:
+     a tight contact shadow and a wide soft one, only nudged down, so the brass reads as floating
+     over the map without drawing a second, shifted ring. */
   box-shadow:
-    0 0 0 calc(var(--vp-bezel) + 4px) var(--vp-ink),
-    12px 14px 0 calc(var(--vp-bezel) + 4px) rgb(26 20 35 / 0.32);
+    0 0 0 calc(var(--vp-bezel) + var(--vp-ink-w)) var(--vp-ink),
+    0 3px 6px calc(var(--vp-bezel) + var(--vp-ink-w)) rgb(26 20 35 / 0.28),
+    0 12px 40px calc(var(--vp-bezel) + var(--vp-ink-w)) rgb(26 20 35 / 0.3);
 }
 
 /* The lens lets go: it drifts a little towards the eye while every layer fades */
@@ -82,17 +106,17 @@
   background:
     /* bevel: dark lip at the glass, bright crown, dark outer edge */
     radial-gradient(
-      circle closest-side,
-      rgb(70 40 0 / 0.65) calc(100% - var(--vp-bezel)),
-      rgb(70 40 0 / 0.15) calc(100% - var(--vp-bezel) * 0.82),
-      rgb(255 246 205 / 0.55) calc(100% - var(--vp-bezel) * 0.58),
-      rgb(255 246 205 / 0) calc(100% - var(--vp-bezel) * 0.36),
-      rgb(26 20 35 / 0.25) calc(100% - var(--vp-bezel) * 0.31),
-      rgb(26 20 35 / 0) calc(100% - var(--vp-bezel) * 0.27),
-      rgb(70 40 0 / 0.55) 100%
+      circle at 50% 50%,
+      rgb(70 40 0 / 0.65) var(--vp-r),
+      rgb(70 40 0 / 0.15) calc(var(--vp-r) + var(--vp-bezel) * 0.18),
+      rgb(255 246 205 / 0.55) calc(var(--vp-r) + var(--vp-bezel) * 0.42),
+      rgb(255 246 205 / 0) calc(var(--vp-r) + var(--vp-bezel) * 0.64),
+      rgb(26 20 35 / 0.25) calc(var(--vp-r) + var(--vp-bezel) * 0.69),
+      rgb(26 20 35 / 0) calc(var(--vp-r) + var(--vp-bezel) * 0.73),
+      rgb(70 40 0 / 0.55) var(--vp-r-brass)
     ),
     /* brushed metal: fine concentric strokes */
-    repeating-radial-gradient(circle, rgb(255 255 255 / 0.08) 0 1px, rgb(90 55 0 / 0.08) 1px 2.5px),
+    repeating-radial-gradient(circle at 50% 50%,rgb(255 255 255 / 0.08) 0 1px, rgb(90 55 0 / 0.08) 1px 2.5px),
     /* polished brass reflecting the light from the upper left */
     conic-gradient(
       from 200deg,
@@ -108,9 +132,9 @@
       #b47c1e 90%,
       #7a4d0f
     );
-  /* cut out the glass */
-  -webkit-mask: radial-gradient(circle closest-side, transparent calc(100% - var(--vp-bezel)), #000 calc(100% - var(--vp-bezel) + 1px));
-  mask: radial-gradient(circle closest-side, transparent calc(100% - var(--vp-bezel)), #000 calc(100% - var(--vp-bezel) + 1px));
+  /* cut out the glass: the hole is exactly the glass radius */
+  -webkit-mask: radial-gradient(circle at 50% 50%, transparent var(--vp-r), #000 calc(var(--vp-r) + 1px));
+  mask: radial-gradient(circle at 50% 50%, transparent var(--vp-r), #000 calc(var(--vp-r) + 1px));
 }
 
 /* Knurled grip on the outer band of the bezel */
@@ -123,8 +147,15 @@
     rgb(255 246 210 / 0.4) 0.55deg 1.1deg,
     transparent 1.1deg 2.2deg
   );
-  -webkit-mask: radial-gradient(circle closest-side, transparent calc(100% - var(--vp-bezel) * 0.27), #000 calc(100% - var(--vp-bezel) * 0.25), #000 calc(100% - 2px), transparent 100%);
-  mask: radial-gradient(circle closest-side, transparent calc(100% - var(--vp-bezel) * 0.27), #000 calc(100% - var(--vp-bezel) * 0.25), #000 calc(100% - 2px), transparent 100%);
+  --vp-knurl-mask: radial-gradient(
+    circle at 50% 50%,
+    transparent calc(var(--vp-r) + var(--vp-bezel) * 0.73),
+    #000 calc(var(--vp-r) + var(--vp-bezel) * 0.75),
+    #000 calc(var(--vp-r-brass) - 2px),
+    transparent var(--vp-r-brass)
+  );
+  -webkit-mask: var(--vp-knurl-mask);
+  mask: var(--vp-knurl-mask);
 }
 
 /* ---- Optics (backdrop filters on the map behind) ---- */
@@ -137,7 +168,7 @@
 
 /* Clean glass lifts colour and contrast a little, with the faintest cool tint */
 .variable-picker__optic--tint {
-  background: radial-gradient(circle at 50% 45%, rgb(225 245 255 / 0.04), rgb(190 225 245 / 0.1));
+  background: radial-gradient(circle at 50% 50%, rgb(225 245 255 / 0.04), rgb(190 225 245 / 0.1) var(--vp-r));
   -webkit-backdrop-filter: saturate(1.35) contrast(1.08) brightness(1.06);
   backdrop-filter: saturate(1.35) contrast(1.08) brightness(1.06);
 }
@@ -151,8 +182,8 @@
 .variable-picker__optic--rim {
   -webkit-backdrop-filter: blur(2.5px) saturate(1.2);
   backdrop-filter: blur(2.5px) saturate(1.2);
-  -webkit-mask: radial-gradient(circle closest-side, transparent 78%, #000 97%);
-  mask: radial-gradient(circle closest-side, transparent 78%, #000 97%);
+  -webkit-mask: radial-gradient(circle at 50% 50%, transparent calc(var(--vp-r) * 0.78), #000 calc(var(--vp-r) * 0.97));
+  mask: radial-gradient(circle at 50% 50%, transparent calc(var(--vp-r) * 0.78), #000 calc(var(--vp-r) * 0.97));
 }
 
 /* Out of focus when the lens arrives, then it sharpens */
@@ -454,7 +485,9 @@
 @media (max-width: 560px) {
   .variable-picker {
     --lens-d: 420px;
+    --vp-r: 210px;
     --vp-bezel: 12px;
+    --vp-ink-w: 3px;
     padding: 28px 16px;
   }
 
@@ -469,8 +502,9 @@
     border-radius: 24px;
     overflow: visible;
     box-shadow:
-      0 0 0 calc(var(--vp-bezel) + 3px) var(--vp-ink),
-      8px 10px 0 calc(var(--vp-bezel) + 3px) rgb(26 20 35 / 0.32);
+      0 0 0 calc(var(--vp-bezel) + var(--vp-ink-w)) var(--vp-ink),
+      0 3px 6px calc(var(--vp-bezel) + var(--vp-ink-w)) rgb(26 20 35 / 0.28),
+      0 10px 30px calc(var(--vp-bezel) + var(--vp-ink-w)) rgb(26 20 35 / 0.3);
   }
 
   .variable-picker__bezel {

@@ -187,11 +187,20 @@ export function createChaseCamera(camera: THREE.PerspectiveCamera, dom: HTMLElem
       const dist = lensFocusDistance(lens.radius, FOCUS_FOV, camera.aspect) * (1 - push)
       focusPos.copy(lens.normal).multiplyScalar(dist).add(lens.center)
       chasePos.copy(camera.position)
-      camera.position.lerpVectors(chasePos, focusPos, e)
-      // The camera turns to the lens a little ahead of the move, so the glass is centred early
-      const lookE = 1 - (1 - e) * (1 - e)
-      focusLook.lerpVectors(lookAt, lens.center, lookE)
-      // Same safeguard as the chase view: never below the ground nor inside a roof or a monument
+      if (e >= 1) {
+        // Fully in: exactly on the glass axis, looking at the glass centre, so the camera's forward
+        // is -lens.normal and the glass is square to it (a centred circle, not an ellipse) and
+        // matches the UI glass drawn at the screen centre. No lerp rounding on this frame.
+        camera.position.copy(focusPos)
+        focusLook.copy(lens.center)
+      } else {
+        camera.position.lerpVectors(chasePos, focusPos, e)
+        // The camera turns to the lens a little ahead of the move, so the glass is centred early
+        const lookE = 1 - (1 - e) * (1 - e)
+        focusLook.lerpVectors(lookAt, lens.center, lookE)
+      }
+      // Same safeguard as the chase view: never below the ground nor inside a roof or a monument.
+      // (Only if it lifts the final pose does the glass leave the camera axis; it stays centred.)
       const p = camera.position
       p.y = Math.max(p.y, heightAt(p.x, p.z) + 0.3, wallAt(p.x, p.z) + 0.5, obstacleAt(p.x, p.z) + 0.5)
       camera.lookAt(focusLook)

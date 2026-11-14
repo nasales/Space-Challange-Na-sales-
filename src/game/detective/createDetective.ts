@@ -56,6 +56,8 @@ const FOCUS_ARM_Z = 0.3 // and a little out to the right
  * down through the lens. Neither the head nor the arm is on that line of sight.
  */
 const FOCUS_NORMAL = new THREE.Vector3(0.35, 0.35, 1).normalize()
+/** Above this lens focus (0..1) the 3D lens is hidden and the UI glass takes over. */
+const LENS_HIDE_FOCUS = 0.97
 
 export function createDetective() {
   const materials = new Map<number, THREE.Material>()
@@ -327,9 +329,11 @@ export function createDetective() {
     /** 0..1: how far the lens is raised to face the camera (set it before update, every frame). */
     setFocus(f: number) {
       focus = Math.max(0, Math.min(1, f))
-      // Once the camera is fully in, the UI glass lens (with its own brass bezel) takes the 3D
-      // lens's place: the 3D rim is wider than that bezel and would show inside and around it
-      lens.visible = focus < 1
+      // Near the end of the flight the UI glass lens (with its own brass bezel) takes the 3D
+      // lens's place: the 3D rim is wider than that bezel and would show inside and around it.
+      // It goes a little before the camera is fully in, so the last frames, where the 3D glass is
+      // still a slightly tilted, off-centre ellipse, never show next to the UI's centred circle
+      lens.visible = focus <= LENS_HIDE_FOCUS
     },
     /** World position of the centre of the lens glass. */
     lensPosition() {
