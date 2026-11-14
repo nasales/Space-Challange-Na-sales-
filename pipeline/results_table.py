@@ -13,7 +13,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from pipeline.build_cases import ROOT, case_file, load_case_file
+from pipeline.build_cases import ROOT, case_file, case_vars, load_case_file
 from pipeline.cases import CASES
 
 METHODS_PATH = ROOT / "docs" / "methods.md"
@@ -32,7 +32,7 @@ def results_table(cases: list[dict] = CASES, root: Path = ROOT) -> str:
         "|---|---|---|---|---|---|",
     ]
     for case in cases:
-        for var in case["variables"]:
+        for var in case_vars(case):
             trend, series = load_case_file(Path(root) / case_file(case["id"], var))
             p = trend["p_value"]
             lines.append(

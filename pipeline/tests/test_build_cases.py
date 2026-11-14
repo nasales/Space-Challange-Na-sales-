@@ -87,3 +87,34 @@ def test_results_table_and_methods_doc():
     doc = (ROOT / "docs" / "methods.md").read_text(encoding="utf-8")
     assert replace_table(doc, table) == doc  # the committed doc holds the current table
     assert replace_table(f"a{START}old{END}b", "T") == f"a{START}\nT\n{END}b"
+
+
+def test_power_source_reproduces_committed_case_files(tmp_path):
+    """--source power (default) rebuilds every committed case file byte for byte from data/raw/power/."""
+    from pipeline.build_cases import RAW_DIR, case_file, case_vars
+
+    for case in CASES:
+        for variable in case["variables"]:
+            build_one(case, variable, raw_dir=RAW_DIR, cache_dir=tmp_path, source="power")
+        for name in case_vars(case):
+            committed = ROOT / case_file(case["id"], name)
+            assert (tmp_path / committed.name).read_bytes() == committed.read_bytes()
+
+
+def test_variable_ids_and_sources():
+    import pytest
+
+    from pipeline.build_cases import SOURCES, get_series, main, output_var
+    from pipeline.cases import POWER_PARAMS, VARIABLES
+
+    assert set(SOURCES) == {"power", "supabase_cases"}
+    assert all(v in VARIABLES for c in CASES for v in c["variables"])
+    assert set(POWER_PARAMS) <= set(VARIABLES)
+    assert output_var("PRECIP") == "PRECTOTCORR" and output_var("SOILM") == "GWETTOP"
+    assert output_var("NDVI") is None and output_var("NDVI", "supabase_cases") == "NDVI"
+    with pytest.raises(NotImplementedError, match="supabase_cases"):
+        get_series(CASES[0], "T2M", "supabase_cases")
+    with pytest.raises(ValueError, match="unknown source"):
+        get_series(CASES[0], "T2M", "nope")
+    with pytest.raises(SystemExit):
+        main(["--source", "nope"])
