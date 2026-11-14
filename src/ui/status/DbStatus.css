@@ -1,8 +1,10 @@
-/* Database badge (top-left). Never catches clicks, so it cannot block the game. */
+/* Database badge (bottom center: the menu title, Wardrobe Back tag, data credit, controls hint and
+   location panel use the corners). Never catches clicks, so it cannot block the game. */
 .db-status {
   position: fixed;
-  top: 12px;
-  left: 12px;
+  bottom: 12px;
+  left: 50%;
+  translate: -50% 0;
   z-index: 50;
   display: grid;
   grid-template-columns: auto auto;
@@ -40,4 +42,18 @@
   font-weight: 400;
   font-size: 10px;
   opacity: 0.7;
+}
+
+/* Phones: the menu board scrolls under the badge, so keep it to the dot and the short label. */
+@media (max-width: 760px) {
+  .db-status {
+    bottom: 6px;
+    padding: 3px 7px;
+    font-size: 10px;
+    opacity: 0.85;
+  }
+
+  .db-status__version {
+    display: none;
+  }
 }

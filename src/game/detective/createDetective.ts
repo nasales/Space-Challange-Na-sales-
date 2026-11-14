@@ -12,6 +12,7 @@ import { TUNING, type CarState } from '../car/carPhysics'
 import { toonMaterial } from '../scene/toonGradient'
 import { createSquash } from '../car/createSquash'
 import { DETECTIVE_SCALE } from './detectiveSize'
+import { DEFAULT_OUTFIT, type Outfit } from '../../shared/outfit'
 
 
 // Classic noir palette: tan trench coat, brown hat and leather, dark trousers, red scarf accent.
@@ -45,25 +46,75 @@ const DETECTIVE_SHADOW = 0.55
 const GLASS = 0xbdf3ff
 const WOOD = 0x7a4a2c
 
-export function createDetective() {
+// ---- Outfit (recolorable clothes) ----
+// Shade colors (coat collar and tails, belt, scarf fringe) are derived from the main color with
+// the same HSL shift as the original palette, so a new coat color keeps the same look.
+const tmpColor = new THREE.Color()
+type Hsl = { h: number; s: number; l: number }
+const hslOf = (c: THREE.ColorRepresentation): Hsl => tmpColor.set(c).getHSL({ h: 0, s: 0, l: 0 })
+/** Returns a function that turns a base color into its shade, like `from` turns into `to`. */
+function shadeLike(from: number, to: number) {
+  const a = hslOf(from), b = hslOf(to)
+  const dh = b.h - a.h, ks = b.s / Math.max(a.s, 1e-6), kl = b.l / Math.max(a.l, 1e-6)
+  return (base: string) => {
+    const c = hslOf(base)
+    return new THREE.Color().setHSL((c.h + dh + 1) % 1, Math.min(1, c.s * ks), Math.min(1, c.l * kl))
+  }
+}
+const coatDarkOf = shadeLike(COAT, COAT_DARK)
+const beltOf = shadeLike(COAT, BELT)
+const scarfDarkOf = shadeLike(SCARF, SCARF_DARK)
+/** Every recolorable slot of the model. */
+type Slot = 'coat' | 'coatDark' | 'belt' | 'hat' | 'scarf' | 'scarfDark' | 'trousers'
+
+export function createDetective(outfit: Partial<Outfit> = {}) {
   const materials = new Map<number, THREE.Material>()
   const mat = (color: number) => {
     // Sombra suave: con la sombra violeta completa, el negro del traje se vería morado
     if (!materials.has(color)) materials.set(color, toonMaterial(color, {}, DETECTIVE_SHADOW))
     return materials.get(color)!
   }
+  // Clothes get their own materials (never shared through the color cache) so they can be recolored live
+  const slotColors: Record<Slot, number> = {
+    coat: COAT, coatDark: COAT_DARK, belt: BELT, hat: HAT, scarf: SCARF, scarfDark: SCARF_DARK, trousers: TROUSERS,
+  }
+  const slots = Object.fromEntries(
+    (Object.keys(slotColors) as Slot[]).map((k) => [k, toonMaterial(slotColors[k], {}, DETECTIVE_SHADOW)]),
+  ) as Record<Slot, THREE.MeshToonMaterial>
+  /** Recolors the clothes in place; missing parts keep their current color. */
+  const setOutfit = (o: Partial<Outfit>) => {
+    // The default colors map back to the exact original constants (no rounding drift)
+    const isDefault = (part: keyof Outfit) => o[part]!.toLowerCase() === DEFAULT_OUTFIT[part].toLowerCase()
+    if (o.coat) {
+      if (isDefault('coat')) {
+        slots.coat.color.setHex(COAT); slots.coatDark.color.setHex(COAT_DARK); slots.belt.color.setHex(BELT)
+      } else {
+        slots.coat.color.set(o.coat); slots.coatDark.color.copy(coatDarkOf(o.coat)); slots.belt.color.copy(beltOf(o.coat))
+      }
+    }
+    if (o.scarf) {
+      if (isDefault('scarf')) {
+        slots.scarf.color.setHex(SCARF); slots.scarfDark.color.setHex(SCARF_DARK)
+      } else {
+        slots.scarf.color.set(o.scarf); slots.scarfDark.color.copy(scarfDarkOf(o.scarf))
+      }
+    }
+    if (o.hat) slots.hat.color.set(o.hat)
+    if (o.trousers) slots.trousers.color.set(o.trousers)
+  }
+  setOutfit(outfit)
   const geometries: THREE.BufferGeometry[] = []
-  const add = (parent: THREE.Object3D, geo: THREE.BufferGeometry, color: number, x = 0, y = 0, z = 0) => {
+  const add = (parent: THREE.Object3D, geo: THREE.BufferGeometry, color: number | Slot, x = 0, y = 0, z = 0) => {
     geometries.push(geo)
-    const m = new THREE.Mesh(geo, mat(color))
+    const m = new THREE.Mesh(geo, typeof color === 'number' ? mat(color) : slots[color])
     m.position.set(x, y, z)
     m.castShadow = true
     parent.add(m)
     return m
   }
-  const box = (p: THREE.Object3D, w: number, h: number, d: number, c: number, x = 0, y = 0, z = 0) =>
+  const box = (p: THREE.Object3D, w: number, h: number, d: number, c: number | Slot, x = 0, y = 0, z = 0) =>
     add(p, new THREE.BoxGeometry(w, h, d), c, x, y, z)
-  const ball = (p: THREE.Object3D, r: number, c: number, x = 0, y = 0, z = 0) =>
+  const ball = (p: THREE.Object3D, r: number, c: number | Slot, x = 0, y = 0, z = 0) =>
     add(p, new THREE.IcosahedronGeometry(r, 2), c, x, y, z)
   const pivot = (parent: THREE.Object3D, x: number, y: number, z: number) => {
     const g = new THREE.Group()
@@ -81,37 +132,37 @@ export function createDetective() {
   const HIP = 0.85
   const legs = [-1, 1].map((side) => {
     const leg = pivot(body, side * 0.2, HIP, 0)
-    box(leg, 0.24, 0.68, 0.26, TROUSERS, 0, -0.34, 0)
+    box(leg, 0.24, 0.68, 0.26, 'trousers', 0, -0.34, 0)
     box(leg, 0.28, 0.16, 0.46, SHOES, 0, -0.76, -0.08) // zapato, con la punta hacia delante
     return leg
   })
 
   // ---- Tronco: gabardina que se ensancha, cinturón, botones y cuello subido ----
-  add(body, new THREE.CylinderGeometry(0.4, 0.52, 0.95, 12), COAT, 0, HIP + 0.47, 0)
-  add(body, new THREE.CylinderGeometry(0.53, 0.53, 0.12, 12), BELT, 0, HIP + 0.25, 0)
+  add(body, new THREE.CylinderGeometry(0.4, 0.52, 0.95, 12), 'coat', 0, HIP + 0.47, 0)
+  add(body, new THREE.CylinderGeometry(0.53, 0.53, 0.12, 12), 'belt', 0, HIP + 0.25, 0)
   box(body, 0.16, 0.12, 0.05, BUCKLE, 0, HIP + 0.25, -0.53) // hebilla
   // Double-breasted: two columns of buttons
   for (const y of [HIP + 0.48, HIP + 0.7]) for (const x of [-0.13, 0.13]) ball(body, 0.05, DARK, x, y, -0.45 + (y - HIP) * 0.04)
-  for (const side of [-1, 1]) box(body, 0.16, 0.05, 0.3, COAT_DARK, side * 0.42, HIP + 0.92, 0) // epaulettes
+  for (const side of [-1, 1]) box(body, 0.16, 0.05, 0.3, 'coatDark', side * 0.42, HIP + 0.92, 0) // epaulettes
   for (const side of [-1, 1]) {
-    const collar = box(body, 0.34, 0.32, 0.1, COAT_DARK, side * 0.22, HIP + 1.0, -0.2)
+    const collar = box(body, 0.34, 0.32, 0.1, 'coatDark', side * 0.22, HIP + 1.0, -0.2)
     collar.rotation.set(-0.25, side * 0.6, side * -0.25) // levantado y abierto, muy noir
   }
   // Faldones de la gabardina: cuelgan de la cadera y vuelan hacia atrás al correr
   const flaps = [-1, 1].map((side) => {
     const flap = pivot(body, side * 0.24, HIP + 0.05, 0.22)
-    box(flap, 0.46, 0.62, 0.08, COAT_DARK, 0, -0.31, 0)
+    box(flap, 0.46, 0.62, 0.08, 'coatDark', 0, -0.31, 0)
     flap.rotation.y = side * 0.25
     return flap
   })
   const front = pivot(body, 0, HIP + 0.05, -0.3) // faldón delantero (más corto, deja ver las piernas)
-  for (const side of [-1, 1]) box(front, 0.22, 0.4, 0.06, COAT, side * 0.18, -0.2, 0)
+  for (const side of [-1, 1]) box(front, 0.22, 0.4, 0.06, 'coat', side * 0.18, -0.2, 0)
 
   // ---- Brazos (pivote en el hombro). La mano derecha lleva una lupa ----
   const SHOULDER = HIP + 0.85
   const arms = [-1, 1].map((side) => {
     const arm = pivot(body, side * 0.5, SHOULDER, 0)
-    box(arm, 0.2, 0.66, 0.22, COAT, 0, -0.33, 0)
+    box(arm, 0.2, 0.66, 0.22, 'coat', 0, -0.33, 0)
     ball(arm, 0.12, GLOVES, 0, -0.72, 0) // guantes negros
     return arm
   })
@@ -119,7 +170,7 @@ export function createDetective() {
   // ---- Bufanda roja: vuelta al cuello y dos puntas que ondean detrás al correr ----
   // Each tail is a chain of segments hanging from the back of the neck, outside the coat, so it
   // never cuts through the body; every segment follows the previous one with a delay, like cloth.
-  add(body, new THREE.TorusGeometry(0.36, 0.13, 8, 18).rotateX(Math.PI / 2), SCARF, 0, SHOULDER + 0.02, 0)
+  add(body, new THREE.TorusGeometry(0.36, 0.13, 8, 18).rotateX(Math.PI / 2), 'scarf', 0, SHOULDER + 0.02, 0)
   const SEG = 0.26
   const scarfTails = [-1, 1].map((side, t) => {
     const segments: THREE.Group[] = []
@@ -127,11 +178,11 @@ export function createDetective() {
     const count = t === 0 ? 3 : 2 // two tails of different length
     for (let i = 0; i < count; i++) {
       const seg = pivot(parent, 0, i === 0 ? 0 : -SEG, 0)
-      box(seg, 0.2 - i * 0.015, SEG + 0.02, 0.06, SCARF, 0, -SEG / 2, 0)
+      box(seg, 0.2 - i * 0.015, SEG + 0.02, 0.06, 'scarf', 0, -SEG / 2, 0)
       segments.push(seg)
       parent = seg
     }
-    box(parent, 0.19, 0.06, 0.065, SCARF_DARK, 0, -SEG - 0.02, 0) // fringe
+    box(parent, 0.19, 0.06, 0.065, 'scarfDark', 0, -SEG - 0.02, 0) // fringe
     segments[0].rotation.y = side * 0.15
     return segments
   })
@@ -147,17 +198,25 @@ export function createDetective() {
   ball(head, 0.14, NOSE, 0, 0.42, -0.54)
   // Big cartoon eyes (white with a dark pupil and a highlight), thick brows with one raised
   // ("hmm, interesting...") and a confident lopsided smirk
+  let winkEye: { eye: THREE.Mesh; pupil: THREE.Mesh; shine: THREE.Mesh; brow: THREE.Mesh } | null = null
   for (const side of [-1, 1]) {
     const eye = ball(head, 0.13, EYES, side * 0.2, 0.6, -0.48)
     eye.scale.set(0.9, 1.15, 0.5)
     const pupil = ball(head, 0.07, PUPIL, side * 0.19, 0.58, -0.545)
     pupil.scale.set(1, 1.2, 0.5)
-    ball(head, 0.025, EYES, side * 0.19 + 0.03, 0.62, -0.575) // highlight
+    const shine = ball(head, 0.025, EYES, side * 0.19 + 0.03, 0.62, -0.575) // highlight
     const brow = box(head, 0.28, 0.08, 0.08, BROWS, side * 0.21, side > 0 ? 0.82 : 0.78, -0.47)
     brow.rotation.z = side > 0 ? -0.15 : 0.3 // left brow frowns, right brow is raised
+    if (side > 0) winkEye = { eye, pupil, shine, brow }
   }
+  const wink = winkEye!
   const smirk = box(head, 0.22, 0.045, 0.05, DARK, 0.05, 0.25, -0.5)
   smirk.rotation.z = 0.18
+  // Closed-eye arch for the menu wink (hidden unless setWink() is used, so the game look is unchanged)
+  const lid = add(head, new THREE.TorusGeometry(0.11, 0.03, 6, 14, Math.PI), DARK, 0.2, 0.55, -0.535)
+  lid.rotation.y = -0.35
+  lid.castShadow = false
+  lid.visible = false
   // Pelo: casquete oscuro en la nuca y las sienes (si no, visto desde atrás parece calvo)
   const hair = ball(head, 0.56, HAIR, 0, 0.56, 0.08)
   hair.scale.set(1.02, 0.78, 1)
@@ -167,8 +226,8 @@ export function createDetective() {
   }
   // Fedora (se levanta un poco al correr, con un muelle)
   const hat = pivot(head, 0, 0.88, 0)
-  add(hat, new THREE.CylinderGeometry(0.78, 0.78, 0.06, 20), HAT, 0, 0, 0)
-  add(hat, new THREE.CylinderGeometry(0.46, 0.52, 0.42, 16), HAT, 0, 0.23, 0)
+  add(hat, new THREE.CylinderGeometry(0.78, 0.78, 0.06, 20), 'hat', 0, 0, 0)
+  add(hat, new THREE.CylinderGeometry(0.46, 0.52, 0.42, 16), 'hat', 0, 0.23, 0)
   add(hat, new THREE.CylinderGeometry(0.53, 0.53, 0.12, 16), HAT_BAND, 0, 0.08, 0)
   add(hat, new THREE.BoxGeometry(0.08, 0.1, 0.6), HAT_BAND, 0, 0.45, 0) // dent on the crown
   hat.rotation.x = -0.12 // calado hacia delante
@@ -262,9 +321,28 @@ export function createDetective() {
     body.scale.y *= 1 - sq
   }
 
+  /** Menu-only wink of his right eye: 0 = open (the normal look, default), 1 = fully closed. */
+  const setWink = (amount: number) => {
+    const k = Math.max(0, Math.min(1, amount))
+    const open = Math.max(0.06, 1 - k)
+    wink.eye.scale.y = 1.15 * open
+    wink.pupil.scale.y = 1.2 * open
+    wink.eye.visible = wink.pupil.visible = k < 0.8
+    wink.shine.visible = k < 0.4
+    lid.visible = k >= 0.8
+    wink.brow.position.y = 0.82 - 0.08 * k
+    wink.brow.rotation.z = -0.15 - 0.2 * k
+    smirk.rotation.z = 0.18 + 0.22 * k
+    smirk.scale.x = 1 + 0.35 * k
+  }
+
   return {
     root,
     update,
+    setOutfit,
+    setWink,
+    /** Pivots the menu showcase poses after update() (head scratch, crouch). Read-only for the game. */
+    parts: { body, head, arms, legs, hat } as const,
     /** Fase de la zancada (rad). Cada vez que pasa por un múltiplo de π, un pie pisa el suelo. */
     get stridePhase() {
       return phase
@@ -280,6 +358,7 @@ export function createDetective() {
     dispose: () => {
       geometries.forEach((g) => g.dispose())
       materials.forEach((m) => m.dispose())
+      Object.values(slots).forEach((m) => m.dispose())
     },
   }
 }

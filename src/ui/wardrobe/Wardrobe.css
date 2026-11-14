@@ -1,0 +1,898 @@
+/* Wardrobe: comic detective page with pinned sheets (left) | comic stage with the live detective
+   (right). Same print language as the main menu: thick ink lines, Ben-Day halftone dots,
+   cyan/magenta misregistration, caption boxes, lettered sound effects, stepped ("on twos") motion.
+   Stacked on narrow screens: stage on top, page below. */
+.wardrobe {
+  --wr-ink: #3b4a6b;
+  --wr-ink-deep: #161b2e;
+  --wr-sea: #5ea8c2;
+  --wr-gold: #f2c14e;
+  --wr-red: #e5322d;
+  --wr-paper: #fff8e7;
+  --wr-cyan: rgba(0, 164, 214, 0.85);
+  --wr-magenta: rgba(226, 0, 122, 0.75);
+
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: minmax(320px, 2fr) 3fr;
+  background: var(--wr-sea);
+  color: var(--wr-ink-deep);
+  font-family: var(--font-type);
+  overflow: hidden;
+}
+
+.wardrobe ::selection {
+  background: var(--wr-gold);
+  color: var(--wr-ink-deep);
+}
+
+/* ---- Left panel: dark comic gutter around the page ---- */
+.wardrobe__panel {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  padding: 12px;
+  background:
+    radial-gradient(circle, rgba(255, 248, 231, 0.12) 1.2px, transparent 1.6px) 0 0 / 7px 7px,
+    var(--wr-ink-deep);
+  border-right: 6px solid var(--wr-ink-deep);
+}
+
+.wardrobe__page {
+  /* One layout unit, as on the menu: 1% of the page width, capped so the stack fits the height. */
+  --u: min(1cqw, 0.62cqh);
+  --line: max(2px, calc(var(--u) * 0.55));
+
+  position: relative;
+  flex: 1;
+  container-type: size;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: calc(var(--u) * 1.6);
+  padding: calc(var(--u) * 3) calc(var(--u) * 4) calc(var(--u) * 2.4);
+  border: max(3px, calc(var(--u) * 0.8)) solid var(--wr-paper);
+  outline: 3px solid var(--wr-ink-deep);
+  background: var(--panel-bg) center / cover no-repeat, var(--wr-paper);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* Ben-Day dots, densest in the corners. */
+.wardrobe__page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(circle, rgba(22, 27, 46, 0.24) 1.4px, transparent 1.9px) 0 0 / 9px 9px;
+  mask-image: radial-gradient(ellipse at 50% 45%, transparent 30%, black 95%);
+  pointer-events: none;
+}
+
+/* ---- Shared pieces ---- */
+.wr-sheet {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: var(--line) solid var(--wr-ink-deep);
+  background: var(--wr-paper);
+  transform: rotate(var(--tilt, 0deg));
+  transform-origin: 50% calc(var(--u) * 1.4);
+  transition: box-shadow 0.15s ease-out;
+}
+
+/* Halftone shadow on the wall behind each sheet (on the unrotated wrapper, tilted to match). */
+.wr-back::before,
+.wr-part::before,
+.wr-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(circle, var(--wr-ink-deep) 1.2px, transparent 1.7px) 0 0 / 5px 5px;
+  opacity: 0.45;
+  transform: translate(calc(var(--u) * 1.1), calc(var(--u) * 1.3)) rotate(var(--tilt, 0deg));
+  pointer-events: none;
+}
+
+.wr-pin {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  top: calc(var(--u) * 1.4);
+  width: max(12px, calc(var(--u) * 3));
+  aspect-ratio: 1;
+  border: max(2px, calc(var(--u) * 0.45)) solid var(--wr-ink-deep);
+  border-radius: 50%;
+  translate: -50% -50%;
+  background:
+    radial-gradient(circle at 34% 32%, #ffffff 0 16%, transparent 18%),
+    var(--wr-red);
+  pointer-events: none;
+}
+
+/* Native radio kept for keyboard and screen readers; it covers its sheet, invisible. */
+.wr-radio {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.wr-sfx {
+  position: absolute;
+  z-index: 5;
+  font-family: var(--font-display);
+  font-weight: 900;
+  line-height: 0.9;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--wr-gold);
+  -webkit-text-stroke: calc(var(--u) * 0.55) var(--wr-ink-deep);
+  paint-order: stroke fill;
+  text-shadow:
+    calc(var(--u) * 0.6) calc(var(--u) * 0.6) 0 var(--wr-ink-deep),
+    calc(var(--u) * -0.4) 0 0 var(--wr-cyan);
+  opacity: 0;
+  transform: scale(0) rotate(-12deg);
+  pointer-events: none;
+}
+
+/* ---- Header: back tag + caption boxes ---- */
+.wr-head {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: calc(var(--u) * 3);
+}
+
+.wr-back {
+  --tilt: -4deg;
+  position: relative;
+  margin: calc(var(--u) * 1) 0 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.wr-back__paper {
+  gap: calc(var(--u) * 0.4);
+  width: calc(var(--u) * 17);
+  padding: calc(var(--u) * 3.4) calc(var(--u) * 1.4) calc(var(--u) * 1.4);
+}
+
+.wr-back__arrow {
+  width: calc(var(--u) * 8);
+  height: auto;
+  fill: var(--wr-red);
+  stroke: var(--wr-ink-deep);
+  stroke-width: 2.4;
+  stroke-linejoin: round;
+}
+
+.wr-back__word {
+  font-family: var(--font-display);
+  font-size: max(16px, calc(var(--u) * 4.6));
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.wr-back__key {
+  padding: 0 calc(var(--u) * 0.8);
+  border: max(1px, calc(var(--u) * 0.3)) solid var(--wr-ink-deep);
+  font-size: max(11px, calc(var(--u) * 2.2));
+  font-weight: 700;
+}
+
+/* "SEE YA!" lands in the free space under the tag, never on the title. */
+.wr-sfx--back {
+  left: 50%;
+  top: calc(100% + var(--u) * 1.4);
+  margin-left: calc(var(--u) * -8);
+  font-size: calc(var(--u) * 4.4);
+}
+
+.wr-masthead {
+  justify-self: center;
+  width: min(100%, calc(var(--u) * 64));
+}
+
+.wr-title {
+  margin: 0;
+  padding: calc(var(--u) * 1.2) calc(var(--u) * 3) calc(var(--u) * 1.4);
+  border: var(--line) solid var(--wr-ink-deep);
+  background:
+    radial-gradient(circle, rgba(229, 50, 45, 0.28) 1.3px, transparent 1.8px) 0 0 / 6px 6px,
+    var(--wr-gold);
+  color: var(--wr-red);
+  font-family: var(--font-display);
+  font-size: calc(var(--u) * 12.5);
+  font-weight: 900;
+  line-height: 0.9;
+  letter-spacing: 0.02em;
+  text-align: center;
+  text-transform: uppercase;
+  -webkit-text-stroke: calc(var(--u) * 0.4) var(--wr-ink-deep);
+  paint-order: stroke fill;
+  text-shadow:
+    calc(var(--u) * -0.6) calc(var(--u) * -0.2) 0 var(--wr-cyan),
+    calc(var(--u) * 0.7) calc(var(--u) * 0.45) 0 var(--wr-magenta);
+  transform: rotate(-1.5deg);
+  filter: drop-shadow(calc(var(--u) * 1) calc(var(--u) * 1.1) 0 var(--wr-ink-deep));
+}
+
+.wr-tagline {
+  width: fit-content;
+  max-width: 92%;
+  margin: calc(var(--u) * -0.6) 0 0 auto;
+  padding: calc(var(--u) * 1) calc(var(--u) * 2);
+  border: var(--line) solid var(--wr-ink-deep);
+  background: var(--wr-paper);
+  font-size: max(12px, calc(var(--u) * 2.6));
+  font-weight: 700;
+  line-height: 1.3;
+  transform: rotate(1.4deg);
+}
+
+/* ---- Fieldsets with caption-box legends ---- */
+.wr-parts,
+.wr-swatches {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.wr-legend {
+  float: left;
+  margin: 0 0 calc(var(--u) * 1.6);
+  padding: calc(var(--u) * 0.6) calc(var(--u) * 1.8);
+  border: max(2px, calc(var(--u) * 0.4)) solid var(--wr-paper);
+  outline: 2px solid var(--wr-ink-deep);
+  background: var(--wr-ink-deep);
+  color: var(--wr-paper);
+  font-size: max(12px, calc(var(--u) * 2.5));
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transform: rotate(-1deg);
+}
+
+/* ---- Part picker: four sheets hanging from one red string ---- */
+.wr-parts__row {
+  position: relative;
+  clear: both;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: calc(var(--u) * 2.4);
+  padding: calc(var(--u) * 1) calc(var(--u) * 1) 0;
+}
+
+.wr-parts__string {
+  position: absolute;
+  left: 0;
+  top: calc(var(--u) * 0.2);
+  z-index: 3;
+  width: 100%;
+  height: calc(var(--u) * 4);
+  overflow: visible;
+  pointer-events: none;
+}
+
+.wr-string,
+.wr-string-ink {
+  fill: none;
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
+}
+
+.wr-string-ink {
+  stroke: var(--wr-ink-deep);
+  stroke-width: 5.5;
+}
+
+.wr-string {
+  stroke: var(--wr-red);
+  stroke-width: 2.6;
+}
+
+.wr-pin--string {
+  top: calc(var(--u) * 1.4);
+}
+
+.wr-part {
+  position: relative;
+  display: block;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.wr-part__paper {
+  gap: calc(var(--u) * 0.6);
+  padding: calc(var(--u) * 3) calc(var(--u) * 0.8) calc(var(--u) * 1.4);
+}
+
+.wr-part__icon {
+  width: calc(var(--u) * 11);
+  height: auto;
+  overflow: visible;
+}
+
+.wr-part__icon path,
+.wr-part__icon ellipse {
+  stroke: var(--wr-ink-deep);
+  stroke-width: 2.6;
+  stroke-linejoin: round;
+}
+
+.wr-part__icon .wr-ink-line {
+  fill: none;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+}
+
+.wr-part__icon .wr-ink-fill,
+.wr-part__icon .wr-ink-dot {
+  fill: var(--wr-ink-deep);
+}
+
+.wr-part__label {
+  font-family: var(--font-display);
+  font-size: max(13px, calc(var(--u) * 3.4));
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+/* Selected piece: lifted off the wall with a gold and ink ring. */
+.wr-radio:checked + .wr-part__paper {
+  translate: 0 calc(var(--u) * -1);
+  background: #fffdf3;
+  box-shadow:
+    0 0 0 calc(var(--u) * 0.8) var(--wr-gold),
+    0 0 0 calc(var(--u) * 1.4) var(--wr-ink-deep);
+}
+
+.wr-sfx--part {
+  right: calc(var(--u) * -0.6);
+  top: calc(var(--u) * 3);
+  font-size: max(15px, calc(var(--u) * 4.6));
+}
+
+/* ---- Fabric cards ---- */
+.wr-swatches {
+  position: relative;
+}
+
+.wr-cards {
+  clear: both;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: calc(var(--u) * 3.2) calc(var(--u) * 4);
+  padding: 0 calc(var(--u) * 1.4);
+}
+
+.wr-card {
+  position: relative;
+  display: block;
+  perspective: calc(var(--u) * 60);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.wr-card__paper {
+  gap: calc(var(--u) * 0.8);
+  padding: calc(var(--u) * 3) calc(var(--u) * 1.4) calc(var(--u) * 1.2);
+}
+
+.wr-card__fabric {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2 / 1;
+  border: var(--line) solid var(--wr-ink-deep);
+}
+
+/* Printed halftone shading on the cloth. */
+.wr-card__fabric::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, rgba(22, 27, 46, 0.32) 1.1px, transparent 1.6px) 0 0 / 5px 5px;
+  mask-image: linear-gradient(135deg, transparent 35%, black 100%);
+}
+
+.wr-card__name {
+  font-family: var(--font-hand);
+  font-size: max(14px, calc(var(--u) * 3.3));
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.wr-card__original {
+  position: absolute;
+  z-index: 2;
+  top: 42%;
+  right: calc(var(--u) * -1.8);
+  padding: calc(var(--u) * 0.3) calc(var(--u) * 1);
+  border: max(2px, calc(var(--u) * 0.35)) solid var(--wr-ink-deep);
+  background: var(--wr-red);
+  color: var(--wr-paper);
+  font-size: max(10px, calc(var(--u) * 1.9));
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transform: rotate(9deg);
+}
+
+/* Red marker circle drawn round the chosen fabric. */
+.wr-card__marker {
+  position: absolute;
+  inset: calc(var(--u) * -1.6) calc(var(--u) * -2);
+  border: max(2px, calc(var(--u) * 0.6)) solid var(--wr-red);
+  border-radius: 50%;
+  opacity: 0;
+  transform: rotate(-5deg);
+  pointer-events: none;
+}
+
+.wr-radio:checked + .wr-card__paper .wr-card__marker {
+  opacity: 1;
+}
+
+.wr-sfx--card {
+  left: 50%;
+  top: calc(var(--u) * 5);
+  margin-left: calc(var(--u) * -6);
+  font-size: max(15px, calc(var(--u) * 4.2));
+}
+
+/* Choosing: squash, then a red POW stamp that fades away. */
+.wr-pow {
+  position: absolute;
+  z-index: 7;
+  left: 50%;
+  top: calc(var(--u) * 4.6);
+  padding: calc(var(--u) * 0.3) calc(var(--u) * 1.4);
+  border: max(2px, calc(var(--u) * 0.6)) solid var(--wr-red);
+  background: rgba(255, 248, 231, 0.9);
+  color: var(--wr-red);
+  font-family: var(--font-display);
+  font-size: calc(var(--u) * 4.4);
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+  opacity: 0;
+  translate: -50% 0;
+  animation: wr-pow 0.9s steps(3, end) forwards;
+  pointer-events: none;
+}
+
+/* Switching part re-deals the cards onto the page. */
+.wr-swatches.is-dealing .wr-card {
+  animation: wr-deal 0.42s steps(3, end) calc(var(--i) * 0.06s) backwards;
+}
+
+.wr-swatches .wr-card.is-picked {
+  animation: wr-squash 0.36s steps(2, end);
+}
+
+/* ---- Footer: readout caption + rubber-stamp reset ---- */
+.wr-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--u) * 3);
+}
+
+.wr-readout {
+  margin: 0;
+  padding: calc(var(--u) * 1) calc(var(--u) * 2);
+  border: var(--line) solid var(--wr-ink-deep);
+  background: var(--wr-paper);
+  font-family: var(--font-hand);
+  font-size: max(15px, calc(var(--u) * 3.6));
+  font-weight: 700;
+  line-height: 1.1;
+  transform: rotate(-1deg);
+}
+
+.wr-readout__part {
+  font-family: var(--font-display);
+  font-weight: 900;
+  color: var(--wr-red);
+  text-transform: uppercase;
+}
+
+.wr-reset {
+  position: relative;
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.wr-reset__stamp {
+  display: block;
+  padding: calc(var(--u) * 0.8) calc(var(--u) * 2.2);
+  border: max(3px, calc(var(--u) * 0.7)) solid var(--wr-red);
+  outline: max(1px, calc(var(--u) * 0.3)) solid var(--wr-red);
+  outline-offset: max(1px, calc(var(--u) * 0.4));
+  background: var(--wr-paper);
+  color: var(--wr-red);
+  font-family: var(--font-display);
+  font-size: max(16px, calc(var(--u) * 4.4));
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transform: rotate(-4deg);
+}
+
+/* Ink burst behind the stamp, shown by the hover show. */
+.wr-reset__burst {
+  position: absolute;
+  inset: calc(var(--u) * -3) calc(var(--u) * -2.4);
+  z-index: -1;
+  background:
+    repeating-conic-gradient(from 4deg, var(--wr-ink-deep) 0deg 2deg, transparent 2deg 15deg);
+  mask-image: radial-gradient(closest-side, transparent 62%, black 70%, black 86%, transparent 100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.wr-reset:disabled {
+  cursor: default;
+}
+
+.wr-reset:disabled .wr-reset__stamp {
+  border-color: rgba(59, 74, 107, 0.45);
+  outline-color: rgba(59, 74, 107, 0.45);
+  color: #5a6582;
+}
+
+.wr-reset__slam {
+  position: absolute;
+  z-index: 7;
+  left: 50%;
+  top: 50%;
+  padding: calc(var(--u) * 0.4) calc(var(--u) * 1.6);
+  border: max(3px, calc(var(--u) * 0.7)) solid var(--wr-red);
+  background: var(--wr-paper);
+  color: var(--wr-red);
+  font-family: var(--font-display);
+  font-size: calc(var(--u) * 5.4);
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0;
+  translate: -50% -50%;
+  animation: wr-pow 1s steps(3, end) forwards;
+  pointer-events: none;
+}
+
+.wr-credit {
+  align-self: flex-start;
+  margin: 0;
+  padding: calc(var(--u) * 0.7) calc(var(--u) * 1.6);
+  border: max(2px, calc(var(--u) * 0.4)) solid var(--wr-paper);
+  outline: 2px solid var(--wr-ink-deep);
+  background: var(--wr-ink-deep);
+  color: var(--wr-paper);
+  font-size: max(11px, calc(var(--u) * 2.3));
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+/* ---- Focus: shown only after a real key press (data-kbd), like the menu ---- */
+.wardrobe__page[data-kbd] .wr-back:focus-visible .wr-back__paper,
+.wardrobe__page[data-kbd] .wr-radio:focus-visible + .wr-sheet,
+.wardrobe__page[data-kbd] .wr-reset:focus-visible .wr-reset__stamp {
+  outline: 3px dashed var(--wr-ink-deep);
+  outline-offset: calc(var(--u) * 1.8);
+}
+
+.wr-back:focus-visible,
+.wr-reset:focus-visible {
+  outline: none;
+}
+
+/* ---- Hover / keyboard-focus shows ---- */
+
+/* Back: the tag swings off towards the menu. */
+:is(.wr-back:hover, .wardrobe__page[data-kbd] .wr-back:focus-visible) .wr-back__paper {
+  animation: wr-swing-left 0.7s steps(3, end) forwards;
+}
+
+:is(.wr-back:hover, .wardrobe__page[data-kbd] .wr-back:focus-visible) .wr-sfx--back {
+  animation: wr-pop 0.4s steps(2, end) 0.12s forwards;
+}
+
+/* Parts */
+:is(.wr-part--coat:hover, .wardrobe__page[data-kbd] .wr-part--coat:has(:focus-visible)) .wr-part__paper {
+  animation: wr-swing 0.9s steps(3, end) forwards;
+}
+
+:is(.wr-part--hat:hover, .wardrobe__page[data-kbd] .wr-part--hat:has(:focus-visible)) .wr-part__icon {
+  animation: wr-tip 0.6s steps(2, end) forwards;
+}
+
+:is(.wr-part--scarf:hover, .wardrobe__page[data-kbd] .wr-part--scarf:has(:focus-visible)) .wr-part__icon {
+  animation: wr-flutter 0.7s steps(2, end) forwards;
+}
+
+:is(.wr-part--trousers:hover, .wardrobe__page[data-kbd] .wr-part--trousers:has(:focus-visible)) .wr-part__paper {
+  animation: wr-hop 0.6s steps(2, end) forwards;
+}
+
+:is(.wr-part:hover, .wardrobe__page[data-kbd] .wr-part:has(:focus-visible)) .wr-sfx--part {
+  animation: wr-pop 0.4s steps(2, end) 0.1s forwards;
+}
+
+/* Cards: six different shows */
+:is(.wr-card--1:hover, .wardrobe__page[data-kbd] .wr-card--1:has(:focus-visible)) .wr-card__paper {
+  animation: wr-wobble 0.6s steps(2, end) forwards;
+}
+
+:is(.wr-card--2:hover, .wardrobe__page[data-kbd] .wr-card--2:has(:focus-visible)) .wr-card__paper {
+  animation: wr-flip 0.6s steps(6, end) forwards;
+}
+
+:is(.wr-card--3:hover, .wardrobe__page[data-kbd] .wr-card--3:has(:focus-visible)) .wr-card__paper {
+  animation: wr-flutter-card 0.6s steps(2, end) forwards;
+}
+
+:is(.wr-card--4:hover, .wardrobe__page[data-kbd] .wr-card--4:has(:focus-visible)) .wr-card__paper {
+  animation: wr-hop 0.6s steps(2, end) forwards;
+}
+
+:is(.wr-card--5:hover, .wardrobe__page[data-kbd] .wr-card--5:has(:focus-visible)) .wr-card__paper {
+  animation: wr-twirl 0.6s steps(3, end) forwards;
+}
+
+:is(.wr-card--6:hover, .wardrobe__page[data-kbd] .wr-card--6:has(:focus-visible)) .wr-card__paper {
+  animation: wr-shake 0.5s steps(1, end) forwards;
+}
+
+:is(.wr-card:hover, .wardrobe__page[data-kbd] .wr-card:has(:focus-visible)) .wr-sfx--card {
+  animation: wr-pop 0.4s steps(2, end) 0.12s forwards;
+}
+
+/* Reset: the rubber stamp lifts and slams down with an ink burst. */
+:is(.wr-reset:not(:disabled):hover, .wardrobe__page[data-kbd] .wr-reset:not(:disabled):focus-visible)
+  .wr-reset__stamp {
+  animation: wr-stamp 0.45s steps(2, end) forwards;
+}
+
+:is(.wr-reset:not(:disabled):hover, .wardrobe__page[data-kbd] .wr-reset:not(:disabled):focus-visible)
+  .wr-reset__burst {
+  animation: wr-burst 0.4s steps(2, end) 0.2s forwards;
+}
+
+/* Press: squash */
+.wr-back:active .wr-back__paper,
+.wr-reset:not(:disabled):active .wr-reset__stamp {
+  scale: 1.06 0.9;
+}
+
+/* ---- Keyframes ---- */
+@keyframes wr-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(-24deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.25) rotate(6deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(-6deg);
+  }
+}
+
+@keyframes wr-swing {
+  0% { rotate: 0deg; }
+  20% { rotate: 12deg; }
+  45% { rotate: -8deg; }
+  70% { rotate: 4deg; }
+  100% { rotate: 0deg; }
+}
+
+@keyframes wr-swing-left {
+  0% { rotate: 0deg; translate: 0 0; }
+  40% { rotate: -16deg; translate: calc(var(--u) * -1.4) 0; }
+  70% { rotate: 6deg; translate: 0 0; }
+  100% { rotate: -4deg; translate: calc(var(--u) * -0.6) 0; }
+}
+
+@keyframes wr-tip {
+  0% { translate: 0 0; rotate: 0deg; }
+  40% { translate: 0 calc(var(--u) * -3); rotate: -18deg; }
+  100% { translate: 0 calc(var(--u) * -1); rotate: -10deg; }
+}
+
+@keyframes wr-flutter {
+  0% { scale: 1; rotate: 0deg; }
+  25% { scale: 1.08 0.94; rotate: 6deg; }
+  50% { scale: 0.94 1.06; rotate: -6deg; }
+  75% { scale: 1.06 0.95; rotate: 4deg; }
+  100% { scale: 1; rotate: 0deg; }
+}
+
+@keyframes wr-hop {
+  0% { translate: 0 0; }
+  30% { translate: 0 calc(var(--u) * -2.6); }
+  55% { translate: 0 0; }
+  75% { translate: 0 calc(var(--u) * -1.2); }
+  100% { translate: 0 calc(var(--u) * -0.6); }
+}
+
+@keyframes wr-wobble {
+  0% { rotate: 0deg; }
+  25% { rotate: -7deg; }
+  50% { rotate: 6deg; }
+  75% { rotate: -3deg; }
+  100% { rotate: 1deg; }
+}
+
+@keyframes wr-flip {
+  from { rotate: y 0deg; }
+  to { rotate: y 360deg; }
+}
+
+@keyframes wr-flutter-card {
+  0% { scale: 1; }
+  25% { scale: 1.07 0.93; }
+  50% { scale: 0.95 1.06; }
+  75% { scale: 1.04 0.97; }
+  100% { scale: 1.02; }
+}
+
+@keyframes wr-twirl {
+  0% { rotate: 0deg; scale: 1; }
+  40% { rotate: 12deg; scale: 1.08; }
+  70% { rotate: -6deg; scale: 1.04; }
+  100% { rotate: 3deg; scale: 1.04; }
+}
+
+@keyframes wr-shake {
+  0% { translate: 0 0; }
+  20% { translate: calc(var(--u) * -1) 0; }
+  40% { translate: calc(var(--u) * 1) 0; }
+  60% { translate: calc(var(--u) * -0.7) 0; }
+  80% { translate: calc(var(--u) * 0.5) 0; }
+  100% { translate: 0 0; }
+}
+
+@keyframes wr-squash {
+  0% { scale: 1; }
+  40% { scale: 1.1 0.84; }
+  70% { scale: 0.96 1.05; }
+  100% { scale: 1; }
+}
+
+@keyframes wr-pow {
+  0% { opacity: 0; scale: 2.2; rotate: -14deg; }
+  20% { opacity: 1; scale: 0.92; rotate: -10deg; }
+  70% { opacity: 1; scale: 1; rotate: -10deg; }
+  100% { opacity: 0; scale: 1; rotate: -10deg; }
+}
+
+@keyframes wr-deal {
+  0% { opacity: 0; translate: calc(var(--u) * -30) calc(var(--u) * -8); rotate: -24deg; }
+  60% { opacity: 1; translate: calc(var(--u) * 2) 0; rotate: 6deg; }
+  100% { opacity: 1; translate: 0 0; rotate: 0deg; }
+}
+
+@keyframes wr-stamp {
+  0% { translate: 0 0; scale: 1; }
+  40% { translate: 0 calc(var(--u) * -2.4); scale: 1.12; }
+  100% { translate: 0 0; scale: 1.03 0.97; }
+}
+
+@keyframes wr-burst {
+  0% { opacity: 0; scale: 0.7; }
+  60% { opacity: 1; scale: 1.1; }
+  100% { opacity: 0.85; scale: 1; }
+}
+
+/* ---- Stage (same comic sunburst as the menu) ---- */
+.wardrobe__stage {
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 55%, #8fd0e3 0%, var(--wr-sea) 55%, #3f86a3 100%);
+}
+
+.wardrobe__rays {
+  position: absolute;
+  left: 50%;
+  top: 55%;
+  width: 220vmax;
+  height: 220vmax;
+  translate: -50% -50%;
+  background: repeating-conic-gradient(rgba(255, 255, 255, 0.16) 0deg 9deg, transparent 9deg 18deg);
+  animation: wardrobe-spin 40s linear infinite;
+}
+
+.wardrobe__dots {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(59, 74, 107, 0.22) 1.6px, transparent 1.8px);
+  background-size: 14px 14px;
+  mask-image: radial-gradient(circle at 50% 55%, transparent 25%, black 75%);
+}
+
+.wardrobe__preview {
+  position: absolute;
+  inset: 0;
+}
+
+@keyframes wardrobe-spin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+/* ---- Narrow screens: detective on top, page below (the screen scrolls) ---- */
+@media (max-width: 760px) {
+  .wardrobe {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(260px, 1fr) auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .wardrobe__stage {
+    order: -1;
+  }
+
+  .wardrobe__panel {
+    height: 660px;
+    padding: 10px;
+    border-right: none;
+    border-top: 6px solid var(--wr-ink-deep);
+  }
+}
+
+/* ---- Reduced motion: no movement; shows become a static highlight ---- */
+@media (prefers-reduced-motion: reduce) {
+  .wardrobe__rays,
+  .wardrobe *,
+  .wardrobe *::before {
+    animation: none !important;
+  }
+
+  .wr-pow,
+  .wr-reset__slam {
+    display: none;
+  }
+
+  :is(.wr-back:hover, .wardrobe__page[data-kbd] .wr-back:focus-visible) .wr-back__paper,
+  :is(.wr-part:hover, .wardrobe__page[data-kbd] .wr-part:has(:focus-visible)) .wr-part__paper,
+  :is(.wr-card:hover, .wardrobe__page[data-kbd] .wr-card:has(:focus-visible)) .wr-card__paper,
+  .wr-reset:not(:disabled):hover .wr-reset__stamp {
+    background: #fff1c4;
+  }
+
+  :is(.wr-back:hover, .wardrobe__page[data-kbd] .wr-back:focus-visible) .wr-sfx,
+  :is(.wr-part:hover, .wardrobe__page[data-kbd] .wr-part:has(:focus-visible)) .wr-sfx,
+  :is(.wr-card:hover, .wardrobe__page[data-kbd] .wr-card:has(:focus-visible)) .wr-sfx {
+    opacity: 1;
+    transform: rotate(-6deg);
+  }
+}
