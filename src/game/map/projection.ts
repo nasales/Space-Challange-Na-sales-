@@ -6,7 +6,7 @@
 // Norte = -Z, Este = +X, arriba = +Y.
 
 /** Escala del mundo: unidades 3D por kilómetro real. Más grande = más que explorar. */
-export const UNITS_PER_KM = 4
+export const UNITS_PER_KM = 8 // was 4: the map is twice as big to explore
 
 const REF_LAT = 40
 const KM_PER_DEG_LON = 111.32 * Math.cos((REF_LAT * Math.PI) / 180)
@@ -28,8 +28,14 @@ export function metersToY(meters: number, exaggeration: number) {
   return (meters / 1000) * exaggeration * UNITS_PER_KM
 }
 
+/**
+ * Relief exaggeration of the explored countries. Lower than before (12 at 4 units/km) so that, on
+ * the twice-as-big map, slopes are much gentler while keeping the toy-terrace look.
+ */
+export const HEIGHT_EXAGGERATION = 5
+
 /** Nivel del mar de los países explorados (un poco hundido: la costa forma escalón). */
-export const SEA_Y = metersToY(-25, 12)
+export const SEA_Y = metersToY(-25, HEIGHT_EXAGGERATION)
 /** Nivel del mar del mundo sin explorar: algo más bajo, para que no "parpadee" con el otro. */
 export const WORLD_SEA_Y = SEA_Y - 0.4 * UNITS_PER_KM
 /** Donde se esconden las partes de una malla que no se deben ver (bajo el suelo del mundo). */

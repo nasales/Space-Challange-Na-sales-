@@ -5,7 +5,7 @@ export const TERRACE_LEVELS = [0, 150, 350, 600, 900, 1200, 1600, 2000, 2500]
 /** Altura a la que se dibuja cada piso (el primero, un pequeño escalón sobre el mar). */
 const PLATEAU = [40, ...TERRACE_LEVELS.slice(1)]
 /** Fracción del tramo entre dos pisos que es pared (el resto es suelo plano). */
-const WALL_START = 0.7
+const WALL_START = 0.45 // was 0.7: walls take more of each step, so they read as ramps, not cliffs
 const WALL_MIDDLE = (WALL_START + 1) / 2
 
 /** Busca el tramo [i, i+1] en el que cae una altura y en qué punto (t de 0 a 1). */
@@ -42,7 +42,7 @@ export function terraceHeight(meters: number): number {
  * Suaviza la rejilla de alturas (desenfoque 3x3, varias pasadas) para que los bordes
  * de los pisos salgan redondeados.
  */
-export function smoothHeights(src: Int16Array, w: number, h: number, passes = 4): Float32Array {
+export function smoothHeights(src: Int16Array, w: number, h: number, passes = 6): Float32Array {
   let a = Float32Array.from(src)
   let b = new Float32Array(a.length)
   for (let pass = 0; pass < passes; pass++) {

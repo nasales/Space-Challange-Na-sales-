@@ -33,10 +33,10 @@ export interface CarState {
 // Ajustes del manejo (unidades del mundo por segundo)
 export const TUNING = {
   maxSpeed: 48,
-  turboSpeed: 140,
+  turboSpeed: 220, // was 140: the map is twice as big
   reverseSpeed: 15,
   accel: 26,
-  turboAccel: 85,
+  turboAccel: 130,
   brake: 70,
   coastDrag: 3, // cuánto frena al soltar (una persona se para enseguida; el coche usaba 0.9)
   turnRate: 1.9, // rad/s a velocidad media

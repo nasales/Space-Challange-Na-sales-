@@ -14,13 +14,14 @@ import {
   UNITS_PER_DEG_LAT,
   UNITS_PER_DEG_LON,
   UNITS_PER_KM,
+  HEIGHT_EXAGGERATION,
   SEA_Y,
   HIDDEN_Y,
 } from '../map/projection'
 import { createToonTerrainMaterial } from './createToonTerrainMaterial'
 
 /** Cuánto exageramos las alturas (relieve muy marcado, estilo videojuego). */
-export const HEIGHT_EXAGGERATION = 12
+export { HEIGHT_EXAGGERATION }
 const CHUNK = 256
 
 export interface Terrain {
