@@ -1,0 +1,92 @@
+[
+ {
+  "id": "dana_valencia",
+  "title": "Valencia DANA",
+  "place": "Valencia",
+  "lat": 39.47,
+  "lon": -0.38,
+  "question": "After the 2024 DANA floods, is it raining more and more in Valencia, or is something else changing?",
+  "context": "On 29 October 2024 a DANA storm dropped months of rain on Valencia in a few hours and killed more than 220 people.",
+  "files": [
+   "data/cache/case_dana_valencia_PRECTOTCORR.json",
+   "data/cache/case_dana_valencia_T2M.json"
+  ]
+ },
+ {
+  "id": "donana",
+  "title": "Doñana wetlands",
+  "place": "Doñana",
+  "lat": 37.0,
+  "lon": -6.45,
+  "question": "Doñana is running out of water. Is it the rain, or something the satellites cannot see?",
+  "context": "In 2023 Santa Olalla, the largest lagoon in Doñana, dried up completely, while the aquifer below it is overexploited.",
+  "files": [
+   "data/cache/case_donana_GWETTOP.json",
+   "data/cache/case_donana_PRECTOTCORR.json"
+  ]
+ },
+ {
+  "id": "sierra_culebra",
+  "title": "Sierra de la Culebra fire",
+  "place": "Sierra de la Culebra (Zamora)",
+  "lat": 41.9,
+  "lon": -6.3,
+  "question": "After the huge 2022 wildfire, is Sierra de la Culebra getting hotter and drier?",
+  "context": "In June 2022 about 25,000 hectares burned in Sierra de la Culebra (Zamora), one of the largest wildfires in Spain.",
+  "files": [
+   "data/cache/case_sierra_culebra_T2M.json",
+   "data/cache/case_sierra_culebra_GWETTOP.json"
+  ]
+ },
+ {
+  "id": "galicia_fires",
+  "title": "Galicia fires",
+  "place": "Ourense (Galicia)",
+  "lat": 42.3,
+  "lon": -7.9,
+  "question": "Galicia is green and wet, yet it burns more and more. What do temperature and soil say?",
+  "context": "Ourense suffered major wildfires in 2017 and in August 2025, with tens of thousands of hectares burned.",
+  "files": [
+   "data/cache/case_galicia_fires_T2M.json",
+   "data/cache/case_galicia_fires_GWETTOP.json"
+  ]
+ },
+ {
+  "id": "ebro_delta",
+  "title": "Ebro Delta",
+  "place": "Ebro Delta",
+  "lat": 40.7,
+  "lon": 0.75,
+  "question": "After storm Gloria, is the climate of the Ebro Delta changing?",
+  "context": "In January 2020 storm Gloria pushed the sea kilometres inland and flooded thousands of hectares of rice fields in the Ebro Delta.",
+  "files": [
+   "data/cache/case_ebro_delta_PRECTOTCORR.json",
+   "data/cache/case_ebro_delta_T2M.json"
+  ]
+ },
+ {
+  "id": "filomena_madrid",
+  "title": "Storm Filomena",
+  "place": "Madrid",
+  "lat": 40.42,
+  "lon": -3.7,
+  "question": "If Madrid had its biggest snowfall in half a century, does that mean it is not warming?",
+  "context": "In January 2021 storm Filomena brought Madrid its heaviest snowfall in about 50 years.",
+  "files": [
+   "data/cache/case_filomena_madrid_T2M.json"
+  ]
+ },
+ {
+  "id": "almeria_murcia",
+  "title": "Almería-Murcia drylands",
+  "place": "Almería-Murcia",
+  "lat": 37.3,
+  "lon": -1.9,
+  "question": "Is south-east Spain becoming even drier?",
+  "context": "The south-east is the driest part of mainland Europe, home to the Tabernas desert and thousands of hectares of greenhouses.",
+  "files": [
+   "data/cache/case_almeria_murcia_PRECTOTCORR.json",
+   "data/cache/case_almeria_murcia_GWETTOP.json"
+  ]
+ }
+]
