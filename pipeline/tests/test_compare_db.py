@@ -113,3 +113,11 @@ def test_cli_writes_csv(export_dir, tmp_path, capsys):
     assert "Compared: 4 series" in capsys.readouterr().out
     with open(out, newline="", encoding="utf-8") as f:
         assert len(list(csv.DictReader(f))) == 4
+
+
+def test_recompute_db_ignores_exported_trend(export_dir):
+    _tamper(export_dir, 102, "tair", "significant", False)  # wrong stored trend is ignored
+    rows = {(r["cell_id"], r["var_id"]): r for r in compare_export(export_dir, progress_every=0,
+                                                                     recompute_db=True)}
+    assert len(rows) == 5  # cell 103 (trend null in the export) is now compared too
+    assert all(r["status"] == "ok" for r in rows.values())
