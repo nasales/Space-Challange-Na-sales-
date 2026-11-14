@@ -1,0 +1,246 @@
+{
+  "case_id": "ebro_delta",
+  "title": "Ebro Delta",
+  "place": "Ebro Delta",
+  "intro": {
+    "headline": "January 2020: the sea came into the rice fields",
+    "paragraphs": [
+      "The Ebro Delta, in Catalonia, is where Spain's longest river meets the Mediterranean Sea. It is very low and very flat: much of it sits barely above sea level, and a large part is covered by rice fields.",
+      "In January 2020 storm Gloria hit the east coast of Spain. Huge waves and a storm surge pushed the sea kilometres inland and flooded thousands of hectares of rice fields in the delta.",
+      "Pictures like these make people ask whether the climate of the delta is changing. In this case file you will learn a new way to read a time series: comparing an earlier period with a later one. Then you decide."
+    ],
+    "question": "After storm Gloria, is the climate of the Ebro Delta changing?"
+  },
+  "steps": [
+    {
+      "id": "recap",
+      "title": "A quick look at the record",
+      "text": "You know this kind of chart: one point per month of air temperature near the delta, from January 1980 to September 2026. The big regular waves are the seasons, hot summers and mild winters. The straight line is the trend: the slow change that remains once the waves are averaged out. Data: NASA MERRA-2.",
+      "chart": {
+        "variable": "T2M",
+        "view": "monthly",
+        "show_trend": true
+      },
+      "question": {
+        "prompt": "What does the straight line through the waves show?",
+        "options": [
+          {
+            "text": "The slow change over the whole record",
+            "correct": true,
+            "feedback": "Right: the waves are the seasons, the line is the long-term change."
+          },
+          {
+            "text": "The temperature of one hot summer",
+            "correct": false,
+            "feedback": "Follow the straight line: it runs from the first month to the last one, across all the summers. Does it belong to one summer only?"
+          },
+          {
+            "text": "The normal shape of one year",
+            "correct": false,
+            "feedback": "The shape of a year is the up-and-down wave that repeats. The straight line does not go up and down: what is it measuring instead?"
+          }
+        ]
+      },
+      "takeaway": "Seasons make the waves; the trend line shows the slow change underneath."
+    },
+    {
+      "id": "histogram",
+      "title": "Counting months",
+      "text": "New tool: a histogram. Each month first becomes an anomaly (its temperature minus the normal for that month). Then the months are sorted into ranges 0.5 °C wide, and each bar shows how many months fall in its range. Here the record is cut in two: 1980 to 2002 (276 months) and 2003 to September 2026 (285 months). Each period gets its own bars.",
+      "chart": {
+        "variable": "T2M",
+        "view": "periods"
+      },
+      "question": {
+        "prompt": "What does the height of one bar tell you?",
+        "options": [
+          {
+            "text": "How many months had an anomaly in that range",
+            "correct": true,
+            "feedback": "Exactly: a histogram counts how often each range happens."
+          },
+          {
+            "text": "The temperature of one particular month",
+            "correct": false,
+            "feedback": "Look at the axes: the ranges of anomaly are along the bottom. What is counted on the vertical axis?"
+          },
+          {
+            "text": "The year when the temperature was measured",
+            "correct": false,
+            "feedback": "There are no years on this chart. Read the axis labels again: one axis is the anomaly range, the other is a count."
+          }
+        ]
+      },
+      "takeaway": "A histogram shows how often each kind of month happens, not when it happened."
+    },
+    {
+      "id": "temperature_shift",
+      "title": "The whole shape moved",
+      "text": "Compare the two shapes. Before 2003 the average anomaly was -0.36 °C; from 2003 it is +0.35 °C, a shift of about 0.7 °C. The whole shape moved, not only the edges. Months more than 1 °C warmer than normal: 18 before, 84 after. Months more than 1 °C colder than normal: 70 before, 29 after. Warm months became common and cold ones rarer.",
+      "chart": {
+        "variable": "T2M",
+        "view": "periods"
+      },
+      "question": {
+        "prompt": "Where does the shape of the later period sit, compared with the earlier one?",
+        "options": [
+          {
+            "text": "Shifted to the warm side (to the right)",
+            "correct": true,
+            "feedback": "Yes: the later bars pile up further to the right."
+          },
+          {
+            "text": "In the same place",
+            "correct": false,
+            "feedback": "Find the tallest bars of each period. Are they above the same anomaly range, or is one set further to the right?"
+          },
+          {
+            "text": "Shifted to the cold side (to the left)",
+            "correct": false,
+            "feedback": "Look at the far right of the chart, above +1.5 °C. Which period has more bars there?"
+          }
+        ]
+      },
+      "takeaway": "When the whole distribution shifts, it is not one odd month: every kind of month changed."
+    },
+    {
+      "id": "gloria_rain",
+      "title": "Gloria in the rain record",
+      "text": "Now the rain, as an anomaly. Data: NASA GPM IMERG, January 1998 to September 2025. Gloria also brought heavy rain. In January 2020 this square got about 6.6 mm/day on average, while a normal January gets about 1.3. Its anomaly, +5.3 mm/day, is the second largest in the record; only October 2000 is higher.",
+      "chart": {
+        "variable": "PRECIP",
+        "view": "anomaly",
+        "highlights": [
+          { "kind": "point", "date": "2020-01", "label": "January 2020 (Gloria)" }
+        ]
+      },
+      "question": {
+        "prompt": "How does January 2020 look in this rain record?",
+        "options": [
+          {
+            "text": "One of the highest points of the whole record",
+            "correct": true,
+            "feedback": "Correct: a very wet month, far above normal."
+          },
+          {
+            "text": "Close to zero, a normal month",
+            "correct": false,
+            "feedback": "Find the labelled point for January 2020. Is it near the zero line or far above it?"
+          },
+          {
+            "text": "Below zero, a dry month",
+            "correct": false,
+            "feedback": "Points below zero were drier than normal. Is the January 2020 point above or below the zero line?"
+          }
+        ]
+      },
+      "takeaway": "A storm can make one month stand out, but one month is still one point."
+    },
+    {
+      "id": "rain_periods",
+      "title": "Did the rain shape move?",
+      "text": "The same before-and-after test for rain. The record is shorter, so the cut is at January 2012: 1998 to 2011 (168 months) and 2012 to September 2025 (165 months). Gloria's month is in the later period. Yet both average anomalies are almost exactly zero: about +0.0004 and -0.0004 mm/day. Wet and dry months happen about as often in both periods.",
+      "chart": {
+        "variable": "PRECIP",
+        "view": "periods"
+      },
+      "question": {
+        "prompt": "Compared with the temperature histogram, what do the two rain shapes do?",
+        "options": [
+          {
+            "text": "They overlap: no clear shift",
+            "correct": true,
+            "feedback": "Right: the two rain shapes sit in the same place."
+          },
+          {
+            "text": "The later one moved to the wet side",
+            "correct": false,
+            "feedback": "Find the tallest bars of each period. Are they above the same range? One very wet month does not move a whole shape."
+          },
+          {
+            "text": "The later one moved to the dry side",
+            "correct": false,
+            "feedback": "Compare the bars on the left of the chart for both periods. Is one period clearly drier, or are they similar?"
+          }
+        ]
+      },
+      "takeaway": "One extreme month does not move a distribution; a real change moves many months."
+    },
+    {
+      "id": "trend_test",
+      "title": "Does the trend test agree?",
+      "text": "The histograms compare two halves; the trend test uses every month. For temperature the trend is about +0.35 °C every 10 years, about 1.6 °C over the whole record, with p < 0.001: very unlikely to be chance. For rain the slope is about zero and p = 0.90, so there is no clear trend. Both tools tell the same story. Here: yearly mean temperature with its trend line.",
+      "chart": {
+        "variable": "T2M",
+        "view": "annual",
+        "show_trend": true
+      },
+      "question": {
+        "prompt": "What does the temperature trend line do, matching the shift you saw in the histogram?",
+        "options": [
+          {
+            "text": "It rises from left to right",
+            "correct": true,
+            "feedback": "Yes: a rising line and a shape that moved warmer are the same clue."
+          },
+          {
+            "text": "It stays flat",
+            "correct": false,
+            "feedback": "Compare the height of the line at the left edge with its height at the right edge. Are they the same?"
+          },
+          {
+            "text": "It falls from left to right",
+            "correct": false,
+            "feedback": "Follow the line from the 1980s to the 2020s. Does it go down, or up?"
+          }
+        ]
+      },
+      "takeaway": "Two different tools giving the same answer make the evidence stronger."
+    },
+    {
+      "id": "right_evidence",
+      "title": "The clue that is not here",
+      "text": "January 2020 in temperature: only about 0.6 °C above a normal January, an ordinary month. Gloria flooded the delta mainly from the sea: big waves and a storm surge. Sea level and waves are not measured by air temperature or rain. Nor are the slow sinking of the delta and the river mud held back by dams. A good detective picks evidence that can actually see the crime.",
+      "chart": {
+        "variable": "T2M",
+        "view": "anomaly",
+        "highlights": [
+          { "kind": "point", "date": "2020-01", "label": "January 2020 (Gloria)" }
+        ]
+      },
+      "question": {
+        "prompt": "The flood was huge, but January 2020 looks ordinary on this chart. What does that tell the detective?",
+        "options": [
+          {
+            "text": "This variable does not measure what caused the flood",
+            "correct": true,
+            "feedback": "Exactly: the flood came from the sea, which these data do not measure."
+          },
+          {
+            "text": "The storm did not really happen",
+            "correct": false,
+            "feedback": "The storm is well documented, and you saw it in the rain record. Look at what this chart measures: air temperature. Could it show waves?"
+          },
+          {
+            "text": "A warm January caused the flood",
+            "correct": false,
+            "feedback": "Check the January 2020 point: is it far above zero, or close to a normal month? Many months in this chart are warmer."
+          }
+        ]
+      },
+      "takeaway": "Choose the variable that can see the event; no chart can show what it does not measure."
+    }
+  ],
+  "conclusion": {
+    "prompt": "After storm Gloria, is the climate of the Ebro Delta changing? Write your conclusion using what the charts showed you, and say what these data cannot tell you.",
+    "variable": "T2M",
+    "placeholder": "Comparing the earlier and the later years in the Ebro Delta, I think..."
+  },
+  "reveal": {
+    "by_variable": {
+      "T2M": "Air temperature in the Ebro Delta (January 1980 to September 2026) rises clearly: about +0.35 °C per decade (95% range +0.26 to +0.43 °C per decade), p < 0.001, about 1.6 °C over the whole period. The average monthly anomaly moved from -0.36 °C (1980-2002) to +0.35 °C (2003-2026).",
+      "PRECIP": "Rain in the Ebro Delta (January 1998 to September 2025) shows no significant trend: the slope is about zero, p = 0.90, and the 95% confidence range (-0.013 to +0.013 mm/day per year) includes zero. January 2020 was very wet, but the two periods have the same average anomaly."
+    },
+    "lesson": "Comparing two periods shows whether the whole distribution moved: temperature did, rain did not. One extreme month, even storm Gloria, does not move a distribution. And storm Gloria flooded the delta mainly from the sea: sea level, waves, the sinking of the delta and the loss of river sediment are not measured by these variables. Choosing the right evidence matters as much as reading it well."
+  }
+}
