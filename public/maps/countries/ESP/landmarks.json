@@ -97,6 +97,76 @@
       "heading": 0,
       "scale": 0.42,
       "description": "8th-century Umayyad mosque with its forest of red and white arches."
+    },
+    {
+      "id": "catedral-burgos",
+      "name": "Catedral de Burgos",
+      "city": "Burgos",
+      "lat": 42.34056,
+      "lon": -3.70444,
+      "heading": 0,
+      "scale": 0.42,
+      "description": "Gothic cathedral begun in 1221, famous for its openwork spires and crossing lantern."
+    },
+    {
+      "id": "teatro-merida",
+      "name": "Teatro Romano",
+      "city": "Mérida",
+      "lat": 38.91583,
+      "lon": -6.33833,
+      "heading": 0,
+      "scale": 0.42,
+      "description": "Roman theatre from 16-15 BC with a two-storey columned stage front, still used for plays."
+    },
+    {
+      "id": "basilica-pilar",
+      "name": "Basílica del Pilar",
+      "city": "Zaragoza",
+      "lat": 41.65694,
+      "lon": -0.87861,
+      "heading": 0,
+      "scale": 0.38,
+      "description": "Baroque basilica beside the Ebro, with four tall towers and domes of glazed tiles."
+    },
+    {
+      "id": "molinos-consuegra",
+      "name": "Molinos de Consuegra",
+      "city": "Consuegra",
+      "lat": 39.45389,
+      "lon": -3.60667,
+      "heading": 0,
+      "scale": 0.45,
+      "description": "Whitewashed windmills and the castle of La Muela on a ridge of La Mancha, Don Quixote's land."
+    },
+    {
+      "id": "alcazar-toledo",
+      "name": "Alcázar de Toledo",
+      "city": "Toledo",
+      "lat": 39.85806,
+      "lon": -4.02028,
+      "heading": 0,
+      "scale": 0.42,
+      "description": "Square stone fortress with four slate-spired towers at the highest point of Toledo."
+    },
+    {
+      "id": "murallas-avila",
+      "name": "Murallas de Ávila",
+      "city": "Ávila",
+      "lat": 40.65611,
+      "lon": -4.70028,
+      "heading": -30,
+      "scale": 0.3,
+      "description": "Medieval walls, about 2.5 km long with 87 round towers, that still ring the old town."
+    },
+    {
+      "id": "plaza-mayor-salamanca",
+      "name": "Plaza Mayor",
+      "city": "Salamanca",
+      "lat": 40.965,
+      "lon": -5.66389,
+      "heading": 0,
+      "scale": 0.4,
+      "description": "18th-century Baroque square of golden sandstone, closed on all four sides by arcades."
     }
   ]
 }
