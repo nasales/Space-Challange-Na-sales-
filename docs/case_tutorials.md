@@ -24,7 +24,7 @@ While the case is open the game is paused (driving keys ignored).
 |---|---|---|
 | `src/shared/tutorial.ts` | shared types (Data + Interface + Game agree) | everyone |
 | `data/tutorials/<case_id>.json` (`TutorialScript`) | story agent (Data area, Diego) | UI |
-| `pipeline/tutorial_data.py` -> `data/cache/tutorial_<case_id>.json` (`TutorialData`) | data agent (Data area, Diego) | UI |
+| `pipeline/tutorial_data.py` -> `data/tutorial_data/<case_id>.json` (`TutorialData`) | data agent (Data area, Diego) | UI |
 | `src/game/cases/` (markers, proximity, open event) | game agent (Game area, with Person 2's OK) | — |
 | `src/ui/casefile/` (intro, steps, charts, conclusion, reveal) | interface agent (Interface area, with Yeipi's OK) | — |
 | `src/App.tsx` (wiring, a few lines) | integration | — |
@@ -33,14 +33,14 @@ While the case is open the game is paused (driving keys ignored).
 - Everything in English, plain words, for a teenager or adult with no statistics background.
 - The intro gives context and the question; it never gives the answer.
 - No number in the script that the data does not back up. Trend numbers come from
-  `data/cache/tutorial_<case_id>.json`, which matches `data/cache/case_<id>_<var>.json`.
+  `data/tutorial_data/<case_id>.json`, which matches `data/cache/case_<id>_<var>.json`.
 - A non-significant trend is a valid result, never presented as a failure.
 - Credit data in text: "Data: NASA ..." (dataset name from the data file). No NASA logos.
 - Lessons the DANA case should teach (one or two per step):
   1. What a monthly time series is (one point per month, years on the x axis).
   2. Seasonality: the same cycle repeats every year; compare like with like.
   3. Anomalies: removing the seasonal cycle to see what is unusual.
-  4. One extreme month (October 2024) is an event, not a trend.
+  4. One extreme event (the October 2024 DANA) is not a trend; and a storm of a few hours can look small in a monthly mean at one pixel (October 2024 is not the record month at this point).
   5. Trend line and noise: the slope summarises decades, single points do not.
   6. Significance in plain words: could this slope appear by chance? (p-value, confidence range)
   7. Compare variables: rain shows no clear trend, temperature rises clearly.

@@ -89,7 +89,7 @@ export type Highlight =
   | { kind: 'band'; from: string; to: string; label: string }
 
 // ---------------------------------------------------------------------------
-// 2. Chart data: data/cache/tutorial_<case_id>.json (built by pipeline/tutorial_data.py)
+// 2. Chart data: data/tutorial_data/<case_id>.json (built by pipeline/tutorial_data.py)
 // ---------------------------------------------------------------------------
 
 export interface TutorialData {

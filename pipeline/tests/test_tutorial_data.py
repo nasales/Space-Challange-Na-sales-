@@ -139,7 +139,7 @@ TREND_KEYS = {"slope_per_year", "ci_low", "ci_high", "p_value", "significant", "
 
 
 def test_real_dana_file_matches_type_and_case_files():
-    path = ROOT / "data" / "cache" / "tutorial_dana_valencia.json"
+    path = ROOT / "data" / "tutorial_data" / "dana_valencia.json"
     data = json.loads(path.read_text(encoding="utf-8"))
     assert set(data) == {"case_id", "place", "lat", "lon", "variables"}
     assert data["case_id"] == "dana_valencia"
@@ -169,4 +169,4 @@ def test_real_dana_file_matches_type_and_case_files():
 
 def test_cli_writes_file(tmp_path):
     assert main(["--case", "dana_valencia", "--out-dir", str(tmp_path)]) == 0
-    assert (tmp_path / "tutorial_dana_valencia.json").exists()
+    assert (tmp_path / "dana_valencia.json").exists()

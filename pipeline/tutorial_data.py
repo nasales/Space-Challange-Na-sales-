@@ -1,4 +1,4 @@
-"""Chart data for featured-case tutorials: data/cache/tutorial_<case_id>.json.
+"""Chart data for featured-case tutorials: data/tutorial_data/<case_id>.json.
 
 Output shape: `TutorialData` / `TutorialSeries` in src/shared/tutorial.ts (rules in
 docs/case_tutorials.md). The UI draws every tutorial chart from this file only (offline).
@@ -52,6 +52,7 @@ from pipeline.trend import _anomalies, _decimal_year, _validate, analyze_trend
 ROOT = Path(__file__).resolve().parent.parent
 INDEX = ROOT / "data" / "cases_index.json"
 CACHE_DIR = ROOT / "data" / "cache"
+OUT_DIR = ROOT / "data" / "tutorial_data"
 TOLERANCE = 1e-9
 DIGITS = 6
 ANNUAL_T_OFFSET = 5.5 / 12   # mean of (month - 1) / 12 over the 12 months
@@ -175,9 +176,9 @@ def build_tutorial(case_id: str, index: list[dict] | None = None, root: Path = R
     }
 
 
-def write_tutorial(data: dict, out_dir: Path = CACHE_DIR) -> Path:
-    """Write data/cache/tutorial_<case_id>.json (deterministic)."""
-    path = Path(out_dir) / f"tutorial_{data['case_id']}.json"
+def write_tutorial(data: dict, out_dir: Path = OUT_DIR) -> Path:
+    """Write data/tutorial_data/<case_id>.json (deterministic)."""
+    path = Path(out_dir) / f"{data['case_id']}.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     return path
@@ -188,7 +189,7 @@ def main(argv: list[str] | None = None) -> int:
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--case", help="case id from data/cases_index.json")
     group.add_argument("--all", action="store_true", help="every case in data/cases_index.json")
-    parser.add_argument("--out-dir", type=Path, default=CACHE_DIR)
+    parser.add_argument("--out-dir", type=Path, default=OUT_DIR)
     args = parser.parse_args(argv)
 
     index = json.loads(INDEX.read_text(encoding="utf-8"))
