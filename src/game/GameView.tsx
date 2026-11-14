@@ -15,6 +15,7 @@ import { createSky } from './scene/createSky'
 import { createLighting } from './scene/createLighting'
 import { createClouds } from './scene/createClouds'
 import { createInkOutline } from './scene/createInkOutline'
+import { createDayCycle, readDayParams } from './scene/dayCycle'
 import { createDetective } from './detective/createDetective'
 import { createDust } from './effects/createDust'
 import { createFootprints } from './effects/createFootprints'
@@ -117,6 +118,8 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
         // Ambiente: cielo con sol, luces con sombras y nubes moviéndose sobre España
         const sky = createSky()
         const lighting = createLighting()
+        // Day/night cycle (debug: ?time=0.75 start time of day, ?daylen=30 seconds per day)
+        const day = createDayCycle(readDayParams(window.location.search))
         scene.add(sky.group, lighting.group)
         worldMesh.receiveShadow = true
         const mb = zoneBounds[0]
@@ -184,7 +187,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
         const keyboard = createKeyboard()
         const chase = createChaseCamera(camera, renderer.domElement)
         // Solo en desarrollo: acceso desde la consola/Playwright para depurar
-        if (import.meta.env.DEV) Object.assign(window, { __game: { carState, camera, chase, ground, detective, renderer, scene, towns, houses, scenery, sceneryItems, landmarks, caseMarkers, main } })
+        if (import.meta.env.DEV) Object.assign(window, { __game: { carState, camera, chase, ground, detective, renderer, scene, day, towns, houses, scenery, sceneryItems, landmarks, caseMarkers, main } })
 
         const fog = scene.fog as THREE.Fog
         const ink = createInkOutline(renderer) // contornos negros de cómic
@@ -241,7 +244,9 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
             lensFlying = false
             callbacks.current.onLensFocus?.('out')
           }
-          clouds.update(dt)
+          // Time of day: stands still while a case level or the magnifier is open
+          const palette = day.advance(callbacks.current.paused || lensFlying ? 0 : dt)
+          clouds.update(dt, palette)
           // Solved cases in green (only when the app sends a new list)
           if (callbacks.current.completedCases !== shownCompleted) {
             shownCompleted = callbacks.current.completedCases
@@ -264,9 +269,10 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
           camera.near = Math.max(0.05, d / 300)
           camera.far = d * 20 + 1000 * UNITS_PER_KM
           camera.updateProjectionMatrix()
-          sky.update(camera)
-          lighting.update(detective.root.position, Math.max(40, Math.min(d * 1.6, 3000 * UNITS_PER_KM)))
-          ink.render(scene, camera, fog.near, fog.near + (fog.far - fog.near) * 0.5)
+          fog.color.copy(palette.fog)
+          sky.update(camera, palette)
+          lighting.update(detective.root.position, Math.max(40, Math.min(d * 1.6, 3000 * UNITS_PER_KM)), palette)
+          ink.render(scene, camera, fog.near, fog.near + (fog.far - fog.near) * 0.5, palette)
           hudClock += dt
           if (hudClock >= HUD_INTERVAL) {
             hudClock = 0
