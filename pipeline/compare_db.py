@@ -6,16 +6,24 @@ climatology, trend | null}}}.
 
 Usage:
     python -m pipeline.compare_db <export_dir> [--vars tair precip] [--limit N] [--out report.csv]
+                                  [--recompute-db]
+
+--recompute-db ignores the "trend" stored in the export and computes the database side with
+trend_stats() of archivos_preSupabase/etl_espana.py on the same exported values. Use it when the
+export was made without --with-trends. It is a weaker check: both sides see the same rounded values.
 """
 
 from __future__ import annotations
 
 import argparse
 import csv
+import importlib.util
 import json
 import math
 import sys
 from pathlib import Path
+
+import numpy as np
 
 from pipeline.trend import analyze_trend
 
@@ -39,6 +47,8 @@ NUMERIC_FIELDS = [
 ]
 EXACT_FIELDS = ["significant", "direction"]
 
+ETL_PATH = Path(__file__).resolve().parent.parent / "archivos_preSupabase" / "etl_espana.py"
+
 CSV_COLUMNS = (
     ["cell_id", "var_id", "lat", "lon", "status", "max_rel_diff", "error"]
     + [f"{k}_{side}" for k, _, _ in NUMERIC_FIELDS for side in ("ours", "db")]
@@ -51,6 +61,22 @@ def monthly_dates(start_month: str, n: int) -> list[str]:
     year, month = int(start_month[:4]), int(start_month[5:7])
     first = year * 12 + month - 1
     return [f"{k // 12}-{k % 12 + 1:02d}" for k in range(first, first + n)]
+
+
+def load_etl(path: str | Path = ETL_PATH):
+    """Load etl_espana.py by path (it is not a package). Needs xarray, which it imports at top level."""
+    spec = importlib.util.spec_from_file_location("etl_espana", path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module  # its @dataclass needs the module registered
+    spec.loader.exec_module(module)
+    return module
+
+
+def recompute_db_trend(etl, var: dict) -> dict | None:
+    """Database-side trend from trend_stats() on the exported values (None if < 120 months)."""
+    values = np.array([np.nan if v is None else v for v in var["values"]], dtype=float)
+    months = np.array(monthly_dates(var["start_month"], len(values)), dtype="datetime64[M]")
+    return etl.trend_stats(values, months)
 
 
 def _abs_tolerances(row: dict) -> dict:
@@ -105,8 +131,13 @@ def compare_series(cell: dict, var_id: str, var: dict) -> dict:
 
 
 def compare_export(export_dir: str | Path, variables: list[str] | None = None,
-                   limit: int | None = None, progress_every: int = 100, out=sys.stdout) -> list[dict]:
-    """Compare every (cell, var) with a non-null trend. `limit` caps the number of cells read."""
+                   limit: int | None = None, progress_every: int = 100, out=sys.stdout,
+                   recompute_db: bool = False) -> list[dict]:
+    """Compare every (cell, var) with a non-null trend. `limit` caps the number of cells read.
+
+    With recompute_db=True the stored trend is ignored and recomputed with trend_stats().
+    """
+    etl = load_etl() if recompute_db else None
     files = sorted(Path(export_dir, "cells").glob("*.json"), key=lambda p: int(p.stem))
     if limit is not None:
         files = files[:limit]
@@ -116,6 +147,8 @@ def compare_export(export_dir: str | Path, variables: list[str] | None = None,
         for var_id, var in sorted(cell.get("vars", {}).items()):
             if variables and var_id not in variables:
                 continue
+            if recompute_db:
+                var = {**var, "trend": recompute_db_trend(etl, var)}
             if var.get("trend") is None:
                 continue
             rows.append(compare_series(cell, var_id, var))
@@ -158,9 +191,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--vars", nargs="*", help="variable ids to compare (default: all)")
     ap.add_argument("--limit", type=int, help="maximum number of cells to read")
     ap.add_argument("--out", default="compare_db_report.csv", help="CSV report path")
+    ap.add_argument("--recompute-db", action="store_true",
+                    help="ignore the exported trend and recompute it with trend_stats() of etl_espana.py")
     args = ap.parse_args(argv)
 
-    rows = compare_export(args.export_dir, args.vars, args.limit)
+    rows = compare_export(args.export_dir, args.vars, args.limit, recompute_db=args.recompute_db)
     write_csv(rows, args.out)
     print(summary(rows))
     print(f"Report: {args.out}")
