@@ -22,7 +22,7 @@ END = "<!-- RESULTS_END -->"
 
 
 def _num(x: float) -> str:
-    return f"{x:+.3g}"
+    return f"{x + 0.0:+.3g}"  # + 0.0 turns -0.0 into 0.0
 
 
 def results_table(cases: list[dict] = CASES, root: Path = ROOT) -> str:

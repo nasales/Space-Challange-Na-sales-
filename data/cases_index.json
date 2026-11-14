@@ -8,12 +8,12 @@
   "question": "After the 2024 DANA floods, is it raining more and more in Valencia, or is something else changing?",
   "context": "On 29 October 2024 a DANA storm dropped months of rain on Valencia in a few hours and killed more than 220 people.",
   "files": [
-   "data/cache/case_dana_valencia_PRECTOTCORR.json",
+   "data/cache/case_dana_valencia_PRECIP.json",
    "data/cache/case_dana_valencia_T2M.json"
   ],
   "facts": {
-   "PRECTOTCORR": "Place: Valencia (39.470, -0.380)\nVariable: PRECTOTCORR (mm/day). Data: NASA POWER (MERRA-2 based) PRECTOTCORR\nPeriod: 1981-01 to 2024-12, 528 valid months\nTrend: 0.00475 mm/day/year (0.0475 mm/day/decade), 95% CI -0.000588 to 0.0103 mm/day/year\nTotal change over the period: 0.209 mm/day\nMann-Kendall p-value: p = 0.0919, not significant at the 5% level\nDirection: no statistically significant trend\nA non-significant result means the data show no clear evidence of change, not proof that nothing changed.",
-   "T2M": "Place: Valencia (39.470, -0.380)\nVariable: T2M (°C). Data: NASA POWER (MERRA-2 based) T2M\nPeriod: 1981-01 to 2024-12, 528 valid months\nTrend: 0.0272 °C/year (0.272 °C/decade), 95% CI 0.017 to 0.0376 °C/year\nTotal change over the period: 1.19 °C\nMann-Kendall p-value: p < 0.001, significant at the 5% level\nDirection: increasing"
+   "PRECIP": "Place: Valencia (39.470, -0.380)\nVariable: PRECIP (mm/day). Data: NASA GPM_3IMERGM v07\nPeriod: 1998-01 to 2025-09, 333 valid months\nTrend: 0.00227 mm/day/year (0.0227 mm/day/decade), 95% CI -0.0139 to 0.0177 mm/day/year\nTotal change over the period: 0.0629 mm/day\nMann-Kendall p-value: p = 0.672, not significant at the 5% level\nDirection: no statistically significant trend\nA non-significant result means the data show no clear evidence of change, not proof that nothing changed.",
+   "T2M": "Place: Valencia (39.470, -0.380)\nVariable: T2M (°C). Data: NASA M2TMNXSLV v5.12.4\nPeriod: 1980-01 to 2026-09, 561 valid months\nTrend: 0.0312 °C/year (0.312 °C/decade), 95% CI 0.0217 to 0.0409 °C/year\nTotal change over the period: 1.46 °C\nMann-Kendall p-value: p < 0.001, significant at the 5% level\nDirection: increasing"
   }
  },
  {
@@ -25,12 +25,12 @@
   "question": "Doñana is running out of water. Is it the rain, or something the satellites cannot see?",
   "context": "In 2023 Santa Olalla, the largest lagoon in Doñana, dried up completely, while the aquifer below it is overexploited.",
   "files": [
-   "data/cache/case_donana_GWETTOP.json",
-   "data/cache/case_donana_PRECTOTCORR.json"
+   "data/cache/case_donana_SOILM.json",
+   "data/cache/case_donana_PRECIP.json"
   ],
   "facts": {
-   "GWETTOP": "Place: Doñana (37.000, -6.450)\nVariable: GWETTOP (fraction (0-1)). Data: NASA POWER (MERRA-2 based) GWETTOP\nPeriod: 1981-01 to 2024-12, 528 valid months\nTrend: -0.000354 fraction (0-1)/year (-0.00354 fraction (0-1)/decade), 95% CI -0.00157 to 0.000863 fraction (0-1)/year\nTotal change over the period: -0.0156 fraction (0-1)\nMann-Kendall p-value: p = 0.485, not significant at the 5% level\nDirection: no statistically significant trend\nA non-significant result means the data show no clear evidence of change, not proof that nothing changed.",
-   "PRECTOTCORR": "Place: Doñana (37.000, -6.450)\nVariable: PRECTOTCORR (mm/day). Data: NASA POWER (MERRA-2 based) PRECTOTCORR\nPeriod: 1981-01 to 2024-12, 528 valid months\nTrend: -0.000435 mm/day/year (-0.00435 mm/day/decade), 95% CI -0.00687 to 0.00545 mm/day/year\nTotal change over the period: -0.0191 mm/day\nMann-Kendall p-value: p = 0.842, not significant at the 5% level\nDirection: no statistically significant trend\nA non-significant result means the data show no clear evidence of change, not proof that nothing changed."
+   "SOILM": "Place: Doñana (37.000, -6.450)\nVariable: SOILM (kg/m² (0-10 cm)). Data: NASA GLDAS_NOAH025_M v2.1\nPeriod: 2000-01 to 2026-07, 319 valid months\nTrend: -0.0288 kg/m² (0-10 cm)/year (-0.288 kg/m² (0-10 cm)/decade), 95% CI -0.0585 to 0.000173 kg/m² (0-10 cm)/year\nTotal change over the period: -0.762 kg/m² (0-10 cm)\nMann-Kendall p-value: p = 0.0498, significant at the 5% level\nDirection: decreasing",
+   "PRECIP": "Place: Doñana (37.000, -6.450)\nVariable: PRECIP (mm/day). Data: NASA GPM_3IMERGM v07\nPeriod: 1998-01 to 2025-09, 333 valid months\nTrend: -0.00537 mm/day/year (-0.0537 mm/day/decade), 95% CI -0.0245 to 0.00793 mm/day/year\nTotal change over the period: -0.149 mm/day\nMann-Kendall p-value: p = 0.44, not significant at the 5% level\nDirection: no statistically significant trend\nA non-significant result means the data show no clear evidence of change, not proof that nothing changed."
   }
  },
  {
@@ -43,11 +43,11 @@
   "context": "In June 2022 about 25,000 hectares burned in Sierra de la Culebra (Zamora), one of the largest wildfires in Spain.",
   "files": [
    "data/cache/case_sierra_culebra_T2M.json",
-   "data/cache/case_sierra_culebra_GWETTOP.json"
+   "data/cache/case_sierra_culebra_SOILM.json"
   ],
   "facts": {
-   "T2M": "Place: Sierra de la Culebra (Zamora) (41.900, -6.300)\nVariable: T2M (°C). Data: NASA POWER (MERRA-2 based) T2M\nPeriod: 1981-01 to 2024-12, 528 valid months\nTrend: 0.0205 °C/year (0.205 °C/decade), 95% CI 0.00849 to 0.0325 °C/year\nTotal change over the period: 0.898 °C\nMann-Kendall p-value: p = 0.00222, significant at the 5% level\nDirection: increasing",
-   "GWETTOP": "Place: Sierra de la Culebra (Zamora) (41.900, -6.300)\nVariable: GWETTOP (fraction (0-1)). Data: NASA POWER (MERRA-2 based) GWETTOP\nPeriod: 1981-01 to 2024-12, 528 valid months\nTrend: 0.000359 fraction (0-1)/year (0.00359 fraction (0-1)/decade), 95% CI -0.00133 to 0.00208 fraction (0-1)/year\nTotal change over the period: 0.0158 fraction (0-1)\nMann-Kendall p-value: p = 0.878, not significant at the 5% level\nDirection: no statistically significant trend\nA non-significant result means the data show no clear evidence of change, not proof that nothing changed."
+   "T2M": "Place: Sierra de la Culebra (Zamora) (41.900, -6.300)\nVariable: T2M (°C). Data: NASA M2TMNXSLV v5.12.4\nPeriod: 1980-01 to 2026-09, 561 valid months\nTrend: 0.0262 °C/year (0.262 °C/decade), 95% CI 0.0148 to 0.037 °C/year\nTotal change over the period: 1.22 °C\nMann-Kendall p-value: p < 0.001, significant at the 5% level\nDirection: increasing",
+   "SOILM": "Place: Sierra de la Culebra (Zamora) (41.900, -6.300)\nVariable: SOILM (kg/m² (0-10 cm)). Data: NASA GLDAS_NOAH025_M v2.1\nPeriod: 2000-01 to 2026-07, 319 valid months\nTrend: -0.053 kg/m² (0-10 cm)/year (-0.53 kg/m² (0-10 cm)/decade), 95% CI -0.107 to 0.00106 kg/m² (0-10 cm)/year\nTotal change over the period: -1.41 kg/m² (0-10 cm)\nMann-Kendall p-value: p = 0.0263, significant at the 5% level\nDirection: decreasing"
   }
  },
  {
@@ -60,11 +60,11 @@
   "context": "Ourense suffered major wildfires in 2017 and in August 2025, with tens of thousands of hectares burned.",
   "files": [
    "data/cache/case_galicia_fires_T2M.json",
-   "data/cache/case_galicia_fires_GWETTOP.json"
+   "data/cache/case_galicia_fires_SOILM.json"
   ],
   "facts": {
-   "T2M": "Place: Ourense (Galicia) (42.300, -7.900)\nVariable: T2M (°C). Data: NASA POWER (MERRA-2 based) T2M\nPeriod: 1981-01 to 2024-12, 528 valid months\nTrend: 0.0201 °C/year (0.201 °C/decade), 95% CI 0.00891 to 0.0317 °C/year\nTotal change over the period: 0.883 °C\nMann-Kendall p-value: p = 0.00116, significant at the 5% level\nDirection: increasing",
-   "GWETTOP": "Place: Ourense (Galicia) (42.300, -7.900)\nVariable: GWETTOP (fraction (0-1)). Data: NASA POWER (MERRA-2 based) GWETTOP\nPeriod: 1981-01 to 2024-12, 528 valid months\nTrend: -0.000691 fraction (0-1)/year (-0.00691 fraction (0-1)/decade), 95% CI -0.00182 to 0.000404 fraction (0-1)/year\nTotal change over the period: -0.0304 fraction (0-1)\nMann-Kendall p-value: p = 0.173, not significant at the 5% level\nDirection: no statistically significant trend\nA non-significant result means the data show no clear evidence of change, not proof that nothing changed."
+   "T2M": "Place: Ourense (Galicia) (42.300, -7.900)\nVariable: T2M (°C). Data: NASA M2TMNXSLV v5.12.4\nPeriod: 1980-01 to 2026-09, 561 valid months\nTrend: 0.0258 °C/year (0.258 °C/decade), 95% CI 0.0152 to 0.0367 °C/year\nTotal change over the period: 1.2 °C\nMann-Kendall p-value: p < 0.001, significant at the 5% level\nDirection: increasing",
+   "SOILM": "Place: Ourense (Galicia) (42.300, -7.900)\nVariable: SOILM (kg/m² (0-10 cm)). Data: NASA GLDAS_NOAH025_M v2.1\nPeriod: 2000-01 to 2026-07, 319 valid months\nTrend: -0.0439 kg/m² (0-10 cm)/year (-0.439 kg/m² (0-10 cm)/decade), 95% CI -0.105 to 0.0147 kg/m² (0-10 cm)/year\nTotal change over the period: -1.16 kg/m² (0-10 cm)\nMann-Kendall p-value: p = 0.112, not significant at the 5% level\nDirection: no statistically significant trend\nA non-significant result means the data show no clear evidence of change, not proof that nothing changed."
   }
  },
  {
@@ -76,12 +76,12 @@
   "question": "After storm Gloria, is the climate of the Ebro Delta changing?",
   "context": "In January 2020 storm Gloria pushed the sea kilometres inland and flooded thousands of hectares of rice fields in the Ebro Delta.",
   "files": [
-   "data/cache/case_ebro_delta_PRECTOTCORR.json",
+   "data/cache/case_ebro_delta_PRECIP.json",
    "data/cache/case_ebro_delta_T2M.json"
   ],
   "facts": {
-   "PRECTOTCORR": "Place: Ebro Delta (40.700, 0.750)\nVariable: PRECTOTCORR (mm/day). Data: NASA POWER (MERRA-2 based) PRECTOTCORR\nPeriod: 1981-01 to 2024-12, 528 valid months\nTrend: -0.00377 mm/day/year (-0.0377 mm/day/decade), 95% CI -0.0095 to 0.00179 mm/day/year\nTotal change over the period: -0.165 mm/day\nMann-Kendall p-value: p = 0.182, not significant at the 5% level\nDirection: no statistically significant trend\nA non-significant result means the data show no clear evidence of change, not proof that nothing changed.",
-   "T2M": "Place: Ebro Delta (40.700, 0.750)\nVariable: T2M (°C). Data: NASA POWER (MERRA-2 based) T2M\nPeriod: 1981-01 to 2024-12, 528 valid months\nTrend: 0.0307 °C/year (0.307 °C/decade), 95% CI 0.0215 to 0.0398 °C/year\nTotal change over the period: 1.35 °C\nMann-Kendall p-value: p < 0.001, significant at the 5% level\nDirection: increasing"
+   "PRECIP": "Place: Ebro Delta (40.700, 0.750)\nVariable: PRECIP (mm/day). Data: NASA GPM_3IMERGM v07\nPeriod: 1998-01 to 2025-09, 333 valid months\nTrend: -0 mm/day/year (-0 mm/day/decade), 95% CI -0.0131 to 0.0132 mm/day/year\nTotal change over the period: -0 mm/day\nMann-Kendall p-value: p = 0.897, not significant at the 5% level\nDirection: no statistically significant trend\nA non-significant result means the data show no clear evidence of change, not proof that nothing changed.",
+   "T2M": "Place: Ebro Delta (40.700, 0.750)\nVariable: T2M (°C). Data: NASA M2TMNXSLV v5.12.4\nPeriod: 1980-01 to 2026-09, 561 valid months\nTrend: 0.0345 °C/year (0.345 °C/decade), 95% CI 0.0259 to 0.0431 °C/year\nTotal change over the period: 1.61 °C\nMann-Kendall p-value: p < 0.001, significant at the 5% level\nDirection: increasing"
   }
  },
  {
@@ -93,10 +93,12 @@
   "question": "If Madrid had its biggest snowfall in half a century, does that mean it is not warming?",
   "context": "In January 2021 storm Filomena brought Madrid its heaviest snowfall in about 50 years.",
   "files": [
-   "data/cache/case_filomena_madrid_T2M.json"
+   "data/cache/case_filomena_madrid_T2M.json",
+   "data/cache/case_filomena_madrid_PRECIP.json"
   ],
   "facts": {
-   "T2M": "Place: Madrid (40.420, -3.700)\nVariable: T2M (°C). Data: NASA POWER (MERRA-2 based) T2M\nPeriod: 1981-01 to 2024-12, 528 valid months\nTrend: 0.0319 °C/year (0.319 °C/decade), 95% CI 0.0196 to 0.0447 °C/year\nTotal change over the period: 1.4 °C\nMann-Kendall p-value: p < 0.001, significant at the 5% level\nDirection: increasing"
+   "T2M": "Place: Madrid (40.420, -3.700)\nVariable: T2M (°C). Data: NASA M2TMNXSLV v5.12.4\nPeriod: 1980-01 to 2026-09, 561 valid months\nTrend: 0.0374 °C/year (0.374 °C/decade), 95% CI 0.0256 to 0.049 °C/year\nTotal change over the period: 1.74 °C\nMann-Kendall p-value: p < 0.001, significant at the 5% level\nDirection: increasing",
+   "PRECIP": "Place: Madrid (40.420, -3.700)\nVariable: PRECIP (mm/day). Data: NASA GPM_3IMERGM v07\nPeriod: 1998-01 to 2025-09, 333 valid months\nTrend: 0.00229 mm/day/year (0.0229 mm/day/decade), 95% CI -0.012 to 0.0175 mm/day/year\nTotal change over the period: 0.0635 mm/day\nMann-Kendall p-value: p = 0.789, not significant at the 5% level\nDirection: no statistically significant trend\nA non-significant result means the data show no clear evidence of change, not proof that nothing changed."
   }
  },
  {
@@ -108,12 +110,12 @@
   "question": "Is south-east Spain becoming even drier?",
   "context": "The south-east is the driest part of mainland Europe, home to the Tabernas desert and thousands of hectares of greenhouses.",
   "files": [
-   "data/cache/case_almeria_murcia_PRECTOTCORR.json",
-   "data/cache/case_almeria_murcia_GWETTOP.json"
+   "data/cache/case_almeria_murcia_PRECIP.json",
+   "data/cache/case_almeria_murcia_SOILM.json"
   ],
   "facts": {
-   "PRECTOTCORR": "Place: Almería-Murcia (37.300, -1.900)\nVariable: PRECTOTCORR (mm/day). Data: NASA POWER (MERRA-2 based) PRECTOTCORR\nPeriod: 1981-01 to 2024-12, 528 valid months\nTrend: 0.00139 mm/day/year (0.0139 mm/day/decade), 95% CI -0.0018 to 0.00484 mm/day/year\nTotal change over the period: 0.061 mm/day\nMann-Kendall p-value: p = 0.464, not significant at the 5% level\nDirection: no statistically significant trend\nA non-significant result means the data show no clear evidence of change, not proof that nothing changed.",
-   "GWETTOP": "Place: Almería-Murcia (37.300, -1.900)\nVariable: GWETTOP (fraction (0-1)). Data: NASA POWER (MERRA-2 based) GWETTOP\nPeriod: 1981-01 to 2024-12, 528 valid months\nTrend: 0.000384 fraction (0-1)/year (0.00384 fraction (0-1)/decade), 95% CI -0.000153 to 0.00101 fraction (0-1)/year\nTotal change over the period: 0.0169 fraction (0-1)\nMann-Kendall p-value: p = 0.117, not significant at the 5% level\nDirection: no statistically significant trend\nA non-significant result means the data show no clear evidence of change, not proof that nothing changed."
+   "PRECIP": "Place: Almería-Murcia (37.300, -1.900)\nVariable: PRECIP (mm/day). Data: NASA GPM_3IMERGM v07\nPeriod: 1998-01 to 2025-09, 333 valid months\nTrend: -0.00466 mm/day/year (-0.0466 mm/day/decade), 95% CI -0.0146 to 0.00468 mm/day/year\nTotal change over the period: -0.129 mm/day\nMann-Kendall p-value: p = 0.233, not significant at the 5% level\nDirection: no statistically significant trend\nA non-significant result means the data show no clear evidence of change, not proof that nothing changed.",
+   "SOILM": "Place: Almería-Murcia (37.300, -1.900)\nVariable: SOILM (kg/m² (0-10 cm)). Data: NASA GLDAS_NOAH025_M v2.1\nPeriod: 2000-01 to 2026-07, 319 valid months\nTrend: -0.0361 kg/m² (0-10 cm)/year (-0.361 kg/m² (0-10 cm)/decade), 95% CI -0.0935 to 0.0193 kg/m² (0-10 cm)/year\nTotal change over the period: -0.957 kg/m² (0-10 cm)\nMann-Kendall p-value: p = 0.15, not significant at the 5% level\nDirection: no statistically significant trend\nA non-significant result means the data show no clear evidence of change, not proof that nothing changed."
   }
  },
  {
@@ -128,7 +130,7 @@
    "data/cache/case_cordoba_heat_T2M.json"
   ],
   "facts": {
-   "T2M": "Place: Córdoba (37.880, -4.780)\nVariable: T2M (°C). Data: NASA POWER (MERRA-2 based) T2M\nPeriod: 1981-01 to 2024-12, 528 valid months\nTrend: 0.0307 °C/year (0.307 °C/decade), 95% CI 0.0177 to 0.0436 °C/year\nTotal change over the period: 1.35 °C\nMann-Kendall p-value: p < 0.001, significant at the 5% level\nDirection: increasing"
+   "T2M": "Place: Córdoba (37.880, -4.780)\nVariable: T2M (°C). Data: NASA M2TMNXSLV v5.12.4\nPeriod: 1980-01 to 2026-09, 561 valid months\nTrend: 0.0333 °C/year (0.333 °C/decade), 95% CI 0.022 to 0.0446 °C/year\nTotal change over the period: 1.56 °C\nMann-Kendall p-value: p < 0.001, significant at the 5% level\nDirection: increasing"
   }
  },
  {
@@ -141,11 +143,11 @@
   "context": "The Aneto glacier has lost most of its ice since the 1980s, and scientists expect it to disappear within a few decades.",
   "files": [
    "data/cache/case_aneto_glacier_T2M.json",
-   "data/cache/case_aneto_glacier_PRECTOTCORR.json"
+   "data/cache/case_aneto_glacier_PRECIP.json"
   ],
   "facts": {
-   "T2M": "Place: Aneto (Pyrenees) (42.630, 0.660)\nVariable: T2M (°C). Data: NASA POWER (MERRA-2 based) T2M\nPeriod: 1981-01 to 2024-12, 528 valid months\nTrend: 0.0309 °C/year (0.309 °C/decade), 95% CI 0.0176 to 0.0443 °C/year\nTotal change over the period: 1.36 °C\nMann-Kendall p-value: p < 0.001, significant at the 5% level\nDirection: increasing",
-   "PRECTOTCORR": "Place: Aneto (Pyrenees) (42.630, 0.660)\nVariable: PRECTOTCORR (mm/day). Data: NASA POWER (MERRA-2 based) PRECTOTCORR\nPeriod: 1981-01 to 2024-12, 528 valid months\nTrend: 0.00693 mm/day/year (0.0693 mm/day/decade), 95% CI 0.000662 to 0.0133 mm/day/year\nTotal change over the period: 0.304 mm/day\nMann-Kendall p-value: p = 0.0192, significant at the 5% level\nDirection: increasing"
+   "T2M": "Place: Aneto (Pyrenees) (42.630, 0.660)\nVariable: T2M (°C). Data: NASA M2TMNXSLV v5.12.4\nPeriod: 1980-01 to 2026-09, 561 valid months\nTrend: 0.0394 °C/year (0.394 °C/decade), 95% CI 0.0265 to 0.0519 °C/year\nTotal change over the period: 1.84 °C\nMann-Kendall p-value: p < 0.001, significant at the 5% level\nDirection: increasing",
+   "PRECIP": "Place: Aneto (Pyrenees) (42.630, 0.660)\nVariable: PRECIP (mm/day). Data: NASA GPM_3IMERGM v07\nPeriod: 1998-01 to 2025-09, 333 valid months\nTrend: 0.0037 mm/day/year (0.037 mm/day/decade), 95% CI -0.0144 to 0.0218 mm/day/year\nTotal change over the period: 0.102 mm/day\nMann-Kendall p-value: p = 0.717, not significant at the 5% level\nDirection: no statistically significant trend\nA non-significant result means the data show no clear evidence of change, not proof that nothing changed."
   }
  },
  {
@@ -157,12 +159,12 @@
   "question": "The Tablas de Daimiel wetland keeps drying out. Is the sky sending less water?",
   "context": "In 2009 the Tablas de Daimiel almost dried up completely, and the peat under the wetland caught fire.",
   "files": [
-   "data/cache/case_daimiel_GWETTOP.json",
-   "data/cache/case_daimiel_PRECTOTCORR.json"
+   "data/cache/case_daimiel_SOILM.json",
+   "data/cache/case_daimiel_PRECIP.json"
   ],
   "facts": {
-   "GWETTOP": "Place: Tablas de Daimiel (39.130, -3.700)\nVariable: GWETTOP (fraction (0-1)). Data: NASA POWER (MERRA-2 based) GWETTOP\nPeriod: 1981-01 to 2024-12, 528 valid months\nTrend: -7.68e-05 fraction (0-1)/year (-0.000768 fraction (0-1)/decade), 95% CI -0.00132 to 0.00112 fraction (0-1)/year\nTotal change over the period: -0.00337 fraction (0-1)\nMann-Kendall p-value: p = 0.667, not significant at the 5% level\nDirection: no statistically significant trend\nA non-significant result means the data show no clear evidence of change, not proof that nothing changed.",
-   "PRECTOTCORR": "Place: Tablas de Daimiel (39.130, -3.700)\nVariable: PRECTOTCORR (mm/day). Data: NASA POWER (MERRA-2 based) PRECTOTCORR\nPeriod: 1981-01 to 2024-12, 528 valid months\nTrend: 0.000688 mm/day/year (0.00688 mm/day/decade), 95% CI -0.00455 to 0.00626 mm/day/year\nTotal change over the period: 0.0302 mm/day\nMann-Kendall p-value: p = 0.837, not significant at the 5% level\nDirection: no statistically significant trend\nA non-significant result means the data show no clear evidence of change, not proof that nothing changed."
+   "SOILM": "Place: Tablas de Daimiel (39.130, -3.700)\nVariable: SOILM (kg/m² (0-10 cm)). Data: NASA GLDAS_NOAH025_M v2.1\nPeriod: 2000-01 to 2026-07, 319 valid months\nTrend: -0.0487 kg/m² (0-10 cm)/year (-0.487 kg/m² (0-10 cm)/decade), 95% CI -0.105 to 0.0082 kg/m² (0-10 cm)/year\nTotal change over the period: -1.29 kg/m² (0-10 cm)\nMann-Kendall p-value: p = 0.0466, significant at the 5% level\nDirection: decreasing",
+   "PRECIP": "Place: Tablas de Daimiel (39.130, -3.700)\nVariable: PRECIP (mm/day). Data: NASA GPM_3IMERGM v07\nPeriod: 1998-01 to 2025-09, 333 valid months\nTrend: -0.000888 mm/day/year (-0.00888 mm/day/decade), 95% CI -0.0127 to 0.0107 mm/day/year\nTotal change over the period: -0.0246 mm/day\nMann-Kendall p-value: p = 0.828, not significant at the 5% level\nDirection: no statistically significant trend\nA non-significant result means the data show no clear evidence of change, not proof that nothing changed."
   }
  }
 ]

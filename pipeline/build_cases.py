@@ -12,14 +12,16 @@ Sources (get_series(case, variable) -> dates, values, units, dataset):
   challenge datasets, see docs/case_data_request.md). Expected layout of the unzipped folder:
 
       <dir>/variables.json          {var_id: {unit, source, ...}}
-      <dir>/cases/<case_id>.json    {case_id, lat_min, lat_max, lon_min, lon_max,
+      <dir>/cases/<case_id>.json    {case_id, lat, lon  (native pixel at the case point)
+                                     or lat_min, lat_max, lon_min, lon_max  (box mean),
                                      vars: {var_id: {start_month, values, climatology?}}}
 
   `start_month` is "YYYY-MM" or "YYYY-MM-01"; `values` has one number per month, null for gaps (same
   shape as the `series` table). var_id is T2M, PRECIP, SOILM, NDVI, LST or SNOW (common aliases such
   as precip / soilmoist are accepted, see pipeline/sources/case_export.py). Units and dataset come
   from variables.json and are converted to the POWER display units before the analysis (see
-  convert_units: K -> °C, mm/hr -> mm/day); lat / lon of the case file are the box centre. Files use the common id
+  convert_units: K -> °C, mm/hr -> mm/day; °C and mm/day pass unchanged); lat / lon of the case
+  file are its point (or the box centre). Files use the common id
   (case_<id>_PRECIP.json ...) and the POWER file of the same variable type is deleted
   (e.g. _PRECTOTCORR when _PRECIP is written). Cases or variables missing in the export keep their
   POWER file (fallback) and are listed in the report.
@@ -73,6 +75,8 @@ def _norm_unit(unit: str) -> str:
 
 
 KELVIN = {"k", "kelvin"}
+CELSIUS = {"°c", "ºc", "degc", "c", "celsius", "degreesc"}
+MM_PER_DAY = {"mm/day", "mm/d", "mmday", "mmd"}
 MM_PER_HOUR = {"mm/hr", "mm/h", "mmhr", "mmh", "mm/hour"}
 KG_M2 = {"kg/m2", "kgm-2", "kgm2", "kg/m-2"}
 UNITLESS = {"", "1", "-", "none", "unitless", "ndvi", "ndvi(0-1)", "index"}
@@ -82,7 +86,7 @@ PERCENT = {"%", "percent", "pct"}
 def convert_units(variable: str, unit: str, values: list) -> tuple[list, str]:
     """Convert an export series to the display units used for POWER. Returns (values, unit label).
 
-    K -> °C (value - 273.15), mm/hr -> mm/day (x 24); soil moisture kg/m2 -> "kg/m² (0-10 cm)";
+    K -> °C (value - 273.15), mm/hr -> mm/day (x 24); °C and mm/day are kept; soil moisture kg/m2 -> "kg/m² (0-10 cm)";
     NDVI -> "NDVI (0-1)"; snow cover % -> "%". Unknown units are kept as they are, with a warning.
     """
     u = _norm_unit(unit)
@@ -92,6 +96,10 @@ def convert_units(variable: str, unit: str, values: list) -> tuple[list, str]:
 
     if variable in ("T2M", "LST") and u in KELVIN:
         return conv(lambda v: v - 273.15), "°C"
+    if variable in ("T2M", "LST") and u in CELSIUS:
+        return list(values), "°C"
+    if variable == "PRECIP" and u in MM_PER_DAY:
+        return list(values), "mm/day"
     if variable == "PRECIP" and u in MM_PER_HOUR:
         return conv(lambda v: v * 24), "mm/day"
     if variable == "SOILM" and u in KG_M2:

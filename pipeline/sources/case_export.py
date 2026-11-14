@@ -2,7 +2,8 @@
 
 Expected layout (same style as the map export, see `export_json()` in the ETL):
     <dir>/variables.json          {var_id: {unit, source, ...}}
-    <dir>/cases/<case_id>.json    {case_id, lat_min, lat_max, lon_min, lon_max,
+    <dir>/cases/<case_id>.json    {case_id, lat, lon  (point: native pixel at the case point)
+                                   or lat_min, lat_max, lon_min, lon_max  (box: area mean),
                                    vars: {var_id: {start_month, values, climatology?}}}
 
 Reading is tolerant: common aliases of field names and variable ids are accepted (e.g. `units` for
@@ -29,11 +30,14 @@ VAR_ALIASES = {
 }
 CASE_KEYS = {
     "case_id": ("case_id", "id"),
+    "vars": ("vars", "variables", "series"),
+}
+POINT_KEYS = {"lat": ("lat", "latitude"), "lon": ("lon", "lng", "longitude")}
+BOX_KEYS = {
     "lat_min": ("lat_min", "latmin", "min_lat", "south"),
     "lat_max": ("lat_max", "latmax", "max_lat", "north"),
     "lon_min": ("lon_min", "lonmin", "min_lon", "west"),
     "lon_max": ("lon_max", "lonmax", "max_lon", "east"),
-    "vars": ("vars", "variables", "series"),
 }
 ENTRY_KEYS = {"start_month": ("start_month", "start", "first_month"), "values": ("values", "series", "data")}
 META_KEYS = {"unit": ("unit", "units"), "source": ("source", "dataset")}
@@ -61,7 +65,9 @@ def load_variables(export_dir: str | Path) -> dict[str, dict]:
 
 
 def load_case(export_dir: str | Path, case_id: str) -> dict | None:
-    """Normalized case: {case_id, lat_min, lat_max, lon_min, lon_max, vars: {common id: entry}, ignored}.
+    """Normalized case: {case_id, lat, lon, vars: {common id: entry}, ignored} (+ lat_min... for a box).
+
+    lat / lon are the point given in the file, or the box centre when only a box is given.
 
     Returns None when cases/<case_id>.json is not in the export.
     """
@@ -72,7 +78,22 @@ def load_case(export_dir: str | Path, case_id: str) -> dict | None:
     path = cases_dir / f"{case_id}.json"
     if not path.exists():
         return None
-    case = _pick(_read_json(path), CASE_KEYS, f"cases/{path.name}")
+    where = f"cases/{path.name}"
+    raw = _read_json(path)
+    case = _pick(raw, CASE_KEYS, where)
+    try:
+        case.update(_pick(raw, BOX_KEYS, where))
+        has_box = True
+    except ValueError:
+        has_box = False
+    try:
+        case.update(_pick(raw, POINT_KEYS, where))
+    except ValueError:
+        if not has_box:
+            raise ValueError(f"{where}: missing the location: give lat, lon (point) or "
+                             f"lat_min, lat_max, lon_min, lon_max (box); found fields: {sorted(raw)}") from None
+        case["lat"] = round((case["lat_min"] + case["lat_max"]) / 2, 4)
+        case["lon"] = round((case["lon_min"] + case["lon_max"]) / 2, 4)
     vars_, ignored = {}, []
     for raw_id, entry in case["vars"].items():
         var = common_var(raw_id)
@@ -84,8 +105,8 @@ def load_case(export_dir: str | Path, case_id: str) -> dict | None:
 
 
 def box_center(case: dict) -> tuple[float, float]:
-    return (round((case["lat_min"] + case["lat_max"]) / 2, 4),
-            round((case["lon_min"] + case["lon_max"]) / 2, 4))
+    """Location of the series: the point of the case file, or the centre of its box."""
+    return case["lat"], case["lon"]
 
 
 def _pick(obj: dict, keys: dict[str, tuple[str, ...]], where: str) -> dict:
