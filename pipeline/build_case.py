@@ -22,7 +22,8 @@ ALPHA = 0.05  # docs/contract.md: significant means p_value < 0.05
 DB_P_TOLERANCE = 1e-6  # float32 (`real`) rounding near 0.05 is ~4e-9; anything bigger is a real mismatch
 MIN_POINTS = 24  # same minimum as scripts/validate_contract.py
 STUB_TEST = "stub"
-DB_TEST = "mann-kendall-prewhitened"  # Mann-Kendall with Yue-Wang 2002 pre-whitening
+# Same label as TEST_NAME in pipeline/trend.py: the trends table is filled with Ivan's analyze_trend.
+DB_TEST = "mann-kendall-prewhitening-yue-wang-2002"
 DEFAULT_CACHE_DIR = Path(__file__).resolve().parent.parent / "data" / "cache"
 
 

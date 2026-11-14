@@ -244,6 +244,12 @@ def test_trend_from_db_bad_slope_raises():
         trend_from_db(dict(DB_ROW, slope_per_decade=float("nan")))
 
 
+def test_db_label_matches_analyze_trend():
+    # Rows in `trends` come from Ivan's analyze_trend, so reading them back must show the same test name
+    trend_module = pytest.importorskip("pipeline.trend")
+    assert DB_TEST == trend_module.TEST_NAME
+
+
 def test_stub_has_analyze_trend_shape(series):
     result = stub_analyze_trend(series.dates, series.values)
     assert result == {"slope": 0.0, "p_value": 1.0, "significant": False, "test": "stub"}

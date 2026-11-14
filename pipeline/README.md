@@ -83,7 +83,7 @@ def get_analyze_trend()                               # Ivan's analyze_trend if 
 def case_id(place: str, variable: str) -> str         # "Cádiz", "precip" -> "cadiz_precip" (file name)
 ```
 `write_case` refuses fields outside the contract and cases computed with the stub (`test == "stub"`), so stub results never reach `data/cache/`.
-Database trends are labelled `test = "mann-kendall-prewhitened"`.
+Database trends are labelled `test = "mann-kendall-prewhitening-yue-wang-2002"` (same as `TEST_NAME` in `trend.py`).
 Only the contract's required fields go into the JSON. Extra fields need approval from the data owner and Yeipi (contract change).
 
 ## Interface 4 — fill the `trends` table (Diego, `pipeline/fill_trends.py`)

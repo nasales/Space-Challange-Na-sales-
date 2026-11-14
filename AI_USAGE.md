@@ -15,3 +15,4 @@ Every agent adds one line per task.
 | 2026-11-14 | Claude Code (Data agent, Diego) | Data | Block 4: Supabase JSON export adapter `pipeline/sources/supabase_export.py` with 18 tests on a fake export copying the ETL layout |
 | 2026-11-14 | Claude Code (Data agent, Diego) | Data | Block 5: `pipeline/fill_trends.py` (trends rows as JSON + idempotent SQL upsert, optional export update) with 12 tests, SQL checked on SQLite |
 | 2026-11-14 | Claude Code (Data agent, Diego) | Data | QA follow-ups: `--update-export` merges into trends.json instead of overwriting; `trend_from_db` fixes float32 p-value rounding at 0.05 (6 tests) |
+| 2026-11-14 | Claude Code (Data agent, Diego) | Data | Checked fill_trends end to end with Ivan's real `analyze_trend`; aligned the database trend label with `trend.py` `TEST_NAME` |
