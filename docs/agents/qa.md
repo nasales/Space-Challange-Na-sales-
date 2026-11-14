@@ -1,31 +1,28 @@
-# QA checklist — run by every person on their own changes
+# QA agent — supervised by Perry (integration owner)
 
-Before opening a pull request, the author (or their agent) runs this checklist on their own branch.
-There is no separate QA owner: whoever made the change is responsible for testing it.
+You do **not** build features. You test and review every change before its author merges it into `main`.
 
-## Before every pull request
-1. On your branch, run `./scripts/check.sh --e2e`.
-2. Review your own diff for:
-   - files edited outside your area;
-   - any change to `tests/stats/` or `docs/contract.md` (not allowed unless it was approved);
+## For every pull request
+1. Check out the branch and run `./scripts/check.sh --e2e`.
+2. Review the diff for:
+   - files edited outside the author's area;
+   - any change to `docs/contract.md` (block it unless it was approved), and any change to an existing test in `tests/stats/` (new tests are fine only if the human asked for them and reviewed them, AGENTS.md rule 3);
    - Spanish text, NASA logos/branding, secrets or API keys in code;
    - missing lines in `AI_USAGE.md` / `REFERENCES.md`.
-3. If your change touches the AI checker, run its test bank (`tests/ai_bank/`): correct, wrong, ambiguous and nonsense conclusions. The verdicts must make sense and must use the statistical result.
-4. Write the report and paste it into the pull request:
+3. Run the AI-checker test bank (`tests/ai_bank/`): correct, wrong, ambiguous and nonsense conclusions. The verdicts must make sense and must use the statistical result.
+4. Write the report:
 
 ```
 QA REPORT — PR #<n> — <branch>
 check.sh --e2e: PASS / FAIL
 Review: OK / issues: <list>
-AI bank: <n>/<total> sensible verdicts (or "not affected")
+AI bank: <n>/<total> sensible verdicts
 Verdict: ✅ READY TO MERGE / ❌ BLOCKED (<reasons>)
 Bug lines: <CRITICAL|MEDIUM|MINOR lines>
 ```
 
-Only open the pull request when the verdict is ✅.
-
 ## After every merge into `main`
-Person 4 (who merges) runs `./scripts/check.sh --e2e` on `main` and runs the demo path once end to end. If it fails, file a CRITICAL bug immediately.
+Run `./scripts/check.sh --e2e` on `main` and run the demo path once end to end. If it fails, file a CRITICAL bug immediately.
 
 ## After the freeze (Sunday 13:00)
-Only open pull requests for CRITICAL fixes.
+Block every PR that is not a CRITICAL fix.

@@ -15,17 +15,15 @@ result (trend slope + significance test such as Mann-Kendall).
 | Interface | Yeipi | Interface agent | `docs/agents/interface.md` |
 | Game (3D map, car) | Person 2 | Game agent | `docs/agents/game.md` |
 | Data + statistics | Person 3 | Data agent | `docs/agents/data.md` |
-| Backend + AI checker + integration | Person 4 | Backend agent | — |
+| Backend + AI checker + integration | Perry | QA agent | `docs/agents/qa.md` |
 | Product, submission, pitch | Person 5 | — | — |
-
-**QA is done by every person for their own changes**, following `docs/agents/qa.md`, before asking Person 4 to merge.
 
 If you do not know which area you belong to, ask the human before doing anything.
 
 ## Hard rules (never break these)
-1. **Never commit or push to `main`.** Work on a branch named `<area>/<short-task>`. Only Person 4 merges to `main`.
+1. **Never commit or push directly to `main`.** Work on a branch named `<area>/<short-task>` and open a PR. Each person merges their own PR into `main`.
 2. **Only edit files inside your area's folders** (listed in your area file). For any other file, stop and ask.
-3. **Never edit `tests/stats/`.** Those tests are written by humans. If they fail, report it; do not change the test to make it pass.
+3. **Agents edit `tests/stats/` only when the human owner explicitly asks for it in that session, and the human reviews the tests before commit. Never change an existing test to make it pass.**
 4. **Never change the data contract** (`docs/contract.md`) without explicit approval from Person 3 and Yeipi.
 5. **Everything in English**: UI text, code comments, commit messages, docs.
 6. **No NASA logos, insignia, flags or mission patches**, and never generate or modify NASA branding. Credit data in text: "Data: NASA MERRA-2".
@@ -42,10 +40,11 @@ If you do not know which area you belong to, ask the human before doing anything
 1. `git status`: if there are uncommitted changes, stop and tell the human before continuing.
 2. `git log --oneline ORIG_HEAD..HEAD` (or the last 10 commits if that fails): see what came in.
 3. Check whether `docs/contract.md` or anything in `data/cache/` changed. If it did, verify that your area still matches the contract.
-4. Run `./scripts/check.sh`.
-5. Run the extra checks listed in your area file.
-6. **Do not fix anything outside your area.** If something in another area fails, write a bug line (format below) for the human to post.
-7. Report exactly in this format:
+4. Read the section 'Open requests between areas' at the end of this file and list in your report every open request addressed to your area or your human.
+5. Run `./scripts/check.sh`.
+6. Run the extra checks listed in your area file.
+7. **Do not fix anything outside your area.** If something in another area fails, write a bug line (format below) for the human to post.
+8. Report exactly in this format:
 
 ```
 SYNC CHECK — <area> — <date time>
@@ -55,6 +54,7 @@ check.sh: PASS / FAIL (<failing step>)
 Area checks: PASS / FAIL (<details>)
 Affects my area: <what and why, or "nothing">
 Bugs for other areas: <bug lines or "none">
+Open requests for me: <list or 'none'>
 Next action: <what you propose to do>
 ```
 
@@ -63,7 +63,6 @@ A task is done only when:
 - it works on another teammate's machine, not only yours;
 - it does not break the demo path (featured case → variable → chart → conclusion → AI check);
 - `./scripts/check.sh` passes;
-- the author ran the QA checklist in `docs/agents/qa.md` and attached the QA REPORT to the PR;
 - everything is in English;
 - `AI_USAGE.md` is updated (and `REFERENCES.md`, if needed).
 
@@ -76,3 +75,23 @@ A task is done only when:
 ## Key times
 - Sunday 13:00: **feature freeze**. After this, only CRITICAL fixes.
 - Sunday 23:59: submission closes. Pitch on Sunday at 17:30.
+
+## Open requests between areas
+Append-only. Format: `- [ ] YYYY-MM-DD From -> To: request`. The receiver ticks `[x]` and adds a short answer when done. Never delete lines.
+- [x] 2026-11-14 Ivan -> Manuel (Perry): add `__pycache__/` to `.gitignore`. — Perry: done.
+- [x] 2026-11-14 Ivan -> Manuel (Perry): run `archivos_preSupabase/etl_espana.py` with `--with-trends` when generating the export; without it every `trend` is null and `pipeline/compare_db.py` has nothing to compare. — Perry: the full load runs without it (series only). The ETL trends can be recomputed offline from the export with `trend_stats()` (no new NASA download), so Ivan's reference copy is still possible.
+- [x] 2026-11-14 Ivan -> Manuel (Perry): `explain(trend, series)` is in `pipeline/explain.py` (plain-English facts for the AI checker, one per line). Confirm the format works for the checker, and say when the database export will be ready. — Perry: full load started 2026-11-14 12:50, expected around 15:30. The AI checker is not built yet; I will confirm the `explain` format when I build it.
+- [x] 2026-11-14 Ivan -> Diego: the real `analyze_trend` is in main (`from pipeline.trend import analyze_trend`); replace the stub. It needs >= 120 valid months and returns slope per year (not per decade). — Diego: done. `get_analyze_trend()` in `build_case.py` picks the real one automatically (stub only if `trend.py` is missing); checked end to end with `fill_trends`. Database rows now use your `TEST_NAME`. Note: `mean_value` is not returned; `fill_trends` computes it as a fallback.
+- [x] 2026-11-14 Ivan -> Diego: the annual mode of block 2 was dropped (pre-whitening on ~20 annual means removes most of the trend); strike it from `pipeline/README.md`. — Diego: done.
+- [x] 2026-11-14 Ivan -> Diego: when will the featured cases be in `data/cache/`, and is `pipeline/series.py` in main? Ivan needs them for block 5 and the block 3 cross tests. — Diego: `series.py`, `build_case.py`, `sources/supabase_export.py` and `fill_trends.py` are in main (PR #7). Featured cases need Perry's real export; they come right after it (block 6).
+- [ ] 2026-11-14 Ivan -> all: rule 3 changed; agents may write tests/stats/ when the human asks and reviews them. Object here if you disagree. — Diego: OK.
+- [x] 2026-11-14 Ivan -> Manuel (Perry): FYI, with Ivan's OK, PR #11 edited scripts/check.sh (python3 falls back to python on Windows) and docs/agents/qa.md (rule 3 wording). Tick if OK. — Perry: OK.
+- [x] 2026-11-14 Ivan -> Diego: FYI, PR #11 edited pipeline/README.md (rule 3 wording only). Tick if OK. — Diego: OK.
+- [x] 2026-11-14 Ivan -> Manuel (Perry): compare_db.py is only meaningful against trend rows computed by etl_espana.py (--with-trends). If the trends table is filled with fill_trends.py (which uses analyze_trend), keep a copy of the ETL export with trends so the check is independent. — Perry: OK, see the --with-trends answer above.
+- [ ] 2026-11-14 Perry -> Diego: no new code needed (`fill_trends.py` is already in main); wait for the export. The real Supabase load (6 variables, 1184 cells) finishes around 15:30 today. I will share the `export/` folder (same layout as `pipeline/README.md`). Then: (1) run `fill_trends.py` on it and tell me if it runs clean, (2) build the featured cases in `data/cache/` (block 6). I run the final `fill_trends` and upload the rows to `trends` myself; you never need the DB password. — Diego: (2) cancelled by v4. (1) pending your export; ready to run `fill_trends` + the new `pipeline/check_trends.py` (exit 0 = safe to upload) as soon as you share it.
+- [x] 2026-11-14 Perry -> Ivan: same export at ~15:30. Block 6a (`analyze_trend` vs `trend_stats()` on real cells) can use it directly; `trend_stats()` is in `archivos_preSupabase/etl_espana.py` (now in English). — Perry: cancelled, no task for Ivan from the database side for now.
+- [ ] 2026-11-14 Perry -> all: `archivos_preSupabase/` (brief, schema, ETL) is now in English (AGENTS.md rule 5); the brief has the current status and test results.
+- [x] 2026-11-14 Ivan -> Diego, Manuel: Ivan now owns the 6-7 featured case studies (e.g. Valencia DANA). Confirm who writes their JSON in data/cache/ (Ivan proposes: Ivan), and update the README ownership table if you agree. — Perry: agreed, Ivan owns them; README updated (v4). Diego to tick. — Diego: agreed.
+- [ ] 2026-11-14 Ivan -> Diego, Yeipi: the 7 featured case studies are in data/cache/case_<id>_<var>.json (13 files, contract format), built from NASA POWER point data 1981-2024 (raw in data/raw/power/), not from the Supabase export. Case list and coordinates in pipeline/cases.py. — Diego: read.
+- [x] 2026-11-14 Perry -> Diego, Ivan: work split clarified (pipeline/README.md v4). Diego = generic analysis (any point of the map): run `fill_trends.py` on my export and tell me it runs clean; point (2) of my earlier request (featured cases) is cancelled. Ivan = about 10 featured cases marked in the game, in `data/cache/case_*.json`. Both: merge `main` into your branch now. Tick when read. — Ivan: read, main merged into ivan_dev. — Diego: read, main merged into diego_dev.
+- [ ] 2026-11-14 Ivan -> Yeipi: featured case texts (question shown first, context below) and file list are in data/cases_index.json.

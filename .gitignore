@@ -34,3 +34,7 @@ __pycache__/
 # Playwright
 test-results/
 playwright-report/
+# Python
+
+# ETL output (large, regenerate with archivos_preSupabase/etl_espana.py)
+export/

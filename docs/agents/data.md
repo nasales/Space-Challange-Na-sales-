@@ -5,7 +5,9 @@
 - `data/cache/` — pre-computed JSON for featured cases
 (TODO: adjust paths once the stack is chosen)
 
-**Never edit `tests/stats/`** — the humans own them.
+**`tests/stats/`**: edit only when the human explicitly asks for it in that session and reviews the tests before commit (AGENTS.md rule 3). Never change an existing test to make it pass.
+
+**Read `pipeline/README.md` before any work.** It says who owns each file (Ivan or Diego), the agreed interfaces and the ordered work blocks. Ask the human which person they are and which block is next.
 
 ## Statistical rules
 - Use established libraries (`pymannkendall`, `scipy.stats`) instead of reimplementing tests.
