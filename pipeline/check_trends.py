@@ -82,17 +82,19 @@ def check(export_dir: str | Path, rows: list[dict], *, compare: bool = True) -> 
         if any(r[c] is not None and not _finite(r[c]) for c in numbers) or not _finite(r["slope_per_decade"]):
             bad["NaN, infinite or missing slope"].append(key)
             continue
-        if not isinstance(r["significant"], bool) or not _finite(r["p_value"]) or \
-                r["significant"] != (r["p_value"] < ALPHA):
-            bad["significant does not match p_value < 0.05"].append(key)
-        if not 0 <= r["p_value"] <= 1:
-            bad["p_value outside 0-1"].append(key)
-        if r["n_months"] < MIN_MONTHS:
-            bad[f"n_months < {MIN_MONTHS}"].append(key)
+        if not _finite(r["p_value"]):
+            bad["p_value missing or not a number"].append(key)
+        else:
+            if not isinstance(r["significant"], bool) or r["significant"] != (r["p_value"] < ALPHA):
+                bad["significant does not match p_value < 0.05"].append(key)
+            if not 0 <= r["p_value"] <= 1:
+                bad["p_value outside 0-1"].append(key)
+        if not isinstance(r["n_months"], int) or isinstance(r["n_months"], bool) or r["n_months"] < MIN_MONTHS:
+            bad[f"n_months missing or < {MIN_MONTHS}"].append(key)
         lo, hi, slope = r["slope_ci_low"], r["slope_ci_high"], r["slope_per_decade"]
         if lo is not None and hi is not None and not (lo - 1e-9 <= slope <= hi + 1e-9):
             bad["slope outside its confidence interval"].append(key)
-        expected = ("increasing" if slope > 0 else "decreasing") if r["significant"] else "no trend"
+        expected = ("increasing" if slope > 0 else "decreasing") if r["significant"] is True else "no trend"
         if r["direction"] != expected:
             bad["direction does not follow the database rule"].append(key)
     for problem, ks in bad.items():

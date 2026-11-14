@@ -59,6 +59,16 @@ def test_detects_nan_and_bad_direction(computed):
     assert any("direction" in e for e in errors)
 
 
+def test_null_p_value_or_n_months_is_reported_not_a_crash(computed):
+    root, rows = computed
+    bad = copy.deepcopy(rows)
+    bad[0]["p_value"] = None
+    bad[1]["n_months"] = None
+    errors = check(root / "export", bad, compare=False)["errors"]
+    assert any("p_value missing" in e for e in errors)
+    assert any("n_months missing" in e for e in errors)
+
+
 def test_detects_slope_outside_ci(computed):
     root, rows = computed
     bad = copy.deepcopy(rows)

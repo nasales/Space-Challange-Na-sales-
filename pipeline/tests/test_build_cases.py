@@ -6,7 +6,8 @@ from pathlib import Path
 
 import numpy as np
 
-from pipeline.build_cases import build_one
+from pipeline.build_cases import build_index, build_one, write_index
+from pipeline.cases import CASES
 from pipeline.build_case import CONTRACT_FIELDS
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -48,3 +49,18 @@ def test_build_one_from_raw_file_passes_contract(tmp_path):
     assert written["dataset"] == "NASA POWER (MERRA-2 based) T2M"
     assert len(written["dates"]) == 240 and written["values"][written["dates"].index("1990-05")] is None
     assert written["slope"] == trend["slope"]
+
+
+def test_cases_index(tmp_path):
+    path = tmp_path / "cases_index.json"
+    write_index(path)
+    index = json.loads(path.read_text(encoding="utf-8"))
+    assert index == build_index()
+    assert [e["id"] for e in index] == [c["id"] for c in CASES]
+    for entry in index:
+        assert set(entry) == {"id", "title", "place", "lat", "lon", "question", "context", "files"}
+        assert entry["question"].endswith("?") and entry["context"] and "TODO" not in entry["context"]
+        assert all(f.startswith("data/cache/case_") for f in entry["files"])
+        assert all((ROOT / f).exists() for f in entry["files"])  # the committed case files
+    assert index[0]["files"] == ["data/cache/case_dana_valencia_PRECTOTCORR.json",
+                                 "data/cache/case_dana_valencia_T2M.json"]

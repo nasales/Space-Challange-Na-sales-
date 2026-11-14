@@ -42,7 +42,7 @@ JSON export (`etl_espana.py --export-dir export`):
 ## Who owns what
 | File | Owner |
 |---|---|
-| `pipeline/__init__.py`, `pipeline/trend.py`, `pipeline/explain.py`, `pipeline/tests/test_trend.py`, `pipeline/tests/test_explain.py`, `pipeline/compare_db.py`, `pipeline/tests/test_compare_db.py`, `tests/stats/test_diego_cross.py`, `pipeline/cases.py`, `pipeline/nasa_power.py`, `pipeline/build_cases.py`, `pipeline/tests/test_nasa_power.py`, `pipeline/tests/test_build_cases.py`, `data/raw/power/`, `data/cache/case_*.json` (featured case studies) | Ivan |
+| `pipeline/__init__.py`, `pipeline/trend.py`, `pipeline/explain.py`, `pipeline/tests/test_trend.py`, `pipeline/tests/test_explain.py`, `pipeline/compare_db.py`, `pipeline/tests/test_compare_db.py`, `tests/stats/test_diego_cross.py`, `pipeline/cases.py`, `pipeline/nasa_power.py`, `pipeline/build_cases.py`, `pipeline/tests/test_nasa_power.py`, `pipeline/tests/test_build_cases.py`, `data/raw/power/`, `data/cache/case_*.json` (featured case studies), `data/cases_index.json` | Ivan |
 | `pipeline/series.py`, `pipeline/sources/*.py`, `pipeline/build_case.py`, `pipeline/fill_trends.py`, `pipeline/check_trends.py`, `pipeline/dry_run.py`, `pipeline/tests/test_series.py`, `pipeline/tests/test_build_case.py`, `pipeline/tests/test_sources.py`, `pipeline/tests/test_fill_trends.py`, `pipeline/tests/test_check_trends.py`, `pipeline/tests/test_dry_run.py`, `data/raw/` (except `data/raw/power/`) | Diego |
 | `pipeline/requirements.txt`, `pipeline/tests/__init__.py`, `AI_USAGE.md`, `REFERENCES.md` | Shared: append lines at the end only |
 
