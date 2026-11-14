@@ -1,10 +1,9 @@
 .location-panel {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  min-width: 220px;
-  max-width: calc(100% - 32px);
-  padding: 12px 16px 12px 34px;
+  position: relative; /* placed by .hud__corner, right under the minimap */
+  box-sizing: border-box;
+  min-width: 172px;
+  max-width: min(260px, calc(100vw - 32px));
+  padding: 10px 14px 10px 32px;
   background: rgb(255 255 255 / 0.9);
   border: 2px solid #1c1f26;
   border-radius: 10px;
@@ -52,27 +51,30 @@
   color: #3b4250;
 }
 
-/* Near a landmark the panel grows a little and the pin turns gold */
-.location-panel--landmark {
-  width: 300px;
-}
-
+/* Near a landmark the pin turns gold */
 .location-panel--landmark .location-panel__pin {
   background: #f2b632;
 }
 
-.location-panel .location-panel__description {
-  margin-top: 6px;
-  font-size: 13px;
-  line-height: 1.4;
-  color: #3b4250;
-}
+@media (max-width: 600px), (max-height: 500px) {
+  .location-panel {
+    min-width: 116px;
+    max-width: min(200px, calc(100vw - 32px));
+    padding: 7px 10px 7px 26px;
+  }
 
-.location-panel__coords {
-  margin-top: 8px;
-  padding-top: 6px;
-  border-top: 1.5px dashed #b9bec7;
-  font-size: 13px;
-  font-variant-numeric: tabular-nums; /* digits do not jump around when they change */
-  color: #3b4250;
+  .location-panel__pin {
+    left: 9px;
+    top: 11px;
+    width: 10px;
+    height: 10px;
+  }
+
+  .location-panel__place {
+    font-size: 15px;
+  }
+
+  .location-panel__region {
+    font-size: 12px;
+  }
 }
