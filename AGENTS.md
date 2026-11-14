@@ -40,10 +40,11 @@ If you do not know which area you belong to, ask the human before doing anything
 1. `git status`: if there are uncommitted changes, stop and tell the human before continuing.
 2. `git log --oneline ORIG_HEAD..HEAD` (or the last 10 commits if that fails): see what came in.
 3. Check whether `docs/contract.md` or anything in `data/cache/` changed. If it did, verify that your area still matches the contract.
-4. Run `./scripts/check.sh`.
-5. Run the extra checks listed in your area file.
-6. **Do not fix anything outside your area.** If something in another area fails, write a bug line (format below) for the human to post.
-7. Report exactly in this format:
+4. Read the section 'Open requests between areas' at the end of this file and list in your report every open request addressed to your area or your human.
+5. Run `./scripts/check.sh`.
+6. Run the extra checks listed in your area file.
+7. **Do not fix anything outside your area.** If something in another area fails, write a bug line (format below) for the human to post.
+8. Report exactly in this format:
 
 ```
 SYNC CHECK — <area> — <date time>
@@ -53,6 +54,7 @@ check.sh: PASS / FAIL (<failing step>)
 Area checks: PASS / FAIL (<details>)
 Affects my area: <what and why, or "nothing">
 Bugs for other areas: <bug lines or "none">
+Open requests for me: <list or 'none'>
 Next action: <what you propose to do>
 ```
 
@@ -73,3 +75,12 @@ A task is done only when:
 ## Key times
 - Sunday 13:00: **feature freeze**. After this, only CRITICAL fixes.
 - Sunday 23:59: submission closes. Pitch on Sunday at 17:30.
+
+## Open requests between areas
+Append-only. Format: `- [ ] YYYY-MM-DD From -> To: request`. The receiver ticks `[x]` and adds a short answer when done. Never delete lines.
+- [ ] 2026-11-14 Ivan -> Manuel (Perry): add `__pycache__/` to `.gitignore`.
+- [ ] 2026-11-14 Ivan -> Manuel (Perry): run `archivos_preSupabase/etl_espana.py` with `--with-trends` when generating the export; without it every `trend` is null and `pipeline/compare_db.py` has nothing to compare.
+- [ ] 2026-11-14 Ivan -> Manuel (Perry): `explain(trend, series)` is in `pipeline/explain.py` (plain-English facts for the AI checker, one per line). Confirm the format works for the checker, and say when the database export will be ready.
+- [ ] 2026-11-14 Ivan -> Diego: the real `analyze_trend` is in main (`from pipeline.trend import analyze_trend`); replace the stub. It needs >= 120 valid months and returns slope per year (not per decade).
+- [ ] 2026-11-14 Ivan -> Diego: the annual mode of block 2 was dropped (pre-whitening on ~20 annual means removes most of the trend); strike it from `pipeline/README.md`.
+- [ ] 2026-11-14 Ivan -> Diego: when will the featured cases be in `data/cache/`, and is `pipeline/series.py` in main? Ivan needs them for block 5 and the block 3 cross tests.
