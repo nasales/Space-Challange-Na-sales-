@@ -1,5 +1,5 @@
 {
-  "_info": "Paisaje por regiones. Cada región: qué se planta (kinds), dónde (cajas lat/lon), cada cuánto (spacing, unidades del mundo), qué parte del terreno cubre (cover, 0-1, en manchas), cómo (rows = en filas, scatter = disperso) y entre qué alturas (metros). Los molinos se colocan en los puntos más altos (pick: highest).",
+  "_info": "Landscape by region, so each part of Spain looks different while driving. Each region: what to plant (kinds), where (lat/lon boxes), how far apart (spacing, world units), how much ground it covers (cover, 0-1, in patches), how (rows = in rows, scatter = loose) and between which heights (metres). Windmills go on the highest points (pick: highest). The id is also the random seed: renaming a region moves its trees.",
   "regions": [
     {
       "id": "olivares-andalucia",
@@ -29,7 +29,8 @@
       "boxes": [
         { "south": 42.2, "north": 42.7, "west": -3.1, "east": -1.8 },
         { "south": 41.5, "north": 41.8, "west": -4.3, "east": -3.5 },
-        { "south": 38.6, "north": 39.1, "west": -3.8, "east": -3 }
+        { "south": 38.6, "north": 39.15, "west": -3.9, "east": -2.3 },
+        { "south": 41.2, "north": 41.5, "west": 1.4, "east": 1.9 }
       ],
       "layout": "rows",
       "spacing": 7,
@@ -38,15 +39,53 @@
       "maxMeters": 1100
     },
     {
+      "id": "trigales-castilla",
+      "kinds": ["wheat"],
+      "boxes": [
+        { "south": 41.5, "north": 42.4, "west": -5.8, "east": -4.0 },
+        { "south": 41.9, "north": 42.5, "west": -4.0, "east": -3.3 },
+        { "south": 39.65, "north": 40.15, "west": -4.3, "east": -2.4 },
+        { "south": 41.4, "north": 41.9, "west": -0.8, "east": 0.2 }
+      ],
+      "layout": "rows",
+      "spacing": 20,
+      "cover": 0.6,
+      "maxMeters": 1050
+    },
+    {
+      "id": "eucaliptales-galicia",
+      "kinds": ["eucalyptus", "eucalyptus", "broadleaf", "pine"],
+      "boxes": [
+        { "south": 41.8, "north": 43.9, "west": -9.4, "east": -7.0 }
+      ],
+      "layout": "scatter",
+      "spacing": 9,
+      "cover": 0.55,
+      "maxMeters": 1200
+    },
+    {
       "id": "bosques-norte",
       "kinds": ["pine", "broadleaf", "broadleaf"],
       "boxes": [
-        { "south": 42.3, "north": 43.9, "west": -9.4, "east": -1.5 },
+        { "south": 42.3, "north": 43.9, "west": -7.0, "east": -1.5 },
         { "south": 42.3, "north": 43, "west": -1.5, "east": 3.3 }
       ],
       "layout": "scatter",
       "spacing": 9,
-      "cover": 0.5
+      "cover": 0.5,
+      "maxMeters": 1300
+    },
+    {
+      "id": "abetos-montana",
+      "kinds": ["fir"],
+      "boxes": [
+        { "south": 42.3, "north": 43.0, "west": -1.5, "east": 3.3 },
+        { "south": 42.7, "north": 43.3, "west": -7.0, "east": -3.5 }
+      ],
+      "layout": "scatter",
+      "spacing": 9,
+      "cover": 0.6,
+      "minMeters": 1300
     },
     {
       "id": "pinares-sierras",
@@ -63,12 +102,40 @@
       "id": "dehesa-extremadura",
       "kinds": ["holmoak"],
       "boxes": [
-        { "south": 38.3, "north": 40, "west": -7.3, "east": -5.3 }
+        { "south": 38.3, "north": 40, "west": -7.3, "east": -5.3 },
+        { "south": 40, "north": 41.2, "west": -6.9, "east": -5.4 },
+        { "south": 37.7, "north": 38.3, "west": -7.3, "east": -6.5 }
       ],
       "layout": "scatter",
       "spacing": 22,
       "cover": 0.8,
       "maxMeters": 1000
+    },
+    {
+      "id": "naranjos-levante",
+      "kinds": ["orange"],
+      "boxes": [
+        { "south": 39.0, "north": 39.75, "west": -0.65, "east": -0.2 },
+        { "south": 39.8, "north": 40.1, "west": -0.3, "east": 0.05 },
+        { "south": 37.9, "north": 38.15, "west": -1.35, "east": -0.7 }
+      ],
+      "layout": "rows",
+      "spacing": 6,
+      "cover": 0.65,
+      "maxMeters": 250
+    },
+    {
+      "id": "pinos-mediterraneo",
+      "kinds": ["stonepine"],
+      "boxes": [
+        { "south": 41.0, "north": 42.3, "west": 0.9, "east": 3.3 },
+        { "south": 38.3, "north": 39.0, "west": -0.6, "east": 0.25 },
+        { "south": 36.9, "north": 37.3, "west": -6.9, "east": -6.2 }
+      ],
+      "layout": "scatter",
+      "spacing": 14,
+      "cover": 0.5,
+      "maxMeters": 500
     },
     {
       "id": "palmeral-elche",
@@ -80,6 +147,17 @@
       "spacing": 10,
       "cover": 0.6,
       "maxMeters": 400
+    },
+    {
+      "id": "palmeras-costa-sol",
+      "kinds": ["palm"],
+      "boxes": [
+        { "south": 36.4, "north": 36.85, "west": -5.2, "east": -2.0 }
+      ],
+      "layout": "scatter",
+      "spacing": 16,
+      "cover": 0.45,
+      "maxMeters": 120
     },
     {
       "id": "palmeras-canarias",

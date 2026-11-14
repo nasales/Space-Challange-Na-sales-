@@ -166,6 +166,110 @@ function palm() {
   return withSway(merge(parts), 5, 22, 1.1)
 }
 
+/**
+ * Orange tree (Valencia / Murcia orchards): short trunk, a dense round dark-green crown and a few
+ * bright oranges on its surface. Planted in tight rows.
+ */
+function orange() {
+  const parts = [
+    cylinder(0.35, 0.55, 2 + SINK, BARK, 0, -SINK),
+    clump(2.6, 0x1f8a3e, 0, 3.9, 0, 0.85, 0.3),
+    clump(1.9, 0x34a84a, 0.9, 4.9, 0.6, 0.8, 1.2),
+    clump(1.7, 0x16702f, -1, 4.3, -0.7, 0.85, 2.1),
+  ]
+  const fruit: [number, number, number][] = [[2.2, 3.6, 0.9], [-1.6, 3.4, 1.7], [0.4, 5.6, 1.9], [-2.1, 4.6, -0.8], [1.2, 3.1, -2], [0.9, 6.1, -0.6]]
+  for (const [x, y, z] of fruit) parts.push(blob(0.45, 0xff8a1c, x, y, z))
+  return withSway(merge(parts), 2, 6.5, 0.18)
+}
+
+/**
+ * Eucalyptus (Galicia): tall, slim, pale peeling trunk and narrow hanging crowns in a blue-grey
+ * green, clearly different from the warm greens of the oaks.
+ */
+function eucalyptus() {
+  return withSway(
+    merge([
+      cylinder(0.35, 0.6, 11 + SINK, 0xe3d8c4, 0, -SINK),
+      cylinder(0.22, 0.3, 4, 0xcbbd9f, 0.4, 10.6),
+      cylinder(0.18, 0.25, 3, 0xe3d8c4, -0.9, 9.4).rotateZ(0.35),
+      clump(2.1, 0x5e9c84, 0, 13.4, 0, 1.5, 0.2),
+      clump(1.6, 0x86bea2, 0.9, 15.6, 0.5, 1.6, 1.3),
+      clump(1.5, 0x4a7f6c, -1.4, 11.8, -0.3, 1.5, 2.4),
+      clump(1.1, 0x9fd0b4, 0.2, 17.4, -0.4, 1.4, 0.9),
+    ]),
+    8,
+    19,
+    0.8,
+  )
+}
+
+/**
+ * Fir (Pyrenees and high Cantabrian mountains): a narrow, dark blue-green conifer with many short
+ * tiers and a dusting of snow on each tier, so the high mountains read as alpine.
+ */
+function fir() {
+  const parts = [cylinder(0.4, 0.6, 3 + SINK, DARK_BARK, 0, -SINK)]
+  const tiers: [number, number, number, number][] = [
+    // radius, height, base y, colour
+    [3.2, 4.2, 2.4, 0x0f5a45],
+    [2.7, 3.8, 5, 0x146a50],
+    [2.2, 3.4, 7.4, 0x1a7a5a],
+    [1.6, 3, 9.6, 0x228c66],
+    [1, 2.6, 11.6, 0x2c9c72],
+  ]
+  tiers.forEach(([r, h, y, color], i) => {
+    const g = cone(r, h, color, 0, 0, 0, 6)
+    g.rotateY(i * 0.5)
+    g.translate(0, y, 0)
+    parts.push(g)
+    // snow cap: a thin white cone sitting on the upper part of the tier
+    const snow = cone(r * 0.55, h * 0.45, 0xf4f6ff, 0, 0, 0, 6)
+    snow.rotateY(i * 0.5)
+    snow.translate(0, y + h * 0.56, 0)
+    parts.push(snow)
+  })
+  return withSway(merge(parts), 3, 14.2, 0.5)
+}
+
+/**
+ * Stone pine (Mediterranean coast, Doñana): a tall bare trunk with a slight lean and a wide, flat
+ * umbrella crown on top. The silhouette alone says "Mediterranean".
+ */
+function stonepine() {
+  const trunk = cylinder(0.45, 0.75, 10 + SINK, 0xa0623a, 0, -SINK)
+  trunk.rotateZ(0.08)
+  return withSway(
+    merge([
+      trunk,
+      cylinder(0.25, 0.4, 3.2, 0xa0623a, 1.4, 8.6).rotateZ(-0.5),
+      clump(5.2, 0x2e8a4a, 0.8, 12.2, 0, 0.32, 0.2),
+      clump(3.8, 0x47a858, 2.8, 12.9, 1.4, 0.34, 1.1),
+      clump(3.6, 0x24743d, -2, 12.5, -1.2, 0.33, 2),
+      clump(2.6, 0x6cc46a, 1.2, 13.8, -1.6, 0.32, 2.8),
+    ]),
+    8,
+    14,
+    0.45,
+  )
+}
+
+/**
+ * Wheat field (Castilla): a flat golden plot with raised furrows in two golds, sitting just above
+ * the ground. Fields are big tiles laid out in a loose patchwork; the furrows sway gently in the
+ * wind like a wheat sea.
+ */
+function wheat() {
+  const size = 24
+  const parts = [box(size, 0.4 + SINK, size, 0xdcae48, 0, -SINK)]
+  for (let i = 0; i < 6; i++) {
+    const z = -size / 2 + 2 + i * ((size - 4) / 5)
+    parts.push(box(size - 1.5, 1.1, 2.2, i % 2 ? 0xf6d05a : 0xeabf4c, 0, 0.4, z))
+  }
+  // a few red poppies on one edge (classic in Spanish cereal fields)
+  for (const [x, z] of [[-9, 10.8], [-5.5, 11.2], [6, 10.6], [9.5, 11]]) parts.push(blob(0.55, 0xe5372f, x, 1.4, z, 0.7))
+  return withSway(merge(parts), 0.6, 1.5, 0.35)
+}
+
 /** Altura del eje de las aspas del molino y lo que sobresale hacia delante (+Z). */
 export const WINDMILL_HUB = { y: 14.5, z: 4 }
 
@@ -198,5 +302,5 @@ export function windmillSails() {
 }
 
 export const SCENERY_MODELS: Record<SceneryKind, () => THREE.BufferGeometry> = {
-  olive, vine, pine, broadleaf, holmoak, palm, windmill,
+  olive, vine, pine, broadleaf, holmoak, palm, windmill, orange, eucalyptus, fir, stonepine, wheat,
 }

@@ -97,6 +97,56 @@
       "heading": 0,
       "scale": 0.42,
       "description": "8th-century Umayyad mosque with its forest of red and white arches."
+    },
+    {
+      "id": "catedral-burgos",
+      "name": "Catedral de Burgos",
+      "city": "Burgos",
+      "lat": 42.34056,
+      "lon": -3.70444,
+      "heading": 0,
+      "scale": 0.42,
+      "description": "Gothic cathedral begun in 1221, famous for its openwork spires and crossing lantern."
+    },
+    {
+      "id": "teatro-merida",
+      "name": "Teatro Romano",
+      "city": "Mérida",
+      "lat": 39.0161,
+      "lon": -6.28448,
+      "heading": -53,
+      "scale": 0.27,
+      "description": "Roman theatre from 16-15 BC with a two-storey columned stage front, still used for plays."
+    },
+    {
+      "id": "basilica-pilar",
+      "name": "Basílica del Pilar",
+      "city": "Zaragoza",
+      "lat": 41.55667,
+      "lon": -0.93246,
+      "heading": -15,
+      "scale": 0.25,
+      "description": "Baroque basilica beside the Ebro, with four tall towers and domes of glazed tiles."
+    },
+    {
+      "id": "casas-colgadas",
+      "name": "Casas Colgadas",
+      "city": "Cuenca",
+      "lat": 40.04389,
+      "lon": -2.01916,
+      "heading": 85,
+      "scale": 0.42,
+      "description": "15th-century Hanging Houses with wooden balconies over the cliff of the Huécar gorge."
+    },
+    {
+      "id": "plaza-mayor-salamanca",
+      "name": "Plaza Mayor",
+      "city": "Salamanca",
+      "lat": 40.89465,
+      "lon": -5.7551,
+      "heading": -29,
+      "scale": 0.26,
+      "description": "18th-century Baroque square of golden sandstone, closed on all four sides by arcades."
     }
   ]
 }

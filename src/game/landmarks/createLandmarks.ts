@@ -243,10 +243,15 @@ export function createLandmarks(list: LandmarkData[]) {
         inside.sort((a, b) => a - b)
         const target = Math.max(inside[Math.floor(inside.length / 2)], 60)
 
+        // Neighbours whose plazas may reach this one: a cell belongs to the closest monument,
+        // so two plazas close together never tilt each other's floor
+        const neighbours = placed.filter((q) => q !== p && Math.hypot(q.x - p.x, q.z - p.z) < reach + Math.hypot(q.halfW, q.halfD) + PLAZA + BLEND)
         for (let r = r0; r <= r1; r++) {
           for (let c = c0; c <= c1; c++) {
-            const d = outside(p, nw.x + c * cellX, nw.z + r * cellZ)
+            const x = nw.x + c * cellX, z = nw.z + r * cellZ
+            const d = outside(p, x, z)
             if (d >= PLAZA + BLEND) continue
+            if (neighbours.some((q) => outside(q, x, z) < d)) continue
             const t = Math.max(0, d - PLAZA) / BLEND // 0 en la explanada, 1 en el borde de la franja
             const k = t * t * (3 - 2 * t)
             const i = r * gw + c
@@ -300,13 +305,22 @@ export function createLandmarks(list: LandmarkData[]) {
       return best?.data ?? null
     },
 
-    /** Circles around each monument footprint that rivers bend around (keeps plazas dry). */
+    /**
+     * Each monument footprint as an area rivers flow around (keeps plazas dry): the bounding
+     * circle (roads use it) plus the real rotated rectangle, which rivers hug at `marginUnits`.
+     */
     riverClearings(marginUnits: number): RiverClearing[] {
       return placed.map((p) => ({
         lon: p.data.lon,
         lat: p.data.lat,
         radiusKm: (Math.hypot(p.halfW, p.halfD) + marginUnits) / UNITS_PER_KM,
         innerKm: Math.hypot(p.halfW, p.halfD) / UNITS_PER_KM,
+        rect: {
+          halfWKm: p.halfW / UNITS_PER_KM,
+          halfDKm: p.halfD / UNITS_PER_KM,
+          angle: (p.data.heading * Math.PI) / 180,
+          marginKm: marginUnits / UNITS_PER_KM,
+        },
       }))
     },
 

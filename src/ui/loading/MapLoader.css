@@ -1,0 +1,725 @@
+/* Comic loading screen. Same print look as the main menu and the magnifier: thick ink lines,
+   Ben-Day halftone dots, offset-print misregistration (cyan/magenta ghosts), lettered sound
+   effects, and motion held "on twos" (step-end poses) for a hand-drawn rhythm.
+
+   The runner's whole routine is ONE loop of --ml-cycle shared by every layer:
+     path  (travel along the bar)  0-34 % run right, 34-46 % skid + turn, 46-58 % run left,
+                                   58-68 % trip, 68-86 % run left, 86-100 % skid + turn
+     face  (scaleX: which way he looks), body (squash, stretch, lean, trip),
+     fx    (dust puffs + "Skrrt!"/"Oof!" at the same moments, via animation-delay).
+   Travel and turns are transforms on HTML wrappers, so they keep moving even while the game
+   is busy building the map; the limbs inside the SVG may pause during the heaviest steps. */
+.map-loader {
+  --ml-ink: #1a1423;
+  --ml-ink-deep: #161b2e;
+  --ml-sea: #5ea8c2;
+  --ml-gold: #f2c14e;
+  --ml-red: #e5322d;
+  --ml-paper: #fff8e7;
+  --ml-print-cyan: rgba(0, 164, 214, 0.85);
+  --ml-print-magenta: rgba(226, 0, 122, 0.75);
+  --ml-cycle: 4.8s;
+  --ml-runner-w: 96px;
+  --ml-runner-h: calc(var(--ml-runner-w) * 140 / 120);
+
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle, rgba(255, 248, 231, 0.16) 1.3px, transparent 1.8px) 0 0 / 8px 8px,
+    var(--ml-sea);
+  color: var(--ml-ink-deep);
+}
+
+/* Denser dark dots towards the corners, like a printed comic page */
+.map-loader::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, rgba(22, 27, 46, 0.3) 1.5px, transparent 2px) 0 0 / 9px 9px;
+  mask-image: radial-gradient(ellipse at 50% 50%, transparent 35%, black 100%);
+  pointer-events: none;
+}
+
+.map-loader__stage {
+  position: relative;
+  width: min(560px, calc(100vw - 112px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ---- Lettering ---- */
+.map-loader__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(40px, 9vw, 76px);
+  font-weight: 900;
+  line-height: 0.9;
+  letter-spacing: 0.02em;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--ml-gold);
+  -webkit-text-stroke: 3px var(--ml-ink-deep);
+  paint-order: stroke fill;
+  text-shadow:
+    -3px -1px 0 var(--ml-print-cyan),
+    4px 3px 0 var(--ml-print-magenta),
+    6px 7px 0 var(--ml-ink-deep);
+  transform: rotate(-2deg);
+}
+
+.map-loader__caption {
+  margin: 14px 0 0;
+  padding: 4px 14px 6px;
+  border: 3px solid var(--ml-ink-deep);
+  background: var(--ml-paper);
+  font-family: var(--font-hand);
+  font-size: max(var(--font-hand-size-min, 18px), 1.15rem);
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  box-shadow: 4px 4px 0 var(--ml-ink-deep);
+  transform: rotate(1.5deg);
+}
+
+/* ---- Track: the runner's lane above the bar, then the bar ---- */
+.map-loader__track {
+  position: relative;
+  width: 100%;
+  margin-top: 18px;
+  padding-top: calc(var(--ml-runner-h) - 6px);
+}
+
+.map-loader__path {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--ml-runner-h);
+  pointer-events: none;
+  animation: ml-travel var(--ml-cycle) infinite;
+}
+
+.map-loader__runner {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: var(--ml-runner-w);
+  height: var(--ml-runner-h);
+  translate: -50% 0;
+  animation: ml-bob 0.34s step-end infinite;
+}
+
+.map-loader__face {
+  width: 100%;
+  height: 100%;
+  animation: ml-face var(--ml-cycle) step-end infinite;
+}
+
+.map-loader__body {
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 94%;
+  animation: ml-body var(--ml-cycle) step-end infinite;
+}
+
+/* ---- The bar ---- */
+.map-loader__bar {
+  position: relative;
+  height: 38px;
+  border: 4px solid var(--ml-ink-deep);
+  background:
+    radial-gradient(circle, rgba(22, 27, 46, 0.22) 1.2px, transparent 1.7px) 0 0 / 6px 6px,
+    var(--ml-paper);
+  box-shadow:
+    -3px -2px 0 var(--ml-print-cyan),
+    3px 2px 0 var(--ml-print-magenta),
+    7px 7px 0 var(--ml-ink-deep);
+  overflow: hidden;
+}
+
+.map-loader__fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: calc(var(--p, 0) * 100%);
+  border-right: 4px solid var(--ml-ink-deep);
+  background:
+    radial-gradient(circle, rgba(229, 50, 45, 0.35) 1.3px, transparent 1.8px) 0 0 / 6px 6px,
+    repeating-linear-gradient(-45deg, rgba(255, 248, 231, 0.35) 0 8px, transparent 8px 18px),
+    var(--ml-gold);
+  background-size: 6px 6px, 50.9px 50.9px, auto;
+  transition: width 0.4s steps(4, end);
+  animation: ml-stripes 0.5s steps(3, end) infinite;
+}
+
+.map-loader__percent {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: var(--ml-paper);
+  -webkit-text-stroke: 2.5px var(--ml-ink-deep);
+  paint-order: stroke fill;
+}
+
+/* ---- Dust puffs and sound effects ---- */
+.map-loader__fx {
+  position: absolute;
+  top: calc(var(--ml-runner-h) - 22px);
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.map-loader__fx--right {
+  left: 103%;
+}
+
+.map-loader__fx--trip {
+  left: 57%;
+}
+
+.map-loader__fx--left {
+  left: -3%;
+}
+
+.map-loader__puff {
+  position: absolute;
+  left: -13px;
+  top: -13px;
+  width: 26px;
+  height: 26px;
+  border: 3px solid var(--ml-ink-deep);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(22, 27, 46, 0.25) 1px, transparent 1.5px) 0 0 / 5px 5px,
+    var(--ml-paper);
+  opacity: 0;
+  translate: var(--dx, 0) var(--dy, 0);
+  animation: ml-puff var(--ml-cycle) step-end infinite;
+  animation-delay: var(--ml-at);
+}
+
+.map-loader__puff:nth-child(1) {
+  --dx: -26px;
+  --dy: 2px;
+}
+
+.map-loader__puff:nth-child(2) {
+  --dx: -6px;
+  --dy: -10px;
+  width: 34px;
+  height: 34px;
+}
+
+.map-loader__puff:nth-child(3) {
+  --dx: 16px;
+  --dy: 0px;
+}
+
+.map-loader__sfx {
+  position: absolute;
+  left: -40px;
+  bottom: 70px;
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--ml-red);
+  -webkit-text-stroke: 2.5px var(--ml-ink-deep);
+  paint-order: stroke fill;
+  text-shadow:
+    -2px -1px 0 var(--ml-print-cyan),
+    2px 2px 0 var(--ml-print-magenta);
+  opacity: 0;
+  animation: ml-sfx var(--ml-cycle) step-end infinite;
+  animation-delay: var(--ml-at);
+}
+
+/* Each spot fires at its moment of the loop (delay = start of that beat) */
+.map-loader__fx--right {
+  --ml-at: calc(var(--ml-cycle) * 0.34);
+}
+
+.map-loader__fx--trip {
+  --ml-at: calc(var(--ml-cycle) * 0.59);
+}
+
+.map-loader__fx--trip .map-loader__sfx {
+  color: var(--ml-gold);
+  left: -20px;
+}
+
+.map-loader__fx--left {
+  --ml-at: calc(var(--ml-cycle) * 0.86);
+}
+
+.map-loader__fx--left .map-loader__sfx {
+  left: -24px;
+}
+
+/* ---- The detective drawing ---- */
+.ld {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  --ld-ink: #1a1423;
+}
+
+.ld g,
+.ld path,
+.ld circle {
+  transform-box: view-box;
+}
+
+.ld__coat {
+  fill: var(--ld-coat);
+}
+
+.ld__coat-dark {
+  fill: color-mix(in srgb, var(--ld-coat) 78%, #3a2410);
+}
+
+.ld__belt {
+  fill: color-mix(in srgb, var(--ld-coat) 70%, #3a2410);
+}
+
+.ld__buckle,
+.ld__gold {
+  fill: #f2c14e;
+}
+
+.ld__trousers {
+  fill: var(--ld-trousers);
+}
+
+.ld__trousers-dark {
+  fill: color-mix(in srgb, var(--ld-trousers) 75%, #000);
+}
+
+.ld__shoe {
+  fill: #4a3020;
+}
+
+.ld__glove {
+  fill: #6b4126;
+}
+
+.ld__scarf {
+  fill: var(--ld-scarf);
+}
+
+.ld__scarf-dark {
+  fill: none;
+  stroke: color-mix(in srgb, var(--ld-scarf) 75%, #000);
+}
+
+.ld__skin {
+  fill: #ffcfa0;
+}
+
+.ld__nose {
+  fill: #ffa978;
+}
+
+.ld__hair {
+  fill: #4a2f1f;
+}
+
+.ld__ink {
+  fill: var(--ld-ink);
+}
+
+.ld__brow {
+  stroke: #3b2516;
+}
+
+.ld__hat-fill {
+  fill: var(--ld-hat);
+}
+
+.ld__band {
+  fill: #2b2540;
+}
+
+.ld__wood {
+  stroke: #7a4a2c;
+}
+
+.ld__glass {
+  fill: #bdf3ff;
+}
+
+/* Run cycle: four held poses per stride (on twos) */
+.ld__leg--front {
+  transform-origin: 61px 97px;
+  animation: ld-leg 0.34s step-end infinite;
+}
+
+.ld__leg--back {
+  transform-origin: 58px 97px;
+  animation: ld-leg 0.34s step-end infinite;
+  animation-delay: -0.17s;
+}
+
+.ld__arm--front {
+  transform-origin: 62px 66px;
+  animation: ld-arm 0.34s step-end infinite;
+  animation-delay: -0.17s;
+}
+
+.ld__arm--back {
+  transform-origin: 56px 66px;
+  animation: ld-arm 0.34s step-end infinite;
+}
+
+.ld__tails {
+  transform-origin: 48px 86px;
+  animation: ld-flap 0.26s step-end infinite;
+}
+
+.ld__scarf-tail {
+  transform-origin: 46px 63px;
+  animation: ld-flap 0.3s step-end infinite;
+  animation-delay: -0.1s;
+}
+
+.ld__head {
+  transform-origin: 60px 58px;
+  animation: ld-head 0.34s step-end infinite;
+}
+
+.ld__hat {
+  transform-origin: 44px 26px;
+  animation: ld-hat var(--ml-cycle) step-end infinite;
+}
+
+/* ---- Finish: the bar fills, a beat, then the page pops away ---- */
+.map-loader--done .map-loader__title {
+  animation: ml-done-pop 0.3s steps(2, end) both;
+}
+
+.map-loader--done .map-loader__caption {
+  background: var(--ml-gold);
+}
+
+.map-loader--done {
+  animation: ml-out 0.24s steps(3, end) 0.44s forwards;
+}
+
+/* ---- Keyframes ---- */
+@keyframes ml-travel {
+  0% {
+    transform: translateX(-3%);
+  }
+  4% {
+    transform: translateX(-3%);
+    animation-timing-function: steps(11, end);
+  }
+  34% {
+    transform: translateX(100%);
+    animation-timing-function: steps(2, end);
+  }
+  38% {
+    transform: translateX(103%);
+  }
+  46% {
+    transform: translateX(103%);
+    animation-timing-function: steps(5, end);
+  }
+  58% {
+    transform: translateX(60%);
+    animation-timing-function: steps(2, end);
+  }
+  62% {
+    transform: translateX(57%);
+  }
+  68% {
+    transform: translateX(57%);
+    animation-timing-function: steps(8, end);
+  }
+  86% {
+    transform: translateX(0%);
+    animation-timing-function: steps(2, end);
+  }
+  90%,
+  100% {
+    transform: translateX(-3%);
+  }
+}
+
+@keyframes ml-face {
+  0% {
+    transform: scaleX(1);
+  }
+  41% {
+    transform: scaleX(-1);
+  }
+  92%,
+  100% {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes ml-body {
+  /* push off */
+  0% {
+    transform: scale(1.12, 0.86);
+  }
+  4% {
+    transform: translateY(-6px) rotate(6deg) scale(0.9, 1.12);
+  }
+  8% {
+    transform: rotate(8deg);
+  }
+  /* skid at the right end: heels dug in, leaning back */
+  34% {
+    transform: rotate(-16deg) scale(1.1, 0.9);
+  }
+  38% {
+    transform: rotate(-20deg) scale(1.14, 0.86);
+  }
+  /* turn: a thin smear frame, then crouch and launch the other way */
+  41% {
+    transform: scale(0.78, 1.06);
+  }
+  43% {
+    transform: scale(1.15, 0.85);
+  }
+  46% {
+    transform: translateY(-6px) rotate(6deg) scale(0.9, 1.12);
+  }
+  49% {
+    transform: rotate(8deg);
+  }
+  /* trip: pitches forward, nose dive, bounces back up */
+  58% {
+    transform: translateY(-4px) rotate(24deg);
+  }
+  61% {
+    transform: translate(6px, 8px) rotate(42deg) scale(1.1, 0.85);
+  }
+  64% {
+    transform: translateY(4px) rotate(30deg) scale(1.12, 0.86);
+  }
+  66% {
+    transform: translateY(-12px) rotate(-8deg) scale(0.92, 1.1);
+  }
+  68% {
+    transform: rotate(8deg);
+  }
+  /* skid at the left end */
+  86% {
+    transform: rotate(-16deg) scale(1.1, 0.9);
+  }
+  90% {
+    transform: rotate(-20deg) scale(1.14, 0.86);
+  }
+  92% {
+    transform: scale(0.78, 1.06);
+  }
+  95%,
+  100% {
+    transform: scale(1.12, 0.86);
+  }
+}
+
+@keyframes ml-bob {
+  0% {
+    transform: translateY(0);
+  }
+  25% {
+    transform: translateY(-5px);
+  }
+  50% {
+    transform: translateY(0);
+  }
+  75% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes ml-stripes {
+  from {
+    background-position: 0 0, 0 0, 0 0;
+  }
+  to {
+    background-position: 0 0, 50.9px 0, 0 0;
+  }
+}
+
+@keyframes ml-puff {
+  0% {
+    opacity: 1;
+    scale: 0.4;
+  }
+  2% {
+    scale: 0.9;
+  }
+  5% {
+    scale: 1.2;
+  }
+  9% {
+    opacity: 0.7;
+    scale: 1.35;
+    translate: var(--dx, 0) calc(var(--dy, 0) - 8px);
+  }
+  12%,
+  100% {
+    opacity: 0;
+    scale: 1.4;
+  }
+}
+
+@keyframes ml-sfx {
+  0% {
+    opacity: 1;
+    transform: scale(0.5) rotate(-12deg);
+  }
+  2% {
+    transform: scale(1.25) rotate(-6deg);
+  }
+  5% {
+    transform: scale(1) rotate(-8deg);
+  }
+  11%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes ld-leg {
+  0% {
+    transform: rotate(38deg);
+  }
+  25% {
+    transform: rotate(10deg);
+  }
+  50% {
+    transform: rotate(-38deg);
+  }
+  75% {
+    transform: rotate(-8deg);
+  }
+}
+
+@keyframes ld-arm {
+  0% {
+    transform: rotate(-22deg);
+  }
+  25% {
+    transform: rotate(-4deg);
+  }
+  50% {
+    transform: rotate(18deg);
+  }
+  75% {
+    transform: rotate(4deg);
+  }
+}
+
+@keyframes ld-flap {
+  0% {
+    transform: rotate(0deg);
+  }
+  33% {
+    transform: rotate(-14deg);
+  }
+  66% {
+    transform: rotate(6deg);
+  }
+}
+
+@keyframes ld-head {
+  0%,
+  50% {
+    transform: rotate(0deg);
+  }
+  25%,
+  75% {
+    transform: rotate(-3deg);
+  }
+}
+
+/* The fedora pops off his head when he trips, and he slaps it back on */
+@keyframes ld-hat {
+  0% {
+    transform: none;
+  }
+  61% {
+    transform: translate(-6px, -16px) rotate(-24deg);
+  }
+  64% {
+    transform: translate(-2px, -22px) rotate(-10deg);
+  }
+  66% {
+    transform: translate(0, -6px) rotate(-4deg);
+  }
+  68%,
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes ml-done-pop {
+  0% {
+    transform: rotate(-2deg) scale(1);
+  }
+  50% {
+    transform: rotate(-4deg) scale(1.12);
+  }
+  100% {
+    transform: rotate(-2deg) scale(1.04);
+  }
+}
+
+@keyframes ml-out {
+  to {
+    opacity: 0;
+    transform: scale(1.04);
+    visibility: hidden;
+  }
+}
+
+/* ---- Reduced motion: no running. The detective stands at the tip of the fill. ---- */
+@media (prefers-reduced-motion: reduce) {
+  .map-loader__path {
+    animation: none;
+    transform: translateX(calc(var(--p, 0) * 100%));
+  }
+
+  .map-loader__runner,
+  .map-loader__face,
+  .map-loader__body,
+  .ld g,
+  .map-loader__fill,
+  .map-loader--done .map-loader__title {
+    animation: none;
+  }
+
+  .map-loader__fill {
+    transition: none;
+  }
+
+  .map-loader__fx {
+    display: none;
+  }
+
+  .map-loader--done {
+    animation: ml-out 0.01s linear 0.44s forwards;
+  }
+}
