@@ -48,7 +48,8 @@ class Series:
     values: list[float | None]  # same length as dates; None = gap
 ```
 Rules: always monthly, always sorted, gaps are `None` (never NaN or fill codes -999 / -9999 / -99999).
-Constructors: `load_csv(path, ...)` (columns `date,value`) and `from_start_month(start_month, values, ...)` (Supabase export shape).
+Constructor: `from_start_month(start_month, values, *, place, lat, lon, variable, units, dataset)` (Supabase export shape).
+Later, only if needed: `load_csv(path, ...)` (columns `date,value`). Rule agreed for daily input: a month with data on fewer than half of its days becomes `None`.
 
 ## Interface 2 — `analyze_trend` (Ivan, `pipeline/trend.py`)
 ```python
@@ -80,7 +81,7 @@ Before starting, ask the human which person they are (Ivan or Diego) and which b
 |---|---|---|---|---|
 | 0 | Ivan + Diego | `ivan_dev` / `diego_dev` | This README (v2) and `pipeline/__init__.py` | Both agree and have it on their branch |
 | 1 | Ivan | `ivan_dev` | `analyze_trend` in `trend.py` with the database method above | `pytest pipeline/tests` passes with synthetic tests (known trend, negative trend, seasonal no-trend, white-noise false-positive rate, autocorrelated no-trend, gaps, < 120 months, bad input) |
-| 1 | Diego | `diego_dev` | `Series`, `Series.validate()`, `load_csv()` and `from_start_month()` (fill codes and empty cells to `None`; missing months inserted as `None`; daily averaged to monthly) | Tests pass for gaps, fill codes, missing months, daily input, unsorted/duplicated/malformed dates |
+| 1 | Diego | `diego_dev` | `Series`, `Series.validate()` and `from_start_month()` (fill codes, NaN and infinity to `None`; non-numbers rejected). `load_csv()` postponed: only needed if a CSV source appears | Tests pass for gaps, fill codes, NaN, malformed start month, unsorted/duplicated/missing dates, bad metadata |
 | 2 | Ivan | `ivan_dev` | Robustness: optional annual-mean trend, warning when the series has many gaps | New tests pass, old ones still pass |
 | 2 | Diego | `diego_dev` | `build_case` + `write_case` + `trend_from_db`, using the stub `analyze_trend` until block 1 of Ivan is merged | Output passes `./scripts/check.sh` (contract validator) |
 | 3 | Ivan + Diego (humans, cross) | — | Each human writes 2-3 tests of the other's code in `tests/stats/` (agents never edit this folder) | They pass, or a bug line goes to the owner |
