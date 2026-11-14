@@ -1,0 +1,83 @@
+/* Almeria-Murcia level: shuffle rounds and dot histogram. Only --lvl-* variables from ../theme.css. */
+.lva-round {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.lva-round__title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: var(--lvl-ink);
+}
+
+.lva-hist {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: var(--lvl-paper);
+  border: var(--lvl-border-panel);
+  border-radius: var(--lvl-radius-panel);
+}
+
+.lva-hist__base {
+  stroke: var(--lvl-dark);
+  stroke-width: 1.2;
+}
+
+.lva-hist__tickline {
+  stroke: var(--lvl-divider);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+}
+
+.lva-hist__zero {
+  stroke: var(--lvl-dark);
+  stroke-width: 1.2;
+}
+
+.lva-hist__tick {
+  font: 11px var(--lvl-font);
+  fill: var(--lvl-text-soft);
+}
+
+.lva-hist__dot {
+  fill: var(--lvl-sea-light);
+  stroke: var(--lvl-sea-dark);
+  stroke-width: 1;
+  animation: lva-drop 0.25s ease-out;
+}
+
+/* Shuffles at least as steep as the real slope */
+.lva-hist__dot--steep {
+  fill: var(--lvl-gold);
+  stroke: var(--lvl-dark);
+}
+
+.lva-hist__real line {
+  stroke: var(--lvl-red);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.lva-hist__real text {
+  font: 700 13px var(--lvl-font);
+  fill: var(--lvl-red);
+  paint-order: stroke;
+  stroke: var(--lvl-paper);
+  stroke-width: 3;
+}
+
+@keyframes lva-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lva-hist__dot {
+    animation: none;
+  }
+}
