@@ -31,6 +31,8 @@ import { bendRiversAround, prepareRivers } from './map/rivers'
 import { createRivers } from './scene/createRivers'
 import { loadRoads, roadsInBounds } from './roads/roadData'
 import { createRoads } from './roads/createRoads'
+import { createCaseMarkers } from './cases/createCaseMarkers'
+import { CASES } from '../levels/data'
 import type { GameStatus, GameViewProps, HudState } from '../shared/events'
 import './GameView.css'
 
@@ -124,6 +126,10 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
         scene.add(clouds.mesh)
 
         landmarks.place(main.heightAt) // on their flattened plazas (the detective can climb them, like houses)
+        // Featured cases: a floating "!" over each one (prototype, no interaction yet)
+        const caseMarkers = createCaseMarkers(CASES)
+        caseMarkers.place(main.heightAt)
+        scene.add(caseMarkers.group)
 
         // Pueblos y ciudades: casitas en las poblaciones reales. Cada punto se consulta en la
         // zona (Península o Canarias) que lo contiene
@@ -178,7 +184,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
         const keyboard = createKeyboard()
         const chase = createChaseCamera(camera, renderer.domElement)
         // Solo en desarrollo: acceso desde la consola/Playwright para depurar
-        if (import.meta.env.DEV) Object.assign(window, { __game: { carState, camera, chase, ground, detective, renderer, scene, towns, houses, scenery, sceneryItems, landmarks, main } })
+        if (import.meta.env.DEV) Object.assign(window, { __game: { carState, camera, chase, ground, detective, renderer, scene, towns, houses, scenery, sceneryItems, landmarks, caseMarkers, main } })
 
         const fog = scene.fog as THREE.Fog
         const ink = createInkOutline(renderer) // contornos negros de cómic
@@ -233,6 +239,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
             callbacks.current.onLensFocus?.('out')
           }
           clouds.update(dt)
+          caseMarkers.update(dt)
           for (const z of zones) {
             z.water.update(dt)
             z.roads.update(dt)
@@ -281,6 +288,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, focusLens = fal
           sky.dispose()
           lighting.dispose()
           clouds.dispose()
+          caseMarkers.dispose()
           ink.dispose()
           dispose()
         }
