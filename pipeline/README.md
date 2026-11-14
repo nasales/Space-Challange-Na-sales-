@@ -6,7 +6,7 @@ Change it only after telling the other person. Code follows this file, not the o
 > **v2 (2026-11-14, Diego):** adjusted to the dataset chosen by the database owner
 > (`docs/Estadística qué datos vais a ver.md`). Changes: data source section, trend method aligned
 > with the database, minimum 120 months, Diego's adapter now reads the Supabase JSON export,
-> all work on branches `dev_Diego` / `ivan_dev`, open decisions listed at the end.
+> all work on branches `diego_dev` / `ivan_dev`, open decisions listed at the end.
 
 ## Data source (from the database owner)
 - Grid of ~1180 land cells of 0.25° over Spain (plus Portugal, Andorra, south of France, north of Morocco/Algeria).
@@ -78,15 +78,15 @@ Before starting, ask the human which person they are (Ivan or Diego) and which b
 
 | # | Owner | Branch | Block | Done when |
 |---|---|---|---|---|
-| 0 | Ivan + Diego | `ivan_dev` / `dev_Diego` | This README (v2) and `pipeline/__init__.py` | Both agree and have it on their branch |
+| 0 | Ivan + Diego | `ivan_dev` / `diego_dev` | This README (v2) and `pipeline/__init__.py` | Both agree and have it on their branch |
 | 1 | Ivan | `ivan_dev` | `analyze_trend` in `trend.py` with the database method above | `pytest pipeline/tests` passes with synthetic tests (known trend, negative trend, seasonal no-trend, white-noise false-positive rate, autocorrelated no-trend, gaps, < 120 months, bad input) |
-| 1 | Diego | `dev_Diego` | `Series`, `Series.validate()`, `load_csv()` and `from_start_month()` (fill codes and empty cells to `None`; missing months inserted as `None`; daily averaged to monthly) | Tests pass for gaps, fill codes, missing months, daily input, unsorted/duplicated/malformed dates |
+| 1 | Diego | `diego_dev` | `Series`, `Series.validate()`, `load_csv()` and `from_start_month()` (fill codes and empty cells to `None`; missing months inserted as `None`; daily averaged to monthly) | Tests pass for gaps, fill codes, missing months, daily input, unsorted/duplicated/malformed dates |
 | 2 | Ivan | `ivan_dev` | Robustness: optional annual-mean trend, warning when the series has many gaps | New tests pass, old ones still pass |
-| 2 | Diego | `dev_Diego` | `build_case` + `write_case` + `trend_from_db`, using the stub `analyze_trend` until block 1 of Ivan is merged | Output passes `./scripts/check.sh` (contract validator) |
+| 2 | Diego | `diego_dev` | `build_case` + `write_case` + `trend_from_db`, using the stub `analyze_trend` until block 1 of Ivan is merged | Output passes `./scripts/check.sh` (contract validator) |
 | 3 | Ivan + Diego (humans, cross) | — | Each human writes 2-3 tests of the other's code in `tests/stats/` (agents never edit this folder) | They pass, or a bug line goes to the owner |
-| 4 | Diego | `dev_Diego` | Adapter `pipeline/sources/supabase_export.py`: reads the JSON export (`series` + `trends`) into `Series` + trend dict | Returns a valid `Series` for the cell nearest to Salamanca |
+| 4 | Diego | `diego_dev` | Adapter `pipeline/sources/supabase_export.py`: reads the JSON export (`series` + `trends`) into `Series` + trend dict | Returns a valid `Series` for the cell nearest to Salamanca |
 | 4 | Ivan | `ivan_dev` | `explain(trend, series) -> str` in `explain.py`: plain-English facts for the AI checker | Correct text for one significant and one non-significant case |
-| 5 | Diego | `dev_Diego` | Featured cases in `data/cache/`, at least one non-significant | `./scripts/check.sh` passes |
+| 5 | Diego | `diego_dev` | Featured cases in `data/cache/`, at least one non-significant | `./scripts/check.sh` passes |
 | 5 | Ivan | `ivan_dev` | (a) Run `analyze_trend` on the featured cases and compare with the database `trends` rows (slope, p-value, significant). (b) Compare one featured case with Giovanni (direction and rough size) | Differences noted in the SYNC CHECK report; any mismatch in `significant` goes as a bug line |
 
 ## Integration
