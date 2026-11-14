@@ -1,0 +1,254 @@
+{
+  "case_id": "donana",
+  "title": "Doñana wetlands",
+  "place": "Doñana",
+  "intro": {
+    "headline": "2023: the largest lagoon in Doñana runs dry",
+    "paragraphs": [
+      "Doñana National Park lies in southwest Spain, where the Guadalquivir river meets the Atlantic. Its marshes and lagoons are among the most important wetlands in Europe, a resting place for millions of migrating birds, and a UNESCO World Heritage Site.",
+      "In 2023 Santa Olalla, the largest permanent lagoon in Doñana, dried up completely. Spain was in a long drought. At the same time, a large aquifer (water stored underground) lies below the park, and around it many farms pump groundwater to irrigate their crops. Scientists have warned for years that it is overexploited.",
+      "So who took the water? In this case file you will put two clues side by side, rain and soil moisture, even though they are measured in different units. Then you decide what the data can and cannot say."
+    ],
+    "question": "Doñana is running out of water. Is it the rain, or something the satellites cannot see?"
+  },
+  "steps": [
+    {
+      "id": "soil_series",
+      "title": "Clue 1: water in the soil",
+      "text": "This time series shows soil moisture: how much water is held in the top 10 cm of soil near Doñana, one point per month from January 2000 to July 2026. It is measured in kilograms of water per square metre (kg/m²), about the same as millimetres of water. Like rain or temperature, it follows a yearly cycle that repeats. Data: NASA GLDAS (a model fed by satellite and ground observations).",
+      "chart": {
+        "variable": "SOILM",
+        "view": "monthly"
+      },
+      "question": {
+        "prompt": "When is the soil usually at its driest each year?",
+        "options": [
+          {
+            "text": "In summer",
+            "correct": true,
+            "feedback": "Right: every summer the line drops to its lowest values."
+          },
+          {
+            "text": "In winter",
+            "correct": false,
+            "feedback": "Look at the dips in the line. Follow the time axis: do the lowest points fall around January or around July?"
+          },
+          {
+            "text": "There is no yearly pattern",
+            "correct": false,
+            "feedback": "Look at the shape of the line: it goes up and down once every year, like a wave. That repeating wave is the yearly cycle."
+          }
+        ]
+      },
+      "takeaway": "Soil moisture has its own yearly cycle: wet in winter, very dry in summer."
+    },
+    {
+      "id": "rain_units",
+      "title": "Clue 2: a different unit",
+      "text": "This is the second clue: rain near Doñana, one point per month from January 1998 to September 2025, as the average rain per day in millimetres per day (mm/day). The marked point, December 2009, is the wettest month in this record. Data: NASA GPM IMERG. Now the problem: soil is in kg/m², rain is in mm/day. Is a jump of 2 mm/day of rain bigger or smaller than a drop of 2 kg/m² of soil water? There is no fair way to say.",
+      "chart": {
+        "variable": "PRECIP",
+        "view": "monthly",
+        "highlight_max": true
+      },
+      "question": {
+        "prompt": "Why can we not simply draw this rain line and the soil line on the same axis?",
+        "options": [
+          {
+            "text": "They are measured in different units",
+            "correct": true,
+            "feedback": "Exactly: mm/day and kg/m² are different things, so the numbers cannot be compared directly."
+          },
+          {
+            "text": "The rain record has no data",
+            "correct": false,
+            "feedback": "Look at the chart: there is a point for almost every month. The problem is not missing data. Check the label on the vertical axis."
+          },
+          {
+            "text": "Rain is always bigger than soil moisture",
+            "correct": false,
+            "feedback": "Compare the numbers on the vertical axis of this chart and of the soil chart. They are not even the same kind of number. What is written next to them?"
+          }
+        ]
+      },
+      "takeaway": "Two clues in different units cannot be compared just by putting their numbers side by side."
+    },
+    {
+      "id": "how_unusual",
+      "title": "How unusual was this month?",
+      "text": "First, remove the yearly cycle: each month minus its normal value is the anomaly. Then measure it with a ruler that fits each clue. The standard deviation is the typical size of the ups and downs: about 1.5 kg/m² for soil, about 1.6 mm/day for rain. Dividing an anomaly by it says \"how unusual\", with no units. The marked month, April 2023, is the lowest: about 5.5 kg/m² below a normal April.",
+      "chart": {
+        "variable": "SOILM",
+        "view": "anomaly",
+        "highlights": [
+          { "kind": "point", "date": "2023-04", "label": "April 2023" }
+        ]
+      },
+      "question": {
+        "prompt": "The typical swing is about 1.5 kg/m². How unusual was April 2023, about 5.5 kg/m² below normal?",
+        "options": [
+          {
+            "text": "Very unusual: more than 3 standard deviations below normal",
+            "correct": true,
+            "feedback": "Yes: 5.5 divided by 1.5 is about 3.7 typical swings below normal."
+          },
+          {
+            "text": "A normal month",
+            "correct": false,
+            "feedback": "Find the marked point. Is it close to the zero line, or is it the lowest point on the chart?"
+          },
+          {
+            "text": "Wetter than normal",
+            "correct": false,
+            "feedback": "Points above zero were wetter than normal, points below zero were drier. Which side of the zero line is April 2023 on?"
+          }
+        ]
+      },
+      "takeaway": "Dividing an anomaly by the standard deviation turns any unit into \"how unusual\"."
+    },
+    {
+      "id": "one_scale",
+      "title": "Two clues on one scale",
+      "text": "Here both clues are expressed as \"how unusual\", so they share one axis. To hide the jumps from month to month, each point is the average of the 12 months around it (a running mean). Zero means normal. In the 2005 drought both lines fall below zero; around 2010 both rise above it. Moving together does not prove that one causes the other, but here it makes sense: rain wets the soil.",
+      "chart": {
+        "variable": "SOILM",
+        "view": "zscore_pair",
+        "variables": ["SOILM", "PRECIP"],
+        "highlights": [
+          { "kind": "point", "date": "2005-03", "label": "Dry 2005" },
+          { "kind": "point", "date": "2010-07", "label": "Wet 2010" }
+        ]
+      },
+      "question": {
+        "prompt": "What do the two lines do around 2010?",
+        "options": [
+          {
+            "text": "Both rise above zero: wetter than usual",
+            "correct": true,
+            "feedback": "Correct: in 2010 rain and soil were both unusually wet."
+          },
+          {
+            "text": "Both fall below zero",
+            "correct": false,
+            "feedback": "That happens around 2005. Move to the 2010 label: are the two lines above or below the zero line?"
+          },
+          {
+            "text": "One goes up and the other goes down",
+            "correct": false,
+            "feedback": "Look closely at both lines near the 2010 label. Do they go in opposite directions, or the same one?"
+          }
+        ]
+      },
+      "takeaway": "On one scale, you can see when two clues move together."
+    },
+    {
+      "id": "parting_ways",
+      "title": "When the clues part ways",
+      "text": "Zoom in on the last ten years. In the 2021-2023 drought both lines are below zero, but not by the same amount: in 2022 the soil line sinks to about -0.9, while the rain line stays above -0.5. The soil was more unusual than the rain. So the rain alone may not explain all of it; soil also loses water to the air, for example in hot years. These two lines cannot tell us which.",
+      "chart": {
+        "variable": "SOILM",
+        "view": "zscore_pair",
+        "variables": ["SOILM", "PRECIP"],
+        "range": ["2016-01", "2026-07"],
+        "highlights": [
+          { "kind": "band", "from": "2021-01", "to": "2023-12", "label": "2021-2023 drought" }
+        ]
+      },
+      "question": {
+        "prompt": "In 2022, which line is further below zero?",
+        "options": [
+          {
+            "text": "Soil moisture",
+            "correct": true,
+            "feedback": "Right: in 2022 the soil was more unusually dry than the rain."
+          },
+          {
+            "text": "Rain",
+            "correct": false,
+            "feedback": "Inside the shaded band, find 2022 and compare the lowest point of each line. Which one goes deeper?"
+          },
+          {
+            "text": "Both are exactly the same",
+            "correct": false,
+            "feedback": "Look inside the shaded band: there is a gap between the two lines in 2022. Which one is lower?"
+          }
+        ]
+      },
+      "takeaway": "When two clues part ways, something else may be involved; the chart tells you to look, not what to blame."
+    },
+    {
+      "id": "borderline",
+      "title": "Right on the edge",
+      "text": "The soil trend is about -0.29 kg/m² every 10 years, about -0.8 over the whole record. Its p-value is 0.0498: just under the usual 0.05 limit, so it counts as significant, barely. The 95% confidence range, -0.059 to +0.0002 kg/m² per year, almost touches zero. Here the two checks sit right on the edge: there is a sign of drying, but the evidence is weak.",
+      "chart": {
+        "variable": "SOILM",
+        "view": "annual",
+        "show_trend": true
+      },
+      "question": {
+        "prompt": "How should a careful detective report this soil trend?",
+        "options": [
+          {
+            "text": "A sign of drying, but weak evidence: p is just under 0.05 and the range almost reaches zero",
+            "correct": true,
+            "feedback": "Well done: borderline evidence is reported with care."
+          },
+          {
+            "text": "Proof that the soil is drying fast",
+            "correct": false,
+            "feedback": "Look at the trend line: it falls only a little compared with the jumps between years. And p = 0.0498 is only just below 0.05. Is that strong proof?"
+          },
+          {
+            "text": "No change at all",
+            "correct": false,
+            "feedback": "Follow the trend line from left to right: it does slope down, and p is below 0.05. Weak evidence is not the same as no evidence."
+          }
+        ]
+      },
+      "takeaway": "When p sits right at 0.05, say \"a weak sign\", never \"proof\"."
+    },
+    {
+      "id": "cannot_see",
+      "title": "What the data cannot see",
+      "text": "The rain trend is about -0.05 mm/day every 10 years, with p = 0.44: no clear change. Its 95% range, -0.025 to +0.008 mm/day per year, includes zero. And the aquifer? Groundwater lies far below the top 10 cm of soil, and pumping is not in either record. These charts cannot test how much water the farms take. A detective says what the evidence shows, and also what it cannot see.",
+      "chart": {
+        "variable": "PRECIP",
+        "view": "annual",
+        "show_trend": true
+      },
+      "question": {
+        "prompt": "Which of these do the charts in this case file actually measure?",
+        "options": [
+          {
+            "text": "Rain, and water in the top 10 cm of soil",
+            "correct": true,
+            "feedback": "Correct: the aquifer and the pumping are not in these data."
+          },
+          {
+            "text": "Water pumped from the aquifer",
+            "correct": false,
+            "feedback": "Read the axis labels of the charts you have seen: mm/day of rain and kg/m² of soil water. Is pumping one of them?"
+          },
+          {
+            "text": "The water level of Santa Olalla lagoon",
+            "correct": false,
+            "feedback": "The intro talks about the lagoon, but no chart shows it. Check the axis labels: what do they measure?"
+          }
+        ]
+      },
+      "takeaway": "Data can only answer questions about what it measures; the aquifer is invisible here."
+    }
+  ],
+  "conclusion": {
+    "prompt": "Doñana is running out of water. Is it the rain, or something the satellites cannot see? Write your conclusion using what the charts showed you, and say how sure you are.",
+    "variable": "SOILM",
+    "placeholder": "Looking at soil moisture and rain near Doñana, I think..."
+  },
+  "reveal": {
+    "by_variable": {
+      "SOILM": "Soil moisture in the top 10 cm near Doñana (January 2000 to July 2026) shows a small decline: about -0.29 kg/m² per decade, p = 0.0498. That is just significant at the 5% level, but the 95% confidence range (-0.059 to +0.0002 kg/m² per year) almost reaches zero, so the evidence is weak.",
+      "PRECIP": "Rain near Doñana (January 1998 to September 2025) shows no significant trend: about -0.05 mm/day per decade, p = 0.44, and the 95% confidence range (-0.025 to +0.008 mm/day per year) includes zero."
+    },
+    "lesson": "Expressing each month as \"how unusual\" (in standard deviations) lets you compare clues with different units. Here the soil shows a weak sign of drying that the rain does not show, so something besides rain may be involved, but these data cannot say what. The aquifer and the pumping are not measured by these satellite and model records: to test that idea you would need groundwater data. Moving together, or apart, is not proof of a cause, and borderline evidence must be said with care."
+  }
+}
