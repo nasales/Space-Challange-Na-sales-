@@ -44,6 +44,18 @@ const SWEEP_SPEED = 1.4
 const DETECTIVE_SHADOW = 0.55
 const GLASS = 0xbdf3ff
 const WOOD = 0x7a4a2c
+/** Radius of the lens glass disc in model units (times DETECTIVE_SCALE in the world). */
+const GLASS_RADIUS = 0.19
+// Lens focus pose (model units / radians): right arm raised forward and a bit out, the handle
+// turned up so the glass sits above the hand, clear of the arm and of the head
+const FOCUS_ARM_X = 1.35 // arm forward, a little below horizontal
+const FOCUS_ARM_Z = 0.3 // and a little out to the right
+/**
+ * Direction the glass faces in the focus pose, in the detective's frame (he looks towards -Z):
+ * back, up and to the right, so the camera ends up beside his right ear, looking forward and
+ * down through the lens. Neither the head nor the arm is on that line of sight.
+ */
+const FOCUS_NORMAL = new THREE.Vector3(0.35, 0.35, 1).normalize()
 
 export function createDetective() {
   const materials = new Map<number, THREE.Material>()
@@ -139,7 +151,7 @@ export function createDetective() {
   add(lupa, new THREE.CylinderGeometry(0.04, 0.05, 0.36, 8), WOOD, 0, -0.16, 0) // mango
   const lens = pivot(lupa, 0, -0.5, 0)
   add(lens, new THREE.TorusGeometry(0.2, 0.045, 8, 20), GOLD)
-  add(lens, new THREE.CylinderGeometry(0.19, 0.19, 0.03, 20).rotateX(Math.PI / 2), GLASS)
+  add(lens, new THREE.CylinderGeometry(GLASS_RADIUS, GLASS_RADIUS, 0.03, 20).rotateX(Math.PI / 2), GLASS)
 
   // ---- Cabeza grande con nariz, ojos y cejas serias ----
   const head = pivot(body, 0, SHOULDER + 0.05, 0)
@@ -180,7 +192,20 @@ export function createDetective() {
   let hatLift = 0, hatVel = 0
   let stillTime = 0 // segundos que lleva parado
   let inspect = 0 // 0 = lupa guardada, 1 = investigando
+  let focus = 0 // 0 = normal, 1 = lens held up facing the camera (driven by the camera flight)
   const lensWorld = new THREE.Vector3()
+  const lensNormalWorld = new THREE.Vector3()
+  const lensScale = new THREE.Vector3()
+  // Scratch objects for orienting the glass
+  const wantNormal = new THREE.Vector3()
+  const axisX = new THREE.Vector3()
+  const axisY = new THREE.Vector3()
+  const basis = new THREE.Matrix4()
+  const wantWorld = new THREE.Quaternion()
+  const parentWorld = new THREE.Quaternion()
+  const wantLocal = new THREE.Quaternion()
+  const IDENTITY = new THREE.Quaternion()
+  const UP = new THREE.Vector3(0, 1, 0)
   const clamp = (v: number, m: number) => Math.max(-m, Math.min(m, v))
 
   /** Coloca el personaje según la física y anima la carrera. */
@@ -227,10 +252,11 @@ export function createDetective() {
     }
 
     // Parado: respira y mira a los lados de vez en cuando (como buscando pistas)
+    // (no breathing while holding the lens up: the camera is framed on the glass)
     const idle = 1 - run
     head.rotation.y = idle * Math.sin(time * 0.8) * Math.max(0, Math.sin(time * 0.31)) * 0.7
     head.rotation.x = idle * Math.sin(time * 1.7) * 0.04 - sprint * 0.1
-    body.scale.y = 1 + idle * Math.sin(time * 2.2) * 0.015
+    body.scale.y = 1 + idle * Math.sin(time * 2.2) * 0.015 * (1 - focus)
 
     // ---- Investigar: tras un instante parado, saca la lupa y barre la zona con ella ----
     stillTime = speed < STILL_SPEED ? stillTime + dt : 0
@@ -238,9 +264,9 @@ export function createDetective() {
     // Sale con calma y se guarda deprisa (en cuanto echa a correr)
     inspect += (wantInspect - inspect) * (1 - Math.exp(-(wantInspect ? 5 : 14) * dt))
     if (inspect > 0.001) {
-      const sweep = Math.sin(time * SWEEP_SPEED) // -1..1: de un lado a otro
+      const sweep = Math.sin(time * SWEEP_SPEED) * (1 - focus) // -1..1: de un lado a otro (stops while focusing)
       const mix = (a: number, b: number) => a + (b - a) * inspect
-      arms[1].rotation.x = mix(arms[1].rotation.x, 1.05 + Math.sin(time * 2.3) * 0.06) // brazo hacia delante y abajo
+      arms[1].rotation.x = mix(arms[1].rotation.x, 1.05 + Math.sin(time * 2.3) * 0.06 * (1 - focus)) // brazo hacia delante y abajo
       arms[1].rotation.z = mix(arms[1].rotation.z, -0.15 + sweep * 0.4) // barrido lateral
       arms[0].rotation.x = mix(arms[0].rotation.x, -0.25) // la otra mano, a la espalda
       arms[0].rotation.z = mix(arms[0].rotation.z, 0.25)
@@ -248,6 +274,16 @@ export function createDetective() {
       head.rotation.x = mix(head.rotation.x, -0.35)
       head.rotation.y = mix(head.rotation.y, -sweep * 0.35) // la cabeza sigue a la lupa
     }
+
+    // ---- Lens focus: raise the lens in front of the right shoulder, glass facing the camera ----
+    const fmix = (a: number, b: number) => a + (b - a) * focus
+    arms[1].rotation.x = fmix(arms[1].rotation.x, FOCUS_ARM_X)
+    arms[1].rotation.z = fmix(arms[1].rotation.z, FOCUS_ARM_Z)
+    lupa.rotation.x = fmix(0, Math.PI - FOCUS_ARM_X) // handle points up from the hand: lens above it
+    body.rotation.x = fmix(body.rotation.x, -0.04)
+    body.rotation.z = fmix(body.rotation.z, 0)
+    head.rotation.x = fmix(head.rotation.x, -0.12)
+    head.rotation.y = fmix(head.rotation.y, -0.45) // looks at the lens
 
     // Sombrero: muelle que lo levanta al esprintar y lo hace botar en cada paso
     const target = sprint * 0.3 + Math.abs(Math.sin(phase)) * 0.06 * run
@@ -260,6 +296,21 @@ export function createDetective() {
     const sq = squash.update(s, dt)
     body.scale.x = body.scale.z = 1 + sq * 0.5
     body.scale.y *= 1 - sq
+
+    // Glass orientation: from its rest pose, turn it so its normal (local +Z) points along
+    // FOCUS_NORMAL (in the detective's frame), with its up as close to world up as possible
+    if (focus > 0) {
+      root.updateMatrixWorld(true)
+      wantNormal.copy(FOCUS_NORMAL).applyAxisAngle(UP, root.rotation.y)
+      axisX.crossVectors(UP, wantNormal).normalize()
+      axisY.crossVectors(wantNormal, axisX)
+      wantWorld.setFromRotationMatrix(basis.makeBasis(axisX, axisY, wantNormal))
+      lens.parent!.getWorldQuaternion(parentWorld)
+      wantLocal.copy(parentWorld).invert().multiply(wantWorld)
+      lens.quaternion.slerpQuaternions(IDENTITY, wantLocal, focus)
+    } else {
+      lens.quaternion.identity()
+    }
   }
 
   return {
@@ -273,9 +324,21 @@ export function createDetective() {
     get inspect() {
       return inspect
     },
-    /** Posición en el mundo del cristal de la lupa (para el círculo de lupa del suelo). */
+    /** 0..1: how far the lens is raised to face the camera (set it before update, every frame). */
+    setFocus(f: number) {
+      focus = Math.max(0, Math.min(1, f))
+    },
+    /** World position of the centre of the lens glass. */
     lensPosition() {
       return lens.getWorldPosition(lensWorld)
+    },
+    /** World-space normal of the lens glass (its local +Z: towards the chase camera at rest and in the focus pose). */
+    lensNormal() {
+      return lens.getWorldDirection(lensNormalWorld)
+    },
+    /** World radius of the lens glass disc (model radius times the world scale, DETECTIVE_SCALE). */
+    lensRadius() {
+      return GLASS_RADIUS * lens.getWorldScale(lensScale).x
     },
     dispose: () => {
       geometries.forEach((g) => g.dispose())
