@@ -65,42 +65,34 @@ test('the detective moves and the speedometer reacts', async ({ page }) => {
   await page.screenshot({ path: 'test-results/demo-moving.png' })
 })
 
-// PROTOTYPE variable menu (src/ui/probe/): replace this test when the magnifying glass is ready.
-test('Space opens the variable menu with the data of the current point', async ({ page }) => {
+// Magnifier variable picker (src/ui/magnifier/): stopped -> Space -> lens with six clues -> Esc.
+test('Space while stopped opens the magnifier with the six variables', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(err.message))
 
   await startGame(page)
   await expect(page.locator('.location-panel')).toBeVisible({ timeout: 30_000 })
 
-  await page.keyboard.press('Space')
-  const menu = page.getByRole('dialog', { name: 'Investigate this place' })
-  await expect(menu).toBeVisible()
+  // The detective takes the magnifier out after standing still for a moment; Space only works then
+  // (retry Space until the picker starts; then wait for the camera flight, slow in a headless browser)
+  await expect(async () => {
+    await page.keyboard.press('Space')
+    await expect(page.locator('.variable-picker')).toBeAttached({ timeout: 1_500 })
+  }).toPass({ timeout: 20_000 })
+  const lens = page.locator('.variable-picker__lens[role="dialog"]')
+  await expect(lens).toBeVisible({ timeout: 30_000 })
 
-  // Either the six variables of the point, or a clear message (no database in this build / sea)
-  const vars = menu.locator('.point-probe__var')
-  await expect(vars.first().or(menu.locator('.point-probe__msg').filter({ hasNotText: 'Gathering' }))).toBeVisible({
-    timeout: 15_000,
-  })
+  await expect(lens.locator('button.clue')).toHaveCount(6)
+  await page.waitForTimeout(800) // camera flight and clue animation
+  await page.screenshot({ path: 'test-results/magnifier-open.png' })
 
-  if ((await vars.count()) > 0) {
-    await expect(vars).toHaveCount(6)
-    await menu.locator('.point-probe__var:not([disabled])').first().click()
-    // Chart without the conclusion; the result only after asking for it
-    await expect(menu.locator('.point-probe__chart path.point-probe__line')).toBeVisible()
-    await expect(menu.locator('.point-probe__result')).toHaveCount(0)
-    await menu.getByRole('button', { name: 'Show the statistical result' }).click()
-    await expect(menu.locator('.point-probe__result')).toContainText(/p [=<]/)
-    await page.screenshot({ path: 'test-results/probe-result.png' })
-  }
-
-  // While the menu is open the car does not move
+  // While the lens is up the car does not move
   await page.keyboard.down('w')
   await page.waitForTimeout(500)
   await page.keyboard.up('w')
   await expect(page.locator('.speedometer__value')).toHaveText('0')
 
   await page.keyboard.press('Escape')
-  await expect(menu).toBeHidden()
+  await expect(lens).toBeHidden({ timeout: 5_000 })
   expect(errors, `Page errors:\n${errors.join('\n')}`).toEqual([])
 })

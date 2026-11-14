@@ -306,6 +306,7 @@ export function createLandmarks(list: LandmarkData[]) {
         lon: p.data.lon,
         lat: p.data.lat,
         radiusKm: (Math.hypot(p.halfW, p.halfD) + marginUnits) / UNITS_PER_KM,
+        innerKm: Math.hypot(p.halfW, p.halfD) / UNITS_PER_KM,
       }))
     },
 
