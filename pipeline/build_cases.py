@@ -306,6 +306,10 @@ def main(argv: list[str] | None = None) -> int:
                 print()
     write_index()
     print(f"Index: {INDEX_PATH.relative_to(ROOT).as_posix()}")
+    from pipeline.featured_doc import DOC_PATH, write_doc  # imports this module: keep it local
+
+    write_doc()
+    print(f"Case list: {DOC_PATH.relative_to(ROOT).as_posix()}")
     return 0
 
 
