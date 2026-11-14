@@ -36,6 +36,18 @@ CASES = [
      "lat": 37.30, "lon": -1.90, "variables": ["PRECTOTCORR", "GWETTOP"],
      "question": "Is south-east Spain becoming even drier?",
      "context": "The south-east is the driest part of mainland Europe, home to the Tabernas desert and thousands of hectares of greenhouses."},
+    {"id": "cordoba_heat", "title": "Córdoba heat", "place": "Córdoba",
+     "lat": 37.88, "lon": -4.78, "variables": ["T2M"],
+     "question": "Córdoba keeps breaking heat records. Is every summer really hotter, or were those just bad years?",
+     "context": "In August 2021 the Córdoba area reached about 47 °C, the highest temperature ever officially recorded in Spain."},
+    {"id": "aneto_glacier", "title": "Aneto glacier", "place": "Aneto (Pyrenees)",
+     "lat": 42.63, "lon": 0.66, "variables": ["T2M", "PRECTOTCORR"],
+     "question": "The largest glacier in the Pyrenees is shrinking. Is it the heat, or less snow and rain?",
+     "context": "The Aneto glacier has lost most of its ice since the 1980s, and scientists expect it to disappear within a few decades."},
+    {"id": "daimiel", "title": "Tablas de Daimiel", "place": "Tablas de Daimiel",
+     "lat": 39.13, "lon": -3.70, "variables": ["GWETTOP", "PRECTOTCORR"],
+     "question": "The Tablas de Daimiel wetland keeps drying out. Is the sky sending less water?",
+     "context": "In 2009 the Tablas de Daimiel almost dried up completely, and the peat under the wetland caught fire."},
 ]
 
 

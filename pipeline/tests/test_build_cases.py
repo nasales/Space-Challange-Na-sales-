@@ -64,3 +64,12 @@ def test_cases_index(tmp_path):
         assert all((ROOT / f).exists() for f in entry["files"])  # the committed case files
     assert index[0]["files"] == ["data/cache/case_dana_valencia_PRECTOTCORR.json",
                                  "data/cache/case_dana_valencia_T2M.json"]
+
+
+def test_featured_cases_cover_the_brief():
+    """README v4: about 10 featured cases, at least one non-significant (committed files)."""
+    assert len(CASES) == 10
+    assert len({c["id"] for c in CASES}) == 10
+    files = [ROOT / f for entry in build_index() for f in entry["files"]]
+    significant = [json.loads(f.read_text(encoding="utf-8"))["significant"] for f in files]
+    assert False in significant

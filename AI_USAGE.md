@@ -26,3 +26,4 @@ Every agent adds one line per task.
 | 2026-11-14 | Claude Code (Opus 5.5) | Data | nasa_power.py: display units (°C, fraction (0-1)); regenerated data/cache/case_*.json; AGENTS.md open request to Diego and Yeipi about the featured cases |
 | 2026-11-14 | Claude Code (Opus 5.5) | Team docs (Perry) | Clarified data work split in pipeline/README.md (v4, block 6: Diego generic analysis, Ivan featured cases) and AGENTS.md open requests |
 | 2026-11-14 | Claude Code (Opus 5.5) | Data | Featured cases: question and context in pipeline/cases.py (case texts: options drafted by AI, chosen and edited by Ivan); data/cases_index.json written by build_cases.py, with a test; AGENTS.md open request to Yeipi |
+| 2026-11-14 | Claude Code (Opus 5.5) | Data | 3 more featured cases (cordoba_heat, aneto_glacier, daimiel; texts by Ivan): NASA POWER raw files, 5 case files, cases_index.json (10 cases), test for 10 cases with at least one non-significant |
