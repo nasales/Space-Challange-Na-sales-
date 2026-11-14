@@ -21,7 +21,7 @@ result (trend slope + significance test such as Mann-Kendall).
 If you do not know which area you belong to, ask the human before doing anything.
 
 ## Hard rules (never break these)
-1. **Never commit or push to `main`.** Work on a branch named `<area>/<short-task>`. Only Person 4 merges to `main`.
+1. **Never commit or push directly to `main`.** Work on a branch named `<area>/<short-task>` and open a PR. Each person merges their own PR into `main`.
 2. **Only edit files inside your area's folders** (listed in your area file). For any other file, stop and ask.
 3. **Never edit `tests/stats/`.** Those tests are written by humans. If they fail, report it; do not change the test to make it pass.
 4. **Never change the data contract** (`docs/contract.md`) without explicit approval from Person 3 and Yeipi.

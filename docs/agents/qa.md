@@ -1,6 +1,6 @@
 # QA agent — supervised by Person 4 (integration owner)
 
-You do **not** build features. You test and review every change before Person 4 merges it into `main`.
+You do **not** build features. You test and review every change before its author merges it into `main`.
 
 ## For every pull request
 1. Check out the branch and run `./scripts/check.sh --e2e`.
