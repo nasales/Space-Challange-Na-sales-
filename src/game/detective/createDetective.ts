@@ -327,6 +327,9 @@ export function createDetective() {
     /** 0..1: how far the lens is raised to face the camera (set it before update, every frame). */
     setFocus(f: number) {
       focus = Math.max(0, Math.min(1, f))
+      // Once the camera is fully in, the UI glass lens (with its own brass bezel) takes the 3D
+      // lens's place: the 3D rim is wider than that bezel and would show inside and around it
+      lens.visible = focus < 1
     },
     /** World position of the centre of the lens glass. */
     lensPosition() {
