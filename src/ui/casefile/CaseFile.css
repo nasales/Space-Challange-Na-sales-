@@ -841,7 +841,7 @@
 /* ---- Dev preview helper ---- */
 .casefile-preview--list {
   min-height: 100dvh;
-  padding: 24px 16px;
+  padding: 64px 16px 24px;
   background: #fff8e7;
   color: #161b2e;
   font-family: var(--font-type, 'Courier Prime', 'Courier New', monospace);

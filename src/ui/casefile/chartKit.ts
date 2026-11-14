@@ -139,13 +139,12 @@ export function placeLabels(
       { tx: m.cx, ty: m.cy - 11, anchor: base },
       { tx: m.cx, ty: m.cy + 20, anchor: base },
     ]
-    if (sideways) {
-      cands.push({ tx: m.cx + 8, ty: m.cy + 4, anchor: 'start' }, { tx: m.cx - 8, ty: m.cy + 4, anchor: 'end' })
-    }
+    // scatter dots: right or left of the dot first, so a label never sits between two dots
+    if (sideways) cands.unshift({ tx: m.cx + 9, ty: m.cy + 4, anchor: 'start' }, { tx: m.cx - 9, ty: m.cy + 4, anchor: 'end' })
     for (const dy of [27, 43, 59]) cands.push({ tx: m.cx, ty: m.cy - dy, anchor: base }, { tx: m.cx, ty: m.cy + dy + 9, anchor: base })
     const fits = (c: (typeof cands)[number]) => {
       const b = textBox(c.tx, c.ty, c.anchor, m.label)
-      return b.y0 >= area.top - 2 && b.y1 <= area.bottom + 2 && b.x0 >= area.left - 40 && b.x1 <= area.right + 6
+      return b.y0 >= area.top - 2 && b.y1 <= area.bottom - 2 && b.x0 >= area.left - 40 && b.x1 <= area.right + 6
     }
     const inside = cands.filter(fits)
     const pick =

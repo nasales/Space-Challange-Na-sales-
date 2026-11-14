@@ -411,7 +411,7 @@ function renderView(spec: ChartSpec, series: TutorialSeries, variables: Record<s
       })
       return withKeys(
         r,
-        <>{seriesKey(`${name}, running total`)}<Key kind="up">Above usual</Key><Key kind="down">Below usual</Key></>,
+        <>{seriesKey(`${name}, running total`)}<Key kind="up">Total above zero</Key><Key kind="down">Total below zero</Key></>,
         'Rises while months are above usual, falls while they are below.',
       )
     }

@@ -98,7 +98,7 @@ export function rankingView(spec: ChartSpec, series: TutorialSeries, W: number):
 
   const recentRows = rows.filter((d) => nRecent > 0 && d.year >= recentFrom).length
   const summary =
-    `${series.name} in ${series.units}, ${title.toLowerCase()}: ${rows.length} years as bars, from ${rows[0].year} ` +
+    `${series.name} in ${series.units}, ${title.replace(/^Every/, 'every')}: ${rows.length} years as bars, from ${rows[0].year} ` +
     `(${sig(rows[0].value)}) down to ${rows[rows.length - 1].year} (${sig(rows[rows.length - 1].value)}).` +
     (nRecent > 0 ? ` ${recentRows} of the bars are from the last ${nRecent} years (${recentFrom}-${lastYear}), drawn in another colour.` : '') +
     [...marked].map(([yr, l]) => ` Marked: ${yr}, ${l}.`).join('')
@@ -328,7 +328,6 @@ export function windowTrendsView(spec: ChartSpec, series: TutorialSeries, W: num
       <text x={4} y={14} textAnchor="start" className="casefile-chart__units">
         {unit}
       </text>
-      <line x1={P.l} x2={W - P.r} y1={H - P.b} y2={H - P.b} className="casefile-chart__axis" />
       {wt.map((w, i) => {
         const s = dec(w.slope_per_year)
         return (
