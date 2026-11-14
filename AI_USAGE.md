@@ -8,5 +8,6 @@ Every agent adds one line per task.
 | 2026-11-14 | Claude Code (Opus 5.5) | Data | Updated AGENTS.md rule 1 and docs/agents/qa.md: each person merges their own PR into main (team decision) |
 | 2026-11-14 | Claude Code (Data agent, Diego) | Data | Updated `pipeline/README.md` to v2: aligned work split and trend method with the chosen GLDAS/IMERG/MERRA-2 dataset |
 | 2026-11-14 | Claude Code (Data agent, Diego) | Data | Renamed Diego's working branch to `diego_dev` in `pipeline/README.md` |
+| 2026-11-14 | Claude Code (Opus 5.5) | Team docs (Perry) | Set Perry as owner of Backend + AI checker + integration (was "Person 4") in AGENTS.md and docs/agents/qa.md |
 | 2026-11-14 | Claude Code (Opus 5.5) | Data | Translated docs/stats-data.md (stats data spec from database teammate) to English and committed it |
 | 2026-11-14 | Claude Code (Opus 5.5) | Data | Block 1: analyze_trend in pipeline/trend.py (anomalies, Sen slope, pre-whitened Mann-Kendall, Gilbert CI), tests in pipeline/tests/test_trend.py, pinned pipeline/requirements.txt |
