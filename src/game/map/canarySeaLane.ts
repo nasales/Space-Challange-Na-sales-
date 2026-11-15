@@ -16,8 +16,8 @@ export const LANE: [number, number][] = [
   [-10.2, 36.0],
   [-11.0, 35.75],
 ]
-/** Half width (km) of the shallow water of the lane (the coast band is 32 km wide). */
-export const LANE_HALF_KM = 14
+/** Half width (km) of the shallow water of the lane (the coast band is 32 km wide; the lane is a wide sea, like the Balearic one). */
+export const LANE_HALF_KM = 70
 /** Coloured sea (km) shown beyond each side of the shallow water. */
 export const LANE_SEA_KM = 14
 
