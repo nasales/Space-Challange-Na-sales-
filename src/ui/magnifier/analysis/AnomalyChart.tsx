@@ -1,6 +1,8 @@
-// Anomaly chart of the evidence sheet: the monthly series with its seasonal cycle removed, the
+// Anomaly chart of the evidence file: the monthly series with its seasonal cycle removed, the
 // Sen trend line and the shaded 95 % range of the slope. The slope and its range are the ones of
 // the statistics pipeline; only the height of the line (its intercept) is computed here.
+// Animation: the months are revealed first, then the trend line is drawn on top like a red
+// marker stroke and the 95 % range fades in (classes in ClueResult.css).
 import type { CiBand, TrendLine } from './analysis'
 import MonthlyPlot from './MonthlyPlot'
 
@@ -42,13 +44,25 @@ export default function AnomalyChart({ dates, anoms, units, label, line, band }:
       }}
       over={(sx, sy) =>
         line && (
-          <line
-            x1={sx(line.t0 * 12)}
-            x2={sx(line.t1 * 12)}
-            y1={sy(line.y0)}
-            y2={sy(line.y1)}
-            className="clue-result__trend"
-          />
+          <g className="clue-result__trend-group">
+            {/* Ink outline under the red stroke, comic style */}
+            <line
+              x1={sx(line.t0 * 12)}
+              x2={sx(line.t1 * 12)}
+              y1={sy(line.y0)}
+              y2={sy(line.y1)}
+              pathLength={1}
+              className="clue-result__trend-ink clue-result__draw"
+            />
+            <line
+              x1={sx(line.t0 * 12)}
+              x2={sx(line.t1 * 12)}
+              y1={sy(line.y0)}
+              y2={sy(line.y1)}
+              pathLength={1}
+              className="clue-result__trend clue-result__draw"
+            />
+          </g>
         )
       }
     />

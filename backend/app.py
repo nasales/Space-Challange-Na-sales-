@@ -7,7 +7,7 @@ from . import cases
 from .db import get_client
 from .models import CaseData, CaseSummary
 
-app = FastAPI(title="Trend Detective API")
+app = FastAPI(title="John Datason API")
 
 
 @app.get("/api/health")

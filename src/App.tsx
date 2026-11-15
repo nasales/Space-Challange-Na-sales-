@@ -11,7 +11,7 @@ import VariablePicker from './ui/magnifier/VariablePicker'
 import PauseMenu from './ui/pause/PauseMenu'
 import Wardrobe from './ui/wardrobe/Wardrobe'
 import LoginScreen from './ui/auth/LoginScreen'
-import { isRecoveryLink } from './shared/auth'
+import { isRecoveryLink, useSession } from './shared/auth'
 import DbTest from './ui/dbtest/DbTest'
 import DbStatus from './ui/status/DbStatus'
 import CaseFilePreview from './ui/casefile/CaseFilePreview'
@@ -21,9 +21,19 @@ import { createAnchorStore } from './ui/casefile/anchors'
 import TravelMap from './ui/travelmap/TravelMap'
 import AchievementToasts from './ui/achievements/AchievementToasts'
 import { reportCaseSolved } from './shared/achievements'
-import type { GameStatus, HudState, LensFocusState, TravelRequest } from './shared/events'
+import GuidePrompt from './ui/guide/GuidePrompt'
+import GuideTour from './ui/guide/GuideTour'
+import { createGuideAnchorStore } from './ui/guide/anchor'
+import type { GameStatus, GuideCue, HudState, LensFocusState, TravelRequest } from './shared/events'
 import { loadOutfit, type Outfit } from './shared/outfit'
-import { loadCompleted, markCompleted } from './shared/progress'
+import {
+  fetchRemoteCompleted,
+  loadCompleted,
+  loadGuideSeen,
+  markCompleted,
+  markGuideSeen,
+  saveRemoteCompleted,
+} from './shared/progress'
 import { startBackgroundMusic } from './shared/music'
 import { hasTutorial } from './ui/casefile/loader'
 import { installUiSounds, playSfx, setWind } from './shared/sound'
@@ -81,14 +91,53 @@ function Game({ onCaseFocus }: { onCaseFocus: (on: boolean) => void }) {
   const [dialogue, setDialogue] = useState<DialogueState>(NO_DIALOGUE)
   const [anchors] = useState(createAnchorStore)
   const [completed, setCompleted] = useState<Set<string>>(loadCompleted)
-  const completedList = useMemo(() => [...completed], [completed])
+  // Signed-in players: solved cases saved in Supabase (minigame_progress), read on load and on
+  // every sign in / sign out. Guests: local progress only, nothing is sent.
+  const { user } = useSession()
+  const userId = user?.id ?? null
+  // Kept with the user it belongs to, so another account (or signing out) never shows these ids
+  const [remote, setRemote] = useState<{ userId: string; ids: Set<string> } | null>(null)
+  useEffect(() => {
+    if (!userId) return
+    let alive = true
+    fetchRemoteCompleted(userId).then((ids) => {
+      if (!alive) return
+      setRemote((prev) => ({ userId, ids: new Set([...(prev?.userId === userId ? prev.ids : []), ...ids]) }))
+    })
+    return () => {
+      alive = false
+    }
+  }, [userId])
+  const remoteIds = remote && remote.userId === userId ? remote.ids : null
+  const completedList = useMemo(() => [...new Set([...completed, ...(remoteIds ?? [])])], [completed, remoteIds])
   // Background music from the menu on (it starts on the first click or key press)
   useEffect(startBackgroundMusic, [])
+  // ---- Map tutorial (src/ui/guide): offered when the map is ready the first time, replayable from the pause panel ----
+  // 'offer': the Start / Skip panel is up (game paused); 'running': the guide robot is showing the player around
+  const [guide, setGuide] = useState<'offer' | 'running' | null>(null)
+  const [guideCue, setGuideCue] = useState<GuideCue | null>(null)
+  const [guideHighlight, setGuideHighlight] = useState<'corner' | null>(null)
+  const [guideAnchors] = useState(createGuideAnchorStore)
+  const onGameStatus = useCallback((s: GameStatus) => {
+    setStatus(s)
+    // The map is drawn and the intro camera has landed: offer the tutorial once per browser
+    if (s === 'ready' && !loadGuideSeen()) setGuide('offer')
+  }, [])
+  const startGuide = useCallback(() => {
+    markGuideSeen()
+    setPaused(false)
+    setGuide('running')
+  }, [])
+  const endGuide = useCallback(() => {
+    markGuideSeen()
+    setGuide(null)
+    setGuideCue(null)
+  }, [])
   // ---- Fast travel (M map): pick a landmark, the detective flies there by plane ----
   const [travelMapOpen, setTravelMapOpen] = useState(false)
   const [travelTo, setTravelTo] = useState<TravelRequest | null>(null)
   const [flying, setFlying] = useState(false)
-  const canOpenTravelMap = screen === 'game' && status === 'ready' && !paused && !openCase && !focusLens && lensState === 'out' && !flying
+  const canOpenTravelMap = screen === 'game' && status === 'ready' && !paused && !openCase && !focusLens && lensState === 'out' && !flying && guide !== 'offer'
   const startTravel = (landmarkId: string) => {
     setTravelMapOpen(false)
     setFlying(true) // until the game reports 'landed'
@@ -101,7 +150,8 @@ function Game({ onCaseFocus }: { onCaseFocus: (on: boolean) => void }) {
   const zoneCase = hud?.caseZone && hasTutorial(hud.caseZone) ? hud.caseZone : null
   // only with the camera out of the hand lens (the picker cannot reset it once a case is open)
   const canOpenCase =
-    screen === 'game' && status === 'ready' && !!hud?.stopped && !!zoneCase && !openCase && !focusLens && lensState === 'out' && !paused && !travelBusy
+    screen === 'game' && status === 'ready' && !!hud?.stopped && !!zoneCase && !openCase && !focusLens && lensState === 'out' && !paused && !travelBusy &&
+    !guide // not during the tutorial: cases open once the guide robot has finished
   useGameSounds({
     playing: screen === 'game' && status === 'ready' && !paused && !openCase && !focusLens,
     rush: hud?.rush ?? 0,
@@ -115,6 +165,8 @@ function Game({ onCaseFocus }: { onCaseFocus: (on: boolean) => void }) {
   const exitToMenu = () => {
     // GameView unmounts and disposes its scene; reset the game state so Play starts fresh
     setPaused(false)
+    setGuide(null)
+    setGuideCue(null)
     setTravelMapOpen(false)
     setFlying(false)
     setTravelTo(null)
@@ -149,7 +201,11 @@ function Game({ onCaseFocus }: { onCaseFocus: (on: boolean) => void }) {
     markCompleted(caseId)
     reportCaseSolved(caseId) // achievements: case levels X/N
     setCompleted((prev) => new Set(prev).add(caseId))
-  }, [])
+    if (userId) {
+      saveRemoteCompleted(caseId)
+      setRemote((prev) => ({ userId, ids: new Set(prev?.userId === userId ? prev.ids : []).add(caseId) }))
+    }
+  }, [userId])
 
   if (screen === 'menu') {
     return (
@@ -189,13 +245,13 @@ function Game({ onCaseFocus }: { onCaseFocus: (on: boolean) => void }) {
   return (
     <main className="app">
       <GameView
-        onStatus={setStatus}
+        onStatus={onGameStatus}
         onHud={setHud}
         focusLens={focusLens}
         onLensFocus={setLensState}
         onProgress={setLoadProgress}
         outfit={outfit}
-        paused={paused || !!openCase || travelMapOpen}
+        paused={paused || !!openCase || travelMapOpen || guide === 'offer'}
         completedCases={completedList}
         dialogueCase={openCase && dialogue.active ? openCase : null}
         speaking={dialogue.speaking}
@@ -203,13 +259,15 @@ function Game({ onCaseFocus }: { onCaseFocus: (on: boolean) => void }) {
         onDialogueAnchors={anchors.set}
         travelTo={travelTo}
         onTravel={(state) => setFlying(state === 'flying')}
+        guide={guide === 'running' ? guideCue : null}
+        onGuideAnchor={guideAnchors.set}
       />
       {/* Dialogue focus: the whole HUD fades out while a case is open */}
-      <Hud status={status} hud={hud} hidden={!!openCase} />
+      <Hud status={status} hud={hud} hidden={!!openCase} highlight={guide === 'running' ? guideHighlight : null} />
       <MapLoader status={status} progress={loadProgress} outfit={outfit} />
       {/* Outside case zones Space opens the magnifier picker, as before */}
       <VariablePicker
-        canOpen={status === 'ready' && !!hud?.stopped && !paused && !zoneCase && !openCase && !travelBusy}
+        canOpen={status === 'ready' && !!hud?.stopped && !paused && !zoneCase && !openCase && !travelBusy && guide !== 'offer'}
         lensState={lensState}
         onOpenChange={setFocusLens}
         location={hud?.location ?? null}
@@ -217,9 +275,10 @@ function Game({ onCaseFocus }: { onCaseFocus: (on: boolean) => void }) {
       {/* After the picker, so the picker's Esc handler runs first and wins; a case flow has its own Esc */}
       <PauseMenu
         open={paused}
-        canOpen={status === 'ready' && !focusLens && lensState === 'out' && !openCase && !travelBusy}
+        canOpen={status === 'ready' && !focusLens && lensState === 'out' && !openCase && !travelBusy && guide !== 'offer'}
         onOpenChange={setPaused}
         onMainMenu={exitToMenu}
+        onTutorial={startGuide}
       />
       {/* Fast travel map (M): opens only when nothing else is up; picking a landmark starts the flight */}
       <TravelMap
@@ -229,7 +288,23 @@ function Game({ onCaseFocus }: { onCaseFocus: (on: boolean) => void }) {
         onTravel={startTravel}
         position={hud?.location ?? null}
       />
-      {zoneCase && !paused && !travelBusy && <CaseHint caseId={zoneCase} stopped={!!hud?.stopped} hidden={!!openCase} />}
+      {/* Map tutorial: the offer panel, then the guide robot's dialogue box */}
+      {guide === 'offer' && <GuidePrompt onStart={startGuide} onSkip={endGuide} />}
+      {guide === 'running' && (
+        <GuideTour
+          hud={hud}
+          focusLens={focusLens}
+          lensState={lensState}
+          travelMapOpen={travelMapOpen}
+          flying={flying}
+          blocked={paused}
+          anchors={guideAnchors}
+          onCue={setGuideCue}
+          onHighlight={setGuideHighlight}
+          onDone={endGuide}
+        />
+      )}
+      {zoneCase && !paused && !travelBusy && !guide && <CaseHint caseId={zoneCase} stopped={!!hud?.stopped} hidden={!!openCase} />}
       {openCase && (
         <CaseFlow
           key={openCase}

@@ -1,12 +1,13 @@
-// Evidence sheet for one clue of the hand lens: the full trend analysis of the chosen variable at
-// the detective's point (database cell), shown from the moment it opens: what changes, where, how
-// much (rate of change) and whether it is statistically significant, with the seasonal cycle
-// removed. A non-significant trend is a valid result and is stated as such.
-// Esc (or "Back to the clues") returns to the ring without closing the lens.
+// Evidence file for one clue of the hand lens: the trend analysis of the chosen variable at the
+// detective's point (database cell), full screen and without scrolling.
+//   left:  the verdict (rubber stamp, one plain sentence, three figures, an evidence meter);
+//   right: one large chart at a time, picked with evidence tabs (click, keys 1-5, or ← → on a tab).
+// The charts draw themselves in, then the stamp lands. A non-significant trend is a valid result
+// and is stamped as such. Esc (or "Back to the clues") returns to the ring without closing the lens.
 // Data: fetchPointAnalysis() in src/shared/pointAnalysis.ts (Supabase get_cell + trends table).
 // The slope, its 95 % range and the p-value come from the statistics pipeline; this file and
 // ./analysis/ only display them (see ./analysis/analysis.ts for the derived display numbers).
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react'
 import type { PointVariable } from '../../shared/pointAnalysis'
 import {
   annualMeans,
@@ -41,23 +42,41 @@ interface Props {
   onBack: () => void
 }
 
+type TabId = 'trend' | 'series' | 'seasons' | 'years' | 'method'
+const TABS: { id: TabId; label: string; short: string }[] = [
+  { id: 'trend', label: 'The trend', short: 'Trend' },
+  { id: 'series', label: 'Raw measurements', short: 'Raw' },
+  { id: 'seasons', label: 'Seasons then and now', short: 'Seasons' },
+  { id: 'years', label: 'Year by year', short: 'Years' },
+  { id: 'method', label: 'How we know', short: 'Method' },
+]
+
 export default function ClueResult({ variable, title, place, distanceKm, onBack }: Props) {
   const back = useRef<HTMLButtonElement>(null)
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([])
+  const [tab, setTab] = useState<TabId>('trend')
   const data = variable.data
 
   useEffect(() => {
-    // The sheet scrolls: keep it at the top (the verdict) while the Back button takes the focus
     back.current?.focus({ preventScroll: true })
   }, [])
 
-  // Esc goes back to the clues. Capture phase on window runs before the picker's own Esc
-  // handler (which would close the whole lens), and stops it.
+  // Esc goes back to the clues; keys 1-5 pick a tab. Capture phase on window runs before the
+  // picker's own Esc handler (which would close the whole lens), and stops it.
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.code !== 'Escape') return
-      e.preventDefault()
-      e.stopImmediatePropagation()
-      onBack()
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.code === 'Escape') {
+        e.preventDefault()
+        e.stopImmediatePropagation()
+        onBack()
+        return
+      }
+      const digit = /^Digit([1-5])$/.exec(e.code)
+      if (digit && !e.altKey && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault()
+        e.stopImmediatePropagation()
+        setTab(TABS[Number(digit[1]) - 1].id)
+      }
     }
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
@@ -66,131 +85,129 @@ export default function ClueResult({ variable, title, place, distanceKm, onBack 
   if (!data) return null
   const { extra } = variable
   const period = testPeriod(data.dates, data.values, extra.periodStart, extra.periodEnd)
-  const nums = data.values.filter((v): v is number => v != null)
-  const seriesMean = mean(nums)
   const last = data.dates.length - 1
   const years = last >= 0 ? `${yearOf(data.dates[0])}–${yearOf(data.dates[last])}` : ''
-  const anoms = anomalies(data.dates, data.values, variable.climatology)
-  const line = period ? trendLine(anoms, data.slope, period) : null
-  const band = line ? ciBand(line, extra.slopeCiLow, extra.slopeCiHigh) : null
-  const anomLabel =
-    `Monthly ${title} with the seasonal cycle removed, ${years}, in ${data.units}. ` +
-    (line
-      ? `Trend line: ${fmtSigned(data.slope * 10)} ${data.units} per decade, ` +
-        `${data.significant ? 'statistically significant' : 'not statistically significant'}.`
-      : 'No trend line.')
-  const seriesLabel =
-    seriesMean == null
-      ? `Monthly ${title}: no values`
-      : `Line chart of monthly ${title} in ${data.units} at ${place}, ${years}. ` +
-        `Lowest ${fmt(Math.min(...nums))}, highest ${fmt(Math.max(...nums))}, average ${fmt(seriesMean)}.`
+  const dataset = data.dataset.replace(/^NASA /, '')
+
+  // Arrow keys move between tabs (roving focus, WAI-ARIA tabs pattern)
+  const onTabKey = (e: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    const delta = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0
+    if (!delta && e.key !== 'Home' && e.key !== 'End') return
+    e.preventDefault()
+    e.stopPropagation()
+    const next = e.key === 'Home' ? 0 : e.key === 'End' ? TABS.length - 1 : (index + delta + TABS.length) % TABS.length
+    setTab(TABS[next].id)
+    tabRefs.current[next]?.focus()
+  }
 
   return (
     <section className="clue-result" aria-labelledby="clue-result-title">
       <header className="clue-result__head">
-        <p className="clue-result__kicker">Evidence · {place}</p>
-        <h3 id="clue-result-title" className="clue-result__title">
-          {title} <span className="clue-result__unit">({data.units})</span>
-        </h3>
+        <span className="clue-result__folder-tab" aria-hidden="true">
+          Evidence file
+        </span>
+        <div className="clue-result__head-text">
+          <p className="clue-result__kicker">
+            {place}
+            {years && ` · ${years}`}
+          </p>
+          <h3 id="clue-result-title" className="clue-result__title">
+            {title} <span className="clue-result__unit">({data.units})</span>
+          </h3>
+        </div>
+        <button ref={back} type="button" className="clue-result__btn" onClick={onBack} data-sfx="close">
+          ← Back to the clues <kbd>Esc</kbd>
+        </button>
       </header>
 
-      <Verdict variable={variable} title={title} place={place} period={period} />
+      <div className="clue-result__body">
+        <Verdict variable={variable} title={title} place={place} period={period} />
 
-      <section className="clue-result__section" aria-labelledby="clue-series-h">
-        <h4 id="clue-series-h" className="clue-result__h">
-          What do the measurements look like?
-        </h4>
-        <MonthlyPlot
-          dates={data.dates}
-          values={data.values}
-          units={data.units}
-          label={seriesLabel}
-          reference={seriesMean != null ? { value: seriesMean, className: 'clue-result__mean' } : undefined}
-        />
-        <p className="clue-result__caption">
-          Every month as measured{years && `, ${years}`}. The yearly up-and-down is the seasonal cycle.
-          {seriesMean != null && ` Dashed line: average of all months (${fmt(seriesMean)} ${data.units}).`}
-        </p>
-      </section>
-
-      <section className="clue-result__section" aria-labelledby="clue-anom-h">
-        <h4 id="clue-anom-h" className="clue-result__h">
-          Is there a trend once the seasons are removed?
-        </h4>
-        <AnomalyChart dates={data.dates} anoms={anoms} units={data.units} label={anomLabel} line={line} band={band} />
-        <ul className="clue-result__legend">
-          <li>
-            <svg viewBox="0 0 26 10" aria-hidden="true">
-              <line x1="0" x2="26" y1="5" y2="5" className="clue-result__line clue-result__line--thin" />
-            </svg>
-            monthly difference from normal
-          </li>
-          {line && (
-            <li>
-              <svg viewBox="0 0 26 10" aria-hidden="true">
-                <line x1="1" x2="25" y1="5" y2="5" className="clue-result__trend" />
-              </svg>
-              trend line ({fmtSigned(data.slope * 10)} {data.units} per decade)
-            </li>
-          )}
-          {band && (
-            <li>
-              <svg viewBox="0 0 26 10" aria-hidden="true">
-                <rect width="26" height="10" className="clue-result__band" />
-              </svg>
-              95 % range of the trend
-            </li>
-          )}
-        </ul>
-        <p className="clue-result__caption">
-          Seasonal cycle removed: each month is compared with the average for that calendar month (every January
-          with the average January, and so on). Zero means a normal month.
-          {band && ' The real trend is very likely inside the shaded range; if a flat line fits inside it, the trend is not clear.'}
-        </p>
-      </section>
-
-      <div className="clue-result__pair">
-        <section className="clue-result__section" aria-labelledby="clue-season-h">
-          <h4 id="clue-season-h" className="clue-result__h">
-            Did the seasons shift?
-          </h4>
-          <SeasonalChart
-            cmp={period ? seasonalComparison(data.dates, data.values, period) : null}
-            units={data.units}
-            title={title}
-          />
-        </section>
-        <section className="clue-result__section" aria-labelledby="clue-annual-h">
-          <h4 id="clue-annual-h" className="clue-result__h">
-            Which years stand out?
-          </h4>
-          <AnnualChart annual={annualMeans(data.dates, data.values)} units={data.units} title={title} />
-        </section>
+        <div className="clue-result__evidence">
+          <div className="clue-result__tabs" role="tablist" aria-label="Evidence">
+            {TABS.map((t, i) => (
+              <button
+                key={t.id}
+                ref={(el) => {
+                  tabRefs.current[i] = el
+                }}
+                type="button"
+                role="tab"
+                id={`clue-tab-${t.id}`}
+                aria-selected={tab === t.id}
+                aria-controls="clue-tabpanel"
+                tabIndex={tab === t.id ? 0 : -1}
+                className="clue-result__tab"
+                onClick={() => setTab(t.id)}
+                onKeyDown={(e) => onTabKey(e, i)}
+              >
+                <span className="clue-result__tab-n" aria-hidden="true">
+                  {i + 1}
+                </span>
+                <span className="clue-result__tab-long">{t.label}</span>
+                <span className="clue-result__tab-short">{t.short}</span>
+              </button>
+            ))}
+          </div>
+          <div
+            key={tab}
+            id="clue-tabpanel"
+            className="clue-result__panel"
+            role="tabpanel"
+            aria-labelledby={`clue-tab-${tab}`}
+          >
+            <EvidencePanel tab={tab} variable={variable} title={title} place={place} period={period} years={years} distanceKm={distanceKm} />
+          </div>
+        </div>
       </div>
 
-      <HowWeKnow variable={variable} period={period} distanceKm={distanceKm} />
-
-      <button ref={back} type="button" className="clue-result__btn" onClick={onBack}>
-        ← Back to the clues <kbd>Esc</kbd>
-      </button>
+      <footer className="clue-result__foot">
+        <span>Data: NASA {dataset}</span>
+        {distanceKm > 20 && <span>Nearest data cell: {distanceKm.toFixed(0)} km from here</span>}
+        <span className="clue-result__foot-keys" aria-hidden="true">
+          <kbd>1</kbd>–<kbd>5</kbd> evidence · <kbd>Esc</kbd> back
+        </span>
+      </footer>
     </section>
   )
 }
 
 const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1)
 
-/** What changed, where, how much and whether it is significant: one sentence and four figures. */
-function Verdict({
-  variable,
-  title,
-  place,
-  period,
-}: {
-  variable: PointVariable
-  title: string
-  place: string
-  period: Period | null
-}) {
+/* ---------------------------------------------------------------------------------------------
+   Verdict column
+--------------------------------------------------------------------------------------------- */
+
+/** Counts a number up from zero once, then shows the exact formatted value. */
+function CountUp({ value, format, delay = 0 }: { value: number; format: (x: number) => string; delay?: number }) {
+  // Progress of the count, 0 to 1 (already 1 with reduced motion)
+  const [k, setK] = useState(() => (reducedMotion() || !Number.isFinite(value) ? 1 : 0))
+  useEffect(() => {
+    if (k >= 1) return
+    let frame = 0
+    const start = performance.now() + delay
+    const DURATION = 900
+    const tick = (now: number) => {
+      const next = Math.min(Math.max((now - start) / DURATION, 0), 1)
+      setK(next)
+      if (next < 1) frame = requestAnimationFrame(tick)
+    }
+    frame = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(frame)
+    // Runs once on mount; k only goes up to 1
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, delay])
+  return <>{k >= 1 ? format(value) : format(value * (1 - (1 - k) ** 3))}</>
+}
+
+function reducedMotion(): boolean {
+  return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
+/** Where the p-value sits on the evidence meter: 0 = pure noise (p = 1), 1 = very strong (p ≤ 0.0001). */
+const meterPos = (p: number) => Math.min(Math.max(-Math.log10(Math.max(p, 1e-12)) / 4, 0), 1)
+
+function Verdict({ variable, title, place, period }: { variable: PointVariable; title: string; place: string; period: Period | null }) {
   const data = variable.data
   if (!data) return null
   const { slopeCiLow, slopeCiHigh } = variable.extra
@@ -199,69 +216,271 @@ function Verdict({
   const since = period ? ` since ${yearOf(data.dates[period.start])}` : ''
   const span = period ? `${yearOf(data.dates[period.start])}–${yearOf(data.dates[period.end])}` : null
   const p = fmtP(data.p_value)
-  const verb = data.slope > 0 ? 'increased' : data.slope < 0 ? 'decreased' : 'changed'
+  const up = data.slope > 0
+  const verb = up ? 'increased' : data.slope < 0 ? 'decreased' : 'changed'
   const hasCi = slopeCiLow != null && slopeCiHigh != null
+  const kind = !data.significant ? 'flat' : up ? 'up' : 'down'
+  const stampWord = kind === 'flat' ? 'No clear trend' : up ? 'Increasing' : 'Decreasing'
 
   return (
-    <div className="clue-result__verdict">
-      <h4 className="clue-result__h">What changed here?</h4>
+    <div className={`clue-result__verdict clue-result__verdict--${kind}`}>
+      <p className="clue-result__verdict-label">Verdict</p>
+      <div className="clue-result__stamp-wrap">
+        <div className="clue-result__stamp" role="img" aria-label={`Verdict: ${stampWord}`}>
+          <span className="clue-result__stamp-arrow" aria-hidden="true">
+            {kind === 'flat' ? '≈' : up ? '▲' : '▼'}
+          </span>
+          <span className="clue-result__stamp-word">{stampWord}</span>
+          <span className="clue-result__stamp-sub">{data.significant ? 'Statistically significant' : 'Not significant'}</span>
+        </div>
+      </div>
+
       {data.significant ? (
         <p className="clue-result__sentence">
           At {place}, {lowerFirst(title)} has {verb} by about{' '}
           <b>
-            {fmt(Math.abs(perDecade))} {units} per decade
+            {fmt(Math.abs(perDecade))} {units} every 10 years
           </b>
-          {since}. This trend is statistically significant ({p}).
+          {since}.
         </p>
       ) : (
         <p className="clue-result__sentence">
           At {place}, {lowerFirst(title)} shows <b>no clear trend</b>
-          {since} ({p}). No clear evidence of change is not proof that nothing changed.
+          {since}. That is a real answer, not proof that nothing changed.
         </p>
       )}
 
-      <h4 className="clue-result__h">How much?</h4>
       <dl className="clue-result__figures">
-        <div className="clue-result__figure">
-          <dt>{data.significant ? 'Change per decade' : 'Best estimate per decade'}</dt>
+        <div className="clue-result__figure clue-result__figure--main">
+          <dt>Per decade</dt>
           <dd>
-            {fmtSigned(perDecade)} <small>{units}</small>
+            <CountUp value={perDecade} format={fmtSigned} delay={350} /> <small>{units}</small>
           </dd>
         </div>
         {period && (
           <div className="clue-result__figure">
-            <dt>Total change, {span}</dt>
+            <dt>Total, {span}</dt>
             <dd>
-              {fmtSigned(totalChange(data.slope, period))} <small>{units}</small>
+              <CountUp value={totalChange(data.slope, period)} format={fmtSigned} delay={450} /> <small>{units}</small>
             </dd>
-            <dd className="clue-result__sub">trend rate × {fmt(periodYears(period))} years</dd>
+            <dd className="clue-result__sub">rate × {fmt(periodYears(period))} years</dd>
           </div>
         )}
         {hasCi && (
           <div className="clue-result__figure">
-            <dt>95 % range per decade</dt>
-            <dd>
-              {fmtSigned(slopeCiLow * 10)} to {fmtSigned(slopeCiHigh * 10)} <small>{units}</small>
+            <dt>95 % range / decade</dt>
+            <dd className="clue-result__range">
+              {fmtSigned(slopeCiLow * 10)} to {fmtSigned(slopeCiHigh * 10)}
             </dd>
-            {slopeCiLow <= 0 && slopeCiHigh >= 0 && <dd className="clue-result__sub">the range includes zero</dd>}
+            {slopeCiLow <= 0 && slopeCiHigh >= 0 && <dd className="clue-result__sub">includes zero</dd>}
           </div>
         )}
-        <div className="clue-result__figure">
-          <dt>Is it real or noise?</dt>
-          <dd>{p}</dd>
-          <dd>
-            <span className={`clue-result__stamp${data.significant ? '' : ' clue-result__stamp--quiet'}`}>
-              {data.significant ? 'Significant' : 'Not significant'}
-            </span>
-          </dd>
-        </div>
       </dl>
-      <p className="clue-result__note">
-        <b>Significant</b> means: if nothing were really changing, a trend this strong would appear by chance alone
-        less than 5 % of the time (p below 0.05).
-      </p>
+
+      <div className="clue-result__meter">
+        <p className="clue-result__meter-title">
+          Real or just noise? <b>{p}</b>
+        </p>
+        <div className="clue-result__meter-track" aria-hidden="true">
+          <span className="clue-result__meter-zone" />
+          <span className="clue-result__meter-line" style={{ '--at': meterPos(0.05) } as CSSProperties}>
+            <span>0.05</span>
+          </span>
+          <span className="clue-result__meter-needle" style={{ '--at': meterPos(data.p_value) } as CSSProperties} />
+        </div>
+        <p className="clue-result__meter-ends" aria-hidden="true">
+          <span>could be noise</span>
+          <span>clear signal</span>
+        </p>
+        <p className="clue-result__note">
+          {data.significant
+            ? 'Past the 0.05 line: a trend this strong would come from chance less than 5 times in 100.'
+            : 'Before the 0.05 line: chance alone could easily make a trend like this.'}
+        </p>
+      </div>
     </div>
   )
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Evidence tabs
+--------------------------------------------------------------------------------------------- */
+
+function Panel({ chart, legend, caption }: { chart: ReactNode; legend?: ReactNode; caption: ReactNode }) {
+  return (
+    <>
+      <div className="clue-result__chart-area">{chart}</div>
+      <div className="clue-result__panel-foot">
+        {legend && <ul className="clue-result__legend">{legend}</ul>}
+        <p className="clue-result__caption">{caption}</p>
+      </div>
+    </>
+  )
+}
+
+function Key({ children, swatch }: { children: ReactNode; swatch: ReactNode }) {
+  return (
+    <li>
+      <svg viewBox="0 0 26 12" aria-hidden="true">
+        {swatch}
+      </svg>
+      {children}
+    </li>
+  )
+}
+
+function EvidencePanel({
+  tab,
+  variable,
+  title,
+  place,
+  period,
+  years,
+  distanceKm,
+}: {
+  tab: TabId
+  variable: PointVariable
+  title: string
+  place: string
+  period: Period | null
+  years: string
+  distanceKm: number
+}) {
+  const data = variable.data
+  if (!data) return null
+  const units = data.units
+
+  if (tab === 'trend') {
+    const anoms = anomalies(data.dates, data.values, variable.climatology)
+    const line = period ? trendLine(anoms, data.slope, period) : null
+    const band = line ? ciBand(line, variable.extra.slopeCiLow, variable.extra.slopeCiHigh) : null
+    const label =
+      `Monthly ${title} with the seasonal cycle removed, ${years}, in ${units}. ` +
+      (line
+        ? `Trend line: ${fmtSigned(data.slope * 10)} ${units} per decade, ` +
+          `${data.significant ? 'statistically significant' : 'not statistically significant'}.`
+        : 'No trend line.')
+    return (
+      <Panel
+        chart={<AnomalyChart dates={data.dates} anoms={anoms} units={units} label={label} line={line} band={band} />}
+        legend={
+          <>
+            <Key swatch={<line x1="0" x2="26" y1="6" y2="6" className="clue-result__line clue-result__line--thin" />}>
+              each month vs. normal
+            </Key>
+            {line && (
+              <Key swatch={<line x1="2" x2="24" y1="6" y2="6" className="clue-result__trend" />}>
+                trend ({fmtSigned(data.slope * 10)} {units}/decade)
+              </Key>
+            )}
+            {band && <Key swatch={<rect width="26" height="12" className="clue-result__band" />}>95 % range</Key>}
+          </>
+        }
+        caption={
+          <>
+            Seasons removed: every month is compared with its usual value, so <b>0 = a normal month</b>.
+            {band && ' If a flat line fits inside the yellow range, the trend is not clear.'}
+          </>
+        }
+      />
+    )
+  }
+
+  if (tab === 'series') {
+    const nums = data.values.filter((v): v is number => v != null)
+    const avg = mean(nums)
+    const label =
+      avg == null
+        ? `Monthly ${title}: no values`
+        : `Line chart of monthly ${title} in ${units} at ${place}, ${years}. ` +
+          `Lowest ${fmt(Math.min(...nums))}, highest ${fmt(Math.max(...nums))}, average ${fmt(avg)}.`
+    return (
+      <Panel
+        chart={
+          <MonthlyPlot
+            dates={data.dates}
+            values={data.values}
+            units={units}
+            label={label}
+            reference={avg != null ? { value: avg, className: 'clue-result__mean' } : undefined}
+          />
+        }
+        legend={
+          <>
+            <Key swatch={<line x1="0" x2="26" y1="6" y2="6" className="clue-result__line" />}>every month as measured</Key>
+            {avg != null && (
+              <Key swatch={<line x1="0" x2="26" y1="6" y2="6" className="clue-result__mean" />}>
+                average ({fmt(avg)} {units})
+              </Key>
+            )}
+          </>
+        }
+        caption="The yearly up-and-down is just the seasons. That is why the trend is measured with the seasons removed."
+      />
+    )
+  }
+
+  if (tab === 'seasons') {
+    const cmp = period ? seasonalComparison(data.dates, data.values, period) : null
+    const diff = cmp && cmp.first.mean != null && cmp.last.mean != null ? cmp.last.mean - cmp.first.mean : null
+    return (
+      <Panel
+        chart={<SeasonalChart cmp={cmp} units={units} title={title} />}
+        legend={
+          cmp && (
+            <>
+              <Key swatch={<line x1="0" x2="26" y1="6" y2="6" className="clue-result__series-a" />}>
+                {cmp.first.label} (dashed, blue)
+              </Key>
+              <Key swatch={<line x1="0" x2="26" y1="6" y2="6" className="clue-result__series-b" />}>
+                {cmp.last.label} (solid, orange)
+              </Key>
+            </>
+          )
+        }
+        caption={
+          cmp ? (
+            <>
+              Average of each month, January to December, in the first and the last {cmp.years} years.
+              {diff != null && (
+                <>
+                  {' '}
+                  On average: <b>{fmtSigned(diff)} {units}</b>.
+                </>
+              )}
+            </>
+          ) : (
+            'Not enough years to compare.'
+          )
+        }
+      />
+    )
+  }
+
+  if (tab === 'years') {
+    const annual = annualMeans(data.dates, data.values)
+    const overall = mean(annual.map((a) => a.mean))
+    return (
+      <Panel
+        chart={<AnnualChart annual={annual} units={units} title={title} />}
+        legend={
+          overall != null && (
+            <>
+              <Key swatch={<rect width="26" height="12" className="clue-result__bar--up" />}>above average (orange)</Key>
+              <Key swatch={<rect width="26" height="12" className="clue-result__bar--down" />}>below average (blue)</Key>
+            </>
+          )
+        }
+        caption={
+          overall != null
+            ? `One bar per year, measured from the average of all years (${fmt(overall)} ${units}, dashed). Years with fewer than 10 months of data are left out.`
+            : 'Not enough complete years.'
+        }
+      />
+    )
+  }
+
+  return <Method variable={variable} period={period} distanceKm={distanceKm} />
 }
 
 /** Name of the significance test in plain words (CaseData.test is a machine id). */
@@ -274,47 +493,35 @@ function testInWords(test: string): string {
   return test
 }
 
-/** The method in four plain steps, and the facts needed to check or repeat the analysis. */
-function HowWeKnow({
-  variable,
-  period,
-  distanceKm,
-}: {
-  variable: PointVariable
-  period: Period | null
-  distanceKm: number
-}) {
+const STEPS: { title: string; text: string }[] = [
+  { title: 'Collect', text: 'One value per month for this place, from NASA data.' },
+  { title: 'Remove the seasons', text: 'Each month minus the usual value of that month. What is left shows how unusual it was.' },
+  { title: 'Measure the rate', text: 'Sen slope: the middle of the slopes between every pair of months, so odd months cannot bend it.' },
+  { title: 'Check against chance', text: 'A test asks how often noise alone gives a trend this strong: the p-value. Below 0.05 = significant.' },
+]
+
+function Method({ variable, period, distanceKm }: { variable: PointVariable; period: Period | null; distanceKm: number }) {
   const data = variable.data
   if (!data) return null
-  const dataset = data.dataset.replace(/^NASA /, '')
   return (
-    <section className="clue-result__how" aria-labelledby="clue-how-h">
-      <h4 id="clue-how-h" className="clue-result__h">
-        How do we know?
-      </h4>
+    <div className="clue-result__method">
       <ol className="clue-result__steps">
-        <li>
-          <b>Collect.</b> One value per month for this place, from NASA data.
-        </li>
-        <li>
-          <b>Remove the seasons.</b> From each month we subtract the average of that calendar month. What is left
-          shows how unusual each month was.
-        </li>
-        <li>
-          <b>Measure the rate.</b> The Sen slope: the middle value of the slopes between every pair of months, so a
-          few odd months cannot bend it. The 95 % range says how sure we are of that rate.
-        </li>
-        <li>
-          <b>Check against chance.</b> A test asks how often noise alone would give a trend this strong. That is the
-          p-value: below 0.05 we call the trend significant.
-        </li>
+        {STEPS.map((s, i) => (
+          <li key={s.title} style={{ '--i': i } as CSSProperties}>
+            <span className="clue-result__step-n" aria-hidden="true">
+              {i + 1}
+            </span>
+            <b>{s.title}</b>
+            <span>{s.text}</span>
+          </li>
+        ))}
       </ol>
       <dl className="clue-result__facts">
         {period && (
           <>
             <div>
               <dt>Months used</dt>
-              <dd>{validMonths(data.values, period)} (the test needs at least 120)</dd>
+              <dd>{validMonths(data.values, period)} (at least 120 needed)</dd>
             </div>
             <div>
               <dt>Period</dt>
@@ -330,7 +537,7 @@ function HowWeKnow({
         </div>
         <div>
           <dt>Dataset</dt>
-          <dd>{dataset}</dd>
+          <dd>{data.dataset}</dd>
         </div>
         {distanceKm > 20 && (
           <div>
@@ -343,7 +550,6 @@ function HowWeKnow({
           <dd>{variable.definition}</dd>
         </div>
       </dl>
-      <p className="clue-result__credit">Data: NASA {dataset}</p>
-    </section>
+    </div>
   )
 }
