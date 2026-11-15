@@ -199,7 +199,7 @@
         "kind": "chart",
         "title": "All the months",
         "teaser": "561 months: find the tilt",
-        "text": "Now every month counts: 561 months, January 1980 to September 2026. Each point is one month minus the normal value for that month (an anomaly), so a cold January and a cold July share one scale. Data: NASA MERRA-2. Do not follow single points: look for the general tilt of the whole cloud. The real trend is about +0.37 °C per decade, about 1.7 °C over the whole record.",
+        "text": "Now every month counts: 561 months, January 1980 to September 2026. Each point is one month minus the normal value for that month (an anomaly), so a cold January and a cold July share one scale. Data: NASA MERRA-2. Do not follow single points: look for the general tilt of the whole cloud.",
         "chart": {
           "variable": "T2M",
           "view": "anomaly",
@@ -215,7 +215,7 @@
           "type": "fit_line",
           "prompt": "Drag the two ends of the ruler so it follows the general direction of the cloud of points.",
           "hint": "Do not chase one point. Compare the middle of the cloud in the 1980s with the middle of the cloud in the 2020s.",
-          "success": "Good: the line climbs. January 2021 sits below it, a cold month inside a warming series."
+          "success": "Good: the line climbs. The real trend is about +0.37 °C per decade, about 1.7 °C over the whole record. January 2021 sits below it, a cold month inside a warming series."
         },
         "relation": "contradicts",
         "relation_feedback": "This goes against the claim. Across all months Madrid is warming clearly: about +0.37 °C per decade (95% range +0.26 to +0.49), p < 0.001. Filomena's month is one cold point below a rising line.",

@@ -121,7 +121,7 @@
         "kind": "chart",
         "title": "A ruler through the summers",
         "teaser": "All summers, 1980 to 2026",
-        "text": "A trend is the slow change hidden under the ups and downs. The real line here is a Sen slope: about +0.47 °C per decade, roughly 2.2 °C from 1980 to 2026. The p-value, 0.0002, is the chance of a slope this big if nothing were changing: very unlikely. The 95% confidence range, +0.26 to +0.70 °C per decade, is all above zero, so the warming is significant.",
+        "text": "A trend is the slow change hidden under the ups and downs. Fit it by eye first, then compare with the real line, a Sen slope. Two numbers tell how sure we can be: the p-value is the chance of a slope this big if nothing were changing, and the 95% confidence range shows where the true slope probably lies. If that range is all above zero, the warming is significant.",
         "chart": {
           "variable": "T2M",
           "view": "season",
@@ -131,7 +131,7 @@
           "type": "fit_line",
           "prompt": "Drag the two ends of the ruler so it runs through the middle of the cloud of summers.",
           "hint": "Do not chase single points: leave about half of the summers above the ruler and half below, at both ends.",
-          "success": "Good fit! The real trend is about +0.47 °C per decade, and the summers scatter above and below it.",
+          "success": "Good fit! The real trend is about +0.47 °C per decade, roughly 2.2 °C from 1980 to 2026. p = 0.0002 and the 95% range, +0.26 to +0.70 °C per decade, is all above zero: significant warming. The summers still scatter above and below the line.",
           "tolerance": 0.3
         },
         "relation": "supports",
