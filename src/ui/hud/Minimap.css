@@ -1,0 +1,55 @@
+/* Comic minimap of the whole of Spain: thick ink frame and the same hard toy shadow as the other HUD panels. */
+.minimap {
+  position: relative;
+  width: 210px;
+  flex: none;
+  pointer-events: none;
+}
+
+.minimap__canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1.15; /* replaced by the real map ratio once it is drawn */
+  border-radius: 14px;
+  border: 3px solid #1a1423;
+  box-shadow: 3px 3px 0 #1a1423;
+  background: #6fc3e4;
+  box-sizing: border-box;
+}
+
+/* Small "N" tag on the top edge (the map is always north up) */
+.minimap__north {
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  translate: -50% 0;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #1a1423;
+  background: #f2c14e;
+  color: #1a1423;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+@media (max-width: 600px), (max-height: 500px) {
+  .minimap {
+    width: 140px;
+  }
+
+  .minimap__canvas {
+    border-radius: 10px;
+    border-width: 2px;
+  }
+
+  .minimap__north {
+    width: 16px;
+    height: 16px;
+    font-size: 9px;
+  }
+}
