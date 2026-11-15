@@ -185,7 +185,16 @@ function moodPose(m: LineMood, t: number): MoodPose {
   return p
 }
 
-export function createWitness(look: WitnessLook) {
+/** Game-side extras of a witness's look that src/shared/witness.ts does not describe. */
+export interface WitnessStyle {
+  /**
+   * How `look.apron` is worn: an open work vest with two pockets (default, Vicent) or a shop
+   * apron with a bib, neck strap and a skirt down to the knees (Pilar's kiosk).
+   */
+  apron?: 'vest' | 'bib'
+}
+
+export function createWitness(look: WitnessLook, style: WitnessStyle = {}) {
   const materials = new Map<string, THREE.Material>()
   const mat = (color: THREE.ColorRepresentation) => {
     const key = new THREE.Color(color).getHexString()
@@ -232,11 +241,32 @@ export function createWitness(look: WitnessLook) {
   // ---- Torso: shirt with a small belly, belt, optional vest/apron ----
   const torso = pivot(body, 0, 0, 0)
   cyl(torso, 0.36, 0.44, 0.85, shirt, 0, HIP + 0.42, 0)
-  const belly = ball(torso, 0.36, look.apron ?? shirt, 0, HIP + 0.3, -0.1)
+  const bib = !!look.apron && style.apron === 'bib'
+  const belly = ball(torso, 0.36, bib ? shirt : (look.apron ?? shirt), 0, HIP + 0.3, -0.1)
   belly.scale.set(1.05, 0.9, 0.85)
   cyl(torso, 0.455, 0.455, 0.1, BELT, 0, HIP + 0.06, 0)
-  box(torso, 0.12, 0.09, 0.04, 0xc9a24a, 0, HIP + 0.06, -0.46) // buckle
-  if (look.apron) {
+  if (!bib) box(torso, 0.12, 0.09, 0.04, 0xc9a24a, 0, HIP + 0.06, -0.46) // buckle
+  if (look.apron && bib) {
+    // Shop apron: a long bib from the chest down over the belly to the waist, a strap round
+    // the neck, ties round the waist and a wrap-around skirt to mid-thigh with a big front pocket.
+    // Its light colour over the dark shirt and trousers reads from the chase camera
+    const pocketColor = new THREE.Color(look.apron).multiplyScalar(0.82)
+    box(torso, 0.52, 0.84, 0.05, look.apron, 0, HIP + 0.5, -0.44).rotation.x = 0.05
+    const strap = add(torso, new THREE.TorusGeometry(0.2, 0.025, 5, 16), look.apron, 0, SHOULDER - 0.06, -0.13)
+    strap.rotation.x = Math.PI / 2 - 0.75 // neck loop, dipping to the top of the bib
+    strap.scale.set(1, 1.25, 1)
+    cyl(torso, 0.462, 0.462, 0.07, look.apron, 0, HIP + 0.06, 0) // ties over the belt
+    // Skirt: an open piece of cone round the front and sides (seen from inside too)
+    const skirtGeo = new THREE.CylinderGeometry(0.47, 0.52, 0.55, 14, 1, true, Math.PI - 1.2, 2.4)
+    geometries.push(skirtGeo)
+    const skirtMat = toonMaterial(look.apron, { side: THREE.DoubleSide }, SHADOW)
+    materials.set('apron-skirt', skirtMat)
+    const skirt = new THREE.Mesh(skirtGeo, skirtMat)
+    skirt.position.set(0, HIP - 0.22, -0.02)
+    skirt.castShadow = true
+    torso.add(skirt)
+    box(torso, 0.36, 0.17, 0.03, pocketColor, 0, HIP - 0.24, -0.535).rotation.x = -0.09
+  } else if (look.apron) {
     // Work vest over the shirt: open at the front (a strip of shirt shows) with two pockets
     cyl(torso, 0.385, 0.45, 0.62, look.apron, 0, HIP + 0.52, 0)
     box(torso, 0.12, 0.62, 0.04, shirt, 0, HIP + 0.52, -0.425).rotation.x = 0.05
@@ -252,7 +282,7 @@ export function createWitness(look: WitnessLook) {
   // ---- Arms: shoulder -> elbow -> hand; rolled-up sleeves ----
   const arms = [-1, 1].map((side) => {
     const shoulder = pivot(body, side * 0.47, SHOULDER - 0.06, 0)
-    ball(shoulder, 0.12, look.apron ?? shirt, 0, 0, 0, 1)
+    ball(shoulder, 0.12, bib ? shirt : (look.apron ?? shirt), 0, 0, 0, 1)
     box(shoulder, 0.19, 0.38, 0.21, shirt, 0, -0.19, 0)
     const elbow = pivot(shoulder, 0, -0.37, 0)
     box(elbow, 0.215, 0.08, 0.235, shirt, 0, -0.01, 0) // rolled cuff
@@ -328,9 +358,15 @@ export function createWitness(look: WitnessLook) {
       break
   }
   if (look.beard) {
-    const beard = ball(head, 0.36, hair, 0, 0.24, -0.2)
-    beard.scale.set(1.05, 0.8, 0.85)
-    box(head, 0.3, 0.07, 0.07, hair, 0, 0.31, -0.5) // moustache
+    // Short full beard: a thin shell hugging the jaw and chin below the mouth (the mouth stays on
+    // skin, readable), a bit lighter than the hair so it does not read as a hole, and a moustache
+    const beardColor = new THREE.Color(hair).offsetHSL(0, 0, 0.07)
+    const beard = add(head, new THREE.SphereGeometry(0.52, 18, 8, Math.PI - 0.5, Math.PI + 1.0, Math.PI * 0.68, Math.PI * 0.32), beardColor, 0, 0.48, 0)
+    beard.scale.set(1.02, 1, 1.03)
+    const chin = ball(head, 0.17, beardColor, 0, 0.1, -0.36, 1)
+    chin.scale.set(1.3, 0.8, 0.9)
+    const moustache = box(head, 0.32, 0.075, 0.08, beardColor, 0, 0.31, -0.5)
+    moustache.rotation.x = -0.2
   }
 
   // ---- Hat ----

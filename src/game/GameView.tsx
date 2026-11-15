@@ -286,10 +286,12 @@ export default function GameView({
         const surfaceAt = (x: number, z: number) => Math.max(main.heightAt(x, z), towns.surfaceAt(x, z), landmarks.surfaceAt(x, z), roadSurfaceAt(x, z))
         // For the camera: ground without monuments (it treats monuments as walls, see chaseCamera)
         const groundNoLandmarks = (x: number, z: number) => Math.max(main.heightAt(x, z), towns.surfaceAt(x, z), roadSurfaceAt(x, z))
+        // Witness trade props (kiosk, crates; set once the witnesses are placed, below) block the way too
+        let witnessPropAt: (x: number, z: number, margin?: number) => boolean = () => false
         const ground: Ground = {
           heightAt: surfaceAt,
           // Land, or the shallow sea (by boat): along the coast and across to the islands
-          isDrivable: (x, z) => (main.isExploredLand(x, z) || main.isFord(x, z)) && !scenery.blocks(x, z),
+          isDrivable: (x, z) => (main.isExploredLand(x, z) || main.isFord(x, z)) && !scenery.blocks(x, z) && !witnessPropAt(x, z),
         }
         const madrid = lonLatToWorld(-3.7038, 40.4168)
         const puerta = landmarks.positionOf('puerta-de-alcala') ?? madrid
@@ -313,11 +315,12 @@ export default function GameView({
 
         // Witnesses of the featured cases, inside their case zones (src/shared/witness.ts). The
         // dialogue camera comes first: the witness spot is chosen where it can frame a talk
+        const occluders: THREE.Object3D[] = [landmarks.group] // + the witness props, once placed
         const dialogue = createDialogue(camera, {
           obstacleAt: (x, z) => Math.max(groundNoLandmarks(x, z), towns.topAt(x, z), landmarks.surfaceAt(x, z)),
           surfaceAt,
-          canStand: (x, z) => ground.isDrivable(x, z) && !towns.blocks(x, z, 2) && !main.nearRiver(x, z, 2),
-          occluders: [landmarks.group],
+          canStand: (x, z) => ground.isDrivable(x, z) && !witnessPropAt(x, z, 2) && !towns.blocks(x, z, 2) && !main.nearRiver(x, z, 2),
+          occluders,
         })
         landmarks.group.updateMatrixWorld(true) // the framing test ray-casts the monuments
         const witnessSite = {
@@ -331,6 +334,9 @@ export default function GameView({
         }
         const witnesses = createWitnesses(WITNESSES, caseMarkers, witnessSite)
         scene.add(witnesses.group)
+        witnesses.props.updateMatrixWorld(true)
+        occluders.push(witnesses.props)
+        witnessPropAt = witnesses.blocks
         // What the dialogue camera frames (reused every frame)
         const talk: DialogueScene = {
           detective: new THREE.Vector3(),

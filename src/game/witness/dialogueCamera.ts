@@ -46,6 +46,28 @@ const LOW_VIEWS = 4
 const STAND_TRIES = [0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6]
 /** Largest height difference between the detective's stand spot and the witness (world units). */
 const STAND_MAX_STEP = 3
+/**
+ * The ground between the witness and the stand spot (and a little beyond it, and round it, for the
+ * detective's body) is sampled every PATH_STEP units: no sample may differ from the witness's feet
+ * by more than STAND_MAX_STEP. This keeps a fence, a wall, an arcade or a tree (all in the monument
+ * height maps) from standing between the two, and the detective off a roof edge (Madrid: the
+ * Puerta de Alcala garden fence; Cordoba: the Mezquita arcade round the Patio de los Naranjos).
+ */
+const PATH_STEP = 0.75
+const BODY_RADIUS = 2.5
+/** Distances beside each character (outwards along the pair) that must be visible too (world units). */
+const SIDE_CHECK = [5, 11]
+/** Share of each side ray (from the camera) that must be clear. */
+const SIDE_NEAR = 0.75
+/**
+ * Once arrived, the camera keeps framing the planned pair (detective on his stand spot) while he
+ * stands within this distance of it (world units): the view checked when choosing the spot stays the
+ * one shown (a metre of braking drift moved the camera enough to put a tree in the shot).
+ */
+const PLANNED_HOLD = 3
+/** Fine check of the camera line near the pair (strict poses): step and reach (world units). */
+const FINE_STEP = 0.6
+const FINE_REACH = 30
 /** Anchors are sent again only when one moves more than this (CSS px). */
 const ANCHOR_EPSILON = 1
 
@@ -84,6 +106,7 @@ export function createDialogue(camera: THREE.PerspectiveCamera, world: DialogueW
   let eased = 0
   let walkTime = 0
   let arrived = false
+  let liveChecked = false
   let spot: { x: number; z: number } | null = null
   let candidate = 0
   // Facing headings for this dialogue (from the camera side chosen)
@@ -120,10 +143,40 @@ export function createDialogue(camera: THREE.PerspectiveCamera, world: DialogueW
     }
     return false
   }
+  /** Can the detective stand at (x, z) to talk to a witness whose feet are at w? (see PATH_STEP) */
+  const standOk = (x: number, z: number, w: THREE.Vector3) => {
+    const y = world.surfaceAt(x, z)
+    if (!world.canStand(x, z) || Math.abs(y - w.y) > STAND_MAX_STEP) return false
+    const dx = x - w.x, dz = z - w.z
+    const len = Math.hypot(dx, dz) || 1
+    for (let t = PATH_STEP; t <= len + BODY_RADIUS; t += PATH_STEP) {
+      if (Math.abs(world.surfaceAt(w.x + (dx / len) * t, w.z + (dz / len) * t) - w.y) > STAND_MAX_STEP) return false
+    }
+    for (let k = 0; k < 8; k++) {
+      const a = (k / 8) * Math.PI * 2
+      const px = x + Math.sin(a) * BODY_RADIUS, pz = z + Math.cos(a) * BODY_RADIUS
+      if (!world.canStand(px, pz) || Math.abs(world.surfaceAt(px, pz) - w.y) > STAND_MAX_STEP) return false
+    }
+    return true
+  }
+  const feet = new THREE.Vector3()
   /** Ray checks from the camera to the heads, the middle and the feet of both characters. */
-  const viewBlocked = (s: DialogueScene, eye: THREE.Vector3) =>
-    [s.detectiveTop, s.witnessTop, center].some((p) => meshBetween(eye, p)) ||
-    [s.detective, s.witness].some((p) => meshBetween(eye, rayTarget.copy(p).setY(p.y + 2)))
+  const viewBlocked = (s: DialogueScene, eye: THREE.Vector3) => {
+    if ([s.detectiveTop, s.witnessTop, center].some((p) => meshBetween(eye, p)) ||
+      [s.detective, s.witness].some((p) => meshBetween(eye, rayTarget.copy(p).setY(p.y + 2)))) return true
+    // The room beside each one (where the speech bubbles go) must be free too: a tree or a pillar
+    // there would fill a third of the frame (Cordoba: the orange trees of the Patio de los Naranjos)
+    const ax = s.witness.x - s.detective.x, az = s.witness.z - s.detective.z
+    const len = Math.hypot(ax, az) || 1
+    // Only the near part of each ray counts: a fence or a wall just behind the pair is background
+    const mid = (s.detectiveTop.y - s.detective.y) * 0.6
+    const near = (p: THREE.Vector3) => meshBetween(eye, p.lerpVectors(eye, p, SIDE_NEAR))
+    return SIDE_CHECK.some((d) => {
+      const k = d / len
+      return near(rayTarget.set(s.detective.x - ax * k, s.detective.y + mid, s.detective.z - az * k)) ||
+        near(rayTarget.set(s.witness.x + ax * k, s.witness.y + mid, s.witness.z + az * k))
+    })
+  }
 
   /**
    * Camera pose for one candidate; false if a roof, a monument or the ground is in the way.
@@ -152,6 +205,16 @@ export function createDialogue(camera: THREE.PerspectiveCamera, world: DialogueW
       const x = out.x + (center.x - out.x) * t, z = out.z + (center.z - out.z) * t
       if (out.y + (center.y - out.y) * t < world.obstacleAt(x, z) + 0.5) return false
     }
+    // When choosing a pose, also sample finely near the pair: a thin fence or railing between the
+    // camera and their legs (Puerta de Alcala garden) falls between the coarse samples above
+    if (strict) {
+      const step = FINE_STEP / d
+      for (let t = 1 - FINE_REACH / d; t < 0.97; t += step) {
+        if (t < 0.1) continue
+        const x = out.x + (center.x - out.x) * t, z = out.z + (center.z - out.z) * t
+        if (out.y + (center.y - out.y) * t < world.obstacleAt(x, z)) return false
+      }
+    }
     return !strict || !viewBlocked(s, out)
   }
 
@@ -161,6 +224,7 @@ export function createDialogue(camera: THREE.PerspectiveCamera, world: DialogueW
       if (on && !wanted) {
         walkTime = 0
         arrived = false
+        liveChecked = false
         spot = null
         candidate = 0
       }
@@ -202,7 +266,7 @@ export function createDialogue(camera: THREE.PerspectiveCamera, world: DialogueW
         const a = (k * Math.PI) / 6
         const sx = x + Math.sin(a) * STAND_DISTANCE, sz = z + Math.cos(a) * STAND_DISTANCE
         const sy = world.surfaceAt(sx, sz)
-        if (!world.canStand(sx, sz) || Math.abs(sy - y) > STAND_MAX_STEP) continue
+        if (!standOk(sx, sz, feet.set(x, y, z))) continue
         trial.detective.set(sx, sy, sz)
         trial.detectiveTop.set(sx, sy + tall, sz)
         trial.witness.set(x, y, z)
@@ -229,15 +293,23 @@ export function createDialogue(camera: THREE.PerspectiveCamera, world: DialogueW
       if (!spot) {
         // Stand spot: STAND_DISTANCE from the witness, first on the detective's side, then round
         // the witness, until one is standable and the camera sees both from there. First pass: only
-        // the low 3/4 views; second pass: any view (higher, looking down)
+        // the low 3/4 views, on a spot he can walk to in a straight line (no prop or house in the
+        // way); second pass: low views, any spot; third pass: any view (higher, looking down)
         const base = Math.atan2(car.x - w.x, car.z - w.z)
         const tall = Math.max(4, s.detectiveTop.y - car.y)
-        for (const views of [LOW_VIEWS, CANDIDATES.length]) {
+        const reachable = (x: number, z: number) => {
+          const len = Math.hypot(x - car.x, z - car.z) || 1
+          for (let t = 2; t < len; t += 1.5) {
+            if (!world.canStand(car.x + ((x - car.x) / len) * t, car.z + ((z - car.z) / len) * t)) return false
+          }
+          return true
+        }
+        for (const [views, direct] of [[LOW_VIEWS, true], [LOW_VIEWS, false], [CANDIDATES.length, false]] as const) {
           for (const k of STAND_TRIES) {
             const a = base + (k * Math.PI) / 6
             const x = w.x + Math.sin(a) * STAND_DISTANCE, z = w.z + Math.cos(a) * STAND_DISTANCE
             const y = world.surfaceAt(x, z)
-            if (!world.canStand(x, z) || Math.abs(y - w.y) > STAND_MAX_STEP) continue
+            if (!standOk(x, z, w) || (direct && !reachable(x, z))) continue
             trial.detective.set(x, y, z)
             trial.detectiveTop.set(x, y + tall, z)
             trial.witness.copy(w)
@@ -250,7 +322,18 @@ export function createDialogue(camera: THREE.PerspectiveCamera, world: DialogueW
           }
           if (spot) break
         }
-        spot ??= { x: w.x + Math.sin(base) * STAND_DISTANCE, z: w.z + Math.cos(base) * STAND_DISTANCE }
+        // No view is free: still stand on the witness's own ground if possible (not on a roof edge
+        // or behind a fence), else on the detective's side
+        if (!spot) {
+          const k = STAND_TRIES.find((k) => {
+            const a = base + (k * Math.PI) / 6
+            return standOk(w.x + Math.sin(a) * STAND_DISTANCE, w.z + Math.cos(a) * STAND_DISTANCE, w)
+          }) ?? 0
+          const a = base + (k * Math.PI) / 6
+          spot = { x: w.x + Math.sin(a) * STAND_DISTANCE, z: w.z + Math.cos(a) * STAND_DISTANCE }
+          // Its view: none is fully free, so take the highest one (it looks over most things)
+          candidate = CANDIDATES.length - 1
+        }
         detectiveHeading = headingTo(spot.x, spot.z, w.x, w.z)
       }
       walkTime += dt
@@ -277,7 +360,7 @@ export function createDialogue(camera: THREE.PerspectiveCamera, world: DialogueW
       // spot): the view chosen for the stand spot stays valid, and he walks into the shot. (Framing
       // the live pair let a building on his way push the camera to a high fallback view for good.)
       let s = scene
-      if (!arrived && spot) {
+      if (spot && (!arrived || Math.hypot(scene.detective.x - spot.x, scene.detective.z - spot.z) < PLANNED_HOLD)) {
         const y = world.surfaceAt(spot.x, spot.z)
         planned.detective.set(spot.x, y, spot.z)
         planned.detectiveTop.set(spot.x, y + (scene.detectiveTop.y - scene.detective.y), spot.z)
@@ -285,8 +368,12 @@ export function createDialogue(camera: THREE.PerspectiveCamera, world: DialogueW
         planned.witnessTop.copy(scene.witnessTop)
         s = planned
       }
+      // Framing the live pair (he stopped away from his spot): check the view against the monuments
+      // and props once, when he stops
+      const recheck = arrived && s === scene && !liveChecked
+      if (recheck) liveChecked = true
       // Keep the current candidate while it is free; otherwise take the first free one
-      if (!pose(s, candidate, pos)) {
+      if (!pose(s, candidate, pos, recheck)) {
         candidate = 0
         while (candidate < CANDIDATES.length - 1 && !pose(s, candidate, pos, true)) candidate++
         pose(s, candidate, pos)
