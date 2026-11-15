@@ -7,7 +7,7 @@ import { distanceTo } from './distanceField'
 import { enclosedSea, COAST_SHALLOWS_KM } from './shallowSea'
 
 /** Ancho de la franja de mar de color alrededor del país explorado. */
-export const COASTAL_SEA_KM = 28 // was 20: the shallow band for the boat (shallowSea.ts) takes the first 16 km
+export const COASTAL_SEA_KM = 44 // was 20, then 28: the shallow band for the boat (shallowSea.ts) takes the first 32 km
 
 /**
  * The country outlines are coarser than the heights, so some dry ground is left outside every
