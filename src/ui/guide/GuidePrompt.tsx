@@ -5,6 +5,7 @@
 import { useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { GUIDE_NAME } from './guideSteps'
 import RobotFace from './RobotFace'
+import { L, LANG } from '../../shared/i18n'
 import './Guide.css'
 
 interface Props {
@@ -56,24 +57,35 @@ export default function GuidePrompt({ onStart, onSkip }: Props) {
         aria-describedby="guide-prompt-text"
         onKeyDown={onPanelKey}
       >
-        <p className="guide-prompt__label">New on the case?</p>
+        <p className="guide-prompt__label">{L('New on the case?', '¿Nuevo en el caso?')}</p>
         <RobotFace className="guide-prompt__robot" />
         <h2 id="guide-prompt-title" className="guide-prompt__title">
           Tutorial
         </h2>
         <p id="guide-prompt-text" className="guide-prompt__text">
-          {GUIDE_NAME} the robot can show you how the game works: how to move, the monuments, the magnifier and the
-          featured cases. It takes about one minute.
+          {LANG === 'es' ? (
+            <>
+              {GUIDE_NAME}, el robot, te puede enseñar cómo funciona el juego: cómo moverte, los monumentos, la lupa y
+              los casos destacados. Es cosa de un minuto.
+            </>
+          ) : (
+            <>
+              {GUIDE_NAME} the robot can show you how the game works: how to move, the monuments, the magnifier and the
+              featured cases. It takes about one minute.
+            </>
+          )}
         </p>
         <div className="guide-prompt__actions">
           <button ref={startButton} type="button" className="guide-button guide-button--main" onClick={onStart}>
-            Start tutorial
+            {L('Start tutorial', 'Empezar tutorial')}
           </button>
           <button type="button" className="guide-button" onClick={onSkip}>
-            Skip
+            {L('Skip', 'Saltar')}
           </button>
         </div>
-        <p className="guide-prompt__hint">You can also start it later from the pause menu (Esc).</p>
+        <p className="guide-prompt__hint">
+          {L('You can also start it later from the pause menu (Esc).', 'También puedes empezarlo luego desde el menú de pausa (Esc).')}
+        </p>
       </div>
     </div>
   )

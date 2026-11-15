@@ -2,6 +2,7 @@
 // They only PREPARE numbers for display. The trend itself (Sen slope, 95 % range, p-value) comes
 // from the statistics pipeline through the database and is never recomputed here.
 // Time convention: t in years from the first month of the series (t = monthIndex / 12).
+import { L, LANG } from '../../../shared/i18n'
 
 /** Inclusive index range of the months used by the trend test. */
 export interface Period {
@@ -9,7 +10,13 @@ export interface Period {
   end: number
 }
 
-export const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+export const MONTH_NAMES =
+  LANG === 'es'
+    ? ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+    : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+/** Decimal comma in Spanish (display only) */
+const comma = (s: string) => (LANG === 'es' ? s.replace('.', ',') : s)
 
 const isNum = (v: number | null | undefined): v is number => v != null && Number.isFinite(v)
 
@@ -232,7 +239,7 @@ export function fmt(x: number): string {
   const decimals = Math.min(Math.max(2 - magnitude, 0), 8)
   const s = x.toFixed(decimals)
   // "-0.00" style results of a tiny negative number read as zero
-  return Number(s) === 0 ? '0' : s.replace('-', '−')
+  return Number(s) === 0 ? '0' : comma(s.replace('-', '−'))
 }
 
 /** Like fmt, with an explicit sign for changes: "+0.21", "−1.4", "0" */
@@ -242,7 +249,7 @@ export function fmtSigned(x: number): string {
 }
 
 /** "p < 0.001" or "p = 0.032" */
-export const fmtP = (p: number) => (p < 0.001 ? 'p < 0.001' : `p = ${p.toFixed(3)}`)
+export const fmtP = (p: number) => (p < 0.001 ? L('p < 0.001', 'p < 0,001') : `p = ${comma(p.toFixed(3))}`)
 
 // --- Axis helpers --------------------------------------------------------------------------
 
@@ -274,7 +281,7 @@ export function niceTicks(lo: number, hi: number, count = 4): Ticks {
 
 export const fmtTick = (v: number, decimals: number) => {
   const s = v.toFixed(decimals)
-  return Number(s) === 0 ? '0' : s.replace('-', '−')
+  return Number(s) === 0 ? '0' : comma(s.replace('-', '−'))
 }
 
 /** Years to label on a time axis: every 10, 5, 2 or 1 years depending on the span. */

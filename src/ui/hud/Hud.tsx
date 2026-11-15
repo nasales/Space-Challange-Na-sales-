@@ -9,6 +9,7 @@ import Minimap from './Minimap'
 import Speedometer from './Speedometer'
 import SpeedLines from './SpeedLines'
 import './Hud.css'
+import { L } from '../../shared/i18n'
 
 export default function Hud({
   status,
@@ -36,7 +37,10 @@ export default function Hud({
       )}
       {status === 'error' && (
         <p className="hud__status">
-          Map data is missing. Run node scripts/fetch-map-data.mjs and node scripts/fetch-world-data.mjs
+          {L(
+            'Map data is missing. Run node scripts/fetch-map-data.mjs and node scripts/fetch-world-data.mjs',
+            'Faltan los datos del mapa. Ejecuta node scripts/fetch-map-data.mjs y node scripts/fetch-world-data.mjs',
+          )}
         </p>
       )}
     </div>

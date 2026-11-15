@@ -1,12 +1,17 @@
 // Small formatting helpers for the case file (numbers, dates, test names).
 import type { TutorialSeries } from '../../shared/tutorial'
+import { L, LANG } from '../../shared/i18n'
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const MONTHS = LANG === 'es'
+  ? ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+  : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 export const MONTH_SHORT = MONTHS
-export const MONTH_LONG = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-]
+export const MONTH_LONG = LANG === 'es'
+  ? ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+  : [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December',
+    ]
 
 /**
  * Repairs UTF-8 text that was decoded as Latin-1 somewhere on the way ("Â°C" -> "°C",
@@ -27,11 +32,14 @@ export function formatDate(date: string): string {
   return m ? `${MONTHS[Number(m) - 1] ?? m} ${y}` : y
 }
 
+/** Decimal comma in Spanish ("0.05" -> "0,05"); display only, never parsed back */
+const dec = (s: string) => (LANG === 'es' ? s.replace('.', ',') : s)
+
 /** Three significant digits, without trailing noise ("0.0227", "1.46", "312") */
 export function sig(x: number): string {
   if (x === 0) return '0'
   if (Math.abs(x) >= 100) return x.toFixed(0)
-  return Number(x.toPrecision(3)).toString()
+  return dec(Number(x.toPrecision(3)).toString())
 }
 
 /** Signed number for slopes: "+0.31", "−0.05" (true minus sign) */
@@ -43,18 +51,20 @@ export function signed(x: number): string {
 }
 
 export function formatP(p: number): string {
-  if (p < 0.001) return 'p < 0.001'
+  if (p < 0.001) return dec('p < 0.001')
   // near the 5% line two digits are not enough: 0.0498 must not read "0.05" (it is below it)
   if (p > 0.045 && p < 0.055) {
     const s = Number(p.toPrecision(3))
-    return `p = ${p < 0.05 && s >= 0.05 ? '0.0499' : s}`
+    return dec(`p = ${p < 0.05 && s >= 0.05 ? '0.0499' : s}`)
   }
-  return `p = ${Number(p.toPrecision(2))}`
+  return dec(`p = ${Number(p.toPrecision(2))}`)
 }
 
 export function testName(test: string): string {
   if (test.startsWith('mann-kendall')) {
-    return test.includes('prewhitening') ? 'Mann-Kendall test with pre-whitening' : 'Mann-Kendall test'
+    return test.includes('prewhitening')
+      ? L('Mann-Kendall test with pre-whitening', 'test de Mann-Kendall con preblanqueo')
+      : L('Mann-Kendall test', 'test de Mann-Kendall')
   }
   return test
 }
@@ -62,5 +72,5 @@ export function testName(test: string): string {
 /** "Data: NASA GPM_3IMERGM v07" (the dataset string already starts with NASA) */
 export function credit(...series: TutorialSeries[]): string {
   const names = [...new Set(series.map((s) => (s.dataset.startsWith('NASA') ? s.dataset : `NASA ${s.dataset}`)))]
-  return `Data: ${names.join('; ')}`
+  return L(`Data: ${names.join('; ')}`, `Datos: ${names.join('; ')}`)
 }

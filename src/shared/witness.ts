@@ -2,6 +2,7 @@
 // The game builds the model from `look`; the UI shows `name` and `role` in the dialogue.
 // Fictional adults only (AGENTS.md rule 11): never real victims or real people.
 // Changing this file needs agreement from Data (Diego), Interface and Game.
+import { L } from './i18n'
 
 export type HairStyle = 'short' | 'bald' | 'bun' | 'long' | 'curly'
 export type HatStyle = 'none' | 'cap' | 'straw' | 'beret'
@@ -36,7 +37,7 @@ export const WITNESSES: Partial<Record<string, Witness>> = {
   dana_valencia: {
     caseId: 'dana_valencia',
     name: 'Vicent',
-    role: "Retired orange farmer, l'Horta Sud",
+    role: L("Retired orange farmer, l'Horta Sud", "Naranjero jubilado, l'Horta Sud"),
     look: {
       skin: '#d9a77c',
       hair: '#d8d8d8',
@@ -54,7 +55,7 @@ export const WITNESSES: Partial<Record<string, Witness>> = {
   filomena_madrid: {
     caseId: 'filomena_madrid',
     name: 'Pilar',
-    role: 'Newspaper kiosk owner, Madrid',
+    role: L('Newspaper kiosk owner, Madrid', 'Dueña de un quiosco de prensa, Madrid'),
     look: {
       skin: '#e8b892',
       hair: '#b9b4ae',
@@ -71,7 +72,7 @@ export const WITNESSES: Partial<Record<string, Witness>> = {
   cordoba_heat: {
     caseId: 'cordoba_heat',
     name: 'Rafael',
-    role: 'Olive farmer, Guadalquivir valley',
+    role: L('Olive farmer, Guadalquivir valley', 'Olivarero, valle del Guadalquivir'),
     look: {
       skin: '#c48a5c',
       hair: '#2b2420',
@@ -87,7 +88,7 @@ export const WITNESSES: Partial<Record<string, Witness>> = {
   aneto_glacier: {
     caseId: 'aneto_glacier',
     name: 'Jordi',
-    role: 'Mountain hut keeper, Pyrenees',
+    role: L('Mountain hut keeper, Pyrenees', 'Guarda de refugio, Pirineos'),
     look: {
       skin: '#d6a07a',
       hair: '#6b4a32',
@@ -104,7 +105,7 @@ export const WITNESSES: Partial<Record<string, Witness>> = {
   donana: {
     caseId: 'donana',
     name: 'Carmen',
-    role: 'Birdwatching guide, Doñana',
+    role: L('Birdwatching guide, Doñana', 'Guía de observación de aves, Doñana'),
     look: {
       skin: '#c99068',
       hair: '#3a2a20',

@@ -1,22 +1,30 @@
 // "How it works": a full-screen comic walkthrough opened from the main menu. Two chapters
-// (the tool, then the statistics behind it), one page at a time. It is a native modal
+// (the tool, then the methods and evidence report behind it), one page at a time. It is a native modal
 // <dialog> (top layer, focus kept inside, Escape closes); Left/Right arrows turn the pages.
 import { useEffect, useRef, useState, type ComponentType, type KeyboardEvent } from 'react'
 import { playSfx } from '../../../shared/sound'
 import {
   PageCases,
+  PageChecking,
+  PageData,
+  PageFeatured,
   PageLimits,
   PageLoop,
-  PageLuck,
-  PageSeasons,
-  PageSlope,
-  PageTested,
+  PageMap,
+  PageQuestion,
+  PageReferences,
+  PageReport,
+  PageTable,
+  PageTestInterval,
+  PageTestSignificance,
+  PageTestSlope,
   PageWhat,
   PageWho,
 } from './pages'
 import './HowItWorks.css'
+import { L } from '../../../shared/i18n'
 
-const CHAPTERS = ['The tool', 'Statistical rigour'] as const
+const CHAPTERS = [L('The tool', 'La herramienta'), L('Statistical rigour', 'Rigor estadístico')] as const
 
 interface Page {
   chapter: 0 | 1
@@ -25,15 +33,22 @@ interface Page {
 }
 
 const PAGES: Page[] = [
-  { chapter: 0, title: "A detective game about Spain's climate", Body: PageWhat },
-  { chapter: 0, title: 'Made for curious minds, not statisticians', Body: PageWho },
-  { chapter: 0, title: 'How an investigation works', Body: PageLoop },
-  { chapter: 0, title: 'Featured cases, or any spot on the map', Body: PageCases },
-  { chapter: 1, title: 'Step 1: remove the seasons', Body: PageSeasons },
-  { chapter: 1, title: 'Step 2: measure the change', Body: PageSlope },
-  { chapter: 1, title: 'Step 3: real trend, or just luck?', Body: PageLuck },
-  { chapter: 1, title: 'We tested the tester', Body: PageTested },
-  { chapter: 1, title: 'Good detectives know the limits', Body: PageLimits },
+  { chapter: 0, title: L("A detective game about Spain's climate", 'Un juego de detectives sobre el clima de España'), Body: PageWhat },
+  { chapter: 0, title: L('Made for curious minds, not statisticians', 'Hecho para mentes curiosas, no para estadísticos'), Body: PageWho },
+  { chapter: 0, title: L('How an investigation works', 'Cómo funciona una investigación'), Body: PageLoop },
+  { chapter: 0, title: L('Featured cases, or any spot on the map', 'Casos destacados, o cualquier punto del mapa'), Body: PageCases },
+  { chapter: 1, title: L('Methods and evidence report', 'Informe de métodos y pruebas'), Body: PageReport },
+  { chapter: 1, title: L('The question', 'La pregunta'), Body: PageQuestion },
+  { chapter: 1, title: L('The data: three NASA products', 'Los datos: tres productos de la NASA'), Body: PageData },
+  { chapter: 1, title: L('How a trend is tested: the slope', 'Cómo se prueba una tendencia: la pendiente'), Body: PageTestSlope },
+  { chapter: 1, title: L('How a trend is tested: real or noise?', 'Cómo se prueba una tendencia: ¿real o ruido?'), Body: PageTestSignificance },
+  { chapter: 1, title: L('How a trend is tested: the 95 % interval', 'Cómo se prueba una tendencia: el intervalo del 95 %'), Body: PageTestInterval },
+  { chapter: 1, title: L('Checking the detective', 'Poniendo a prueba al detective'), Body: PageChecking },
+  { chapter: 1, title: L('What the data show: the featured places', 'Lo que muestran los datos: los lugares destacados'), Body: PageFeatured },
+  { chapter: 1, title: L('The featured series, in numbers', 'Las series destacadas, en cifras'), Body: PageTable },
+  { chapter: 1, title: L('What the data show: the whole map', 'Lo que muestran los datos: todo el mapa'), Body: PageMap },
+  { chapter: 1, title: L('What the evidence does not say', 'Lo que las pruebas no dicen'), Body: PageLimits },
+  { chapter: 1, title: L('References', 'Referencias'), Body: PageReferences },
 ]
 
 const firstOf = (chapter: number) => PAGES.findIndex((p) => p.chapter === chapter)
@@ -98,9 +113,9 @@ export default function HowItWorks({ onClose }: { onClose: () => void }) {
       <div className="how__frame">
         <header className="how__head">
           <h1 id="how-title" className="how__label">
-            How it works
+            {L('How it works', 'Cómo funciona')}
           </h1>
-          <nav className="how__chapters" aria-label="Chapters">
+          <nav className="how__chapters" aria-label={L('Chapters', 'Capítulos')}>
             {CHAPTERS.map((name, c) => (
               <button
                 key={name}
@@ -110,7 +125,9 @@ export default function HowItWorks({ onClose }: { onClose: () => void }) {
                 data-sfx="click"
                 onClick={() => go(firstOf(c))}
               >
-                <span className="how__chapter-n">Chapter {c + 1}</span>
+                <span className="how__chapter-n">
+                  {L('Chapter', 'Capítulo')} {c + 1}
+                </span>
                 {name}
               </button>
             ))}
@@ -119,14 +136,14 @@ export default function HowItWorks({ onClose }: { onClose: () => void }) {
             <svg viewBox="0 0 20 20" aria-hidden="true">
               <path d="M4 4l12 12M16 4L4 16" />
             </svg>
-            Close
+            {L('Close', 'Cerrar')}
           </button>
         </header>
 
         <div ref={stageRef} className="how__stage">
           <article key={index} className={`how__page how__page--ch${page.chapter + 1}`}>
             <p className="how__kicker">
-              Chapter {page.chapter + 1} · {CHAPTERS[page.chapter]}
+              {L('Chapter', 'Capítulo')} {page.chapter + 1} · {CHAPTERS[page.chapter]}
               <span className="how__kicker-count">
                 {posInChapter} / {inChapter.length}
               </span>
@@ -146,15 +163,15 @@ export default function HowItWorks({ onClose }: { onClose: () => void }) {
             data-sfx={isFirst ? 'off' : 'click'}
             onClick={() => !isFirst && go(index - 1)}
           >
-            <span aria-hidden="true">◀</span> Back
+            <span aria-hidden="true">◀</span> {L('Back', 'Atrás')}
           </button>
-          <ol className="how__dots" aria-label="Pages">
+          <ol className="how__dots" aria-label={L('Pages', 'Páginas')}>
             {PAGES.map((p, i) => (
               <li key={p.title} className={i > 0 && p.chapter !== PAGES[i - 1].chapter ? 'how__dot-item how__dot-item--split' : 'how__dot-item'}>
                 <button
                   type="button"
                   className={`how__dot how__dot--ch${p.chapter + 1}`}
-                  aria-label={`Page ${i + 1}: ${p.title}`}
+                  aria-label={L(`Page ${i + 1}: ${p.title}`, `Página ${i + 1}: ${p.title}`)}
                   aria-current={i === index ? 'step' : undefined}
                   data-sfx="click"
                   onClick={() => go(i)}
@@ -169,10 +186,10 @@ export default function HowItWorks({ onClose }: { onClose: () => void }) {
             data-sfx={isLast ? 'confirm' : 'click'}
             onClick={() => (isLast ? onClose() : go(index + 1))}
           >
-            {isLast ? 'Close file' : 'Next'} <span aria-hidden="true">▶</span>
+            {isLast ? L('Close file', 'Cerrar expediente') : L('Next', 'Siguiente')} <span aria-hidden="true">▶</span>
           </button>
           <p className="how__sr" aria-live="polite">
-            Page {index + 1} of {PAGES.length}: {page.title}
+            {L(`Page ${index + 1} of ${PAGES.length}: ${page.title}`, `Página ${index + 1} de ${PAGES.length}: ${page.title}`)}
           </p>
         </footer>
       </div>

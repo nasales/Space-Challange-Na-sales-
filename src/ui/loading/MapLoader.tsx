@@ -7,19 +7,20 @@ import type { GameStatus } from '../../shared/events'
 import type { Outfit } from '../../shared/outfit'
 import LoadingDetective from './LoadingDetective'
 import './MapLoader.css'
+import { L } from '../../shared/i18n'
 
 /** How long the finished bar stays on screen before it disappears (ms). */
 const OUTRO_MS = 700
 
 /** Caption under the title for each loading step (thresholds match the steps in GameView). */
 function stepCaption(p: number, done: boolean) {
-  if (done) return 'Case open!'
-  if (p < 0.04) return 'Pulling the case files'
-  if (p < 0.15) return 'Rolling out the world'
-  if (p < 0.89) return 'Sketching coasts, rivers and roads'
-  if (p < 0.92) return 'Building the towns'
-  if (p < 0.96) return 'Planting groves and forests'
-  return 'Waking up the detective'
+  if (done) return L('Case open!', '¡Caso abierto!')
+  if (p < 0.04) return L('Pulling the case files', 'Sacando los expedientes')
+  if (p < 0.15) return L('Rolling out the world', 'Desplegando el mundo')
+  if (p < 0.89) return L('Sketching coasts, rivers and roads', 'Dibujando costas, ríos y carreteras')
+  if (p < 0.92) return L('Building the towns', 'Levantando los pueblos')
+  if (p < 0.96) return L('Planting groves and forests', 'Plantando arboledas y bosques')
+  return L('Waking up the detective', 'Despertando al detective')
 }
 
 export default function MapLoader({ status, progress, outfit }: { status: GameStatus; progress: number; outfit: Outfit }) {
@@ -40,7 +41,7 @@ export default function MapLoader({ status, progress, outfit }: { status: GameSt
   return (
     <div className={`map-loader${done ? ' map-loader--done' : ''}`} style={{ '--p': p } as CSSProperties}>
       <div className="map-loader__stage">
-        <h2 className="map-loader__title">Drawing the map…</h2>
+        <h2 className="map-loader__title">{L('Drawing the map…', 'Dibujando el mapa…')}</h2>
         <p className="map-loader__caption">{stepCaption(p, done)}</p>
 
         <div className="map-loader__track">
@@ -59,24 +60,24 @@ export default function MapLoader({ status, progress, outfit }: { status: GameSt
             <span className="map-loader__puff" />
             <span className="map-loader__puff" />
             <span className="map-loader__puff" />
-            <span className="map-loader__sfx">Skrrt!</span>
+            <span className="map-loader__sfx">{L('Skrrt!', '¡Ñiiic!')}</span>
           </div>
           <div className="map-loader__fx map-loader__fx--trip" aria-hidden="true">
             <span className="map-loader__puff" />
             <span className="map-loader__puff" />
-            <span className="map-loader__sfx">Oof!</span>
+            <span className="map-loader__sfx">{L('Oof!', '¡Uf!')}</span>
           </div>
           <div className="map-loader__fx map-loader__fx--left" aria-hidden="true">
             <span className="map-loader__puff" />
             <span className="map-loader__puff" />
             <span className="map-loader__puff" />
-            <span className="map-loader__sfx">Skrrt!</span>
+            <span className="map-loader__sfx">{L('Skrrt!', '¡Ñiiic!')}</span>
           </div>
 
           <div
             className="map-loader__bar"
             role="progressbar"
-            aria-label="Loading the map"
+            aria-label={L('Loading the map', 'Cargando el mapa')}
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={percent}

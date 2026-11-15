@@ -2,6 +2,7 @@
 // clue per solved step (its `clue`, or its takeaway when the script has none). A new clue lands
 // with a small ink-stamp animation. On phones it folds into a bar above the case file.
 import { useState } from 'react'
+import { L } from '../../shared/i18n'
 import './Notebook.css'
 
 export interface NotebookClue {
@@ -24,11 +25,11 @@ interface Props {
   emptyText?: string
 }
 
-export default function Notebook({ claim, witnessName, clues, total, variant = 'side', emptyText = 'Solve each step to note a clue here.' }: Props) {
+export default function Notebook({ claim, witnessName, clues, total, variant = 'side', emptyText = L('Solve each step to note a clue here.', 'Resuelve cada paso para anotar aquí una pista.') }: Props) {
   const [open, setOpen] = useState(false)
   const side = variant === 'side'
   return (
-    <aside className={`notebook notebook--${variant}${open ? ' is-open' : ''}`} aria-label="Detective's notebook">
+    <aside className={`notebook notebook--${variant}${open ? ' is-open' : ''}`} aria-label={L("Detective's notebook", 'Libreta del detective')}>
       {side && (
         <button
           type="button"
@@ -37,10 +38,10 @@ export default function Notebook({ claim, witnessName, clues, total, variant = '
           aria-controls="notebook-pages"
           onClick={() => setOpen((o) => !o)}
         >
-          <span>Notebook</span>
+          <span>{L('Notebook', 'Libreta')}</span>
           {/* key: the badge pops again each time a clue is added */}
           <span key={clues.length} className="notebook__badge">
-            {clues.length} / {total} clues
+            {L(`${clues.length} / ${total} clues`, `${clues.length} / ${total} pistas`)}
           </span>
           <span className="notebook__chev" aria-hidden="true">
             ▾
@@ -49,11 +50,11 @@ export default function Notebook({ claim, witnessName, clues, total, variant = '
       )}
       <div className="notebook__pages" id={side ? 'notebook-pages' : undefined}>
         <span className="notebook__rings" aria-hidden="true" />
-        <h2 className="notebook__title">{side ? "Detective's notebook" : 'From the notebook'}</h2>
+        <h2 className="notebook__title">{side ? L("Detective's notebook", 'Libreta del detective') : L('From the notebook', 'De la libreta')}</h2>
         {claim && (
           <figure className="notebook__claim">
             <span className="notebook__pin" aria-hidden="true" />
-            <p className="notebook__claim-label">Witness says:</p>
+            <p className="notebook__claim-label">{L('Witness says:', 'El testigo dice:')}</p>
             <blockquote className="notebook__claim-text">&ldquo;{claim}&rdquo;</blockquote>
             {witnessName && <figcaption className="notebook__claim-who">— {witnessName}</figcaption>}
           </figure>
@@ -66,10 +67,10 @@ export default function Notebook({ claim, witnessName, clues, total, variant = '
               {clues.map((c) => (
                 <li key={c.id} className="notebook__clue">
                   <span className="notebook__stamp" aria-hidden="true">
-                    Clue {c.n}
+                    {L(`Clue ${c.n}`, `Pista ${c.n}`)}
                   </span>
                   <span className="notebook__clue-text">
-                    <span className="notebook__sr">Clue {c.n}: </span>
+                    <span className="notebook__sr">{L(`Clue ${c.n}: `, `Pista ${c.n}: `)}</span>
                     {c.text}
                   </span>
                 </li>

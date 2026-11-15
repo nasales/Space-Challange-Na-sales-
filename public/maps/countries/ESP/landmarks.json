@@ -7,7 +7,8 @@
       "lat": 40.41998,
       "lon": -3.68873,
       "heading": 0,
-      "description": "Monumental gate from 1778, the old entrance to Madrid on the road from Alcalá."
+      "description": "Monumental gate from 1778, the old entrance to Madrid on the road from Alcalá.",
+      "description_es": "Puerta monumental de 1778, la antigua entrada a Madrid por el camino de Alcalá."
     },
     {
       "id": "acueducto-segovia",
@@ -16,7 +17,8 @@
       "lat": 40.94808,
       "lon": -4.11815,
       "heading": 35,
-      "description": "1st-century Roman aqueduct with more than 160 granite arches built without mortar."
+      "description": "1st-century Roman aqueduct with more than 160 granite arches built without mortar.",
+      "description_es": "Acueducto romano del siglo I con más de 160 arcos de granito levantados sin argamasa."
     },
     {
       "id": "sagrada-familia",
@@ -26,7 +28,8 @@
       "lon": 2.17435,
       "heading": 0,
       "scale": 0.75,
-      "description": "Gaudí's basilica, under construction since 1882, with 18 planned towers."
+      "description": "Gaudí's basilica, under construction since 1882, with 18 planned towers.",
+      "description_es": "La basílica de Gaudí, en obras desde 1882, con 18 torres previstas."
     },
     {
       "id": "giralda",
@@ -36,7 +39,8 @@
       "lon": -5.99259,
       "heading": 0,
       "scale": 0.5,
-      "description": "Bell tower of Seville Cathedral, once a 12th-century Almohad minaret."
+      "description": "Bell tower of Seville Cathedral, once a 12th-century Almohad minaret.",
+      "description_es": "Campanario de la catedral de Sevilla, antes alminar almohade del siglo XII."
     },
     {
       "id": "alhambra",
@@ -46,7 +50,8 @@
       "lon": -3.58807,
       "heading": 0,
       "scale": 0.5,
-      "description": "Nasrid palace city from the 13th and 14th centuries on the Sabika hill."
+      "description": "Nasrid palace city from the 13th and 14th centuries on the Sabika hill.",
+      "description_es": "Ciudad palatina nazarí de los siglos XIII y XIV sobre la colina de la Sabika."
     },
     {
       "id": "catedral-santiago",
@@ -56,7 +61,8 @@
       "lon": -8.54457,
       "heading": -90,
       "scale": 0.42,
-      "description": "End of the Way of St. James, with its Baroque Obradoiro façade."
+      "description": "End of the Way of St. James, with its Baroque Obradoiro façade.",
+      "description_es": "Final del Camino de Santiago, con su fachada barroca del Obradoiro."
     },
     {
       "id": "guggenheim",
@@ -66,7 +72,8 @@
       "lon": -2.93402,
       "heading": 0,
       "scale": 0.45,
-      "description": "Frank Gehry's 1997 museum, clad in titanium beside the estuary."
+      "description": "Frank Gehry's 1997 museum, clad in titanium beside the estuary.",
+      "description_es": "El museo de Frank Gehry de 1997, revestido de titanio junto a la ría."
     },
     {
       "id": "ciudad-artes",
@@ -76,7 +83,8 @@
       "lon": -0.35049,
       "heading": 0,
       "scale": 0.4,
-      "description": "Santiago Calatrava's complex in the old bed of the Turia river."
+      "description": "Santiago Calatrava's complex in the old bed of the Turia river.",
+      "description_es": "El conjunto de Santiago Calatrava en el antiguo cauce del río Turia."
     },
     {
       "id": "torre-hercules",
@@ -86,7 +94,8 @@
       "lon": -8.40643,
       "heading": 0,
       "scale": 0.5,
-      "description": "1st-century Roman lighthouse, the oldest in the world still in use."
+      "description": "1st-century Roman lighthouse, the oldest in the world still in use.",
+      "description_es": "Faro romano del siglo I, el más antiguo del mundo aún en funcionamiento."
     },
     {
       "id": "mezquita-cordoba",
@@ -96,7 +105,8 @@
       "lon": -4.77938,
       "heading": 0,
       "scale": 0.42,
-      "description": "8th-century Umayyad mosque with its forest of red and white arches."
+      "description": "8th-century Umayyad mosque with its forest of red and white arches.",
+      "description_es": "Mezquita omeya del siglo VIII con su bosque de arcos rojos y blancos."
     },
     {
       "id": "castillo-penafiel",
@@ -109,7 +119,8 @@
       "plaza": 12,
       "blend": 24,
       "clearance": 20,
-      "description": "Long, narrow 'ship-shaped' castle on a hill crest, with a 34 m keep between two courtyards."
+      "description": "Long, narrow 'ship-shaped' castle on a hill crest, with a 34 m keep between two courtyards.",
+      "description_es": "Castillo largo y estrecho «en forma de barco» sobre la cresta de un cerro, con una torre del homenaje de 34 m entre dos patios."
     },
     {
       "id": "catedral-burgos",
@@ -119,7 +130,8 @@
       "lon": -3.70444,
       "heading": 0,
       "scale": 0.42,
-      "description": "Gothic cathedral begun in 1221, famous for its openwork spires and crossing lantern."
+      "description": "Gothic cathedral begun in 1221, famous for its openwork spires and crossing lantern.",
+      "description_es": "Catedral gótica empezada en 1221, famosa por sus agujas caladas y su cimborrio."
     },
     {
       "id": "teatro-merida",
@@ -129,7 +141,8 @@
       "lon": -6.28448,
       "heading": -53,
       "scale": 0.27,
-      "description": "Roman theatre from 16-15 BC with a two-storey columned stage front, still used for plays."
+      "description": "Roman theatre from 16-15 BC with a two-storey columned stage front, still used for plays.",
+      "description_es": "Teatro romano del 16-15 a. C. con un frente escénico de columnas en dos pisos, donde aún se representan obras."
     },
     {
       "id": "basilica-pilar",
@@ -139,7 +152,8 @@
       "lon": -0.93246,
       "heading": -15,
       "scale": 0.25,
-      "description": "Baroque basilica beside the Ebro, with four tall towers and domes of glazed tiles."
+      "description": "Baroque basilica beside the Ebro, with four tall towers and domes of glazed tiles.",
+      "description_es": "Basílica barroca junto al Ebro, con cuatro torres altas y cúpulas de tejas vidriadas."
     },
     {
       "id": "casas-colgadas",
@@ -149,7 +163,8 @@
       "lon": -2.01916,
       "heading": 85,
       "scale": 0.42,
-      "description": "15th-century Hanging Houses with wooden balconies over the cliff of the Huécar gorge."
+      "description": "15th-century Hanging Houses with wooden balconies over the cliff of the Huécar gorge.",
+      "description_es": "Casas Colgadas del siglo XV con balcones de madera sobre el cortado de la hoz del Huécar."
     },
     {
       "id": "plaza-mayor-salamanca",
@@ -159,7 +174,8 @@
       "lon": -5.7551,
       "heading": -29,
       "scale": 0.26,
-      "description": "18th-century Baroque square of golden sandstone, closed on all four sides by arcades."
+      "description": "18th-century Baroque square of golden sandstone, closed on all four sides by arcades.",
+      "description_es": "Plaza barroca del siglo XVIII de arenisca dorada, cerrada por soportales en sus cuatro lados."
     },
     {
       "id": "catedral-murcia",
@@ -169,7 +185,8 @@
       "lon": -1.12833,
       "heading": -90,
       "scale": 0.4,
-      "description": "Gothic cathedral with a Baroque altarpiece façade by Jaime Bort and one of the tallest bell towers in Spain."
+      "description": "Gothic cathedral with a Baroque altarpiece façade by Jaime Bort and one of the tallest bell towers in Spain.",
+      "description_es": "Catedral gótica con una fachada barroca en forma de retablo de Jaime Bort y uno de los campanarios más altos de España."
     },
     {
       "id": "alcazaba-almeria",
@@ -181,7 +198,8 @@
       "scale": 0.3,
       "plaza": 30,
       "blend": 40,
-      "description": "10th-century Moorish fortress whose walls and towers climb a rocky ridge above Almería in three enclosures, crowned by a Christian castle."
+      "description": "10th-century Moorish fortress whose walls and towers climb a rocky ridge above Almería in three enclosures, crowned by a Christian castle.",
+      "description_es": "Fortaleza andalusí del siglo X cuyas murallas y torres trepan por una cresta rocosa sobre Almería en tres recintos, coronada por un castillo cristiano."
     },
     {
       "id": "alcazar-toledo",
@@ -194,37 +212,38 @@
       "plaza": 14,
       "blend": 28,
       "clearance": 24,
-      "description": "Square Renaissance fortress crowning the hill of Toledo, with four corner towers topped by slate spires around an arcaded courtyard."
+      "description": "Square Renaissance fortress crowning the hill of Toledo, with four corner towers topped by slate spires around an arcaded courtyard.",
+      "description_es": "Fortaleza renacentista cuadrada que corona el cerro de Toledo, con cuatro torres en las esquinas rematadas por chapiteles de pizarra alrededor de un patio porticado."
     },
-    { "id": "muralla-avila", "name": "Murallas de Ávila", "city": "Ávila", "lat": 40.6564, "lon": -4.6786, "heading": 0, "scale": 0.13, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "Complete 12th-century granite walls with 87 round towers; here the Puerta del Alcázar between its two great towers." },
-    { "id": "catedral-leon", "name": "Catedral de León", "city": "León", "lat": 42.5994, "lon": -5.5669, "heading": 0, "scale": 0.18, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "13th-century Gothic cathedral, 'Pulchra Leonina', with almost 1,800 square metres of stained glass." },
-    { "id": "cristo-otero", "name": "Cristo del Otero", "city": "Palencia", "lat": 42.0184, "lon": -4.5244, "heading": 0, "scale": 0.22, "plaza": 8, "blend": 22, "clearance": 18, "travel": false, "description": "Art Deco statue of Christ by Victorio Macho (1931), over 20 m tall, blessing Palencia from its hill." },
-    { "id": "arcos-soria", "name": "Arcos de San Juan de Duero", "city": "Soria", "lat": 41.7695, "lon": -2.4861, "heading": 0, "scale": 0.17, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "Cloister of a 12th-century monastery of the Knights Hospitaller by the Duero, with its unusual interlaced arches." },
-    { "id": "san-pablo-valladolid", "name": "Iglesia de San Pablo", "city": "Valladolid", "lat": 41.6528, "lon": -4.6953, "heading": 0, "scale": 0.18, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "Dominican church whose late-Gothic façade is carved like a stone altarpiece." },
-    { "id": "catedral-zamora", "name": "Catedral de Zamora", "city": "Zamora", "lat": 41.4949, "lon": -5.7488, "heading": 90, "scale": 0.18, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "12th-century Romanesque cathedral crowned by its famous dome of stone scales and four corner turrets." },
-    { "id": "palacio-infantado", "name": "Palacio del Infantado", "city": "Guadalajara", "lat": 40.6551, "lon": -3.1374, "heading": 0, "scale": 0.17, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "15th-century palace of the Mendoza family, its façade studded with diamond-point stones under an arcaded gallery." },
-    { "id": "puerta-toledo-ciudad-real", "name": "Puerta de Toledo", "city": "Ciudad Real", "lat": 38.9937, "lon": -3.9263, "heading": 0, "scale": 0.18, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "Gothic-Mudéjar gate from 1328, the last of the old city wall, between two crenellated towers." },
-    { "id": "puerta-hierros", "name": "Puerta de Hierros", "city": "Albacete", "lat": 38.99, "lon": -1.8509, "heading": 0, "scale": 0.18, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "White entrance gate of the round fairground where the September fair has been held since the 18th century." },
-    { "id": "torre-bujaco", "name": "Torre de Bujaco", "city": "Cáceres", "lat": 39.4611, "lon": -6.3887, "heading": 0, "scale": 0.2, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "Almohad tower on the Plaza Mayor, beside the Arco de la Estrella that leads into the walled old town." },
-    { "id": "puerta-palmas", "name": "Puerta de Palmas", "city": "Badajoz", "lat": 38.8681, "lon": -6.9727, "heading": 0, "scale": 0.2, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "16th-century city gate between two round crenellated towers, at the end of the old bridge over the Guadiana." },
-    { "id": "catedral-oviedo", "name": "Catedral de Oviedo", "city": "Oviedo", "lat": 43.3625, "lon": -5.8434, "heading": 0, "scale": 0.17, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "Gothic cathedral of San Salvador with a three-arched porch and a single tower crowned by an openwork spire." },
-    { "id": "palacio-magdalena", "name": "Palacio de la Magdalena", "city": "Santander", "lat": 43.4416, "lon": -3.7191, "heading": 0, "scale": 0.17, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "Early 20th-century summer palace of the royal family, with English-style slate roofs, on a peninsula by the bay." },
-    { "id": "muralla-lugo", "name": "Muralla de Lugo", "city": "Lugo", "lat": 43.0233, "lon": -7.5332, "heading": 0, "scale": 0.17, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "3rd-century Roman walls, over 2 km long with 85 towers, the only Roman walls still complete around a city." },
-    { "id": "peregrina", "name": "Santuario da Peregrina", "city": "Pontevedra", "lat": 42.4319, "lon": -8.6387, "heading": 0, "scale": 0.22, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "18th-century Baroque church with a round plan shaped like a scallop shell, on the Portuguese Way to Santiago." },
-    { "id": "buen-pastor", "name": "Catedral del Buen Pastor", "city": "San Sebastián", "lat": 43.294, "lon": -1.9686, "heading": 0, "scale": 0.17, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "Neo-Gothic cathedral from 1897 whose 75 m spire is the tallest building in the city." },
-    { "id": "santa-maria-vitoria", "name": "Catedral de Santa María", "city": "Vitoria-Gasteiz", "lat": 42.8467, "lon": -2.6716, "heading": 0, "scale": 0.17, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "Gothic cathedral on the top of the medieval town, with a painted portico and its bell tower beside it." },
-    { "id": "ayuntamiento-pamplona", "name": "Ayuntamiento de Pamplona", "city": "Pamplona", "lat": 42.8169, "lon": -1.644, "heading": 0, "scale": 0.22, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "Baroque town hall whose balcony opens the San Fermín festival every 6 July with the 'chupinazo' rocket." },
-    { "id": "la-redonda", "name": "Concatedral de La Redonda", "city": "Logroño", "lat": 42.4615, "lon": -2.4454, "heading": 0, "scale": 0.17, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "Church on the Way of St. James, famous for its two 18th-century Baroque towers known as 'the twins'." },
-    { "id": "catedral-girona", "name": "Catedral de Girona", "city": "Girona", "lat": 41.9874, "lon": 2.8263, "heading": 0, "scale": 0.16, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "Cathedral with the widest Gothic nave in the world, at the top of a grand Baroque staircase." },
-    { "id": "seu-vella", "name": "La Seu Vella", "city": "Lleida", "lat": 41.6319, "lon": 0.6086, "heading": 0, "scale": 0.17, "plaza": 8, "blend": 22, "clearance": 18, "travel": false, "description": "13th-century cathedral on the hill above the Segre, with a 60 m octagonal bell tower that can be seen from the whole plain." },
-    { "id": "amfiteatre-tarragona", "name": "Amfiteatre de Tarraco", "city": "Tarragona", "lat": 41.1421, "lon": 1.2356, "heading": 0, "scale": 0.2, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "2nd-century Roman amphitheatre by the sea, with the ruins of a Romanesque church in its arena." },
-    { "id": "catedral-huesca", "name": "Catedral de Huesca", "city": "Huesca", "lat": 42.1394, "lon": -0.4088, "heading": 0, "scale": 0.17, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "Gothic cathedral whose deep portal is sheltered by a carved wooden Mudéjar eave." },
-    { "id": "torre-salvador", "name": "Torre de El Salvador", "city": "Teruel", "lat": 40.3166, "lon": -1.096, "heading": 0, "scale": 0.2, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "14th-century Mudéjar brick tower over a street arch, inlaid with green and white glazed tiles (UNESCO World Heritage)." },
-    { "id": "fadri", "name": "El Fadrí", "city": "Castellón de la Plana", "lat": 39.9863, "lon": -0.0379, "heading": 0, "scale": 0.2, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "Octagonal Gothic bell tower, 58 m tall, standing on its own beside the co-cathedral ('fadrí' means bachelor)." },
-    { "id": "santa-barbara", "name": "Castillo de Santa Bárbara", "city": "Alicante", "lat": 38.367, "lon": -0.507, "heading": 0, "scale": 0.2, "plaza": 8, "blend": 22, "clearance": 18, "travel": false, "description": "Castle on the top of Mount Benacantil, 166 m above the port of Alicante." },
-    { "id": "la-seu-palma", "name": "La Seu", "city": "Palma", "lat": 39.5992, "lon": 2.6542, "heading": 0, "scale": 0.15, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "Gothic cathedral of Mallorca facing the sea, with tall buttresses and one of the largest rose windows in the world." },
-    { "id": "colon-huelva", "name": "Monumento a la Fe Descubridora", "city": "Huelva", "lat": 37.2931, "lon": -6.9271, "heading": 0, "scale": 0.2, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "37 m statue of a friar holding a tau cross (1929), a gift from the United States for the voyage of Columbus." },
-    { "id": "catedral-jaen", "name": "Catedral de Jaén", "city": "Jaén", "lat": 37.77, "lon": -3.7545, "heading": 0, "scale": 0.16, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "Renaissance cathedral by Andrés de Vandelvira, model for many cathedrals in Latin America." },
-    { "id": "manquita", "name": "Catedral de Málaga", "city": "Málaga", "lat": 36.7157, "lon": -4.478, "heading": 0, "scale": 0.16, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "Renaissance cathedral nicknamed 'La Manquita' (the one-armed lady) because its south tower was never finished." }
+    { "id": "muralla-avila", "name": "Murallas de Ávila", "city": "Ávila", "lat": 40.6564, "lon": -4.6786, "heading": 0, "scale": 0.13, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "Complete 12th-century granite walls with 87 round towers; here the Puerta del Alcázar between its two great towers.", "description_es": "Murallas de granito completas del siglo XII con 87 torres redondas; aquí, la Puerta del Alcázar entre sus dos grandes torreones." },
+    { "id": "catedral-leon", "name": "Catedral de León", "city": "León", "lat": 42.5994, "lon": -5.5669, "heading": 0, "scale": 0.18, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "13th-century Gothic cathedral, 'Pulchra Leonina', with almost 1,800 square metres of stained glass.", "description_es": "Catedral gótica del siglo XIII, la 'Pulchra Leonina', con casi 1.800 metros cuadrados de vidrieras." },
+    { "id": "cristo-otero", "name": "Cristo del Otero", "city": "Palencia", "lat": 42.0184, "lon": -4.5244, "heading": 0, "scale": 0.22, "plaza": 8, "blend": 22, "clearance": 18, "travel": false, "description": "Art Deco statue of Christ by Victorio Macho (1931), over 20 m tall, blessing Palencia from its hill.", "description_es": "Estatua art déco de Cristo de Victorio Macho (1931), de más de 20 m, que bendice Palencia desde su cerro." },
+    { "id": "arcos-soria", "name": "Arcos de San Juan de Duero", "city": "Soria", "lat": 41.7695, "lon": -2.4861, "heading": 0, "scale": 0.17, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "Cloister of a 12th-century monastery of the Knights Hospitaller by the Duero, with its unusual interlaced arches.", "description_es": "Claustro de un monasterio de los caballeros hospitalarios del siglo XII junto al Duero, con sus curiosos arcos entrecruzados." },
+    { "id": "san-pablo-valladolid", "name": "Iglesia de San Pablo", "city": "Valladolid", "lat": 41.6528, "lon": -4.6953, "heading": 0, "scale": 0.18, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "Dominican church whose late-Gothic façade is carved like a stone altarpiece.", "description_es": "Iglesia dominica cuya fachada gótica tardía está tallada como un retablo de piedra." },
+    { "id": "catedral-zamora", "name": "Catedral de Zamora", "city": "Zamora", "lat": 41.4949, "lon": -5.7488, "heading": 90, "scale": 0.18, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "12th-century Romanesque cathedral crowned by its famous dome of stone scales and four corner turrets.", "description_es": "Catedral románica del siglo XII coronada por su famoso cimborrio de escamas de piedra y cuatro torrecillas." },
+    { "id": "palacio-infantado", "name": "Palacio del Infantado", "city": "Guadalajara", "lat": 40.6551, "lon": -3.1374, "heading": 0, "scale": 0.17, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "15th-century palace of the Mendoza family, its façade studded with diamond-point stones under an arcaded gallery.", "description_es": "Palacio de los Mendoza del siglo XV, con la fachada cubierta de puntas de diamante bajo una galería porticada." },
+    { "id": "puerta-toledo-ciudad-real", "name": "Puerta de Toledo", "city": "Ciudad Real", "lat": 38.9937, "lon": -3.9263, "heading": 0, "scale": 0.18, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "Gothic-Mudéjar gate from 1328, the last of the old city wall, between two crenellated towers.", "description_es": "Puerta gótico-mudéjar de 1328, la última de la antigua muralla, entre dos torres almenadas." },
+    { "id": "puerta-hierros", "name": "Puerta de Hierros", "city": "Albacete", "lat": 38.99, "lon": -1.8509, "heading": 0, "scale": 0.18, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "White entrance gate of the round fairground where the September fair has been held since the 18th century.", "description_es": "Puerta blanca de entrada al recinto ferial redondo donde se celebra la feria de septiembre desde el siglo XVIII." },
+    { "id": "torre-bujaco", "name": "Torre de Bujaco", "city": "Cáceres", "lat": 39.4611, "lon": -6.3887, "heading": 0, "scale": 0.2, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "Almohad tower on the Plaza Mayor, beside the Arco de la Estrella that leads into the walled old town.", "description_es": "Torre almohade en la Plaza Mayor, junto al Arco de la Estrella que da paso a la ciudad amurallada." },
+    { "id": "puerta-palmas", "name": "Puerta de Palmas", "city": "Badajoz", "lat": 38.8681, "lon": -6.9727, "heading": 0, "scale": 0.2, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "16th-century city gate between two round crenellated towers, at the end of the old bridge over the Guadiana.", "description_es": "Puerta de la ciudad del siglo XVI entre dos torres redondas almenadas, al final del puente viejo sobre el Guadiana." },
+    { "id": "catedral-oviedo", "name": "Catedral de Oviedo", "city": "Oviedo", "lat": 43.3625, "lon": -5.8434, "heading": 0, "scale": 0.17, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "Gothic cathedral of San Salvador with a three-arched porch and a single tower crowned by an openwork spire.", "description_es": "Catedral gótica de San Salvador con un pórtico de tres arcos y una única torre rematada por una aguja calada." },
+    { "id": "palacio-magdalena", "name": "Palacio de la Magdalena", "city": "Santander", "lat": 43.4416, "lon": -3.7191, "heading": 0, "scale": 0.17, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "Early 20th-century summer palace of the royal family, with English-style slate roofs, on a peninsula by the bay.", "description_es": "Palacio de verano de la familia real de principios del siglo XX, con tejados de pizarra de estilo inglés, en una península junto a la bahía." },
+    { "id": "muralla-lugo", "name": "Muralla de Lugo", "city": "Lugo", "lat": 43.0233, "lon": -7.5332, "heading": 0, "scale": 0.17, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "3rd-century Roman walls, over 2 km long with 85 towers, the only Roman walls still complete around a city.", "description_es": "Muralla romana del siglo III, de más de 2 km y 85 torres, la única muralla romana que aún rodea entera una ciudad." },
+    { "id": "peregrina", "name": "Santuario da Peregrina", "city": "Pontevedra", "lat": 42.4319, "lon": -8.6387, "heading": 0, "scale": 0.22, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "18th-century Baroque church with a round plan shaped like a scallop shell, on the Portuguese Way to Santiago.", "description_es": "Iglesia barroca del siglo XVIII con planta redonda en forma de concha de vieira, en el Camino Portugués a Santiago." },
+    { "id": "buen-pastor", "name": "Catedral del Buen Pastor", "city": "San Sebastián", "lat": 43.294, "lon": -1.9686, "heading": 0, "scale": 0.17, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "Neo-Gothic cathedral from 1897 whose 75 m spire is the tallest building in the city.", "description_es": "Catedral neogótica de 1897 cuya aguja de 75 m es el edificio más alto de la ciudad." },
+    { "id": "santa-maria-vitoria", "name": "Catedral de Santa María", "city": "Vitoria-Gasteiz", "lat": 42.8467, "lon": -2.6716, "heading": 0, "scale": 0.17, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "Gothic cathedral on the top of the medieval town, with a painted portico and its bell tower beside it.", "description_es": "Catedral gótica en lo alto de la villa medieval, con un pórtico pintado y su campanario al lado." },
+    { "id": "ayuntamiento-pamplona", "name": "Ayuntamiento de Pamplona", "city": "Pamplona", "lat": 42.8169, "lon": -1.644, "heading": 0, "scale": 0.22, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "Baroque town hall whose balcony opens the San Fermín festival every 6 July with the 'chupinazo' rocket.", "description_es": "Ayuntamiento barroco desde cuyo balcón arrancan los Sanfermines cada 6 de julio con el chupinazo." },
+    { "id": "la-redonda", "name": "Concatedral de La Redonda", "city": "Logroño", "lat": 42.4615, "lon": -2.4454, "heading": 0, "scale": 0.17, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "Church on the Way of St. James, famous for its two 18th-century Baroque towers known as 'the twins'.", "description_es": "Iglesia del Camino de Santiago, famosa por sus dos torres barrocas del siglo XVIII conocidas como 'las gemelas'." },
+    { "id": "catedral-girona", "name": "Catedral de Girona", "city": "Girona", "lat": 41.9874, "lon": 2.8263, "heading": 0, "scale": 0.16, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "Cathedral with the widest Gothic nave in the world, at the top of a grand Baroque staircase.", "description_es": "Catedral con la nave gótica más ancha del mundo, en lo alto de una gran escalinata barroca." },
+    { "id": "seu-vella", "name": "La Seu Vella", "city": "Lleida", "lat": 41.6319, "lon": 0.6086, "heading": 0, "scale": 0.17, "plaza": 8, "blend": 22, "clearance": 18, "travel": false, "description": "13th-century cathedral on the hill above the Segre, with a 60 m octagonal bell tower that can be seen from the whole plain.", "description_es": "Catedral del siglo XIII en el cerro sobre el Segre, con un campanario octogonal de 60 m que se ve desde toda la llanura." },
+    { "id": "amfiteatre-tarragona", "name": "Amfiteatre de Tarraco", "city": "Tarragona", "lat": 41.1421, "lon": 1.2356, "heading": 0, "scale": 0.2, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "2nd-century Roman amphitheatre by the sea, with the ruins of a Romanesque church in its arena.", "description_es": "Anfiteatro romano del siglo II junto al mar, con las ruinas de una iglesia románica en su arena." },
+    { "id": "catedral-huesca", "name": "Catedral de Huesca", "city": "Huesca", "lat": 42.1394, "lon": -0.4088, "heading": 0, "scale": 0.17, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "Gothic cathedral whose deep portal is sheltered by a carved wooden Mudéjar eave.", "description_es": "Catedral gótica cuya profunda portada está protegida por un alero mudéjar de madera tallada." },
+    { "id": "torre-salvador", "name": "Torre de El Salvador", "city": "Teruel", "lat": 40.3166, "lon": -1.096, "heading": 0, "scale": 0.2, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "14th-century Mudéjar brick tower over a street arch, inlaid with green and white glazed tiles (UNESCO World Heritage).", "description_es": "Torre mudéjar de ladrillo del siglo XIV sobre un arco de la calle, decorada con azulejos verdes y blancos (Patrimonio de la Humanidad)." },
+    { "id": "fadri", "name": "El Fadrí", "city": "Castellón de la Plana", "lat": 39.9863, "lon": -0.0379, "heading": 0, "scale": 0.2, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "Octagonal Gothic bell tower, 58 m tall, standing on its own beside the co-cathedral ('fadrí' means bachelor).", "description_es": "Campanario gótico octogonal de 58 m, exento junto a la concatedral ('fadrí' significa soltero)." },
+    { "id": "santa-barbara", "name": "Castillo de Santa Bárbara", "city": "Alicante", "lat": 38.367, "lon": -0.507, "heading": 0, "scale": 0.2, "plaza": 8, "blend": 22, "clearance": 18, "travel": false, "description": "Castle on the top of Mount Benacantil, 166 m above the port of Alicante.", "description_es": "Castillo en la cima del monte Benacantil, a 166 m sobre el puerto de Alicante." },
+    { "id": "la-seu-palma", "name": "La Seu", "city": "Palma", "lat": 39.5992, "lon": 2.6542, "heading": 0, "scale": 0.15, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "Gothic cathedral of Mallorca facing the sea, with tall buttresses and one of the largest rose windows in the world.", "description_es": "Catedral gótica de Mallorca frente al mar, con altos contrafuertes y uno de los mayores rosetones del mundo." },
+    { "id": "colon-huelva", "name": "Monumento a la Fe Descubridora", "city": "Huelva", "lat": 37.2931, "lon": -6.9271, "heading": 0, "scale": 0.2, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "37 m statue of a friar holding a tau cross (1929), a gift from the United States for the voyage of Columbus.", "description_es": "Estatua de 37 m de un fraile con una cruz en forma de tau (1929), regalo de Estados Unidos por el viaje de Colón." },
+    { "id": "catedral-jaen", "name": "Catedral de Jaén", "city": "Jaén", "lat": 37.77, "lon": -3.7545, "heading": 0, "scale": 0.16, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "Renaissance cathedral by Andrés de Vandelvira, model for many cathedrals in Latin America.", "description_es": "Catedral renacentista de Andrés de Vandelvira, modelo de muchas catedrales de Hispanoamérica." },
+    { "id": "manquita", "name": "Catedral de Málaga", "city": "Málaga", "lat": 36.7157, "lon": -4.478, "heading": 0, "scale": 0.16, "plaza": 10, "blend": 22, "clearance": 18, "travel": false, "description": "Renaissance cathedral nicknamed 'La Manquita' (the one-armed lady) because its south tower was never finished.", "description_es": "Catedral renacentista apodada 'La Manquita' porque su torre sur nunca se terminó." }
   ]
 }

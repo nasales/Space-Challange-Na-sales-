@@ -9,6 +9,7 @@ import { baseUnits, credit, fixText, formatP, signed, testName } from './format'
 import { loadTutorial, type LoadedTutorial } from './loader'
 import { useKeyCapture } from './keys'
 import Notebook, { type NotebookClue } from './Notebook'
+import { L } from '../../shared/i18n'
 import './CaseFile.css'
 
 /**
@@ -70,7 +71,7 @@ export default function CaseFile({ caseId, onClose, tutorial: given, flow }: Cas
     <dialog
       ref={dialogRef}
       className={`casefile${flow ? ' casefile--notebook' : ''}`}
-      aria-label="Case file"
+      aria-label={L('Case file', 'Expediente')}
       // Escape is handled by our key listener (it prevents the default, so this rarely fires)
       onCancel={(e) => e.preventDefault()}
     >
@@ -78,19 +79,19 @@ export default function CaseFile({ caseId, onClose, tutorial: given, flow }: Cas
         <Tutorial key={caseId} tutorial={load.tutorial} onClose={onClose} flow={flow} />
       ) : (
         <div className="casefile__sheet">
-          <Header label="Case file" onClose={onClose} />
+          <Header label={L('Case file', 'Expediente')} onClose={onClose} />
           <div className="casefile__body">
             {load.state === 'loading' ? (
-              <p className="casefile__msg">Opening the case file…</p>
+              <p className="casefile__msg">{L('Opening the case file…', 'Abriendo el expediente…')}</p>
             ) : (
               <>
-                <h2 className="casefile__title">Case file not found</h2>
+                <h2 className="casefile__title">{L('Case file not found', 'Expediente no encontrado')}</h2>
                 <p className="casefile__msg">
-                  {load.message} The detective will have to come back later. You can keep exploring.
+                  {load.message} {L('The detective will have to come back later. You can keep exploring.', 'El detective tendrá que volver más tarde. Puedes seguir explorando.')}
                 </p>
                 <div className="casefile__nav">
                   <button type="button" className="casefile__btn casefile__btn--primary" onClick={onClose}>
-                    Back to the map
+                    {L('Back to the map', 'Volver al mapa')}
                   </button>
                 </div>
               </>
@@ -128,7 +129,7 @@ export function Header({
         <svg className="casefile__close-icon" viewBox="0 0 20 20" aria-hidden="true">
           <path d="M4 4l12 12M16 4L4 16" />
         </svg>
-        Close
+        {L('Close', 'Cerrar')}
       </button>
     </div>
   )
@@ -175,15 +176,15 @@ function Tutorial({ tutorial, onClose, flow }: { tutorial: LoadedTutorial; onClo
   }
 
   let progress: string | undefined
-  if (at >= 1 && at <= n) progress = `Clue ${at} of ${n}`
+  if (at >= 1 && at <= n) progress = L(`Clue ${at} of ${n}`, `Pista ${at} de ${n}`)
 
   const sheet = (
     <div className="casefile__sheet">
-      <Header label={flow?.brief ? `Case file · ${script.title}` : script.title} progress={progress} onClose={requestClose} />
+      <Header label={flow?.brief ? L(`Case file · ${script.title}`, `Expediente · ${script.title}`) : script.title} progress={progress} onClose={requestClose} />
       {at >= 1 && at <= n && <ProgressDots total={n} current={at} />}
       {flow?.brief && at >= 1 && at <= n && (
         <p className="casefile__brief">
-          <span className="casefile__brief-label">The question</span> {script.intro.question}
+          <span className="casefile__brief-label">{L('The question', 'La pregunta')}</span> {script.intro.question}
         </p>
       )}
 
@@ -208,13 +209,13 @@ function Tutorial({ tutorial, onClose, flow }: { tutorial: LoadedTutorial; onClo
 
       {confirming && (
         <div className="casefile__confirm" role="alertdialog" aria-labelledby="casefile-confirm-text">
-          <p id="casefile-confirm-text">Close this case file? Your answers will be lost.</p>
+          <p id="casefile-confirm-text">{L('Close this case file? Your answers will be lost.', '¿Cerrar este expediente? Perderás tus respuestas.')}</p>
           <div className="casefile__nav">
             <button type="button" className="casefile__btn" onClick={() => setConfirming(false)} autoFocus>
-              Keep investigating
+              {L('Keep investigating', 'Seguir investigando')}
             </button>
             <button type="button" className="casefile__btn casefile__btn--danger" onClick={onClose}>
-              Close case file
+              {L('Close case file', 'Cerrar expediente')}
             </button>
           </div>
         </div>
@@ -259,12 +260,12 @@ function Intro({ script, headingRef, onStart }: { script: TutorialScript; headin
         </p>
       ))}
       <div className="casefile__question-note">
-        <p className="casefile__note-label">The question</p>
+        <p className="casefile__note-label">{L('The question', 'La pregunta')}</p>
         <p className="casefile__note-text">{script.intro.question}</p>
       </div>
       <div className="casefile__nav casefile__nav--end">
         <button type="button" className="casefile__btn casefile__btn--primary" onClick={onStart}>
-          Start investigating
+          {L('Start investigating', 'Empezar a investigar')}
         </button>
       </div>
     </section>
@@ -306,7 +307,9 @@ function Step({
       {series ? (
         <TimeSeriesChart spec={step.chart} series={series} variables={data.variables} />
       ) : (
-        <p className="casefile__msg">The data for {step.chart.variable} is missing from this case file.</p>
+        <p className="casefile__msg">
+          {L(`The data for ${step.chart.variable} is missing from this case file.`, `Faltan los datos de ${step.chart.variable} en este expediente.`)}
+        </p>
       )}
 
       {q && (
@@ -335,7 +338,7 @@ function Step({
           <div aria-live="polite">
             {picked && !picked.correct && (
               <p className="casefile__feedback">
-                <b>Not quite.</b> {picked.feedback} Try another answer.
+                <b>{L('Not quite.', 'No exactamente.')}</b> {picked.feedback} {L('Try another answer.', 'Prueba otra respuesta.')}
               </p>
             )}
           </div>
@@ -345,7 +348,7 @@ function Step({
       <div aria-live="polite">
         {solved && (
           <div className="casefile__takeaway">
-            <p className="casefile__note-label">Clue noted</p>
+            <p className="casefile__note-label">{L('Clue noted', 'Pista anotada')}</p>
             <p className="casefile__note-text">{step.takeaway}</p>
           </div>
         )}
@@ -354,11 +357,11 @@ function Step({
       <div className={onBack ? 'casefile__nav' : 'casefile__nav casefile__nav--end'}>
         {onBack && (
           <button type="button" className="casefile__btn" onClick={onBack}>
-            Back
+            {L('Back', 'Atrás')}
           </button>
         )}
         <button type="button" className="casefile__btn casefile__btn--primary" onClick={onNext} disabled={!solved}>
-          {last ? 'Close the case' : 'Next clue'}
+          {last ? L('Close the case', 'Cerrar el caso') : L('Next clue', 'Siguiente pista')}
         </button>
       </div>
     </section>
@@ -371,12 +374,12 @@ function StatsLine({ series }: { series: TutorialSeries }) {
   const u = baseUnits(series.units)
   return (
     <p className="casefile__stats">
-      Trend: <b>{signed(t.slope_per_year * 10)} {u} per decade</b> (95% range {signed(t.ci_low * 10)} to{' '}
+      {L('Trend:', 'Tendencia:')} <b>{signed(t.slope_per_year * 10)} {u} {L('per decade', 'por década')}</b> ({L('95% range', 'rango del 95 %')} {signed(t.ci_low * 10)} {L('to', 'a')}{' '}
       {signed(t.ci_high * 10)}) · {formatP(t.p_value)} ·{' '}
-      <b className={t.significant ? 'is-sig' : 'is-nosig'}>{t.significant ? 'significant' : 'not significant'}</b>
+      <b className={t.significant ? 'is-sig' : 'is-nosig'}>{t.significant ? L('significant', 'significativa') : L('not significant', 'no significativa')}</b>
       <span className="casefile__stats-test">
         {' '}
-        ({testName(t.test)}, 5% level). {credit(series)}
+        ({testName(t.test)}, {L('5% level', 'nivel del 5 %')}). {credit(series)}
       </span>
     </p>
   )
@@ -404,7 +407,7 @@ export function StatsReveal({ script, data }: { script: TutorialScript; data: Tu
       })}
 
       <div className="casefile__lesson">
-        <p className="casefile__note-label">Lesson</p>
+        <p className="casefile__note-label">{L('Lesson', 'Lección')}</p>
         <p className="casefile__note-text">{script.reveal.lesson}</p>
       </div>
     </>

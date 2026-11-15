@@ -31,6 +31,7 @@ import EvidenceNotebook from './EvidenceNotebook'
 import { AnnualChart, SeasonalChart } from './analysis/SmallCharts'
 import MonthlyPlot from './analysis/MonthlyPlot'
 import './ClueResult.css'
+import { L, LANG } from '../../shared/i18n'
 
 interface Props {
   variable: PointVariable
@@ -44,11 +45,11 @@ interface Props {
 
 type TabId = 'trend' | 'series' | 'seasons' | 'years' | 'method'
 const TABS: { id: TabId; label: string; short: string }[] = [
-  { id: 'trend', label: 'The trend', short: 'Trend' },
-  { id: 'series', label: 'Raw measurements', short: 'Raw' },
-  { id: 'seasons', label: 'Seasons then and now', short: 'Seasons' },
-  { id: 'years', label: 'Year by year', short: 'Years' },
-  { id: 'method', label: 'How we know', short: 'Method' },
+  { id: 'trend', label: L('The trend', 'La tendencia'), short: L('Trend', 'Tendencia') },
+  { id: 'series', label: L('Raw measurements', 'Medidas en bruto'), short: L('Raw', 'Bruto') },
+  { id: 'seasons', label: L('Seasons then and now', 'Estaciones antes y ahora'), short: L('Seasons', 'Estaciones') },
+  { id: 'years', label: L('Year by year', 'Año a año'), short: L('Years', 'Años') },
+  { id: 'method', label: L('How we know', 'Cómo lo sabemos'), short: L('Method', 'Método') },
 ]
 
 export default function ClueResult({ variable, title, place, distanceKm, onBack }: Props) {
@@ -104,7 +105,7 @@ export default function ClueResult({ variable, title, place, distanceKm, onBack 
     <section className="clue-result" aria-labelledby="clue-result-title">
       <header className="clue-result__head">
         <span className="clue-result__folder-tab" aria-hidden="true">
-          Evidence file
+          {L('Evidence file', 'Expediente')}
         </span>
         <div className="clue-result__head-text">
           <p className="clue-result__kicker">
@@ -116,7 +117,7 @@ export default function ClueResult({ variable, title, place, distanceKm, onBack 
           </h3>
         </div>
         <button ref={back} type="button" className="clue-result__btn" onClick={onBack} data-sfx="close">
-          ← Back to the clues <kbd>Esc</kbd>
+          ← {L('Back to the clues', 'Volver a las pistas')} <kbd>Esc</kbd>
         </button>
       </header>
 
@@ -124,7 +125,7 @@ export default function ClueResult({ variable, title, place, distanceKm, onBack 
         <EvidenceNotebook variable={variable} title={title} place={place} period={period} />
 
         <div className="clue-result__evidence">
-          <div className="clue-result__tabs" role="tablist" aria-label="Evidence">
+          <div className="clue-result__tabs" role="tablist" aria-label={L('Evidence', 'Pruebas')}>
             {TABS.map((t, i) => (
               <button
                 key={t.id}
@@ -162,10 +163,16 @@ export default function ClueResult({ variable, title, place, distanceKm, onBack 
       </div>
 
       <footer className="clue-result__foot">
-        <span>Data: NASA {dataset}</span>
-        {distanceKm > 20 && <span>Nearest data cell: {distanceKm.toFixed(0)} km from here</span>}
+        <span>
+          {L('Data: NASA', 'Datos: NASA')} {dataset}
+        </span>
+        {distanceKm > 20 && (
+          <span>
+            {L('Nearest data cell', 'Celda de datos más cercana')}: {distanceKm.toFixed(0)} {L('km from here', 'km de aquí')}
+          </span>
+        )}
         <span className="clue-result__foot-keys" aria-hidden="true">
-          <kbd>1</kbd>–<kbd>5</kbd> evidence · <kbd>Esc</kbd> back
+          <kbd>1</kbd>–<kbd>5</kbd> {L('evidence', 'pruebas')} · <kbd>Esc</kbd> {L('back', 'volver')}
         </span>
       </footer>
     </section>
@@ -224,33 +231,47 @@ function EvidencePanel({
     const anoms = anomalies(data.dates, data.values, variable.climatology)
     const line = period ? trendLine(anoms, data.slope, period) : null
     const band = line ? ciBand(line, variable.extra.slopeCiLow, variable.extra.slopeCiHigh) : null
+    const slope10 = fmtSigned(data.slope * 10)
     const label =
-      `Monthly ${title} with the seasonal cycle removed, ${years}, in ${units}. ` +
-      (line
-        ? `Trend line: ${fmtSigned(data.slope * 10)} ${units} per decade, ` +
-          `${data.significant ? 'statistically significant' : 'not statistically significant'}.`
-        : 'No trend line.')
+      LANG === 'es'
+        ? `${title} mensual sin el ciclo estacional, ${years}, en ${units}. ` +
+          (line
+            ? `Línea de tendencia: ${slope10} ${units} por década, ` +
+              `${data.significant ? 'estadísticamente significativa' : 'no estadísticamente significativa'}.`
+            : 'Sin línea de tendencia.')
+        : `Monthly ${title} with the seasonal cycle removed, ${years}, in ${units}. ` +
+          (line
+            ? `Trend line: ${slope10} ${units} per decade, ` +
+              `${data.significant ? 'statistically significant' : 'not statistically significant'}.`
+            : 'No trend line.')
     return (
       <Panel
         chart={<AnomalyChart dates={data.dates} anoms={anoms} units={units} label={label} line={line} band={band} significant={data.significant} />}
         legend={
           <>
             <Key swatch={<line x1="0" x2="26" y1="6" y2="6" className="clue-result__line clue-result__line--thin" />}>
-              each month vs. normal
+              {L('each month vs. normal', 'cada mes frente a lo normal')}
             </Key>
             {line && (
               <Key swatch={<line x1="2" x2="24" y1="6" y2="6" className="clue-result__trend" />}>
-                trend ({fmtSigned(data.slope * 10)} {units}/decade)
+                {L('trend', 'tendencia')} ({slope10} {units}/{L('decade', 'década')})
               </Key>
             )}
-            {band && <Key swatch={<rect width="26" height="12" className="clue-result__band" />}>95 % range</Key>}
+            {band && <Key swatch={<rect width="26" height="12" className="clue-result__band" />}>{L('95 % range', 'intervalo del 95 %')}</Key>}
           </>
         }
         caption={
-          <>
-            Seasons removed: every month is compared with its usual value, so <b>0 = a normal month</b>.
-            {band && ' If a flat line fits inside the yellow range, the trend is not clear.'}
-          </>
+          LANG === 'es' ? (
+            <>
+              Sin estaciones: cada mes se compara con su valor habitual, así que <b>0 = un mes normal</b>.
+              {band && ' Si una línea plana cabe dentro de la franja amarilla, la tendencia no está clara.'}
+            </>
+          ) : (
+            <>
+              Seasons removed: every month is compared with its usual value, so <b>0 = a normal month</b>.
+              {band && ' If a flat line fits inside the yellow range, the trend is not clear.'}
+            </>
+          )
         }
       />
     )
@@ -261,9 +282,12 @@ function EvidencePanel({
     const avg = mean(nums)
     const label =
       avg == null
-        ? `Monthly ${title}: no values`
-        : `Line chart of monthly ${title} in ${units} at ${place}, ${years}. ` +
-          `Lowest ${fmt(Math.min(...nums))}, highest ${fmt(Math.max(...nums))}, average ${fmt(avg)}.`
+        ? L(`Monthly ${title}: no values`, `${title} mensual: sin valores`)
+        : LANG === 'es'
+          ? `Gráfico de líneas de ${title} mensual en ${units} en ${place}, ${years}. ` +
+            `Mínimo ${fmt(Math.min(...nums))}, máximo ${fmt(Math.max(...nums))}, media ${fmt(avg)}.`
+          : `Line chart of monthly ${title} in ${units} at ${place}, ${years}. ` +
+            `Lowest ${fmt(Math.min(...nums))}, highest ${fmt(Math.max(...nums))}, average ${fmt(avg)}.`
     return (
       <Panel
         chart={
@@ -279,15 +303,18 @@ function EvidencePanel({
         }
         legend={
           <>
-            <Key swatch={<line x1="0" x2="26" y1="6" y2="6" className="clue-result__line" />}>every month as measured</Key>
+            <Key swatch={<line x1="0" x2="26" y1="6" y2="6" className="clue-result__line" />}>{L('every month as measured', 'cada mes tal como se midió')}</Key>
             {avg != null && (
               <Key swatch={<line x1="0" x2="26" y1="6" y2="6" className="clue-result__mean" />}>
-                average ({fmt(avg)} {units})
+                {L('average', 'media')} ({fmt(avg)} {units})
               </Key>
             )}
           </>
         }
-        caption="The yearly up-and-down is just the seasons. That is why the trend is measured with the seasons removed."
+        caption={L(
+          'The yearly up-and-down is just the seasons. That is why the trend is measured with the seasons removed.',
+          'El sube y baja de cada año son solo las estaciones. Por eso la tendencia se mide sin ellas.',
+        )}
       />
     )
   }
@@ -302,10 +329,10 @@ function EvidencePanel({
           cmp && (
             <>
               <Key swatch={<line x1="0" x2="26" y1="6" y2="6" className="clue-result__series-a" />}>
-                {cmp.first.label} (dashed, blue)
+                {cmp.first.label} ({L('dashed, blue', 'discontinua, azul')})
               </Key>
               <Key swatch={<line x1="0" x2="26" y1="6" y2="6" className="clue-result__series-b" />}>
-                {cmp.last.label} (solid, orange)
+                {cmp.last.label} ({L('solid, orange', 'continua, naranja')})
               </Key>
             </>
           )
@@ -313,16 +340,19 @@ function EvidencePanel({
         caption={
           cmp ? (
             <>
-              Average of each month, January to December, in the first and the last {cmp.years} years.
+              {L(
+                `Average of each month, January to December, in the first and the last ${cmp.years} years.`,
+                `Media de cada mes, de enero a diciembre, en los primeros y los últimos ${cmp.years} años.`,
+              )}
               {diff != null && (
                 <>
                   {' '}
-                  On average: <b>{fmtSigned(diff)} {units}</b>.
+                  {L('On average:', 'De media:')} <b>{fmtSigned(diff)} {units}</b>.
                 </>
               )}
             </>
           ) : (
-            'Not enough years to compare.'
+            L('Not enough years to compare.', 'No hay años suficientes para comparar.')
           )
         }
       />
@@ -338,15 +368,18 @@ function EvidencePanel({
         legend={
           overall != null && (
             <>
-              <Key swatch={<rect width="26" height="12" className="clue-result__bar--up" />}>above average (orange)</Key>
-              <Key swatch={<rect width="26" height="12" className="clue-result__bar--down" />}>below average (blue)</Key>
+              <Key swatch={<rect width="26" height="12" className="clue-result__bar--up" />}>{L('above average (orange)', 'por encima de la media (naranja)')}</Key>
+              <Key swatch={<rect width="26" height="12" className="clue-result__bar--down" />}>{L('below average (blue)', 'por debajo de la media (azul)')}</Key>
             </>
           )
         }
         caption={
           overall != null
-            ? `One bar per year, measured from the average of all years (${fmt(overall)} ${units}, dashed). Years with fewer than 10 months of data are left out.`
-            : 'Not enough complete years.'
+            ? L(
+                `One bar per year, measured from the average of all years (${fmt(overall)} ${units}, dashed). Years with fewer than 10 months of data are left out.`,
+                `Una barra por año, medida desde la media de todos los años (${fmt(overall)} ${units}, discontinua). Se quitan los años con menos de 10 meses de datos.`,
+              )
+            : L('Not enough complete years.', 'No hay años completos suficientes.')
         }
       />
     )
@@ -359,17 +392,41 @@ function EvidencePanel({
 function testInWords(test: string): string {
   const id = test.toLowerCase()
   if (id.includes('prewhitening') || id.includes('pre-whitening')) {
-    return 'Mann-Kendall trend test, corrected for the memory between one month and the next (pre-whitening, Yue & Wang 2002)'
+    return L(
+      'Mann-Kendall trend test, corrected for the memory between one month and the next (pre-whitening, Yue & Wang 2002)',
+      'Test de tendencia de Mann-Kendall, corregido por la memoria entre un mes y el siguiente (pre-whitening, Yue & Wang 2002)',
+    )
   }
-  if (id.includes('mann-kendall') || id.includes('mann_kendall')) return 'Mann-Kendall trend test'
+  if (id.includes('mann-kendall') || id.includes('mann_kendall')) return L('Mann-Kendall trend test', 'Test de tendencia de Mann-Kendall')
   return test
 }
 
 const STEPS: { title: string; text: string }[] = [
-  { title: 'Collect', text: 'One value per month for this place, from NASA data.' },
-  { title: 'Remove the seasons', text: 'Each month minus the usual value of that month. What is left shows how unusual it was.' },
-  { title: 'Measure the rate', text: 'Sen slope: the middle of the slopes between every pair of months, so odd months cannot bend it.' },
-  { title: 'Check against chance', text: 'A test asks how often noise alone gives a trend this strong: the p-value. Below 0.05 = significant.' },
+  {
+    title: L('Collect', 'Recoger'),
+    text: L('One value per month for this place, from NASA data.', 'Un valor por mes para este lugar, con datos de la NASA.'),
+  },
+  {
+    title: L('Remove the seasons', 'Quitar las estaciones'),
+    text: L(
+      'Each month minus the usual value of that month. What is left shows how unusual it was.',
+      'Cada mes menos el valor habitual de ese mes. Lo que queda muestra lo raro que fue.',
+    ),
+  },
+  {
+    title: L('Measure the rate', 'Medir el ritmo'),
+    text: L(
+      'Sen slope: the middle of the slopes between every pair of months, so odd months cannot bend it.',
+      'Pendiente de Sen: la mediana de las pendientes entre cada par de meses, así los meses raros no la tuercen.',
+    ),
+  },
+  {
+    title: L('Check against chance', 'Descartar el azar'),
+    text: L(
+      'A test asks how often noise alone gives a trend this strong: the p-value. Below 0.05 = significant.',
+      'Un test mira cada cuánto el puro ruido da una tendencia así de fuerte: el valor p. Por debajo de 0,05 = significativa.',
+    ),
+  },
 ]
 
 function Method({ variable, period, distanceKm }: { variable: PointVariable; period: Period | null; distanceKm: number }) {
@@ -392,33 +449,38 @@ function Method({ variable, period, distanceKm }: { variable: PointVariable; per
         {period && (
           <>
             <div>
-              <dt>Months used</dt>
-              <dd>{validMonths(data.values, period)} (at least 120 needed)</dd>
+              <dt>{L('Months used', 'Meses usados')}</dt>
+              <dd>
+                {validMonths(data.values, period)} {L('(at least 120 needed)', '(hacen falta al menos 120)')}
+              </dd>
             </div>
             <div>
-              <dt>Period</dt>
+              <dt>{L('Period', 'Periodo')}</dt>
               <dd>
-                {monthLabel(data.dates[period.start])} to {monthLabel(data.dates[period.end])}
+                {monthLabel(data.dates[period.start])} {L('to', 'a')} {monthLabel(data.dates[period.end])}
               </dd>
             </div>
           </>
         )}
         <div>
-          <dt>Test</dt>
+          <dt>{L('Test', 'Prueba')}</dt>
           <dd>{testInWords(data.test)}</dd>
         </div>
         <div>
-          <dt>Dataset</dt>
+          <dt>{L('Dataset', 'Conjunto de datos')}</dt>
           <dd>{data.dataset}</dd>
         </div>
         {distanceKm > 20 && (
           <div>
-            <dt>Nearest data cell</dt>
-            <dd>{distanceKm.toFixed(0)} km from here</dd>
+            <dt>{L('Nearest data cell', 'Celda de datos más cercana')}</dt>
+            <dd>
+              {distanceKm.toFixed(0)} {L('km from here', 'km de aquí')}
+            </dd>
           </div>
         )}
         <div>
-          <dt>What is measured</dt>
+          <dt>{L('What is measured', 'Qué se mide')}</dt>
+
           <dd>{variable.definition}</dd>
         </div>
       </dl>

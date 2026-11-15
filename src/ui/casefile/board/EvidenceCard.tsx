@@ -5,6 +5,7 @@ import type { EvidenceItem, EvidenceRelation, TutorialData } from '../../../shar
 import { fixText } from '../format'
 import { KIND_LABEL, RELATION_LABEL, RELATIONS } from './labels'
 import { Burst, TaskView } from './tasks'
+import { L } from '../../../shared/i18n'
 
 interface Props {
   item: EvidenceItem
@@ -47,25 +48,25 @@ export default function EvidenceCard({ item, n, data, claim, solved, linked, onS
       <div className="evfocus__card">
         <span className="evpin evpin--focus" aria-hidden="true" />
         <button type="button" className="evfocus__close" onClick={onClose}>
-          Back to the board <kbd>Esc</kbd>
+          {L('Back to the board', 'Volver al tablón')} <kbd>Esc</kbd>
         </button>
 
         <div className="evfocus__item">
           <p className="evfocus__kind">
-            Evidence {n} · {KIND_LABEL[item.kind]}
+            {L(`Evidence ${n} · ${KIND_LABEL[item.kind]}`, `Prueba ${n} · ${KIND_LABEL[item.kind]}`)}
           </p>
           <h2 id={`evfocus-title-${item.id}`} className="evfocus__title" ref={headingRef} tabIndex={-1}>
             {item.title}
           </h2>
           {item.kind === 'clipping' && item.clipping && (
             <article className="evclipping">
-              <p className="evclipping__mast">Local paper{item.clipping.date ? ` · ${item.clipping.date}` : ''}</p>
+              <p className="evclipping__mast">{L('Local paper', 'Diario local')}{item.clipping.date ? ` · ${item.clipping.date}` : ''}</p>
               <h3 className="evclipping__headline">{fixText(item.clipping.headline)}</h3>
               <p className="evclipping__body">{fixText(item.clipping.body)}</p>
             </article>
           )}
           <div className={item.kind === 'datacard' ? 'evdatacard' : 'evnote'}>
-            {item.kind === 'datacard' && <p className="evdatacard__head">Data card no. {String(n).padStart(3, '0')}</p>}
+            {item.kind === 'datacard' && <p className="evdatacard__head">{L('Data card no.', 'Ficha de datos n.º')} {String(n).padStart(3, '0')}</p>}
             <p className="evfocus__text">{fixText(item.text)}</p>
           </div>
         </div>
@@ -75,10 +76,10 @@ export default function EvidenceCard({ item, n, data, claim, solved, linked, onS
 
           {solved && (
             <div className="evlink" ref={linkRef}>
-              <h3 className="evlink__title">Link it to the claim</h3>
+              <h3 className="evlink__title">{L('Link it to the claim', 'Enlázala con la afirmación')}</h3>
               {claim && <p className="evlink__claim">&ldquo;{claim}&rdquo;</p>}
-              <p className="evlink__ask">Does this evidence support the claim, contradict it, or say nothing about it?</p>
-              <div className="evlink__choices" role="group" aria-label="How this evidence relates to the claim">
+              <p className="evlink__ask">{L('Does this evidence support the claim, contradict it, or say nothing about it?', '¿Esta prueba apoya la afirmación, la contradice o no dice nada al respecto?')}</p>
+              <div className="evlink__choices" role="group" aria-label={L('How this evidence relates to the claim', 'Relación de esta prueba con la afirmación')}>
                 {RELATIONS.map((rel) => (
                   <button
                     key={rel}
@@ -95,20 +96,20 @@ export default function EvidenceCard({ item, n, data, claim, solved, linked, onS
               <div aria-live="polite">
                 {pick && !right && (
                   <p key={pick.n} className="evtask__feedback evtask__feedback--wrong">
-                    <b>Think again.</b> {fixText(item.relation_feedback)}
+                    <b>{L('Think again.', 'Piénsalo otra vez.')}</b> {fixText(item.relation_feedback)}
                   </p>
                 )}
                 {right && (
                   <div className="evlink__done">
                     <p className="evtask__feedback evtask__feedback--right">
                       {!linked && <Burst />}
-                      <b>Linked!</b> {fixText(item.relation_feedback)}
+                      <b>{L('Linked!', '¡Enlazada!')}</b> {fixText(item.relation_feedback)}
                     </p>
                     <p className="evlink__clue">
-                      <span>Clue for the notebook</span> {fixText(item.clue)}
+                      <span>{L('Clue for the notebook', 'Pista para la libreta')}</span> {fixText(item.clue)}
                     </p>
                     <button type="button" className="evbtn evbtn--primary evbtn--big" onClick={linked ? onClose : onLink} autoFocus>
-                      {linked ? 'Back to the board' : 'Pin it with red string'}
+                      {linked ? L('Back to the board', 'Volver al tablón') : L('Pin it with red string', 'Clávala con hilo rojo')}
                     </button>
                   </div>
                 )}

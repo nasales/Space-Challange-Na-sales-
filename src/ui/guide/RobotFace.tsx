@@ -1,6 +1,7 @@
 // The guide robot's face as a small inline drawing (same shapes and colors as the 3D robot in
 // src/game/guide/createGuideBot.ts): dome, dark visor, two glowing eyes, ear caps and an antenna.
 // talking: the eyes and the antenna bulb pulse (CSS, see Guide.css).
+import { L } from '../../shared/i18n'
 
 export default function RobotFace({ className = '', talking = false }: { className?: string; talking?: boolean }) {
   return (
@@ -8,7 +9,7 @@ export default function RobotFace({ className = '', talking = false }: { classNa
       className={`robot-face${talking ? ' is-talking' : ''} ${className}`}
       viewBox="0 0 64 64"
       role="img"
-      aria-label="Guide robot"
+      aria-label={L('Guide robot', 'Robot guía')}
     >
       <line x1="32" y1="6" x2="32" y2="17" stroke="#161b2e" strokeWidth="3" strokeLinecap="round" />
       <circle className="robot-face__bulb" cx="32" cy="6" r="4.5" fill="#ff5a4f" stroke="#161b2e" strokeWidth="2.5" />

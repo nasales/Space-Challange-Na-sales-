@@ -25,6 +25,8 @@ import GuidePrompt from './ui/guide/GuidePrompt'
 import GuideTour from './ui/guide/GuideTour'
 import { createGuideAnchorStore } from './ui/guide/anchor'
 import type { GameStatus, GuideCue, HudState, LensFocusState, TravelRequest } from './shared/events'
+import LanguagePicker from './ui/language/LanguagePicker'
+import { LANG_CHOSEN } from './shared/i18n'
 import { loadOutfit, type Outfit } from './shared/outfit'
 import {
   fetchRemoteCompleted,
@@ -55,7 +57,12 @@ export default function App() {
   const [caseFocus, setCaseFocus] = useState(false)
   return (
     <>
-      {CASE_PREVIEW ? (
+      {!LANG_CHOSEN && !CASE_PREVIEW && !DB_TEST ? (
+        // Very first visit: English or Spanish? (src/shared/i18n.ts; picking reloads the page)
+        <main className="app">
+          <LanguagePicker />
+        </main>
+      ) : CASE_PREVIEW ? (
         <main className="app">
           <CaseFilePreview />
         </main>
