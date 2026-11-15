@@ -74,17 +74,17 @@
         "kind": "chart",
         "title": "Six summers, one ranking",
         "teaser": "Polaroids of six summers",
-        "text": "Each polaroid is one summer: the mean temperature of June, July and August (JJA), so the yearly cycle cannot confuse us. A ranking sorts the summers from hottest to coolest. If nothing were changing, the hottest summers could come from any part of the 47 years, and only about 2 of the top 10 would be recent. Here 6 of the 10 hottest are from the last 10 years (2017-2026).",
+        "text": "Each polaroid is one summer: the mean temperature of June, July and August (JJA), so the yearly cycle cannot confuse us. Sorting all 47 summers from hottest to coolest makes a ranking. If nothing were changing, the hottest summers could come from any part of the 47 years, and only about 2 of the top 10 would be recent. Here 6 of the 10 hottest are from the last 10 years (2017-2026).",
         "chart": {
           "variable": "T2M",
-          "view": "ranking",
+          "view": "season",
           "season": "JJA",
           "recent_years": 10
         },
         "task": {
           "type": "order_cards",
           "prompt": "Drag the six summer polaroids into order, from the hottest summer to the coolest.",
-          "hint": "Find each year in the ranking: the higher its bar, the hotter that summer was.",
+          "hint": "Find each year on the chart: the higher its dot, the hotter that summer was.",
           "success": "Right: 2022, 2025, 2003, 1989, 2018, 1997. The two hottest are recent, but 1989 beats 2018.",
           "cards": ["1989", "2022", "1997", "2018", "2003", "2025"],
           "order": "desc"
