@@ -7,6 +7,7 @@
 // case closed = back to the map. One handler per phase, so the keys never reach the game.
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { DEFAULT_OUTFIT, type Outfit } from '../../shared/outfit'
+import type { LineMood } from '../../shared/tutorial'
 import { getWitness } from '../../shared/witness'
 import type { AnchorStore } from './anchors'
 import CaseClosed, { type LevelResult } from './CaseClosed'
@@ -27,6 +28,8 @@ export interface DialogueState {
   /** true while the witness scene plays (the game frames detective + witness) */
   active: boolean
   speaking: Speaker | null
+  /** Mood of the line being spoken (null when nobody speaks) */
+  mood: LineMood | null
 }
 
 interface Props {
@@ -74,12 +77,14 @@ export default function CaseFlow({ caseId, renderLevel, onClose, onSolved, onDia
   useEffect(() => {
     dialogue.current = onDialogue
   })
-  const [speaking, setSpeaking] = useState<Speaker | null>(null)
+  const [talk, setTalk] = useState<{ speaking: Speaker | null; mood: LineMood | null }>({ speaking: null, mood: null })
+  const onSpeaking = useCallback((speaking: Speaker | null, mood: LineMood | null) => setTalk({ speaking, mood }), [])
   const sceneOn = phase === 'scene'
+  const { speaking, mood } = talk
   useEffect(() => {
-    dialogue.current?.({ active: sceneOn, speaking: sceneOn ? speaking : null })
-  }, [sceneOn, speaking])
-  useEffect(() => () => dialogue.current?.({ active: false, speaking: null }), [])
+    dialogue.current?.({ active: sceneOn, speaking: sceneOn ? speaking : null, mood: sceneOn ? mood : null })
+  }, [sceneOn, speaking, mood])
+  useEffect(() => () => dialogue.current?.({ active: false, speaking: null, mood: null }), [])
 
   // Escape during the final test asks first (Ivan's levels have no exit button before the end)
   const leavingRef = useRef(leaving)
@@ -134,7 +139,7 @@ export default function CaseFlow({ caseId, renderLevel, onClose, onSolved, onDia
         witness={witness}
         outfit={outfit}
         anchors={anchors}
-        onSpeaking={setSpeaking}
+        onSpeaking={onSpeaking}
         onDone={sceneDone}
       />
     )

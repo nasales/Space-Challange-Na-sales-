@@ -90,7 +90,7 @@ export default function CaseFile({ caseId, onClose, tutorial: given, flow }: Cas
               <>
                 <h2 className="casefile__title">Case file not found</h2>
                 <p className="casefile__msg">
-                  {load.message} The detective will have to come back later. You can keep driving.
+                  {load.message} The detective will have to come back later. You can keep exploring.
                 </p>
                 <div className="casefile__nav">
                   <button type="button" className="casefile__btn casefile__btn--primary" onClick={onClose}>

@@ -1,5 +1,6 @@
 // Everything drawn on top of the 3D game: controls hint, speed effects, location panel,
 // speedometer and the loading / error messages.
+// hidden: fades the whole HUD out (while a featured case is open, so only the dialogue shows).
 import type { GameStatus, HudState } from '../../shared/events'
 import ControlsHint from './ControlsHint'
 import LocationPanel from './LocationPanel'
@@ -7,9 +8,9 @@ import Speedometer from './Speedometer'
 import SpeedLines from './SpeedLines'
 import './Hud.css'
 
-export default function Hud({ status, hud }: { status: GameStatus; hud: HudState | null }) {
+export default function Hud({ status, hud, hidden = false }: { status: GameStatus; hud: HudState | null; hidden?: boolean }) {
   return (
-    <>
+    <div className={`hud${hidden ? ' is-hidden' : ''}`} aria-hidden={hidden || undefined}>
       {status === 'ready' && <ControlsHint />}
       {hud && (
         <>
@@ -24,6 +25,6 @@ export default function Hud({ status, hud }: { status: GameStatus; hud: HudState
           Map data is missing. Run node scripts/fetch-map-data.mjs and node scripts/fetch-world-data.mjs
         </p>
       )}
-    </>
+    </div>
   )
 }

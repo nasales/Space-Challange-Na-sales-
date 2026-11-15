@@ -119,62 +119,212 @@
   will-change: transform;
 }
 
+/* The bubble sits above the head point: its tail tip touches (0, -10px) of the anchor.
+   --tilt: slight comic tilt, away from the other character. */
+.wbubble--detective {
+  --tilt: -4deg;
+}
+
+.wbubble--witness {
+  --tilt: 4deg;
+}
+
+.wbubble__pop {
+  position: absolute;
+  left: 0;
+  bottom: 30px; /* tail (22px) + a small gap above the head */
+  width: max-content;
+  transform: translateX(-50%) rotate(var(--tilt));
+  transform-origin: 50% calc(100% + 30px);
+  animation: wbubble-pop 0.32s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+}
+
+@keyframes wbubble-pop {
+  from {
+    transform: translateX(-50%) rotate(var(--tilt)) scale(0.3);
+    opacity: 0;
+  }
+}
+
 .wbubble__body {
   position: relative;
-  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 64px;
+  padding: 8px 14px;
   border: 3px solid var(--ws-ink);
-  border-radius: 22px;
+  border-radius: 26px 24px 28px 22px / 24px 28px 22px 26px; /* hand-inked, not a perfect pill */
   background: #fff;
-  box-shadow: 3px 3px 0 var(--ws-ink);
-  transform: translate(-50%, calc(-100% - 18px)) scale(0.6);
-  transform-origin: 50% 100%;
-  opacity: 0;
-  transition:
-    opacity 0.15s ease-out,
-    transform 0.18s cubic-bezier(0.3, 1.6, 0.5, 1);
+  box-shadow: 4px 4px 0 var(--ws-ink);
+  justify-content: center;
 }
 
-/* tail pointing down at the head */
-.wbubble__body::after {
-  content: '';
+.wemote {
+  display: block;
+  flex: none;
+  width: 52px;
+  height: 52px;
+  overflow: visible;
+}
+
+/* tail: an open ink path pointing down at the head; it covers the body's bottom border */
+.wbubble__tail {
+  position: absolute;
+  left: calc(50% - 13px);
+  top: calc(100% - 4px);
+  width: 28px;
+  height: 24px;
+  overflow: visible;
+}
+
+.wbubble__tail path {
+  fill: #fff;
+  stroke: var(--ws-ink);
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+
+/* Listener reaction: a small thought bubble with puffs instead of a tail, popping in a beat later */
+.wbubble__pop--react {
+  bottom: 26px;
+  transform: translateX(-50%) rotate(var(--tilt)) scale(0.8);
+  animation: wbubble-react 0.32s cubic-bezier(0.3, 1.6, 0.5, 1) 0.45s both;
+}
+
+@keyframes wbubble-react {
+  from {
+    transform: translateX(-50%) rotate(var(--tilt)) scale(0.2);
+    opacity: 0;
+  }
+}
+
+.wbubble__pop--react .wbubble__body {
+  min-width: 0;
+  padding: 6px;
+  border-radius: 50%;
+  background: var(--ws-paper);
+}
+
+.wbubble__puff {
   position: absolute;
   left: 50%;
-  bottom: -14px;
-  width: 16px;
-  height: 16px;
-  border-right: 3px solid var(--ws-ink);
-  border-bottom: 3px solid var(--ws-ink);
-  background: #fff;
-  transform: translateX(-50%) skewX(18deg) rotate(45deg);
+  border: 3px solid var(--ws-ink);
+  border-radius: 50%;
+  background: var(--ws-paper);
 }
 
-.wbubble.is-active .wbubble__body {
-  opacity: 1;
-  transform: translate(-50%, calc(-100% - 18px)) scale(1);
+.wbubble__puff--1 {
+  top: calc(100% + 2px);
+  width: 14px;
+  height: 14px;
+  translate: -30% 0;
 }
 
+.wbubble__puff--2 {
+  top: calc(100% + 18px);
+  width: 9px;
+  height: 9px;
+  translate: -10% 0;
+}
+
+/* talking dots next to the emote while the line types */
 .wbubble__dots {
   display: flex;
-  gap: 6px;
+  gap: 4px;
 }
 
 .wbubble__dots i {
-  width: 9px;
-  height: 9px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: var(--ws-ink);
+  opacity: 0.35;
 }
 
-.wbubble__dots.is-typing i {
+.wbubble__dots.is-typing i,
+.wemote--neutral.is-typing .wemote__dots circle {
+  opacity: 1;
   animation: bubble-dot 0.9s ease-in-out infinite;
+  transform-box: fill-box;
 }
 
-.wbubble__dots.is-typing i:nth-child(2) {
+.wbubble__dots.is-typing i:nth-child(2),
+.wemote--neutral.is-typing .wemote__dots circle:nth-child(2) {
   animation-delay: 0.15s;
 }
 
-.wbubble__dots.is-typing i:nth-child(3) {
+.wbubble__dots.is-typing i:nth-child(3),
+.wemote--neutral.is-typing .wemote__dots circle:nth-child(3) {
   animation-delay: 0.3s;
+}
+
+/* insistent: the "!!" gives a short shake; determined: one firm nod */
+.wemote--insistent {
+  animation: wemote-shake 0.4s ease-in-out 0.3s 3;
+}
+
+@keyframes wemote-shake {
+  25% {
+    transform: translateX(-3px) rotate(-6deg);
+  }
+  75% {
+    transform: translateX(3px) rotate(6deg);
+  }
+}
+
+.wemote--determined,
+.wemote--proud,
+.wemote--happy {
+  animation: wemote-nod 0.5s ease-out 0.25s;
+}
+
+@keyframes wemote-nod {
+  40% {
+    transform: scale(1.18);
+  }
+}
+
+/* ---- Cinematic focus: vignette + letterbox bars (under bubbles z 46 and the box z 47) ---- */
+.wscene__vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 44;
+  pointer-events: none;
+  background: radial-gradient(ellipse 75% 70% at 50% 45%, transparent 55%, rgba(16, 20, 34, 0.5) 100%);
+  animation: wscene-in 0.8s ease-out both;
+}
+
+.wscene__bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 45;
+  height: clamp(28px, 7vh, 64px);
+  background: #0d101c;
+  pointer-events: none;
+  animation: wbar-top 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.wscene__bar--top {
+  top: 0;
+}
+
+.wscene__bar--bottom {
+  bottom: 0;
+  animation-name: wbar-bottom;
+}
+
+@keyframes wbar-top {
+  from {
+    transform: translateY(-100%);
+  }
+}
+
+@keyframes wbar-bottom {
+  from {
+    transform: translateY(100%);
+  }
 }
 
 @keyframes bubble-dot {
@@ -608,11 +758,13 @@
   .wscene__claim.is-pinning,
   .wscene__next.is-ready,
   .wbubble__dots.is-typing i,
+  .wemote--neutral.is-typing .wemote__dots circle,
+  .wemote,
+  .wbubble__pop,
+  .wbubble__pop--react,
+  .wscene__vignette,
+  .wscene__bar,
   .cf-figure.is-talking .cf-figure__mouth {
     animation: none;
-  }
-
-  .wbubble__body {
-    transition: none;
   }
 }

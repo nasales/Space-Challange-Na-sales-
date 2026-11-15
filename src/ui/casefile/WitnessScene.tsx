@@ -9,9 +9,10 @@ import { useEffect, useRef, useState } from 'react'
 import type { DialogueAnchors } from '../../shared/events'
 import type { Outfit } from '../../shared/outfit'
 import type { Witness } from '../../shared/witness'
-import type { TutorialScript } from '../../shared/tutorial'
+import type { LineMood, TutorialScript } from '../../shared/tutorial'
+import Emote from './Emote'
 import { DetectiveFigure, WitnessFigure } from './Figure'
-import { PLAIN_LOOK, prefersReducedMotion } from './sceneKit'
+import { listenerReaction, PLAIN_LOOK, prefersReducedMotion } from './sceneKit'
 import type { AnchorStore } from './anchors'
 import './WitnessScene.css'
 
@@ -24,8 +25,8 @@ interface Props {
   outfit: Outfit
   /** Head positions from the game; undefined = no game behind (draw stand-in figures) */
   anchors?: AnchorStore
-  /** Who is talking while a line types (null when the line is complete) */
-  onSpeaking: (s: Speaker | null) => void
+  /** Who is talking while a line types, and the line's mood (both null when the line is complete) */
+  onSpeaking: (s: Speaker | null, mood: LineMood | null) => void
   /** The claim is pinned: go on to the case file */
   onDone: () => void
 }
@@ -58,10 +59,12 @@ export default function WitnessScene({ scene, witness, outfit, anchors, onSpeaki
   }, [mode, typed, full])
 
   const speaking = typing ? line.speaker : null
+  const mood: LineMood = line?.mood ?? 'neutral'
+  const speakingMood = speaking ? mood : null
   useEffect(() => {
-    onSpeaking(speaking)
-  }, [speaking, onSpeaking])
-  useEffect(() => () => onSpeaking(null), [onSpeaking])
+    onSpeaking(speaking, speakingMood)
+  }, [speaking, speakingMood, onSpeaking])
+  useEffect(() => () => onSpeaking(null, null), [onSpeaking])
 
   const advance = () => {
     if (mode !== 'talk') return
@@ -126,6 +129,11 @@ export default function WitnessScene({ scene, witness, outfit, anchors, onSpeaki
       className={`wscene${standalone ? ' wscene--stage' : ''}${mode !== 'talk' ? ' wscene--claim' : ''}`}
       onClick={mode === 'talk' ? advance : undefined}
     >
+      {/* cinematic focus: soft vignette + letterbox bars (drawn under the dialogue box) */}
+      <div className="wscene__vignette" aria-hidden="true" />
+      <div className="wscene__bar wscene__bar--top" aria-hidden="true" />
+      <div className="wscene__bar wscene__bar--bottom" aria-hidden="true" />
+
       {standalone && (
         <div className="wscene__stage" aria-hidden="true">
           <div className="wscene__stand wscene__stand--detective">
@@ -139,8 +147,8 @@ export default function WitnessScene({ scene, witness, outfit, anchors, onSpeaki
 
       {mode === 'talk' && line && (
         <>
-          <Bubble who="detective" anchors={anchors} active={line.speaker === 'detective'} typing={typing} />
-          <Bubble who="witness" anchors={anchors} active={line.speaker === 'witness'} typing={typing} />
+          <Bubble who="detective" anchors={anchors} line={idx} speaker={line.speaker} mood={mood} typing={typing} />
+          <Bubble who="witness" anchors={anchors} line={idx} speaker={line.speaker} mood={mood} typing={typing} />
         </>
       )}
 
@@ -237,7 +245,23 @@ const FALLBACK_PHONE: Record<Speaker, { x: number; y: number }> = {
   witness: { x: 0.73, y: 0.32 },
 }
 
-function Bubble({ who, anchors, active, typing }: { who: Speaker; anchors?: AnchorStore; active: boolean; typing: boolean }) {
+interface BubbleProps {
+  who: Speaker
+  anchors?: AnchorStore
+  /** Index of the line: a new line pops the bubble in again */
+  line: number
+  /** Who says the current line */
+  speaker: Speaker
+  mood: LineMood
+  typing: boolean
+}
+
+/**
+ * Comic bubble above one character's head. The speaker gets a speech bubble with the emote of the
+ * line's mood (plus talking dots while the line types); the listener may get a small thought
+ * bubble with a reaction (listenerReaction), or nothing.
+ */
+function Bubble({ who, anchors, line, speaker, mood, typing }: BubbleProps) {
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
     const el = ref.current
@@ -247,8 +271,8 @@ function Bubble({ who, anchors, active, typing }: { who: Speaker; anchors?: Anch
       const h = window.innerHeight
       const f = (w <= 600 ? FALLBACK_PHONE : FALLBACK)[who]
       const p = a?.[who] ?? { x: f.x * w, y: f.y * h }
-      const x = Math.min(w - 40, Math.max(40, p.x))
-      const y = Math.min(h * 0.6, Math.max(56, p.y))
+      const x = Math.min(w - 48, Math.max(48, p.x))
+      const y = Math.min(h * 0.6, Math.max(96, p.y))
       el.style.transform = `translate(${x}px, ${y}px)`
       // In the game, hide the bubbles until the camera has framed both characters (anchors arrive)
       el.style.visibility = anchors && !a ? 'hidden' : 'visible'
@@ -263,15 +287,37 @@ function Bubble({ who, anchors, active, typing }: { who: Speaker; anchors?: Anch
     }
   }, [who, anchors])
 
+  const talking = who === speaker
+  const reaction = talking ? null : listenerReaction(mood)
+
   return (
-    <div ref={ref} className={`wbubble wbubble--${who}${active ? ' is-active' : ''}`} aria-hidden="true">
-      <div className="wbubble__body">
-        <span className={`wbubble__dots${active && typing ? ' is-typing' : ''}`}>
-          <i />
-          <i />
-          <i />
-        </span>
-      </div>
+    <div ref={ref} className={`wbubble wbubble--${who}`} aria-hidden="true">
+      {talking && (
+        <div key={line} className={`wbubble__pop wbubble__pop--${mood}`}>
+          <div className="wbubble__body">
+            <Emote mood={mood} className={mood === 'neutral' && typing ? 'is-typing' : ''} />
+            {mood !== 'neutral' && (
+              <span className={`wbubble__dots${typing ? ' is-typing' : ''}`}>
+                <i />
+                <i />
+                <i />
+              </span>
+            )}
+          </div>
+          <svg className="wbubble__tail" viewBox="0 0 28 24" aria-hidden="true">
+            <path d="M3 0L13 22L24 0" />
+          </svg>
+        </div>
+      )}
+      {reaction && (
+        <div key={`r${line}`} className="wbubble__pop wbubble__pop--react">
+          <div className="wbubble__body">
+            <Emote mood={reaction} />
+          </div>
+          <span className="wbubble__puff wbubble__puff--1" />
+          <span className="wbubble__puff wbubble__puff--2" />
+        </div>
+      )}
     </div>
   )
 }

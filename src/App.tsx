@@ -30,9 +30,11 @@ const CASE_PREVIEW = new URLSearchParams(window.location.search).has('casefile')
 /** Final test of a featured case (Ivan's level), drawn by the case flow over the paused game */
 const renderLevel = (p: LevelSlotProps) => <CaseLevel {...p} />
 
-const NO_DIALOGUE: DialogueState = { active: false, speaking: null }
+const NO_DIALOGUE: DialogueState = { active: false, speaking: null, mood: null }
 
 export default function App() {
+  // true while a featured case is open: the HUD and the database badge fade out (dialogue focus)
+  const [caseFocus, setCaseFocus] = useState(false)
   return (
     <>
       {CASE_PREVIEW ? (
@@ -44,15 +46,15 @@ export default function App() {
           <DbTest />
         </main>
       ) : (
-        <Game />
+        <Game onCaseFocus={setCaseFocus} />
       )}
-      {/* Database badge + build version, on every screen */}
-      <DbStatus />
+      {/* Database badge + build version, on every screen (hidden while a case is open) */}
+      <DbStatus hidden={caseFocus} />
     </>
   )
 }
 
-function Game() {
+function Game({ onCaseFocus }: { onCaseFocus: (on: boolean) => void }) {
   const [screen, setScreen] = useState<Screen>('menu')
   const [status, setStatus] = useState<GameStatus>('loading')
   const [hud, setHud] = useState<HudState | null>(null)
@@ -83,6 +85,9 @@ function Game() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [canOpenCase, zoneCase])
+  useEffect(() => {
+    onCaseFocus(!!openCase)
+  }, [openCase, onCaseFocus])
   const closeCase = useCallback(() => {
     setOpenCase(null)
     setDialogue(NO_DIALOGUE)
@@ -129,9 +134,11 @@ function Game() {
         completedCases={completedList}
         dialogueCase={openCase && dialogue.active ? openCase : null}
         speaking={dialogue.speaking}
+        speakingMood={dialogue.mood}
         onDialogueAnchors={anchors.set}
       />
-      <Hud status={status} hud={hud} />
+      {/* Dialogue focus: the whole HUD fades out while a case is open */}
+      <Hud status={status} hud={hud} hidden={!!openCase} />
       {/* Outside case zones Space opens the magnifier picker, as before */}
       <VariablePicker
         canOpen={status === 'ready' && !!hud?.stopped && !zoneCase && !openCase}
@@ -139,7 +146,7 @@ function Game() {
         onOpenChange={setFocusLens}
         location={hud?.location ?? null}
       />
-      {zoneCase && !openCase && <CaseHint caseId={zoneCase} stopped={!!hud?.stopped} />}
+      {zoneCase && <CaseHint caseId={zoneCase} stopped={!!hud?.stopped} hidden={!!openCase} />}
       {openCase && (
         <CaseFlow
           key={openCase}
