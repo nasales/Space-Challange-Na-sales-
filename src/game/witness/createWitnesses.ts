@@ -6,10 +6,11 @@
 // near a road, on bare ground win, and he needs open sky round him for the dialogue camera. (The
 // zone centre itself may be a monument roof, as in Valencia.)
 //
-// So the player finds him: a "..." speech bubble floats over his head (seen from far, drawn over
-// buildings), a glowing trail of chevrons runs from near the "!" to his feet, he turns to watch the
-// detective from far away, waves when he comes close and again now and then, and glows warmly
-// while the detective is in the case zone. All of it hides during the dialogue.
+// So the player finds him: a "..." speech bubble floats over his head (drawn over buildings, but
+// only near his case: from farther away it would show through the whole map), a glowing trail of
+// chevrons runs from near the "!" to his feet, he turns to watch the detective from far away,
+// waves when he comes close and again now and then, and glows warmly while the detective is in
+// the case zone. All of it hides during the dialogue.
 //
 // Some witnesses have a small trade prop (witnessProps.ts: Pilar's newspaper kiosk, Rafael's olive
 // crates, Jordi's trail signpost and rucksack, Carmen's telescope) at their side, on flat free ground; the detective walks round it and the dialogue camera
@@ -81,6 +82,12 @@ const TRAIL_RANGE = 3.5
 const TRAIL_START = 0.25
 /** The talk bubble hides when the camera is this far (world units): only the big "!" shows then. */
 const BUBBLE_MAX_CAMERA = 2500
+/**
+ * The talk bubble shows only while the detective is within this many zone radii of the zone centre
+ * (same range as the trail). It is drawn over everything, so farther away it showed through hills
+ * and across the whole map.
+ */
+const BUBBLE_RANGE = TRAIL_RANGE
 /** The pointer at the detective's feet hides when he is this close to the witness (world units). */
 const POINTER_HIDE = 20
 /** Same climb limit as the zone ring: the trail lies on plazas, never on roofs. */
@@ -332,7 +339,7 @@ export function createWitnesses(list: Partial<Record<string, Witness>>, zones: C
         if (view) {
           p.witness.headTop(headTop)
           p.bubble.update(dt, headTop, view.camera, {
-            visible: !inDialogue && view.distance < BUBBLE_MAX_CAMERA,
+            visible: !inDialogue && view.distance < BUBBLE_MAX_CAMERA && fromZone < p.zone.radius * BUBBLE_RANGE,
             inZone,
           })
         }

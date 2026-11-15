@@ -159,20 +159,6 @@
   animation: ml-stripes 0.5s steps(3, end) infinite;
 }
 
-.map-loader__percent {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  font-family: var(--font-display);
-  font-size: 26px;
-  font-weight: 900;
-  letter-spacing: 0.04em;
-  color: var(--ml-paper);
-  -webkit-text-stroke: 2.5px var(--ml-ink-deep);
-  paint-order: stroke fill;
-}
-
 /* ---- Dust puffs and sound effects ---- */
 .map-loader__fx {
   position: absolute;
