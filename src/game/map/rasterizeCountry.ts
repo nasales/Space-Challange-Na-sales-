@@ -4,10 +4,11 @@ import type { Bounds } from './mapData'
 import type { Country } from './worldData'
 
 /**
+ * @param country one country, or several (their outlines are painted together)
  * @param bounds zona geográfica que cubre la rejilla
  * @param width,height tamaño de la rejilla; la fila 0 es el norte
  */
-export function rasterizeCountry(country: Country, bounds: Bounds, width: number, height: number): Uint8Array {
+export function rasterizeCountry(country: Country | Country[], bounds: Bounds, width: number, height: number): Uint8Array {
   const canvas = document.createElement('canvas')
   canvas.width = width
   canvas.height = height
@@ -17,7 +18,7 @@ export function rasterizeCountry(country: Country, bounds: Bounds, width: number
 
   ctx.fillStyle = '#fff'
   ctx.beginPath()
-  for (const polygon of country.polygons) {
+  for (const polygon of [country].flat().flatMap((c) => c.polygons)) {
     for (const ring of polygon) {
       ring.forEach(([lon, lat], k) => (k === 0 ? ctx.moveTo(toX(lon), toY(lat)) : ctx.lineTo(toX(lon), toY(lat))))
       ctx.closePath()
