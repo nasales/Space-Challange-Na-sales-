@@ -201,14 +201,14 @@ function GuideStepBox({ step, index, total, anchors, onCue, onNext, onSkip, hud,
             )}
           </div>
           <div className="guide-tour__footer">
+            <button type="button" className="guide-button guide-button--small" onMouseDown={noFocus} onClick={onSkip}>
+              Skip tutorial
+            </button>
             <span className="guide-tour__progress" aria-label={`Step ${index + 1} of ${total}`}>
               {Array.from({ length: total }, (_, i) => (
                 <i key={i} className={i < index ? 'is-past' : i === index ? 'is-now' : ''} />
               ))}
             </span>
-            <button type="button" className="guide-button guide-button--small" onMouseDown={noFocus} onClick={onSkip}>
-              Skip tutorial
-            </button>
             {canNext && (
               <button type="button" className="guide-button guide-button--small guide-button--main" onMouseDown={noFocus} onClick={advance}>
                 {index + 1 >= total ? 'Finish' : 'Next'} <kbd>Enter</kbd>
