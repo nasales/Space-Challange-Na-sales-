@@ -15,6 +15,8 @@ import { createSky } from './scene/createSky'
 import { createLighting } from './scene/createLighting'
 import { createClouds } from './scene/createClouds'
 import { createInkOutline } from './scene/createInkOutline'
+import { createDayCycle, readDayParams } from './scene/dayCycle'
+import { createNightLights } from './scene/nightLights'
 import { createDetective } from './detective/createDetective'
 import { createRowBoat } from './boat/createRowBoat'
 import { createDust } from './effects/createDust'
@@ -183,6 +185,8 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
         // Ambiente: cielo con sol, luces con sombras y nubes moviéndose sobre España
         const sky = createSky()
         const lighting = createLighting()
+        // Day/night cycle (debug: ?time=0.75 start time of day, ?daylen=30 seconds per day)
+        const day = createDayCycle(readDayParams(window.location.search))
         scene.add(sky.group, lighting.group)
         worldMesh.receiveShadow = true
         const mb = zoneBounds[0]
@@ -208,12 +212,15 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
         const houses = placeTowns(explored.places, {
           heightAt: (x, z) => terrainAt(x, z)?.heightAt(x, z) ?? 0,
           isLand: (x, z) => terrainAt(x, z)?.isExploredLand(x, z) ?? false,
-          landmarkDistance: landmarks.distance,
+          landmarkDistance: landmarks.spacing,
           nearRiver: (x, z, m) => terrainAt(x, z)?.nearRiver(x, z, m) ?? false,
           nearRoad,
         })
         const towns = createTowns(houses)
         scene.add(towns.group)
+        // Night lights of houses and landmarks: their own scene, drawn after the ink pass
+        const nightLights = createNightLights()
+        nightLights.scene.add(towns.lights, landmarks.lights)
         await progress(0.92)
 
         // Paisaje por regiones: olivares, viñedos, bosques, dehesa, palmeras y molinos (scenery.json)
@@ -222,7 +229,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
           metersAt: (x, z) => terrainAt(x, z)?.metersAt(x, z) ?? 0,
           isLand: (x, z) => terrainAt(x, z)?.isExploredLand(x, z) ?? false,
           nearHouse: towns.blocks,
-          landmarkDistance: landmarks.distance,
+          landmarkDistance: landmarks.spacing,
           nearRiver: (x, z, m) => terrainAt(x, z)?.nearRiver(x, z, m) ?? false,
           nearRoad,
         })
@@ -263,7 +270,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
         await progress(0.975)
         chase.startIntro() // swoop from far above Spain down to the detective; control starts when it lands
         // Solo en desarrollo: acceso desde la consola/Playwright para depurar
-        if (import.meta.env.DEV) Object.assign(window, { __game: { carState, camera, chase, ground, detective, boat, renderer, scene, towns, houses, scenery, sceneryItems, landmarks, caseMarkers, main } })
+        if (import.meta.env.DEV) Object.assign(window, { __game: { carState, camera, chase, ground, detective, boat, renderer, scene, day, nightLights, towns, houses, scenery, sceneryItems, landmarks, caseMarkers, main } })
 
         const fog = scene.fog as THREE.Fog
         const ink = createInkOutline(renderer) // contornos negros de cómic
@@ -330,7 +337,9 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
             lensFlying = false
             callbacks.current.onLensFocus?.('out')
           }
-          clouds.update(dt)
+          // Time of day: stands still while a case level or the magnifier is open
+          const palette = day.advance(callbacks.current.paused || lensFlying ? 0 : dt)
+          clouds.update(dt, palette)
           // Solved cases in green (only when the app sends a new list)
           if (callbacks.current.completedCases !== shownCompleted) {
             shownCompleted = callbacks.current.completedCases
@@ -353,9 +362,11 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
           camera.near = Math.max(0.05, d / 300)
           camera.far = d * 20 + 1000 * UNITS_PER_KM
           camera.updateProjectionMatrix()
-          sky.update(camera)
-          lighting.update(detective.root.position, Math.max(40, Math.min(d * 1.6, 3000 * UNITS_PER_KM)))
-          ink.render(scene, camera, fog.near, fog.near + (fog.far - fog.near) * 0.5)
+          fog.color.copy(palette.fog)
+          sky.update(camera, palette)
+          lighting.update(detective.root.position, Math.max(40, Math.min(d * 1.6, 3000 * UNITS_PER_KM)), palette)
+          nightLights.update(palette.night, fog.near, fog.far)
+          ink.render(scene, camera, fog.near, fog.near + (fog.far - fog.near) * 0.5, palette, nightLights.scene)
           hudClock += dt
           if (hudClock >= HUD_INTERVAL && !chase.introActive) {
             hudClock = 0
@@ -376,6 +387,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
           footprints.dispose()
           landmarks.dispose()
           towns.dispose()
+          nightLights.dispose()
           scenery.dispose()
           worldMesh.geometry.dispose()
           ;(worldMesh.material as THREE.Material).dispose()

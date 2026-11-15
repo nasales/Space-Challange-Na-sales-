@@ -48,10 +48,11 @@ export function buildTorreHercules(kit: Kit): THREE.Group {
   const windows = [[-3, 9], [3, 15.5], [-2.4, 22], [2.6, 28], [-2.8, 33]]
   for (let k = 0; k < 4; k++) {
     const face = new THREE.Group()
-    for (const [x, y] of windows) {
+    for (const [i, [x, y]] of windows.entries()) {
       const z = widthAt(y) / 2 + 0.05
       const sx = x * (k % 2 ? -1 : 1)
       face.add(kit.slab(1.5, 2.6, 0.3, DARK, sx, y, z))
+      if ((i + k) % 2 === 0) face.add(kit.lightPanel(1.1, 2.1, sx, y + 0.25, z + 0.25)) // lit at night
       face.add(kit.box(2.1, 0.45, 0.6, TRIM, sx, y - 0.45, z))
     }
     face.rotation.y = (k * Math.PI) / 2
@@ -90,6 +91,7 @@ export function buildTorreHercules(kit: Kit): THREE.Group {
     const win = kit.slab(1.4, 3, 0.4, DARK, Math.sin(a) * 4.45, stage1 + 1.8, Math.cos(a) * 4.45)
     win.rotation.y = a
     top.add(win)
+    top.add(kit.lightPanel(1, 2.4, Math.sin(a) * 4.75, stage1 + 2.1, Math.cos(a) * 4.75, a))
   }
   oct(5.6, 5.6, 1, TRIM)
   oct(3.6, 3.2, 4, STONE)
@@ -97,6 +99,7 @@ export function buildTorreHercules(kit: Kit): THREE.Group {
 
   // ---- Oversized glowing lantern with its frame, and a fat dome ----
   top.add(kit.mesh(new THREE.CylinderGeometry(2.6, 2.6, 3.6, 12), LIGHT, 0, y + 1.8, 0))
+  top.add(kit.lightHalo(7, 0, y + 1.8, 0, 1.3)) // the lighthouse lamp: the brightest night light
   for (let k = 0; k < 6; k++) {
     const a = (k * Math.PI) / 3
     top.add(kit.box(0.45, 3.6, 0.45, DARK, Math.sin(a) * 2.7, y, Math.cos(a) * 2.7))

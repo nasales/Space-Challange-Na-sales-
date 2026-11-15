@@ -36,6 +36,14 @@ const CONTRAST = '1.05'
 const OBJECT_INK_FAR_START = '0.15'
 const OBJECT_INK_FAR_END = '0.6'
 const OBJECT_INK_FAR = '0.45'
+/**
+ * Day/night tint (dayCycle.ts): the picture, except the sky, is multiplied by `tint` and raised by
+ * `lift`. Bright pixels (by luminance, so the plain blue sea does not count) keep part of their
+ * own colour (from HIGHLIGHT_START up, at most HIGHLIGHT_KEEP), so case markers, snow and white
+ * walls still stand out at night.
+ */
+const HIGHLIGHT_START = '0.55'
+const HIGHLIGHT_KEEP = '0.4'
 
 const vertexShader = /* glsl */ `
   varying vec2 vUv;
@@ -54,6 +62,8 @@ const fragmentShader = /* glsl */ `
   uniform vec3 ink;
   uniform float fadeNear;
   uniform float fadeFar;
+  uniform vec3 tint;
+  uniform vec3 lift;
   varying vec2 vUv;
 
   // Profundidad real (distancia a la cámara) a partir del valor guardado (0..1)
@@ -87,12 +97,19 @@ const fragmentShader = /* glsl */ `
     float edge = mix(groundEdge, objectEdge, object);
     // Colour grade: saturation + vibrance + contrast (see constants above)
     vec3 c = color.rgb;
+    // Time-of-day tint. The sky (nothing drawn in the depth image) already has its final colour
+    float bright = dot(c, vec3(0.2126, 0.7152, 0.0722));
+    vec3 tinted = mix(c * tint + lift, c, ${HIGHLIGHT_KEEP} * smoothstep(${HIGHLIGHT_START}, 1.0, bright));
+    c = mix(tinted, c, step(1.0, texture2D(tDepth, vUv).x));
     float luma = dot(c, vec3(0.2126, 0.7152, 0.0722));
     float hi = max(c.r, max(c.g, c.b));
     float sat = (hi - min(c.r, min(c.g, c.b))) / max(hi, 1e-4);
     c = max(mix(vec3(luma), c, ${SATURATION} + ${VIBRANCE} * (1.0 - sat)), 0.0);
     c = 0.18 * pow(c / 0.18, vec3(${CONTRAST}));
     gl_FragColor = vec4(mix(c, ink, edge), 1.0);
+    // The screen gets the scene depth too: what is drawn after this pass (night lights) is hidden
+    // behind houses, landmarks and the detective like anything else
+    gl_FragDepth = texture2D(tDepth, vUv).x;
     #include <colorspace_fragment>
   }
 `
@@ -117,9 +134,10 @@ export function createInkOutline(renderer: THREE.WebGLRenderer) {
       ink: { value: INK },
       fadeNear: { value: 300 },
       fadeFar: { value: 900 },
+      tint: { value: new THREE.Color(1, 1, 1) },
+      lift: { value: new THREE.Color(0, 0, 0) },
     },
-    depthTest: false,
-    depthWrite: false,
+    depthFunc: THREE.AlwaysDepth, // always drawn, and it writes the scene depth (see the shader)
   })
   const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material)
   quad.frustumCulled = false
@@ -127,8 +145,24 @@ export function createInkOutline(renderer: THREE.WebGLRenderer) {
   quadScene.add(quad)
   const quadCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1)
 
-  /** Dibuja la escena con contornos. fadeNear/fadeFar: distancias donde la tinta se desvanece. */
-  const render = (scene: THREE.Scene, camera: THREE.PerspectiveCamera, fadeNear: number, fadeFar: number) => {
+  /**
+   * Dibuja la escena con contornos. fadeNear/fadeFar: distancias donde la tinta se desvanece.
+   * `grade`: optional day/night tint (the time-of-day palette); without it the picture is unchanged.
+   * `overlay`: optional scene drawn straight to the screen after the ink and the tint, with the
+   * scene depth (the night lights, so the tint does not dim them).
+   */
+  const render = (
+    scene: THREE.Scene,
+    camera: THREE.PerspectiveCamera,
+    fadeNear: number,
+    fadeFar: number,
+    grade?: { tint: THREE.Color; lift: THREE.Color },
+    overlay?: THREE.Scene,
+  ) => {
+    if (grade) {
+      material.uniforms.tint.value.copy(grade.tint)
+      material.uniforms.lift.value.copy(grade.lift)
+    }
     // Si la ventana ha cambiado de tamaño, la imagen intermedia también
     renderer.getDrawingBufferSize(size)
     if (size.x !== target.width || size.y !== target.height) {
@@ -144,6 +178,12 @@ export function createInkOutline(renderer: THREE.WebGLRenderer) {
     renderer.render(scene, camera)
     renderer.setRenderTarget(null)
     renderer.render(quadScene, quadCamera)
+    if (overlay?.visible) {
+      const autoClear = renderer.autoClear
+      renderer.autoClear = false // keep the picture and its depth
+      renderer.render(overlay, camera)
+      renderer.autoClear = autoClear
+    }
   }
 
   return {
