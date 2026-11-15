@@ -13,7 +13,6 @@ import Wardrobe from './ui/wardrobe/Wardrobe'
 import LoginScreen from './ui/auth/LoginScreen'
 import { isRecoveryLink, useSession } from './shared/auth'
 import DbTest from './ui/dbtest/DbTest'
-import DbStatus from './ui/status/DbStatus'
 import CaseFilePreview from './ui/casefile/CaseFilePreview'
 import CaseFlow, { type DialogueState } from './ui/casefile/CaseFlow'
 import CaseHint from './ui/casefile/CaseHint'
@@ -53,8 +52,8 @@ const CASE_PREVIEW = new URLSearchParams(window.location.search).has('casefile')
 const NO_DIALOGUE: DialogueState = { active: false, speaking: null, mood: null }
 
 export default function App() {
-  // true while a featured case is open: the HUD and the database badge fade out (dialogue focus)
-  const [caseFocus, setCaseFocus] = useState(false)
+  // Game reports when a featured case is open; nothing at this level reads it now (the badge is gone)
+  const [, setCaseFocus] = useState(false)
   return (
     <>
       {!LANG_CHOSEN && !CASE_PREVIEW && !DB_TEST ? (
@@ -73,8 +72,6 @@ export default function App() {
       ) : (
         <Game onCaseFocus={setCaseFocus} />
       )}
-      {/* Database badge + build version, on every screen (hidden while a case is open) */}
-      <DbStatus hidden={caseFocus} />
     </>
   )
 }
