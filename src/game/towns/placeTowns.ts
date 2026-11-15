@@ -72,6 +72,11 @@ const HOUSE_PITCH = 14
 const BLOCK = 38
 /** Villages under this population get a slightly irregular grid and some empty garden plots. */
 const LOOSE_POP = 20000
+/**
+ * Extra blocks a town may try when its central ones are lost (e.g. a castle on the town centre,
+ * as in Peñafiel): the town then keeps its houses on the next ring instead of having none.
+ */
+const SPARE_BLOCKS = 8
 const GARDEN_SHARE = 0.15
 /** Radio de una casa normal (para pendientes y choques). */
 const HOUSE_RADIUS = 6
@@ -155,7 +160,11 @@ export function placeTowns(places: Place[], ground: TownGround): HouseSpot[] {
     const tryPlace = (gx: number, gz: number, variant: HouseVariant, radius: number, rot: number, scale: number) => {
       const x = center.x + gx * cos - gz * sin
       const z = center.z + gx * sin + gz * cos
-      if (!ground.isLand(x, z) || ground.landmarkDistance(x, z) < LANDMARK_CLEARANCE) return false
+      if (!ground.isLand(x, z)) return false
+      if (ground.landmarkDistance(x, z) < LANDMARK_CLEARANCE) {
+        tries-- // like roads: a spot taken by a monument does not use up the town's attempts
+        return false
+      }
       if (occupied(x, z, radius, index)) return false // ya hay una casa (p. ej. de un pueblo vecino) en ese sitio
       // Toda la planta en tierra y sin pendiente fuerte (centro + cuatro puntos alrededor)
       const pts = [[0, 0], [radius, 0], [-radius, 0], [0, radius], [0, -radius]].map(([dx, dz]) => [x + dx, z + dz])
@@ -177,7 +186,7 @@ export function placeTowns(places: Place[], ground: TownGround): HouseSpot[] {
     // Blocks of the street grid, from the centre out. Each block holds one big building (church,
     // block of flats, tower) or up to four houses in a 2 x 2 square, each facing the street on its
     // side of the block, so from above the town reads as roofs in rows with streets between them.
-    for (const [bi, bj] of spiralCells(blocks)) {
+    for (const [bi, bj] of spiralCells(blocks + SPARE_BLOCKS)) {
       if (placed >= wanted || tries > wanted * 3) break
       const bx = bi * BLOCK + (rand() - 0.5) * 3 * loose
       const bz = bj * BLOCK + (rand() - 0.5) * 3 * loose

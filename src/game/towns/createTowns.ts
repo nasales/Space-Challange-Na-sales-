@@ -197,6 +197,9 @@ function buildHouse(variant: HouseVariant, style: TownStyle) {
     buildBuilding(parts, variant, p, slots)
   } else if (variant === 6) {
     buildHorreo(parts)
+    // Night: no windows, so a lantern hangs under the granary floor at the front (a door-lamp slot:
+    // the lamp goes at y0 + h + 0.9, just below the floor slab, and 0.5 in front of z)
+    slots.push({ door: true, w: 0, h: 2.3, x: 0, y0: 0, z: 2.3, rotY: 0 })
   } else {
     // Iglesia con campanario
     parts.push(box(12, 10 + SINK, 22, p.wall, 0, -SINK, -2), box(12.1, 1.5 + SINK, 22.1, p.band, 0, -SINK, -2))

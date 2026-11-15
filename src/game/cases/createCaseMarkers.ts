@@ -1,5 +1,6 @@
-// Featured case markers: a floating "!" over each case and a glowing trigger zone on the ground
-// under it (where the player must stand to open the case). Solved cases turn green.
+// Featured case markers: a floating symbol over each case (one per place, see symbols/; "!" when a
+// case has none) and a glowing trigger zone on the ground under it (where the player must stand to
+// open the case). Solved cases turn green.
 // Coordinates come from data/cases_index.json (via src/levels/data.ts); nothing is duplicated here.
 // To restyle: change the constants below. To use another symbol ("?", a magnifier...): replace
 // buildMarkerMesh(); for another zone shape, buildZoneMesh(). Each marker keeps userData.caseId.
@@ -13,6 +14,7 @@
 import * as THREE from 'three'
 import { lonLatToWorld } from '../map/projection'
 import { toonMaterial } from '../scene/toonGradient'
+import { CASE_SYMBOLS, createSymbolKit, type SymbolKit } from './symbols'
 
 // ---- "!" symbol ----
 /** Total height of the "!" in world units (detective ~9, landmarks up to ~100; 8 units = 1 km). */
@@ -101,20 +103,32 @@ interface MarkerLook {
 }
 
 /**
- * The "!" symbol, standing on y = 0 (its bottom), centred on x = z = 0. It receives shared
- * geometries and materials (one set for all markers). Swap this function to change the symbol;
- * the rest of the file only needs the meshes tagged with userData.part ('bar' | 'dot').
+ * The case's symbol (symbols/index.ts), or the "!" when the case has none, standing on y = 0 (its
+ * bottom), centred on x = z = 0. Geometries and materials are shared (one set for all markers).
+ * Every mesh is tagged userData.part = 'symbol' with its open material in userData.openMat and its
+ * solved material in userData.doneMat (the green bar material unless set, so a solved symbol is
+ * all green); the rest of the file only swaps those.
  */
-function buildMarkerMesh(look: MarkerLook) {
+function buildMarkerMesh(look: MarkerLook, doneLook: MarkerLook, kit: SymbolKit, caseId: string) {
+  const build = CASE_SYMBOLS[caseId]
+  if (build) {
+    const symbol = build(kit)
+    symbol.traverse((o) => {
+      if (o.userData.part === 'symbol') o.userData.doneMat ??= doneLook.barMat
+    })
+    return symbol
+  }
   const symbol = new THREE.Group()
   const dot = new THREE.Mesh(look.dot, look.dotMat)
   dot.position.y = DOT_RADIUS
-  dot.userData.part = 'dot'
+  dot.userData.doneMat = doneLook.dotMat
   const bar = new THREE.Mesh(look.bar, look.barMat)
   bar.position.y = DOT_RADIUS * 2 + GAP + BAR_HEIGHT / 2
-  bar.userData.part = 'bar'
+  bar.userData.doneMat = doneLook.barMat
   for (const m of [dot, bar]) {
     m.castShadow = true
+    m.userData.part = 'symbol'
+    m.userData.openMat = m.material
     symbol.add(m)
   }
   return symbol
@@ -161,6 +175,8 @@ interface Marker {
   baseY: number
   phase: number
   done: boolean
+  /** The symbol faces the camera instead of spinning (see update()). */
+  facesCamera: boolean
 }
 
 export function createCaseMarkers(cases: CaseMarkerData[]) {
@@ -170,6 +186,7 @@ export function createCaseMarkers(cases: CaseMarkerData[]) {
   }
   const open = { marker: { ...geometries, barMat: toonMaterial(MARKER_COLOR), dotMat: toonMaterial(ACCENT_COLOR) }, zone: { fill: glowMaterial(ZONE_COLOR), rim: glowMaterial(ZONE_COLOR) } }
   const done = { marker: { ...geometries, barMat: toonMaterial(DONE_COLOR), dotMat: toonMaterial(DONE_ACCENT_COLOR) }, zone: { fill: glowMaterial(ZONE_DONE_COLOR), rim: glowMaterial(ZONE_DONE_COLOR) } }
+  const symbolKit = createSymbolKit() // materials and geometries of the per-case symbols
   const fills = [open.zone.fill, done.zone.fill] as THREE.MeshBasicMaterial[]
   const rims = [open.zone.rim, done.zone.rim] as THREE.MeshBasicMaterial[]
 
@@ -183,13 +200,14 @@ export function createCaseMarkers(cases: CaseMarkerData[]) {
     holder.name = c.title
     holder.userData.caseId = c.id
     holder.position.set(x, baseY, z)
-    holder.add(buildMarkerMesh(open.marker))
+    const symbol = buildMarkerMesh(open.marker, done.marker, symbolKit, c.id)
+    holder.add(symbol)
     const radius = ZONE_RADIUS_OVERRIDE[c.id] ?? ZONE_RADIUS
     const zone = buildZoneMesh(open.zone, radius)
     zone.userData.caseId = c.id
     zone.position.set(x, 0, z)
     group.add(holder, zone)
-    return { id: c.id, x, z, holder, zone, radius, baseY, phase: i * 1.7, done: false } // own phase: no lockstep
+    return { id: c.id, x, z, holder, zone, radius, baseY, phase: i * 1.7, done: false, facesCamera: !!symbol.userData.facesCamera } // own phase: no lockstep
   })
   let clock = 0
 
@@ -197,8 +215,7 @@ export function createCaseMarkers(cases: CaseMarkerData[]) {
   const applyLook = (m: Marker) => {
     const look = m.done ? done : open
     m.holder.traverse((o) => {
-      if (o.userData.part === 'bar') (o as THREE.Mesh).material = look.marker.barMat
-      if (o.userData.part === 'dot') (o as THREE.Mesh).material = look.marker.dotMat
+      if (o.userData.part === 'symbol') (o as THREE.Mesh).material = m.done ? o.userData.doneMat : o.userData.openMat
     })
     m.zone.traverse((o) => {
       if (o.userData.part === 'fill') (o as THREE.Mesh).material = look.zone.fill
@@ -232,12 +249,17 @@ export function createCaseMarkers(cases: CaseMarkerData[]) {
       }
     },
 
-    /** Slow bob and spin of the "!", pulse of the zones. */
-    update(dt: number) {
+    /**
+     * Slow bob and spin of the symbols, pulse of the zones. A symbol tagged userData.facesCamera
+     * (the tilted paella) turns its +Z side to the camera instead of spinning, so it never shows
+     * its underside.
+     */
+    update(dt: number, cameraPos?: THREE.Vector3) {
       clock += dt
       for (const m of markers) {
         m.holder.position.y = m.baseY + Math.sin(clock * BOB_SPEED + m.phase) * BOB_AMPLITUDE
-        m.holder.rotation.y += SPIN_SPEED * dt
+        if (cameraPos && m.facesCamera) m.holder.rotation.y = Math.atan2(cameraPos.x - m.x, cameraPos.z - m.z)
+        else m.holder.rotation.y += SPIN_SPEED * dt
       }
       const pulse = 0.5 + 0.5 * Math.sin(clock * ZONE_PULSE_SPEED)
       for (const f of fills) f.opacity = ZONE_FILL_MIN + (ZONE_FILL_MAX - ZONE_FILL_MIN) * pulse
@@ -261,6 +283,7 @@ export function createCaseMarkers(cases: CaseMarkerData[]) {
     dispose() {
       geometries.bar.dispose()
       geometries.dot.dispose()
+      symbolKit.dispose()
       for (const look of [open, done]) {
         look.marker.barMat.dispose()
         look.marker.dotMat.dispose()

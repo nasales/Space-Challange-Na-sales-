@@ -58,6 +58,10 @@ const NEAR_DISTANCE = 250
 const DEFAULT_CLEARANCE = 80
 /** Night lights of a monument switch on within this first part of the dusk (0..1), one after another. */
 const LIGHT_PHASE_SPREAD = 0.5
+/** Fast travel: landing spot this fraction of the plaza out from the footprint edge, within these limits (units). Close enough that the chase camera behind him stays on the plaza, clear of the houses. */
+const APPROACH_GAP = 0.3
+const APPROACH_MIN_GAP = 8
+const APPROACH_MAX_GAP = 30
 
 interface Placed {
   data: LandmarkData
@@ -392,6 +396,34 @@ export function createLandmarks(list: LandmarkData[]) {
     positionOf(id: string) {
       const p = placed.find((q) => q.data.id === id)
       return p ? { x: p.x, z: p.z } : null
+    },
+
+    /**
+     * Fast travel (plane): where to land at a monument. On its flat plaza, in front of the facade
+     * (local +Z, the side that faces south at heading 0), facing the monument. If that spot is not
+     * usable (sea, a tree, another footprint), the other sides are tried, then a bit closer.
+     * @param ok the spot can be walked on (land and nothing in the way)
+     * @returns null if the monument does not exist or no side is usable
+     */
+    approachOf(id: string, ok: (x: number, z: number) => boolean) {
+      const p = placed.find((q) => q.data.id === id)
+      if (!p) return null
+      const plaza = p.data.plaza ?? DEFAULT_PLAZA
+      const gap = Math.min(APPROACH_MAX_GAP, Math.max(APPROACH_MIN_GAP, plaza * APPROACH_GAP))
+      const angle = (p.data.heading * Math.PI) / 180
+      // Local directions: front (+Z), right, left, back; each at the edge of the footprint plus the gap
+      const sides: [number, number, number][] = [[0, 1, p.halfD], [1, 0, p.halfW], [-1, 0, p.halfW], [0, -1, p.halfD]]
+      for (const shrink of [1, 0.6, 0.3]) {
+        for (const [lx, lz, half] of sides) {
+          const d = half + gap * shrink
+          // Holder rotation of a local point (lx, lz) * d around Y by `angle`
+          const x = p.x + (lx * Math.cos(angle) + lz * Math.sin(angle)) * d
+          const z = p.z + (-lx * Math.sin(angle) + lz * Math.cos(angle)) * d
+          if (!ok(x, z) || placed.some((q) => outside(q, x, z) < APPROACH_MIN_GAP * 0.5)) continue
+          return { x, z, heading: Math.atan2(-(p.x - x), -(p.z - z)) }
+        }
+      }
+      return null
     },
 
     dispose: () => {
