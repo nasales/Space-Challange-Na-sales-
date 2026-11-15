@@ -1343,6 +1343,18 @@
   margin: 0;
 }
 
+/* One credit line: name and text share the grid of the list. */
+.case-file__credit {
+  display: contents;
+}
+
+/* Small print under a credit: dataset version or license. */
+.case-file__credit-note {
+  display: block;
+  font-size: 0.85rem;
+  color: #3b4a6b;
+}
+
 /* ---- Right stage ---- */
 .main-menu__stage {
   position: relative;
