@@ -1494,14 +1494,48 @@
   100% { rotate: 0deg; }
 }
 
-/* ---- Volume sliders (src/ui/settings/SoundSliders.tsx): top-left of the stage ---- */
-.menu-sound {
+/* ---- Volume sliders (src/ui/settings/SoundSliders.tsx): a taped note in the wall's top-left
+   corner, clear of the title (centred) and the Play sheet (from 26 % down) ---- */
+.board-sound {
   position: absolute;
-  z-index: 3;
-  top: 14px;
-  left: 14px;
-  width: min(200px, calc(100% - 28px));
-  transform: rotate(-1.5deg);
+  z-index: 5;
+  top: 30px;
+  left: 30px;
+  width: clamp(132px, 14%, 180px);
+  gap: 2px;
+  padding: 10px 10px 4px;
+  transform: rotate(-2.5deg);
+  box-shadow:
+    4px 5px 0 var(--menu-ink-deep),
+    -2px -2px 0 var(--print-cyan);
+}
+
+/* Strip of tape holding the note to the wall */
+.board-sound::before {
+  content: '';
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  width: 54px;
+  height: 16px;
+  translate: -50% 0;
+  rotate: 4deg;
+  background: rgba(255, 248, 231, 0.78);
+  border: 1px solid rgba(22, 27, 46, 0.35);
+  pointer-events: none;
+}
+
+.board-sound .sound-sliders__title {
+  font-size: 17px;
+}
+
+.board-sound .sound-sliders__label,
+.board-sound .sound-sliders__value {
+  font-size: 11px;
+}
+
+.board-sound .sound-sliders__range {
+  height: 24px;
 }
 
 /* ---- Narrow screens: character on top, wall below (the page scrolls) ---- */
@@ -1517,34 +1551,28 @@
     order: -1;
   }
 
-  /* Compact sliders in the top-left corner, beside the account badge, clear of the character */
-  .menu-sound {
-    top: 10px;
-    left: 10px;
-    width: min(132px, calc(50% - 20px));
-    gap: 0;
-    padding: 4px 8px 2px;
-    box-shadow: 3px 3px 0 var(--menu-ink-deep);
-  }
-
-  .menu-sound .sound-sliders__title {
-    display: none;
-  }
-
-  .menu-sound .sound-sliders__label,
-  .menu-sound .sound-sliders__value {
-    font-size: 11px;
-  }
-
-  .menu-sound .sound-sliders__range {
-    height: 22px;
-  }
-
+  /* The wall is narrow here and the title spans it: the sliders go below the wall instead */
   .main-menu__panel {
-    height: 640px;
+    flex-direction: column;
+    gap: 14px;
     padding: 10px;
     border-right: none;
     border-top: 6px solid var(--menu-ink-deep);
+  }
+
+  .main-menu__panel .board {
+    flex: none;
+    height: 620px;
+  }
+
+  .board-sound {
+    position: static;
+    width: auto;
+    transform: none;
+  }
+
+  .board-sound::before {
+    display: none;
   }
 
   .case-file__credits {
