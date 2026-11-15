@@ -21,6 +21,7 @@ import { buildCastilloPenafiel, buildCastilloPenafielBase } from './castilloPena
 import { buildCatedralMurcia, buildCatedralMurciaBase } from './catedralMurcia'
 import { buildAlcazarToledo, buildAlcazarToledoBase } from './alcazarToledo'
 import { buildAlcazabaAlmeria, buildAlcazabaAlmeriaBase } from './alcazabaAlmeria'
+import { PROVINCE_MODELS } from './province'
 
 export interface LandmarkModel {
   /** El monumento en sí (unidades del modelo, base en y = 0). */
@@ -54,4 +55,6 @@ export const LANDMARK_MODELS: Record<string, LandmarkModel> = {
   'catedral-murcia': { build: buildCatedralMurcia, base: buildCatedralMurciaBase, margin: 6 },
   'alcazar-toledo': { build: buildAlcazarToledo, base: buildAlcazarToledoBase, margin: 6 },
   'alcazaba-almeria': { build: buildAlcazabaAlmeria, base: buildAlcazabaAlmeriaBase, margin: 10 },
+  // One small monument per provincial capital (visual only, not on the travel map)
+  ...PROVINCE_MODELS,
 }

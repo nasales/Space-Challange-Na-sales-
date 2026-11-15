@@ -19,6 +19,8 @@ import CaseFlow, { type DialogueState } from './ui/casefile/CaseFlow'
 import CaseHint from './ui/casefile/CaseHint'
 import { createAnchorStore } from './ui/casefile/anchors'
 import TravelMap from './ui/travelmap/TravelMap'
+import AchievementToasts from './ui/achievements/AchievementToasts'
+import { reportCaseSolved } from './shared/achievements'
 import GuidePrompt from './ui/guide/GuidePrompt'
 import GuideTour from './ui/guide/GuideTour'
 import { createGuideAnchorStore } from './ui/guide/anchor'
@@ -197,6 +199,7 @@ function Game({ onCaseFocus }: { onCaseFocus: (on: boolean) => void }) {
     // Green marker once the case is solved
     playSfx('success')
     markCompleted(caseId)
+    reportCaseSolved(caseId) // achievements: case levels X/N
     setCompleted((prev) => new Set(prev).add(caseId))
     if (userId) {
       saveRemoteCompleted(caseId)
@@ -313,6 +316,7 @@ function Game({ onCaseFocus }: { onCaseFocus: (on: boolean) => void }) {
           outfit={outfit}
         />
       )}
+      <AchievementToasts />
     </main>
   )
 }
