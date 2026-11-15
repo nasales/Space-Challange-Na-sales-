@@ -17,6 +17,16 @@ export const COASTAL_SEA_KM = 44 // was 20, then 28: the shallow band for the bo
  */
 const OUTLINE_GAP_KM = 12
 
+/**
+ * Neighbouring countries (Portugal, France, Andorra, Morocco...) are drawn with their real relief
+ * but grey and not drivable, so the map does not end in a cliff at the border. Their land is shown
+ * up to NEIGHBOUR_KM from the country; from NEIGHBOUR_FADE_KM on, and within EDGE_FADE_KM of the
+ * edge of the zone, its height blends into the low grey world (see createTerrain.ts).
+ */
+export const NEIGHBOUR_KM = 140
+const NEIGHBOUR_FADE_KM = 70
+const EDGE_FADE_KM = 30
+
 export interface ExploredRegion {
   /** 1 = tierra del país */
   countryLand: Uint8Array
@@ -26,6 +36,8 @@ export interface ExploredRegion {
   ford: Uint8Array
   /** Distance (km) from each cell to the edge of the shallow sea: negative inside it, positive outside (+Infinity on dry ground) */
   shallowKm: Float32Array
+  /** Neighbouring land shown grey (0 = none; 1 = full relief; in between it blends into the grey world) */
+  neighbourLand: Float32Array
 }
 
 /**
@@ -58,6 +70,25 @@ export function computeExploredRegion(
     }
   }
 
+  // Neighbouring land near the country: grey relief that fades into the grey world (NEIGHBOUR_KM)
+  const neighbourLand = new Float32Array(n)
+  const toCountry = distanceTo(countryLand, width, height)
+  const smoothstep = (a: number, b: number, v: number) => {
+    const t = Math.min(1, Math.max(0, (v - a) / (b - a)))
+    return t * t * (3 - 2 * t)
+  }
+  for (let r = 0; r < height; r++) {
+    const edgeR = Math.min(r, height - 1 - r)
+    for (let c = 0; c < width; c++) {
+      const i = r * width + c
+      if (countryLand[i] || elevation[i] <= 0) continue
+      const km = toCountry[i] / cellsPerKm
+      if (km >= NEIGHBOUR_KM) continue
+      const edgeKm = Math.min(edgeR, c, width - 1 - c) / cellsPerKm
+      neighbourLand[i] = (1 - smoothstep(NEIGHBOUR_FADE_KM, NEIGHBOUR_KM, km)) * smoothstep(0, EDGE_FADE_KM, edgeKm)
+    }
+  }
+
   // The sea "next to the country" is measured from its land and from its enclosed seas
   const enclosed = enclosedSea(countryLand, bounds, width, height)
   if (enclosed) for (let i = 0; i < n; i++) if (countryLand[i]) enclosed[i] = 1
@@ -71,9 +102,9 @@ export function computeExploredRegion(
   for (let i = 0; i < n; i++) {
     const sea = elevation[i] <= 0
     const d = distToCore[i]
-    region[i] = countryLand[i] || (sea && d < radius) ? 1 : 0
+    region[i] = countryLand[i] || neighbourLand[i] > 0 || (sea && d < radius) ? 1 : 0
     shallowKm[i] = sea ? d / cellsPerKm - COAST_SHALLOWS_KM : Infinity
     if (sea && !countryLand[i] && shallowKm[i] <= 0) ford[i] = 1
   }
-  return { countryLand, region, ford, shallowKm }
+  return { countryLand, region, ford, shallowKm, neighbourLand }
 }

@@ -88,7 +88,7 @@ export function buildToyMap(
 
   // 2) Zona explorada y distancias a la costa
   const pxPerKm = width / (((bounds.east - bounds.west) * UNITS_PER_DEG_LON) / UNITS_PER_KM)
-  const { countryLand, region, shallowKm } = computeExploredRegion(country, bounds, elev, width, height, pxPerKm, neighbours)
+  const { countryLand, region, shallowKm, neighbourLand } = computeExploredRegion(country, bounds, elev, width, height, pxPerKm, neighbours)
   const land = new Uint8Array(n)
   const sea = new Uint8Array(n)
   for (let i = 0; i < n; i++) {
@@ -129,6 +129,16 @@ export function buildToyMap(
       if (!region[i]) {
         // Fuera de la zona explorada (queda escondido; solo asoma en el corte de la frontera)
         c = UNEXPLORED.wall
+      } else if (neighbourLand[i] > 0) {
+        // ---- NEIGHBOURING COUNTRY: grey paper-map land with the same hillshade, not playable ----
+        c = mix(UNEXPLORED.land, UNEXPLORED.neighbour, neighbourLand[i]) // lighter where it melts into the grey world
+        if (x > 0 && y > 0 && x < width - 1 && y < height - 1) {
+          const hx = (surfY(elev[i + 1]) - surfY(elev[i - 1])) / (2 * pxWorld)
+          const hz = (surfY(elev[i + width]) - surfY(elev[i - width])) / (2 * pxWorld)
+          const len = Math.hypot(hx, 1, hz)
+          const lit = (-hx * SUN_DIRECTION.x + SUN_DIRECTION.y - hz * SUN_DIRECTION.z) / len / SUN_DIRECTION.y
+          c = scale(c, Math.min(HILLSHADE_MAX, Math.max(HILLSHADE_MIN, 1 + (lit - 1) * HILLSHADE)))
+        }
       } else if (!countryLand[i]) {
         // ---- MAR: tres bandas planas + dos líneas de espuma ----
         const dl = distToLand[i]
