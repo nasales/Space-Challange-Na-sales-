@@ -41,6 +41,8 @@ test('M opens the travel map, Esc closes it, a landmark flies the detective ther
   await page.keyboard.press('KeyM')
   await expect(map).toBeVisible()
   await expect(page.getByRole('button', { name: /^Fly to / }).first()).toBeVisible({ timeout: 30_000 })
+  // The Canary Islands are reached only by plane: their airfields are on the map (shared/travelSpots.ts)
+  await expect(page.getByRole('button', { name: 'Fly to Tenerife, Santa Cruz de Tenerife' })).toBeVisible()
   await page.keyboard.press('Escape')
   await expect(map).toBeHidden()
   await expect(page.locator('.pause-menu')).toHaveCount(0)

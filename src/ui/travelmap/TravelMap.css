@@ -133,6 +133,14 @@
   vector-effect: non-scaling-stroke;
   stroke-linejoin: round;
 }
+/* Box of the Canary Islands (south-west corner) */
+.travel-map__inset {
+  fill: var(--tm-sea);
+  stroke: var(--tm-ink);
+  stroke-width: 2px;
+  stroke-dasharray: 6 4;
+  vector-effect: non-scaling-stroke;
+}
 .travel-map__shadow {
   fill: var(--tm-land-shadow);
 }

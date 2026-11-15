@@ -18,7 +18,7 @@ export const COAST_SHALLOWS_KM = 32 // was 16
 export const ENCLOSED_SEAS: { bounds: Bounds; radiusKm: number }[] = [
   // Balearic Sea: Cabo de Palos .. Cap de Creus on the mainland, out to Formentera, Mallorca and Menorca
   { bounds: { west: -1.5, east: 4.7, south: 37.5, north: 42.6 }, radiusKm: 220 },
-  // Canary Islands: the sea between the seven islands (real lon/lat; the lane to the mainland is canarySeaLane.ts)
+  // Canary Islands: the sea between the seven islands (real lon/lat). No sea joins them to the mainland: he flies there (travel map, M)
   { bounds: { west: -18.3, east: -13.3, south: 27.6, north: 29.45 }, radiusKm: 140 },
 ]
 
@@ -69,7 +69,7 @@ function squaredDistance(isTarget: Uint8Array, w: number, h: number): Float32Arr
 
 /**
  * Cells of the grid that lie in an enclosed sea (1) or not (0); land cells may be marked too.
- * Returns null if no enclosed sea touches the zone (e.g. the Canary Islands).
+ * Returns null if no enclosed sea touches the zone.
  * @param land 1 = land of the country, on the same grid
  */
 export function enclosedSea(land: Uint8Array, bounds: Bounds, width: number, height: number): Uint8Array | null {

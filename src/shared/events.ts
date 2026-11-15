@@ -131,7 +131,7 @@ export interface GuideCue {
 }
 
 // ---- Fast travel (M map) ----
-/** A trip asked for from the travel map: landmark id (as in landmarks.json) and a counter, so the same place can be asked twice. */
+/** A trip asked for from the travel map: landmark id (as in landmarks.json) or airfield id (travelSpots.ts), and a counter, so the same place can be asked twice. */
 export interface TravelRequest {
   landmarkId: string
   seq: number
