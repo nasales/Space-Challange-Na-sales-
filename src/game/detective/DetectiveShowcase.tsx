@@ -6,12 +6,31 @@
 // during the fastest actions.
 //
 // mode 'investigate' (default)
-//   Entrance, once when the menu opens (ENTRANCE s):
-//     0.12 - 0.50  drops in from above the frame, stretched, arms up; his hat floats far behind
-//     0.50         lands: big squash, "POOF!" and a ring of comic dust puffs, small camera shake
-//     0.50 - 1.25  wobbles and windmills his arms while the hat drifts down like a leaf
-//     1.25         the hat lands on his head and squashes him a little more
-//     1.45 - 2.30  grabs his lapels and straightens his coat (two tugs), chin up
+//   Entrance, once when the menu opens (ENTRANCE s), told as comic panels and posed entirely
+//   on twos (12 fps; camera shake stays at full rate). Panels, rocket and lettering are built in
+//   introRocket.ts / comicArt.ts in the main menu's print style (timings in INTRO there):
+//     0.00 - 1.17  panel A, deep space: the panel pops in crooked; caption "Somewhere above
+//                  Earth..."; the rocket (his silhouette in the porthole) zips in with smear,
+//                  speed lines and cyan/magenta ghosts, overshoots, holds and bobs, winds up and
+//                  zips off
+//     1.17 - 1.42  ink diagonal wipe
+//     1.25 - 2.50  panel B, re-entry: flat comic Earth under shimmering focus lines; the rocket
+//                  dives in from the corner, rattles in its re-entry fire, pulls back and plunges
+//                  at Spain in three drawings ("WHOOSH!", the Earth punches in, a twinkle)
+//     2.50         one impact frame (paper and ink focus lines), hard cut
+//     2.58 - 3.42  panel C, the map of Spain: caption "Destination: Spain"; the landing ring
+//                  stamps in and pulses; a tiny rocket streaks onto it; impact star, panel shake
+//     3.42 - 3.67  ink diagonal wipe onto the stage (panel D)
+//     3.50 - 4.17  the rocket hangs at the top, then drops tail first, wobbling, ghosts trailing,
+//                  comic clouds and paper speed lines rushing up past it
+//     4.17         crash-lands tilted: keyed squash, "BOOM!", plate ghosts, puffs, camera shake
+//     4.83         the porthole hatch springs open, "POP!", and he pops out like a cork
+//     4.83 - 5.33  hops in an arc to the center of the stage, arms up; his hat floats behind
+//     5.33 - 6.00  lands, wobbles and windmills while the hat drifts down like a leaf
+//     6.00         the hat lands on his head and squashes him a little more
+//     5.50 - 7.00  the hatch snaps shut, the rocket rumbles, straightens up and blasts off out of
+//                  the frame (6.17, "WHOOSH!") in a burst of smoke, leaving the stage clear
+//     6.17 - 7.08  grabs his lapels and straightens his coat (two tugs), chin up
 //   Loop of LOOP s (repeats forever after the entrance):
 //     0.00 - 0.70  wind-up: snaps to profile, leans back, arms back, knee up, legs spin in place
 //     0.70 - 2.90  dash: sprint with motion streaks and dust (on twos)
@@ -28,18 +47,22 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { createDetective } from './createDetective'
+import { createRocketIntro, FRAME, INTRO } from './introRocket'
+import { PAL, burstWordTexture, comicPuffTexture, stepPop, swishWordTexture } from './comicArt'
 import type { CarState } from '../car/carPhysics'
 import type { Outfit } from '../../shared/outfit'
 
-// ---- Entrance (seconds since the menu opened) ----
-const ENTRANCE = 2.6
-const E_DROP = 0.08
-const E_LAND = 0.55
-const E_HAT = 1.25
-const E_TUG = 1.45
-const E_SETTLE = 2.3
-const FALL_HEIGHT = 24
+// ---- Entrance (seconds since the menu opened; the rocket part is in INTRO) ----
+const E_POP = INTRO.POP // he pops out of the porthole
+const E_LAND = 64 * FRAME
+const E_HAT = 72 * FRAME
+const E_TUG = 74 * FRAME
+const E_SETTLE = 85 * FRAME
+const ENTRANCE = 88 * FRAME
+const HOP_PEAK = 4.5 // extra height of the arc from the porthole to the center of the stage
 const HAT_FLOAT = 1.7 // hat height above its seat at the landing (model units, before scaling)
+const VSTREAK_COUNT = 6
+const ROCKET_WORD_X = 3 // "BOOM!" sits between the rocket and the center (inside narrow stages)
 
 // ---- Loop (seconds since the end of the entrance, modulo LOOP) ----
 const WINDUP_END = 0.7
@@ -63,7 +86,7 @@ const TWOS = 1 / 12 // "on twos": pose updates per second during the fastest act
 const PRINT_COUNT = 8
 const PRINT_SPACING = 1.8
 const PRINT_SCROLL = 1.6 // units/s the prints slide under him while he sneaks
-const PUFF_COUNT = 24
+const PUFF_COUNT = 32
 const STREAK_COUNT = 10
 const FIT_WIDTH = 17 // world units that must fit across the stage (keeps him inside on narrow screens)
 const INK = '#2b2540'
@@ -345,9 +368,17 @@ export default function DetectiveShowcase({ outfit, mode = 'investigate' }: Dete
     // Comic pops
     const exclaim = spriteOf(exclaimTexture())
     const question = spriteOf(questionTexture())
-    const poof = spriteOf(wordTexture('POOF!', '#fff6e3', 74))
     const skrrt = spriteOf(wordTexture('SKRRT!', '#f2c14e', 64))
     const sparkle = spriteOf(sparkleTexture())
+
+    // Rocket entrance (space panel, Earth, map, rocket): only when the story plays
+    const intro = story ? createRocketIntro(scene, camera, keep, renderer) : null
+    const boom = story ? spriteOf(burstWordTexture('Boom!')) : null
+    const pop = story ? spriteOf(burstWordTexture('Pop!', PAL.paper)) : null
+    const whoosh = story ? spriteOf(swishWordTexture('Whoosh!')) : null
+    const hopFrom = new THREE.Vector3() // porthole position when he pops out
+    const nozzle = new THREE.Vector3()
+    if (story) rig.visible = false // he is inside the rocket until the hatch opens
 
     // Flat comic dust puffs (one pool for the landing, the run and the skid)
     const puffMat = keep(new THREE.SpriteMaterial({ map: keep(puffTexture()), transparent: true, depthWrite: false }))
@@ -379,6 +410,35 @@ export default function DetectiveShowcase({ outfit, mode = 'investigate' }: Dete
       return { mesh: m, life: 0, len: 1 }
     })
     let streakNext = 0
+    // Entrance only: comic smoke puffs (paper, halftone shadow, ink line) and paper speed lines
+    // rushing up past the falling rocket; both move on twos
+    const introPuffMat = keep(new THREE.SpriteMaterial({ map: keep(comicPuffTexture()), transparent: true, depthWrite: false }))
+    const introPuffs = Array.from({ length: story ? PUFF_COUNT : 0 }, () => {
+      const s = new THREE.Sprite(introPuffMat)
+      s.visible = false
+      scene.add(s)
+      return { sprite: s, vel: new THREE.Vector3(), life: 0, rate: 1, size: 1 }
+    })
+    let introPuffNext = 0
+    const spawnIntroPuff = (x: number, y: number, z: number, vx: number, vy: number, vz: number, size: number, rate: number) => {
+      const p = introPuffs[introPuffNext]
+      introPuffNext = (introPuffNext + 1) % PUFF_COUNT
+      p.sprite.position.set(x, y, z)
+      p.vel.set(vx, vy, vz)
+      p.life = 1
+      p.rate = rate
+      p.size = size
+      p.sprite.visible = true
+    }
+    const vstreakMat = keep(new THREE.MeshBasicMaterial({ color: PAL.paper, transparent: true, depthWrite: false, side: THREE.DoubleSide }))
+    const vstreaks = Array.from({ length: story ? VSTREAK_COUNT : 0 }, () => {
+      const m = new THREE.Mesh(streakGeo, vstreakMat)
+      m.rotation.z = Math.PI / 2
+      m.visible = false
+      scene.add(m)
+      return { mesh: m, life: 0, len: 1 }
+    })
+    let vstreakNext = 0
 
     // Mouse: he turns to look at the cursor while he winks (and at the end of the entrance)
     let mouseX = 0
@@ -423,8 +483,9 @@ export default function DetectiveShowcase({ outfit, mode = 'investigate' }: Dete
     let lean = 0, leanV = 0 // springy whole-body lean (wobbles after the skid)
     let prevSpeed = 0
     let prevT = -1 // loop time of the previous frame (to fire one-shot effects)
+    let prevFrame = -1 // entrance drawing of the previous frame
     let shake = 0
-    const camPos = new THREE.Vector3(0, 9, -30)
+    const camPos = new THREE.Vector3(0, 9, story ? -30 * fit : -30) // story: start at the fitted distance
     const camTarget = new THREE.Vector3(0, CENTER_Y + 1.6, 0)
     const tmp = new THREE.Vector3()
     const fwd = new THREE.Vector3() // run direction (world), from RUN_HEADING
@@ -438,12 +499,25 @@ export default function DetectiveShowcase({ outfit, mode = 'investigate' }: Dete
       elapsed += dt
       const ease = (rate: number) => 1 - Math.exp(-rate * dt)
       const inEntrance = story && elapsed < ENTRANCE
-      const e = elapsed // entrance time
+      // Entrance time, on twos: sampled in the middle of each 1/12 s drawing
+      const frame = Math.floor(elapsed * 12)
+      const tick = frame !== prevFrame // a new drawing
+      const e = (frame + 0.5) * FRAME
       const t = story && !inEntrance ? (elapsed - ENTRANCE) % LOOP : -1 // loop time
       const crossed = (at: number) => t >= at && (prevT < at || prevT > t)
+      const hit = (at: number) => inEntrance && frame >= Math.round(at * 12) && prevFrame < Math.round(at * 12) // one-shot entrance events
+
+      // Rocket entrance: space panel, Earth, map and the world rocket
+      if (intro) {
+        if (inEntrance) {
+          intro.update(e)
+          intro.porthole(hopFrom)
+        } else intro.finish()
+      }
+      if (story) rig.visible = !inEntrance || e >= E_POP
 
       // ---------------- Character (posed on twos during the fastest actions) ----------------
-      const twos = (inEntrance && e < E_HAT) || (t >= WINDUP_END - 0.25 && t < DASH_END)
+      const twos = inEntrance || (t >= WINDUP_END - 0.25 && t < DASH_END) // the whole entrance is on twos
       stepAcc += dt
       if (!twos || stepAcc >= TWOS) {
         const cdt = Math.min(stepAcc, 0.1)
@@ -469,12 +543,19 @@ export default function DetectiveShowcase({ outfit, mode = 'investigate' }: Dete
         } else if (inEntrance) {
           headingTarget = e < E_SETTLE ? 0 : mouseX * 0.4
           if (e < E_LAND) {
-            const u = clamp01((e - E_DROP) / (E_LAND - E_DROP))
-            lift = FALL_HEIGHT * (1 - u * u)
-            sy = 1.28
-            sx = sz = 0.82
+            // Pops out of the porthole like a cork (tiny and stretched) and hops in an arc to
+            // the center of the stage, growing back to full size with overshoot
+            const u = clamp01((e - E_POP) / (E_LAND - E_POP))
+            slidePos.set(hopFrom.x * (1 - u), 0, (hopFrom.z - 1) * (1 - u)) // starts just outside the hull
+            const grow = 0.25 + 0.75 * backOut(u / 0.5)
+            const stretch = 1 - smooth(u / 0.6)
+            sy = grow * (1 + 0.35 * stretch)
+            sx = sz = grow * (1 - 0.25 * stretch)
+            // The rig scale also scales his height above the floor, so divide it out
+            lift = (Math.max(0, hopFrom.y - 1.2) * (1 - u) + 4 * HOP_PEAK * u * (1 - u)) / sy
             hatY = HAT_FLOAT + (1 - u) * 1.5
           } else {
+            slidePos.set(0, 0, 0)
             const u = e - E_LAND
             // Big squash on landing that springs back with overshoot, then the hat "bonk"
             sy = (u < 0.09 ? 0.55 : 1 - wobble(u - 0.09, 0.45, 14, 5)) - wobble(e - E_HAT, 0.16, 22, 9)
@@ -586,7 +667,7 @@ export default function DetectiveShowcase({ outfit, mode = 'investigate' }: Dete
           pose(arms[1], 'z', 0.45, 1)
         } else if (inEntrance) {
           if (e < E_LAND) {
-            // Falling: arms up and flailing, legs apart, looking down in alarm
+            // Hopping out of the rocket: arms up and flailing, legs apart, looking down in alarm
             pose(arms[0], 'x', 2.9 + Math.sin(time * 30) * 0.25, 1)
             pose(arms[0], 'z', -0.5, 1)
             pose(arms[1], 'x', 2.9 + Math.sin(time * 30 + 2) * 0.25, 1)
@@ -705,28 +786,103 @@ export default function DetectiveShowcase({ outfit, mode = 'investigate' }: Dete
 
       // ---------------- Effects (every frame) ----------------
       const rx = rig.position.x, rz = rig.position.z
-      // Landing: "POOF!" and a ring of puffs, plus a small camera shake
-      if (inEntrance && e >= E_LAND && e - dt < E_LAND) {
-        for (let i = 0; i < 9; i++) {
-          const a = (i / 9) * TAU
-          spawnPuff(Math.cos(a) * 1.6, 0.6, Math.sin(a) * 1.2, Math.cos(a) * 9, 1 + Math.random() * 2, Math.sin(a) * 4, 2.6 + Math.random() * 0.8, 1.5)
+      if (intro && inEntrance && tick) {
+        const rocket = intro.worldRocket.position
+        const every = (n: number) => frame % n === 0 // every n-th drawing
+        // Falling: clouds and speed lines rushing up past the rocket
+        if (e > INTRO.FALL + 2 * FRAME && e < INTRO.CRASH) {
+          const side = frame % 2 ? -1 : 1
+          spawnIntroPuff(rocket.x + side * (3 + Math.random() * 2), rocket.y + 4 + Math.random() * 8, rocket.z + 1,
+            0, 30 + Math.random() * 10, 0, 2.6 + Math.random() * 1.2, 2.2)
+          for (let i = 0; i < 2; i++) {
+            const st = vstreaks[vstreakNext]
+            vstreakNext = (vstreakNext + 1) % VSTREAK_COUNT
+            st.life = 2 // drawings it stays
+            st.len = 5 + Math.random() * 5
+            st.mesh.position.set(rocket.x + (Math.random() - 0.5) * 8, rocket.y + 3 + Math.random() * 10, rocket.z - 1.5)
+            st.mesh.visible = true
+          }
         }
-        shake = 1
+        // Crash: ring of dust puffs around the base, "BOOM!", camera shake
+        if (hit(INTRO.CRASH)) {
+          for (let i = 0; i < 12; i++) {
+            const a = (i / 12) * TAU
+            spawnIntroPuff(rocket.x + Math.cos(a) * 2.2, 0.7, rocket.z + Math.sin(a) * 1.6,
+              Math.cos(a) * 11, 1.5 + Math.random() * 2.5, Math.sin(a) * 5, 3 + Math.random() * 1, 1.4)
+          }
+          shake = 1.3
+        }
+        // Smoke curling up from the crash site until the hatch opens
+        if (e > INTRO.CRASH + 2 * FRAME && e < E_POP + 0.3 && every(2)) {
+          spawnIntroPuff(rocket.x + (Math.random() - 0.5) * 4, 0.8, rocket.z - 1, (Math.random() - 0.5) * 2, 3 + Math.random() * 2, 0, 1.6 + Math.random() * 0.8, 1.1)
+        }
+        // Hatch pops: two little puffs at the porthole
+        if (hit(E_POP)) {
+          spawnIntroPuff(hopFrom.x - 1, hopFrom.y + 0.5, hopFrom.z - 1, -6, 3, -2, 1.6, 2.2)
+          spawnIntroPuff(hopFrom.x - 0.5, hopFrom.y - 0.8, hopFrom.z - 1, -4, -1, -2, 1.4, 2.2)
+        }
+        // Blast-off: smoke ring at the base, then exhaust puffs from the nozzle as it climbs
+        if (hit(INTRO.LIFT)) {
+          for (let i = 0; i < 10; i++) {
+            const a = (i / 10) * TAU
+            spawnIntroPuff(rocket.x + Math.cos(a) * 1.8, 0.6, rocket.z + Math.sin(a) * 1.4, Math.cos(a) * 9, 1 + Math.random() * 2, Math.sin(a) * 4, 2.6 + Math.random() * 0.8, 1.5)
+          }
+          shake = 0.7
+        }
+        if (e > INTRO.LIFT && e < INTRO.LIFT + 0.5) {
+          intro.nozzle(nozzle)
+          spawnIntroPuff(nozzle.x + (Math.random() - 0.5), nozzle.y - 1.5, nozzle.z, (Math.random() - 0.5) * 4, -6, 0, 1.8 + Math.random() * 0.8, 1.8)
+        }
+        // Landing: a small ring of puffs and a little camera shake
+        if (hit(E_LAND)) {
+          for (let i = 0; i < 7; i++) {
+            const a = (i / 7) * TAU
+            spawnIntroPuff(Math.cos(a) * 1.4, 0.5, Math.sin(a) * 1.1, Math.cos(a) * 7, 1 + Math.random() * 1.5, Math.sin(a) * 3, 2 + Math.random() * 0.6, 1.8)
+          }
+          shake = Math.max(shake, 0.6)
+        }
+        // Hat bonk: two tiny puffs from the brim
+        if (hit(E_HAT)) {
+          head.getWorldPosition(tmp)
+          spawnIntroPuff(tmp.x + 2.6, tmp.y + 2.4, tmp.z - 1, 8, 2, 0, 1.6, 2.4)
+          spawnIntroPuff(tmp.x - 2.6, tmp.y + 2.4, tmp.z - 1, -8, 2, 0, 1.6, 2.4)
+        }
+        // Entrance puffs and speed lines move on twos too
+        for (const p of introPuffs) {
+          if (p.life <= 0) continue
+          p.life -= FRAME * p.rate
+          p.sprite.position.addScaledVector(p.vel, FRAME)
+          p.vel.multiplyScalar(1 - 4 * FRAME)
+          const k = Math.max(0, p.life)
+          p.sprite.scale.setScalar(p.size * Math.sqrt(k) * (1.6 - 0.6 * k))
+          if (p.life <= 0) p.sprite.visible = false
+        }
+        for (const st of vstreaks) {
+          if (st.life <= 0) continue
+          st.life -= 1
+          st.mesh.position.y += 5
+          st.mesh.scale.set(st.len, 1, 1)
+          if (st.life <= 0) st.mesh.visible = false
+        }
       }
-      // Hat bonk: two tiny puffs from the brim
-      if (inEntrance && e >= E_HAT && e - dt < E_HAT) {
-        head.getWorldPosition(tmp)
-        spawnPuff(tmp.x + 2.6, tmp.y + 2.4, tmp.z - 1, 8, 2, 0, 1.6, 2.4)
-        spawnPuff(tmp.x - 2.6, tmp.y + 2.4, tmp.z - 1, -8, 2, 0, 1.6, 2.4)
+      if (intro && !inEntrance) {
+        introPuffs.forEach((p) => (p.sprite.visible = false))
+        vstreaks.forEach((st) => (st.mesh.visible = false))
       }
-      const poofK = inEntrance ? window01(e, E_LAND, E_LAND + 0.75, 0.08) : 0
-      poof.visible = poofK > 0.01
-      if (poof.visible) {
-        const s = 6 * backOut((e - E_LAND) / 0.18) * (0.6 + 0.4 * poofK)
-        poof.scale.set(s, s, 1)
-        poof.position.set(-5.2, 3 + (e - E_LAND) * 1.5, -2)
-        poof.material.rotation = 0.12
+      // Lettered sound effects, stepped like the menu's .sfx pops: "BOOM!", "POP!", "WHOOSH!"
+      const word = (sprite: THREE.Sprite | null, at: number, frames: number, size: number, x: number, y: number, aspect = 1) => {
+        if (!sprite) return
+        const fIn = frame - Math.round(at * 12)
+        const k = inEntrance ? stepPop(fIn, frames - 1 - fIn) : { scale: 0, rot: 0 }
+        sprite.visible = k.scale > 0
+        if (!sprite.visible) return
+        sprite.scale.set(size * k.scale, (size / aspect) * k.scale, 1)
+        sprite.position.set(x, y, -2)
+        sprite.material.rotation = k.rot
       }
+      word(boom, INTRO.CRASH, 9, 8, ROCKET_WORD_X, 6)
+      word(pop, E_POP, 6, 4.5, hopFrom.x - 1.5, hopFrom.y + 2.8)
+      word(whoosh, INTRO.LIFT, 7, 8, ROCKET_WORD_X - 0.5, 11, 512 / 192)
 
       if (t >= 0) {
         // Dust kicked back from the feet: wheel-spin, dash
@@ -834,7 +990,7 @@ export default function DetectiveShowcase({ outfit, mode = 'investigate' }: Dete
       shadow.position.x = rx
       shadow.position.z = rz
       shadow.scale.setScalar(0.35 + 0.65 * (1 - air) - Math.min(0.25, state.y / HOP_HEIGHT * 0.1))
-      shadowMat.opacity = 0.28 * (1 - air * 0.6) * (inEntrance && e < E_DROP ? smooth(e / E_DROP) : 1)
+      shadowMat.opacity = 0.28 * (1 - air * 0.6) * (inEntrance && e < E_POP ? 0 : 1) // none while he is in the rocket
 
       // Glow: gentle pulse, a flash on the clue and on the wink
       const flashAt = (at: number) => {
@@ -845,7 +1001,8 @@ export default function DetectiveShowcase({ outfit, mode = 'investigate' }: Dete
       const glowSize = 15 + Math.sin(elapsed * 3) * 0.8 + flash * 6
       glow.position.x = rx * 0.5
       glow.scale.set(glowSize, glowSize, 1)
-      glowMat.opacity = 0.55 + flash * 0.35
+      // During the entrance the glow only comes up once the rocket has landed
+      glowMat.opacity = (0.55 + flash * 0.35) * (inEntrance ? smooth((e - INTRO.CRASH) / 0.6) : 1)
 
       // Camera: higher while he studies the floor (so the prints read), push-in for the wink,
       // slow sway the rest of the time, small shake on the landing
@@ -861,6 +1018,7 @@ export default function DetectiveShowcase({ outfit, mode = 'investigate' }: Dete
       camera.lookAt(camTarget)
 
       prevT = t
+      prevFrame = frame
       renderer.render(scene, camera)
     }
     renderer.setAnimationLoop(animate)

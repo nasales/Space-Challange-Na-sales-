@@ -18,7 +18,9 @@ import {
   HEIGHT_EXAGGERATION,
   SEA_Y,
   HIDDEN_Y,
+  WORLD_SEA_Y,
 } from '../map/projection'
+import { WORLD_EXAGGERATION } from './createWorldTerrain'
 import { createToonTerrainMaterial } from './createToonTerrainMaterial'
 
 /** Cuánto exageramos las alturas (relieve muy marcado, estilo videojuego). */
@@ -58,7 +60,7 @@ export function createTerrain(
   const width = (bounds.east - bounds.west) * UNITS_PER_DEG_LON
   const depth = (bounds.north - bounds.south) * UNITS_PER_DEG_LAT
   const cellsPerKm = gw / (width / UNITS_PER_KM)
-  const { countryLand, region, ford } = computeExploredRegion(country, bounds, heights, gw, gh, cellsPerKm, neighbours)
+  const { countryLand, region, ford, neighbourLand } = computeExploredRegion(country, bounds, heights, gw, gh, cellsPerKm, neighbours)
 
   // Shallow river beds: a small dip under the terraced surface, so water follows the terraces
   const river = riverCarveDepth(data.rivers, bounds, gw, gh, cellsPerKm, countryLand, keepDry)
@@ -67,6 +69,14 @@ export function createTerrain(
 
   const cellY = (i: number) => {
     if (!region[i]) return HIDDEN_Y
+    const nb = neighbourLand[i]
+    if (nb > 0) {
+      // Neighbouring country: real terraced relief, blending into the low grey world far away
+      // (same height formula as createWorldTerrain.ts, so the two meshes meet without a step)
+      const toy = metersToY(terraceHeight(Math.max(heights[i], 1)), HEIGHT_EXAGGERATION)
+      const grey = WORLD_SEA_Y + metersToY(heights[i] + 100, WORLD_EXAGGERATION) + 0.05
+      return grey + (toy - grey) * nb
+    }
     if (!countryLand[i]) return SEA_Y
     const y = metersToY(terraceHeight(Math.max(heights[i], 1)), HEIGHT_EXAGGERATION)
     return carve ? Math.max(y - carve[i], SEA_Y + 0.3) : y

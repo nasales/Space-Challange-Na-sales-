@@ -272,8 +272,24 @@ export interface RiverClearing {
   rect?: { halfWKm: number; halfDKm: number; angle: number; marginKm: number }
 }
 
-/** How far (km) beyond the target distance a rectangular clearing still nudges a river. */
-const RECT_FALLOFF_KM = 1.2
+/**
+ * How far a monument bends a river: from the target distance out to target + max(DETOUR_MIN_KM,
+ * DETOUR_SPREAD x target). The bend is spread over many km, so it reads as a natural meander and
+ * not as a river hugging the building.
+ */
+const DETOUR_SPREAD = 3
+const DETOUR_MIN_KM = 6
+
+/**
+ * Wide smooth push: a point at distance d (< outer) from a clearing moves out to
+ * d + target * (1 - d / outer)^2. It starts at `target`, meets the identity at `outer` with the same
+ * slope (no kink where the bend ends) and is monotonic while outer > 2 x target (always true with
+ * the spread above), so the order of the points and of nearby rivers is kept.
+ */
+function pushedDistance(d: number, target: number, outer: number) {
+  return d >= outer ? d : d + target * (1 - d / outer) ** 2
+}
+const detourOuter = (target: number) => target + Math.max(DETOUR_MIN_KM, DETOUR_SPREAD * target)
 
 /** Same equirectangular projection as map/projection.ts (km per degree, reference latitude 40). */
 const KM_PER_DEG_LON = 111.32 * Math.cos((40 * Math.PI) / 180)
@@ -303,7 +319,7 @@ export function rectClearingDistanceKm(c: RiverClearing, lon: number, lat: numbe
 /**
  * Pushes a point out of a rectangular clearing: a point whose distance d to the footprint edge is
  * below `outer` slides along the ray from the centre until its distance is
- * target + (d / outer) * (outer - target). Rays from the centre of a convex shape cross every
+ * pushedDistance(d, target, outer). Rays from the centre of a convex shape cross every
  * distance contour once, so the map is continuous (a river passing beside the centre wraps around
  * the near side, it never jumps across) and keeps the order of the points.
  */
@@ -313,7 +329,7 @@ function pushOutOfRect(c: RiverClearing, lon: number, lat: number, target: numbe
   const { u, v } = toRect(c, lon, lat)
   const d = dist(u, v)
   if (d >= outer) return [lon, lat]
-  const nd = target + (d / outer) * (outer - target)
+  const nd = pushedDistance(d, target, outer)
   const len = Math.hypot(u, v)
   const du = len > 1e-9 ? u / len : 0, dv = len > 1e-9 ? v / len : 1
   let lo = 0, hi = Math.hypot(a, b) + nd + 1
@@ -326,27 +342,39 @@ function pushOutOfRect(c: RiverClearing, lon: number, lat: number, target: numbe
 }
 
 /**
- * Bends the rivers around the clearings: points inside (radius + river half width + bank) are
- * pushed radially out, with a soft falloff so the bend is a gentle curve, not a kink. Segments
- * near a clearing are densified first so long segments cannot cut through it.
+ * Bends the rivers around the clearings, then keeps them from overlapping each other.
+ * 1) Points near a clearing are pushed out along the ray from its centre with a wide smooth
+ *    falloff (pushedDistance): the river swings around the monument in a long gentle curve.
+ *    The push is one warp of the plane shared by every river, so a tributary still meets its main
+ *    river exactly (both move the same way) and two rivers never swap sides. Segments near a
+ *    clearing are densified first so long segments cannot cut through it.
+ * 2) separateRivers: where two rivers run so close that their water ribbons would overlap (the
+ *    cartoon widths are much wider than real rivers, and the warp packs nearby rivers closer),
+ *    the smaller one is eased away from the bigger one. Confluences and crossings are left alone.
  */
 export function bendRiversAround(rivers: River[], clearings: RiverClearing[]): River[] {
+  return separateRivers(bendAroundClearings(rivers, clearings))
+}
+
+function bendAroundClearings(rivers: River[], clearings: RiverClearing[]): River[] {
   if (clearings.length === 0) return rivers
   const KM_LAT = 110.57
   const STEP_KM = 0.3
+  // One warp for all rivers (sized for the widest one), so confluences stay joined
+  const hw = riverHalfWidthKm(1)
+  const zones = clearings.map((c) => {
+    const kmLon = 111.32 * Math.cos((c.lat * Math.PI) / 180)
+    if (c.rect) {
+      // Distances measured from the footprint edge, so the river keeps its margin from the building
+      const target = c.rect.marginKm + hw + BANK_KM
+      const outer = detourOuter(target)
+      return { c, kmLon, target, outer, reach: Math.hypot(c.rect.halfWKm, c.rect.halfDKm) + outer }
+    }
+    const target = c.radiusKm + hw + BANK_KM
+    const outer = detourOuter(target)
+    return { c, kmLon, target, outer, reach: outer }
+  })
   return rivers.map((river) => {
-    const hw = riverHalfWidthKm(river.rank)
-    const zones = clearings.map((c) => {
-      const kmLon = 111.32 * Math.cos((c.lat * Math.PI) / 180)
-      if (c.rect) {
-        // Distances measured from the footprint edge: the river hugs the plaza with a short falloff
-        const target = c.rect.marginKm + hw + BANK_KM
-        const outer = target + RECT_FALLOFF_KM
-        return { c, kmLon, target, outer, reach: Math.hypot(c.rect.halfWKm, c.rect.halfDKm) + outer }
-      }
-      const target = c.radiusKm + hw + BANK_KM
-      return { c, kmLon, target, outer: target * 1.6, reach: target * 1.6 }
-    })
     const lines = river.lines.map((line) => {
       // 1) densify segments that pass near a clearing
       const dense: [number, number][] = []
@@ -375,7 +403,7 @@ export function bendRiversAround(rivers: River[], clearings: RiverClearing[]): R
           const dx = (lon - z.c.lon) * z.kmLon, dy = (lat - z.c.lat) * KM_LAT
           const d = Math.hypot(dx, dy)
           if (d >= z.outer) continue
-          const nd = z.target + (d / z.outer) * (z.outer - z.target)
+          const nd = pushedDistance(d, z.target, z.outer)
           const k = d > 1e-6 ? nd / d : 0
           const ux = d > 1e-6 ? dx * k : nd, uy = d > 1e-6 ? dy * k : 0
           lon = z.c.lon + ux / z.kmLon
@@ -386,6 +414,225 @@ export function bendRiversAround(rivers: River[], clearings: RiverClearing[]): R
     })
     return { ...river, lines }
   })
+}
+
+// ---------------------------------------------------------------------------------------------
+// River vs river: two water ribbons must never overlap (except where one joins the other)
+// ---------------------------------------------------------------------------------------------
+
+/** Gap (km) kept between two water ribbons, on top of both half widths (their banks). */
+const RIVER_SEP_GAP_KM = 2 * BANK_KM
+/** Width (km) of the soft zone over which a river is eased away from a bigger one. */
+const RIVER_SEP_FALLOFF_KM = 2.5
+/** Around a confluence or a crossing nothing moves within this distance (km), then it eases in. */
+const RIVER_PROTECT_KM = 3
+/** Long segments near another river are split into pieces this long (km) before moving them. */
+const RIVER_SEP_STEP_KM = 0.4
+const RIVER_SEP_PASSES = 2
+const SEP_CELL_KM = 6
+
+interface PlanarLine {
+  /** River index, line index and rank (the river with the lower rank number is the bigger one). */
+  ri: number
+  li: number
+  rank: number
+  /** Water half width (km, full width: conservative near springs). */
+  hw: number
+  pts: [number, number][]
+}
+
+/** Lines of all rivers in a flat km frame around the zone (lon/lat converted back at the end). */
+function toPlanar(rivers: River[]) {
+  let latSum = 0, count = 0
+  for (const r of rivers) for (const l of r.lines) for (const p of l) {
+    latSum += p[1]
+    count++
+  }
+  const kx = kmPerDegLon(count ? latSum / count : 40)
+  const lines: PlanarLine[] = rivers.flatMap((r, ri) =>
+    r.lines.map((line, li) => ({
+      ri,
+      li,
+      rank: r.rank,
+      hw: riverHalfWidthKm(r.rank) * 1.06, // the water mesh is a hair wider (WIDTH_FACTOR in createRivers)
+      pts: line.map(([lon, lat]): [number, number] => [lon * kx, lat * KM_LAT]),
+    })),
+  )
+  return { lines, back: ([x, y]: [number, number]): [number, number] => [x / kx, y / KM_LAT] }
+}
+
+/** Segment grid of planar lines, for nearest-point and crossing queries. */
+function segmentGrid(lines: PlanarLine[]) {
+  const grid = new Map<string, { l: number; i: number }[]>()
+  lines.forEach((line, l) => {
+    for (let i = 0; i < line.pts.length - 1; i++) {
+      const [ax, ay] = line.pts[i], [bx, by] = line.pts[i + 1]
+      const c0 = Math.floor(Math.min(ax, bx) / SEP_CELL_KM), c1 = Math.floor(Math.max(ax, bx) / SEP_CELL_KM)
+      const r0 = Math.floor(Math.min(ay, by) / SEP_CELL_KM), r1 = Math.floor(Math.max(ay, by) / SEP_CELL_KM)
+      for (let c = c0; c <= c1; c++) {
+        for (let r = r0; r <= r1; r++) {
+          const key = `${c},${r}`
+          let list = grid.get(key)
+          if (!list) grid.set(key, (list = []))
+          list.push({ l, i })
+        }
+      }
+    }
+  })
+  /** Segments whose cells touch the square of half size `reach` around (x, y). */
+  const near = (x: number, y: number, reach: number) => {
+    const out = new Set<{ l: number; i: number }>()
+    const c0 = Math.floor((x - reach) / SEP_CELL_KM), c1 = Math.floor((x + reach) / SEP_CELL_KM)
+    const r0 = Math.floor((y - reach) / SEP_CELL_KM), r1 = Math.floor((y + reach) / SEP_CELL_KM)
+    for (let c = c0; c <= c1; c++) for (let r = r0; r <= r1; r++) for (const s of grid.get(`${c},${r}`) ?? []) out.add(s)
+    return out
+  }
+  return { near }
+}
+
+/** Closest point of segment a-b to p: the point and its distance. */
+function closestOnSegment(p: [number, number], a: [number, number], b: [number, number]) {
+  const dx = b[0] - a[0], dy = b[1] - a[1]
+  const t = Math.min(1, Math.max(0, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / (dx * dx + dy * dy || 1e-12)))
+  const cx = a[0] + dx * t, cy = a[1] + dy * t
+  return { cx, cy, d: Math.hypot(p[0] - cx, p[1] - cy) }
+}
+
+/** Points where two different lines meet: confluence ends ('join') and real crossings. */
+function meetingPoints(rivers: River[], lines: PlanarLine[]): [number, number][] {
+  const out: [number, number][] = []
+  for (const line of lines) {
+    const ends = rivers[line.ri].ends?.[line.li]
+    if (ends?.[0] === 'join') out.push(line.pts[0])
+    if (ends?.[1] === 'join') out.push(line.pts[line.pts.length - 1])
+  }
+  const grid = segmentGrid(lines)
+  lines.forEach((line, l) => {
+    for (let i = 0; i < line.pts.length - 1; i++) {
+      const [px, py] = line.pts[i], [qx, qy] = line.pts[i + 1]
+      const rx = qx - px, ry = qy - py
+      for (const s of grid.near((px + qx) / 2, (py + qy) / 2, Math.hypot(rx, ry) / 2)) {
+        if (s.l <= l) continue // each pair once, never a line with itself
+        const [ax, ay] = lines[s.l].pts[s.i], [bx, by] = lines[s.l].pts[s.i + 1]
+        const sx = bx - ax, sy = by - ay
+        const den = rx * sy - ry * sx
+        if (Math.abs(den) < 1e-12) continue
+        const t = ((ax - px) * sy - (ay - py) * sx) / den
+        const u = ((ax - px) * ry - (ay - py) * rx) / den
+        if (t >= 0 && t <= 1 && u >= 0 && u <= 1) out.push([px + rx * t, py + ry * t])
+      }
+    }
+  })
+  return out
+}
+
+/** true if line a gives way to line b (b is the bigger river; ties go by order). */
+const yields = (a: PlanarLine, b: PlanarLine, ia: number, ib: number) => a.rank > b.rank || (a.rank === b.rank && ia > ib)
+
+/**
+ * Eases smaller rivers away from bigger ones where their water ribbons would overlap. A point of
+ * the smaller river closer than (both half widths + gap) to the bigger one's centre line moves
+ * out along the line between them, with the same soft falloff the roads use beside rivers.
+ * Nothing moves near a confluence or a crossing (the tributary must still reach its river).
+ */
+function separateRivers(rivers: River[]): River[] {
+  if (rivers.length < 2) return rivers
+  const { lines, back } = toPlanar(rivers)
+  const maxHw = Math.max(...lines.map((l) => l.hw))
+  const meets = meetingPoints(rivers, lines)
+  const protect = (x: number, y: number) => {
+    let w = 1
+    for (const [mx, my] of meets) w = Math.min(w, smooth(RIVER_PROTECT_KM, RIVER_PROTECT_KM * 2, Math.hypot(x - mx, y - my)))
+    return w
+  }
+  let moved = false
+  for (let pass = 0; pass < RIVER_SEP_PASSES; pass++) {
+    const grid = segmentGrid(lines)
+    /** Nearest point of a bigger line within `reach` of its water edge, or null. */
+    const nearestBigger = (p: [number, number], l: number) => {
+      const reach = lines[l].hw + RIVER_SEP_GAP_KM + RIVER_SEP_FALLOFF_KM
+      let best: { cx: number; cy: number; d: number; need: number } | null = null
+      for (const s of grid.near(p[0], p[1], reach + maxHw)) {
+        const other = lines[s.l]
+        if (!yields(lines[l], other, l, s.l)) continue
+        const c = closestOnSegment(p, other.pts[s.i], other.pts[s.i + 1])
+        const need = lines[l].hw + other.hw + RIVER_SEP_GAP_KM
+        if (c.d < need + RIVER_SEP_FALLOFF_KM && (!best || c.d - need < best.d - best.need)) best = { ...c, need }
+      }
+      return best
+    }
+    lines.forEach((line, l) => {
+      // Split long segments that pass near a bigger river, so the push follows it smoothly
+      const dense: [number, number][] = []
+      for (let i = 0; i < line.pts.length; i++) {
+        const a = line.pts[i]
+        dense.push(a)
+        if (i === line.pts.length - 1) break
+        const b = line.pts[i + 1]
+        const len = Math.hypot(b[0] - a[0], b[1] - a[1])
+        if (len <= RIVER_SEP_STEP_KM) continue
+        const mid: [number, number] = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]
+        const reach = line.hw + maxHw + RIVER_SEP_GAP_KM + RIVER_SEP_FALLOFF_KM + len / 2
+        let close = false
+        for (const s of grid.near(mid[0], mid[1], reach)) {
+          if (!yields(line, lines[s.l], l, s.l)) continue
+          if (closestOnSegment(mid, lines[s.l].pts[s.i], lines[s.l].pts[s.i + 1]).d < reach) {
+            close = true
+            break
+          }
+        }
+        if (!close) continue
+        const n = Math.ceil(len / RIVER_SEP_STEP_KM)
+        for (let k = 1; k < n; k++) dense.push([a[0] + ((b[0] - a[0]) * k) / n, a[1] + ((b[1] - a[1]) * k) / n])
+      }
+      line.pts = dense.map((p, i): [number, number] => {
+        if (i === 0 || i === dense.length - 1) return p // ends stay (joins, mouths, zone edges)
+        const nb = nearestBigger(p, l)
+        if (!nb) return p
+        const w = protect(p[0], p[1])
+        if (w === 0) return p
+        const outer = nb.need + RIVER_SEP_FALLOFF_KM
+        const nd = nb.need + (nb.d / outer) * (outer - nb.need)
+        if (nd <= nb.d) return p
+        if (nb.d < 1e-6) return p // exactly on the other line: a crossing, left to the protection
+        const ux = (p[0] - nb.cx) / nb.d, uy = (p[1] - nb.cy) / nb.d
+        moved = true
+        return [p[0] + (nb.cx + ux * nd - p[0]) * w, p[1] + (nb.cy + uy * nd - p[1]) * w]
+      })
+    })
+  }
+  if (!moved) return rivers
+  return rivers.map((river, ri) => ({
+    ...river,
+    lines: river.lines.map((_, li) => lines.find((l) => l.ri === ri && l.li === li)!.pts.map(back)),
+  }))
+}
+
+/**
+ * Development check: points of a river inside another river's water (both half widths), away
+ * from confluences and crossings. Should be 0 after bendRiversAround.
+ */
+export function riverOverlaps(rivers: River[] | undefined): number {
+  if (!rivers || rivers.length < 2) return 0
+  const { lines } = toPlanar(rivers)
+  const meets = meetingPoints(rivers, lines)
+  const grid = segmentGrid(lines)
+  const maxHw = Math.max(...lines.map((l) => l.hw))
+  let count = 0
+  lines.forEach((line, l) => {
+    for (const p of line.pts) {
+      if (meets.some(([mx, my]) => Math.hypot(p[0] - mx, p[1] - my) < RIVER_PROTECT_KM * 2)) continue
+      for (const s of grid.near(p[0], p[1], line.hw + maxHw)) {
+        if (s.l === l) continue
+        const other = lines[s.l]
+        if (closestOnSegment(p, other.pts[s.i], other.pts[s.i + 1]).d < line.hw + other.hw) {
+          count++
+          break
+        }
+      }
+    }
+  })
+  return count
 }
 
 /** Reach (km) that `paintRiver` needs from the field. */

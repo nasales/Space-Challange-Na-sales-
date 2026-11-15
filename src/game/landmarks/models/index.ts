@@ -18,6 +18,9 @@ import { buildBasilicaPilar, buildBasilicaPilarBase } from './basilicaPilar'
 import { buildPlazaMayorSalamanca, buildPlazaMayorSalamancaBase } from './plazaMayorSalamanca'
 import { buildCasasColgadas, buildCasasColgadasBase } from './casasColgadas'
 import { buildCastilloPenafiel, buildCastilloPenafielBase } from './castilloPenafiel'
+import { buildCatedralMurcia, buildCatedralMurciaBase } from './catedralMurcia'
+import { buildAlcazarToledo, buildAlcazarToledoBase } from './alcazarToledo'
+import { buildAlcazabaAlmeria, buildAlcazabaAlmeriaBase } from './alcazabaAlmeria'
 
 export interface LandmarkModel {
   /** El monumento en sí (unidades del modelo, base en y = 0). */
@@ -48,4 +51,7 @@ export const LANDMARK_MODELS: Record<string, LandmarkModel> = {
   'plaza-mayor-salamanca': { build: buildPlazaMayorSalamanca, base: buildPlazaMayorSalamancaBase, margin: 4 },
   'casas-colgadas': { build: buildCasasColgadas, base: buildCasasColgadasBase, margin: 6 },
   'castillo-penafiel': { build: buildCastilloPenafiel, base: buildCastilloPenafielBase, margin: 4 },
+  'catedral-murcia': { build: buildCatedralMurcia, base: buildCatedralMurciaBase, margin: 6 },
+  'alcazar-toledo': { build: buildAlcazarToledo, base: buildAlcazarToledoBase, margin: 6 },
+  'alcazaba-almeria': { build: buildAlcazabaAlmeria, base: buildAlcazabaAlmeriaBase, margin: 10 },
 }
