@@ -11,7 +11,7 @@ import VariablePicker from './ui/magnifier/VariablePicker'
 import PauseMenu from './ui/pause/PauseMenu'
 import Wardrobe from './ui/wardrobe/Wardrobe'
 import LoginScreen from './ui/auth/LoginScreen'
-import { isRecoveryLink } from './shared/auth'
+import { isRecoveryLink, useSession } from './shared/auth'
 import DbTest from './ui/dbtest/DbTest'
 import DbStatus from './ui/status/DbStatus'
 import CaseFilePreview from './ui/casefile/CaseFilePreview'
@@ -24,7 +24,14 @@ import GuideTour from './ui/guide/GuideTour'
 import { createGuideAnchorStore } from './ui/guide/anchor'
 import type { GameStatus, GuideCue, HudState, LensFocusState, TravelRequest } from './shared/events'
 import { loadOutfit, type Outfit } from './shared/outfit'
-import { loadCompleted, loadGuideSeen, markCompleted, markGuideSeen } from './shared/progress'
+import {
+  fetchRemoteCompleted,
+  loadCompleted,
+  loadGuideSeen,
+  markCompleted,
+  markGuideSeen,
+  saveRemoteCompleted,
+} from './shared/progress'
 import { startBackgroundMusic } from './shared/music'
 import { hasTutorial } from './ui/casefile/loader'
 import { installUiSounds, playSfx, setWind } from './shared/sound'
@@ -82,7 +89,25 @@ function Game({ onCaseFocus }: { onCaseFocus: (on: boolean) => void }) {
   const [dialogue, setDialogue] = useState<DialogueState>(NO_DIALOGUE)
   const [anchors] = useState(createAnchorStore)
   const [completed, setCompleted] = useState<Set<string>>(loadCompleted)
-  const completedList = useMemo(() => [...completed], [completed])
+  // Signed-in players: solved cases saved in Supabase (minigame_progress), read on load and on
+  // every sign in / sign out. Guests: local progress only, nothing is sent.
+  const { user } = useSession()
+  const userId = user?.id ?? null
+  // Kept with the user it belongs to, so another account (or signing out) never shows these ids
+  const [remote, setRemote] = useState<{ userId: string; ids: Set<string> } | null>(null)
+  useEffect(() => {
+    if (!userId) return
+    let alive = true
+    fetchRemoteCompleted(userId).then((ids) => {
+      if (!alive) return
+      setRemote((prev) => ({ userId, ids: new Set([...(prev?.userId === userId ? prev.ids : []), ...ids]) }))
+    })
+    return () => {
+      alive = false
+    }
+  }, [userId])
+  const remoteIds = remote && remote.userId === userId ? remote.ids : null
+  const completedList = useMemo(() => [...new Set([...completed, ...(remoteIds ?? [])])], [completed, remoteIds])
   // Background music from the menu on (it starts on the first click or key press)
   useEffect(startBackgroundMusic, [])
   // ---- Map tutorial (src/ui/guide): offered when the map is ready the first time, replayable from the pause panel ----
@@ -173,7 +198,11 @@ function Game({ onCaseFocus }: { onCaseFocus: (on: boolean) => void }) {
     playSfx('success')
     markCompleted(caseId)
     setCompleted((prev) => new Set(prev).add(caseId))
-  }, [])
+    if (userId) {
+      saveRemoteCompleted(caseId)
+      setRemote((prev) => ({ userId, ids: new Set(prev?.userId === userId ? prev.ids : []).add(caseId) }))
+    }
+  }, [userId])
 
   if (screen === 'menu') {
     return (

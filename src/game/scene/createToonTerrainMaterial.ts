@@ -36,7 +36,8 @@ const GROUND_SHADOW_TINT = { multiply: 'vec3(0.6, 0.55, 0.9)', add: 'vec3(0.04, 
 const BEACH_WALL_Y = metersToY(30, HEIGHT_EXAGGERATION)
 const BEACH_WALL_COLOR = new THREE.Color('#ffd98a')
 
-export function createToonTerrainMaterial(map: THREE.Texture) {
+/** @param map ground texture, or null for a mesh coloured per vertex (the sea sheet of scene/createSeaLane.ts) */
+export function createToonTerrainMaterial(map: THREE.Texture | null) {
   const material = new THREE.MeshToonMaterial({ map, gradientMap: getToonGradient() })
 
   material.onBeforeCompile = (shader) => {

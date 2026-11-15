@@ -42,8 +42,8 @@ import { createRoads } from './roads/createRoads'
 import { createGuideBot } from './guide/createGuideBot'
 import { createCaseMarkers } from './cases/createCaseMarkers'
 import { createSeaLane } from './scene/createSeaLane'
-import { laneFordAtWorld } from './map/canarySeaLane'
-import { toDisplayLonLat } from './map/canaryInset'
+import { laneFordAtWorld, setLaneCoast } from './map/canarySeaLane'
+import { sinkAfricaInCanaryZone, toDisplayLonLat } from './map/canaryInset'
 import { createWitnesses } from './witness/createWitnesses'
 import { createDialogue, type DialogueScene } from './witness/dialogueCamera'
 import { CASES as ALL_CASES } from '../levels/data'
@@ -234,6 +234,7 @@ export default function GameView({
           const zone = z.rivers ? { ...z, rivers: bendRiversAround(prepareRivers(z.rivers, z), clearings) } : z
           // Smoothed heights plus extra relief (slopes everywhere): same grid for texture and mesh
           const heights = addRelief(smoothHeights(zone.heights, zone.heightWidth, zone.heightHeight), zone.heightWidth, zone.heightHeight)
+          sinkAfricaInCanaryZone(zone.bounds, heights, zone.heightWidth, zone.heightHeight) // no Africa inside the Canary box
           landmarks.flattenTerrain(zone, heights) // explanadas bajo los monumentos
           await zoneProgress(0.07)
           const textureWidth = Math.min(4096, zone.heightWidth * 2)
@@ -325,6 +326,7 @@ export default function GameView({
         await progress(0.96)
 
         // Sea lane to the Canary Islands (prototype): its water in the gap between the two zones
+        setLaneCoast(world) // the water and the boat stop at the African coast
         const seaLane = createSeaLane(
           zoneBounds.map((b) => {
             const sw = toDisplayLonLat(b.west, b.south), ne = toDisplayLonLat(b.east, b.north)

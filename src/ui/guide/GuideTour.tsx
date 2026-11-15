@@ -113,11 +113,17 @@ function GuideStepBox({ step, index, total, anchors, onCue, onNext, onSkip, hud,
     : step.goal === 'lensOpen' ? focusLens
     : step.goal === 'lensClose' ? !focusLens && lensState === 'out'
     : false
+  // The timer depends only on `reached`: the HUD re-renders this box every frame while the
+  // player moves, and a new onNext each render would restart the pause forever.
+  const onNextRef = useRef(onNext)
+  useEffect(() => {
+    onNextRef.current = onNext
+  })
   useEffect(() => {
     if (!reached) return
-    const timer = setTimeout(onNext, DONE_PAUSE_MS)
+    const timer = setTimeout(() => onNextRef.current(), DONE_PAUSE_MS)
     return () => clearTimeout(timer)
-  }, [reached, onNext])
+  }, [reached])
 
   useEffect(() => {
     if (step.goal !== 'wheel') return
