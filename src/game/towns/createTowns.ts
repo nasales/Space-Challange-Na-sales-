@@ -19,6 +19,8 @@ const CHUNK = 300
 const SINK = 3
 /** Altura del punto más alto de cada tipo (sin escalar): casa baja, de dos alturas, alargada, iglesia, bloque, torre. */
 const ROOF_TOP: Record<HouseVariant, number> = { 0: 11, 1: 16.5, 2: 11, 3: 33, 4: 24, 5: 45, 6: 11 }
+/** Darkest per-house brightness (1 = the palette colour): small variety between neighbours. */
+const INSTANCE_TINT_MIN = 0.86
 /** Huecos oscuros del campanario. */
 const BELFRY = 0x2a2833
 
@@ -148,6 +150,9 @@ function buildHorreo(parts: THREE.BufferGeometry[]) {
 const cylinderPiece = (r: number, hgt: number, color: number, x: number, y0: number, z: number) =>
   piece(new THREE.CylinderGeometry(r, r, hgt, 8), color, x, y0 + hgt / 2, z)
 
+/** A colour made lighter (f > 1) or darker (f < 1), channel by channel. */
+const tone = (hex: number, f: number) => new THREE.Color(hex).multiplyScalar(f).getHex()
+
 /** Construye la geometría de un tipo de casa (frente hacia +Z, base en y = 0). */
 function buildHouse(variant: HouseVariant, style: TownStyle) {
   const p = PALETTES[style]
@@ -175,7 +180,7 @@ function buildHouse(variant: HouseVariant, style: TownStyle) {
   } else if (variant === 1) {
     // Casa de dos alturas, con balcón y chimenea
     parts.push(box(11, 12 + SINK, 10, p.wall, 0, -SINK), box(11.1, 1.2 + SINK, 10.1, p.band, 0, -SINK))
-    parts.push(roof(12.4, 4.5, 11, p.roof, 12))
+    parts.push(roof(12.4, 4.5, 11, tone(p.roof, 0.84), 12)) // darker tile: roofs read as a patchwork from above
     parts.push(doorPlate(2, 3.6, 0, 5.02))
     windowsFront([-3.2, 3.2], [3.2], 5.02)
     windowsFront([-3.2, 0, 3.2], [8], 5.02)
@@ -185,7 +190,7 @@ function buildHouse(variant: HouseVariant, style: TownStyle) {
   } else if (variant === 2) {
     // Casa alargada (tejado con la cumbrera a lo largo)
     parts.push(box(16, 7 + SINK, 9, p.wall, 0, -SINK), box(16.1, 1.2 + SINK, 9.1, p.band, 0, -SINK))
-    parts.push(roof(10.4, 4, 17.4, p.roof, 7, Math.PI / 2))
+    parts.push(roof(10.4, 4, 17.4, tone(p.roof, 1.12), 7, Math.PI / 2)) // lighter, newer tile
     parts.push(doorPlate(2, 3.6, -4, 4.52))
     windowsFront([0, 4, 6.5], [3.2], 4.52)
   } else if (variant === 4 || variant === 5) {
@@ -263,6 +268,7 @@ export function createTowns(houses: HouseSpot[]) {
   const up = new THREE.Vector3(0, 1, 0)
   const pos = new THREE.Vector3()
   const scl = new THREE.Vector3()
+  const tint = new THREE.Color()
   for (const list of buckets.values()) {
     const { style, variant } = list[0]
     const mesh = new THREE.InstancedMesh(geometryFor(style, variant), material, list.length)
@@ -272,6 +278,10 @@ export function createTowns(houses: HouseSpot[]) {
       scl.setScalar(h.scale * HOUSE_SCALE)
       m.compose(pos, q, scl)
       mesh.setMatrixAt(i, m)
+      // A slight, fixed brightness change per house (from its position): neighbouring roofs of
+      // the same type are not all the same flat colour seen from above
+      const k = Math.abs(Math.sin(h.x * 12.9898 + h.z * 78.233) * 43758.5453) % 1
+      mesh.setColorAt(i, tint.setScalar(INSTANCE_TINT_MIN + k * (1 - INSTANCE_TINT_MIN)))
     })
     mesh.computeBoundingSphere() // esfera que envuelve todas las copias: para descartar el trozo entero
     mesh.castShadow = mesh.receiveShadow = true
