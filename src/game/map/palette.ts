@@ -43,6 +43,7 @@ export const UNEXPLORED = {
   coast: hex('#7E92B0'),
   border: hex('#FFFFFF'),
   wall: hex('#B5C3D8'),
+  neighbour: hex('#7D8796'), // neighbouring countries' relief (exploredRegion.ts): dark slate so it does not read as snow
 }
 
 
