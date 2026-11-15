@@ -34,6 +34,8 @@ export interface Terrain {
   metersAt: (x: number, z: number) => number
   /** true si x,z está dentro del país explorado (tierra). */
   isExploredLand: (x: number, z: number) => boolean
+  /** true if (x, z) is on the shallow sea (coastal band or an enclosed sea up to the islands): crossed by boat (map/shallowSea.ts). */
+  isFord: (x: number, z: number) => boolean
   /** true if (x, z) is in a river or within `margin` world units of its water. */
   nearRiver: (x: number, z: number, margin: number) => boolean
   dispose: () => void
@@ -49,12 +51,14 @@ export function createTerrain(
   texture: THREE.Texture,
   /** Objects (monuments) whose ground the river channels must never carve. */
   keepDry: RiverClearing[] = [],
+  /** The other countries of the world (see computeExploredRegion). */
+  neighbours: Country[] = [],
 ): Terrain {
   const { bounds, heightWidth: gw, heightHeight: gh } = data
   const width = (bounds.east - bounds.west) * UNITS_PER_DEG_LON
   const depth = (bounds.north - bounds.south) * UNITS_PER_DEG_LAT
   const cellsPerKm = gw / (width / UNITS_PER_KM)
-  const { countryLand, region } = computeExploredRegion(country, bounds, heights, gw, gh, cellsPerKm)
+  const { countryLand, region, ford } = computeExploredRegion(country, bounds, heights, gw, gh, cellsPerKm, neighbours)
 
   // Shallow river beds: a small dip under the terraced surface, so water follows the terraces
   const river = riverCarveDepth(data.rivers, bounds, gw, gh, cellsPerKm, countryLand, keepDry)
@@ -143,6 +147,10 @@ export function createTerrain(
     isExploredLand: (x, z) => {
       const { i, tx, tz } = cell(x, z)
       return countryLand[i + (tx > 0.5 ? 1 : 0) + (tz > 0.5 ? gw : 0)] === 1
+    },
+    isFord: (x, z) => {
+      const { i, tx, tz } = cell(x, z)
+      return ford[i + (tx > 0.5 ? 1 : 0) + (tz > 0.5 ? gw : 0)] === 1
     },
     nearRiver: (x, z, margin) => {
       if (!river) return false

@@ -18,6 +18,7 @@ import { createInkOutline } from './scene/createInkOutline'
 import { createDayCycle, readDayParams } from './scene/dayCycle'
 import { createNightLights } from './scene/nightLights'
 import { createDetective } from './detective/createDetective'
+import { createRowBoat } from './boat/createRowBoat'
 import { createDust } from './effects/createDust'
 import { createFootprints } from './effects/createFootprints'
 import { placeTowns } from './towns/placeTowns'
@@ -105,6 +106,8 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
         if (cancelled) return
         await progress(0.36)
         const country = world.countries.find((c) => c.id === EXPLORED_COUNTRY)!
+        // The other countries: ground that no country outline covers goes to the nearest one
+        const neighbours = world.countries.filter((c) => c !== country)
         const { renderer, scene, camera, dispose } = createScene(el)
         disposePartial = dispose
 
@@ -139,8 +142,8 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
           const heights = addRelief(smoothHeights(zone.heights, zone.heightWidth, zone.heightHeight), zone.heightWidth, zone.heightHeight)
           landmarks.flattenTerrain(zone, heights) // explanadas bajo los monumentos
           const textureWidth = Math.min(4096, zone.heightWidth * 2)
-          const texture = makeTexture(buildToyMap(zone, heights, country, textureWidth), renderer)
-          const terrain = createTerrain(zone, heights, country, texture, clearings)
+          const texture = makeTexture(buildToyMap(zone, heights, country, textureWidth, neighbours), renderer)
+          const terrain = createTerrain(zone, heights, country, texture, clearings, neighbours)
           scene.add(terrain.group)
           const water = createRivers(zone.rivers, terrain) // animated water inside the carved channels
           scene.add(water.mesh)
@@ -224,7 +227,8 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
         const groundNoLandmarks = (x: number, z: number) => Math.max(main.heightAt(x, z), towns.surfaceAt(x, z), roadSurfaceAt(x, z))
         const ground: Ground = {
           heightAt: surfaceAt,
-          isDrivable: (x, z) => main.isExploredLand(x, z) && !scenery.blocks(x, z),
+          // Land, or the shallow sea (by boat): along the coast and across to the islands
+          isDrivable: (x, z) => (main.isExploredLand(x, z) || main.isFord(x, z)) && !scenery.blocks(x, z),
         }
         const madrid = lonLatToWorld(-3.7038, 40.4168)
         const puerta = landmarks.positionOf('puerta-de-alcala') ?? madrid
@@ -233,6 +237,10 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
         const detective = createDetective(outfitRef.current)
         detectiveRef.current = detective
         scene.add(detective.root)
+        // Rowing boat: he sits in it and rows on the shallow sea (along the coast and across to the islands)
+        const boat = createRowBoat()
+        scene.add(boat.root)
+        const rowing = { ...carState } // his state as the running effects see it in the boat: no steps, no skids
         // Efectos al correr: nubecitas de polvo en cada pisada y huellas en el suelo
         const dust = createDust()
         const footprints = createFootprints()
@@ -241,7 +249,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
         const chase = createChaseCamera(camera, renderer.domElement)
         chase.startIntro() // swoop from far above Spain down to the detective; control starts when it lands
         // Solo en desarrollo: acceso desde la consola/Playwright para depurar
-        if (import.meta.env.DEV) Object.assign(window, { __game: { carState, camera, chase, ground, detective, renderer, scene, day, nightLights, towns, houses, scenery, sceneryItems, landmarks, caseMarkers, main } })
+        if (import.meta.env.DEV) Object.assign(window, { __game: { carState, camera, chase, ground, detective, boat, renderer, scene, day, nightLights, towns, houses, scenery, sceneryItems, landmarks, caseMarkers, main } })
 
         const fog = scene.fog as THREE.Fog
         const ink = createInkOutline(renderer) // contornos negros de cómic
@@ -289,8 +297,11 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
           stepCar(carState, input, ground, dt)
           detective.setFocus(chase.stepFocus(wantLens, dt))
           detective.update(carState, dt)
-          dust.update(carState, surfaceAt, detective.stridePhase, dt)
-          footprints.update(carState, surfaceAt, detective.stridePhase)
+          const afloat = boat.update(carState, main.isFord(carState.x, carState.z), detective, dt)
+          // In the boat there are no footsteps: no dust puffs and no footprints on the water
+          const walker = afloat > 0.5 ? Object.assign(rowing, carState, { speed: 0, accel: 0, yawRate: 0 }) : carState
+          dust.update(walker, surfaceAt, detective.stridePhase, dt)
+          footprints.update(walker, surfaceAt, detective.stridePhase)
           const lens = chase.focus > 0 ? { center: detective.lensPosition(), normal: detective.lensNormal(), radius: detective.lensRadius() } : null
           chase.update(carState, groundNoLandmarks, dt, detective.inspect, towns.topAt, landmarks.surfaceAt, lens)
           if (introBefore && !chase.introActive) {
@@ -349,6 +360,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
           chase.dispose()
           detective.dispose()
           detectiveRef.current = null
+          boat.dispose()
           dust.dispose()
           footprints.dispose()
           landmarks.dispose()

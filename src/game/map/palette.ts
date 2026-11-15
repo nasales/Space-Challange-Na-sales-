@@ -14,6 +14,7 @@ export const SEA = {
   shallow: hex('#36A6F2'),
   coast: hex('#7FDDF7'),
   foam: hex('#FFFFFF'),
+  ford: hex('#A9E9FA'), // shallow sea where the boat can go (shallowSea.ts): the lightest water, so it reads as open to the player
 }
 
 export const SAND = hex('#FFE48A')
