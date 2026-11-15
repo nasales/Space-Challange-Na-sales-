@@ -1,10 +1,8 @@
 // Evidence file for one clue of the hand lens: the trend analysis of the chosen variable at the
 // detective's point (database cell), full screen and without scrolling.
-//   left:  the detective's notebook (EvidenceNotebook.tsx): the question, the findings as clues,
-//          and the verdict stamp;
+//   left:  the verdict (rubber stamp, one plain sentence, three figures, an evidence meter);
 //   right: one large chart at a time, picked with evidence tabs (click, keys 1-5, or ← → on a tab).
-// The charts draw themselves in while the clues are written, then the stamp lands; the charts
-// then stay alive (scanning magnifier, record markers, pulses). A non-significant trend is a valid result
+// The charts draw themselves in, then the stamp lands. A non-significant trend is a valid result
 // and is stamped as such. Esc (or "Back to the clues") returns to the ring without closing the lens.
 // Data: fetchPointAnalysis() in src/shared/pointAnalysis.ts (Supabase get_cell + trends table).
 // The slope, its 95 % range and the p-value come from the statistics pipeline; this file and
@@ -16,18 +14,20 @@ import {
   anomalies,
   ciBand,
   fmt,
+  fmtP,
   fmtSigned,
   mean,
   monthLabel,
+  periodYears,
   seasonalComparison,
   testPeriod,
+  totalChange,
   validMonths,
   trendLine,
   yearOf,
   type Period,
 } from './analysis/analysis'
 import AnomalyChart from './analysis/AnomalyChart'
-import EvidenceNotebook from './EvidenceNotebook'
 import { AnnualChart, SeasonalChart } from './analysis/SmallCharts'
 import MonthlyPlot from './analysis/MonthlyPlot'
 import './ClueResult.css'
@@ -121,7 +121,7 @@ export default function ClueResult({ variable, title, place, distanceKm, onBack 
       </header>
 
       <div className="clue-result__body">
-        <EvidenceNotebook variable={variable} title={title} place={place} period={period} />
+        <Verdict variable={variable} title={title} place={place} period={period} />
 
         <div className="clue-result__evidence">
           <div className="clue-result__tabs" role="tablist" aria-label="Evidence">
@@ -169,6 +169,136 @@ export default function ClueResult({ variable, title, place, distanceKm, onBack 
         </span>
       </footer>
     </section>
+  )
+}
+
+const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1)
+
+/* ---------------------------------------------------------------------------------------------
+   Verdict column
+--------------------------------------------------------------------------------------------- */
+
+/** Counts a number up from zero once, then shows the exact formatted value. */
+function CountUp({ value, format, delay = 0 }: { value: number; format: (x: number) => string; delay?: number }) {
+  // Progress of the count, 0 to 1 (already 1 with reduced motion)
+  const [k, setK] = useState(() => (reducedMotion() || !Number.isFinite(value) ? 1 : 0))
+  useEffect(() => {
+    if (k >= 1) return
+    let frame = 0
+    const start = performance.now() + delay
+    const DURATION = 900
+    const tick = (now: number) => {
+      const next = Math.min(Math.max((now - start) / DURATION, 0), 1)
+      setK(next)
+      if (next < 1) frame = requestAnimationFrame(tick)
+    }
+    frame = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(frame)
+    // Runs once on mount; k only goes up to 1
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, delay])
+  return <>{k >= 1 ? format(value) : format(value * (1 - (1 - k) ** 3))}</>
+}
+
+function reducedMotion(): boolean {
+  return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
+/** Where the p-value sits on the evidence meter: 0 = pure noise (p = 1), 1 = very strong (p ≤ 0.0001). */
+const meterPos = (p: number) => Math.min(Math.max(-Math.log10(Math.max(p, 1e-12)) / 4, 0), 1)
+
+function Verdict({ variable, title, place, period }: { variable: PointVariable; title: string; place: string; period: Period | null }) {
+  const data = variable.data
+  if (!data) return null
+  const { slopeCiLow, slopeCiHigh } = variable.extra
+  const units = data.units
+  const perDecade = data.slope * 10
+  const since = period ? ` since ${yearOf(data.dates[period.start])}` : ''
+  const span = period ? `${yearOf(data.dates[period.start])}–${yearOf(data.dates[period.end])}` : null
+  const p = fmtP(data.p_value)
+  const up = data.slope > 0
+  const verb = up ? 'increased' : data.slope < 0 ? 'decreased' : 'changed'
+  const hasCi = slopeCiLow != null && slopeCiHigh != null
+  const kind = !data.significant ? 'flat' : up ? 'up' : 'down'
+  const stampWord = kind === 'flat' ? 'No clear trend' : up ? 'Increasing' : 'Decreasing'
+
+  return (
+    <div className={`clue-result__verdict clue-result__verdict--${kind}`}>
+      <p className="clue-result__verdict-label">Verdict</p>
+      <div className="clue-result__stamp-wrap">
+        <div className="clue-result__stamp" role="img" aria-label={`Verdict: ${stampWord}`}>
+          <span className="clue-result__stamp-arrow" aria-hidden="true">
+            {kind === 'flat' ? '≈' : up ? '▲' : '▼'}
+          </span>
+          <span className="clue-result__stamp-word">{stampWord}</span>
+          <span className="clue-result__stamp-sub">{data.significant ? 'Statistically significant' : 'Not significant'}</span>
+        </div>
+      </div>
+
+      {data.significant ? (
+        <p className="clue-result__sentence">
+          At {place}, {lowerFirst(title)} has {verb} by about{' '}
+          <b>
+            {fmt(Math.abs(perDecade))} {units} every 10 years
+          </b>
+          {since}.
+        </p>
+      ) : (
+        <p className="clue-result__sentence">
+          At {place}, {lowerFirst(title)} shows <b>no clear trend</b>
+          {since}. That is a real answer, not proof that nothing changed.
+        </p>
+      )}
+
+      <dl className="clue-result__figures">
+        <div className="clue-result__figure clue-result__figure--main">
+          <dt>Per decade</dt>
+          <dd>
+            <CountUp value={perDecade} format={fmtSigned} delay={350} /> <small>{units}</small>
+          </dd>
+        </div>
+        {period && (
+          <div className="clue-result__figure">
+            <dt>Total, {span}</dt>
+            <dd>
+              <CountUp value={totalChange(data.slope, period)} format={fmtSigned} delay={450} /> <small>{units}</small>
+            </dd>
+            <dd className="clue-result__sub">rate × {fmt(periodYears(period))} years</dd>
+          </div>
+        )}
+        {hasCi && (
+          <div className="clue-result__figure">
+            <dt>95 % range / decade</dt>
+            <dd className="clue-result__range">
+              {fmtSigned(slopeCiLow * 10)} to {fmtSigned(slopeCiHigh * 10)}
+            </dd>
+            {slopeCiLow <= 0 && slopeCiHigh >= 0 && <dd className="clue-result__sub">includes zero</dd>}
+          </div>
+        )}
+      </dl>
+
+      <div className="clue-result__meter">
+        <p className="clue-result__meter-title">
+          Real or just noise? <b>{p}</b>
+        </p>
+        <div className="clue-result__meter-track" aria-hidden="true">
+          <span className="clue-result__meter-zone" />
+          <span className="clue-result__meter-line" style={{ '--at': meterPos(0.05) } as CSSProperties}>
+            <span>0.05</span>
+          </span>
+          <span className="clue-result__meter-needle" style={{ '--at': meterPos(data.p_value) } as CSSProperties} />
+        </div>
+        <p className="clue-result__meter-ends" aria-hidden="true">
+          <span>could be noise</span>
+          <span>clear signal</span>
+        </p>
+        <p className="clue-result__note">
+          {data.significant
+            ? 'Past the 0.05 line: a trend this strong would come from chance less than 5 times in 100.'
+            : 'Before the 0.05 line: chance alone could easily make a trend like this.'}
+        </p>
+      </div>
+    </div>
   )
 }
 
@@ -232,7 +362,7 @@ function EvidencePanel({
         : 'No trend line.')
     return (
       <Panel
-        chart={<AnomalyChart dates={data.dates} anoms={anoms} units={units} label={label} line={line} band={band} significant={data.significant} />}
+        chart={<AnomalyChart dates={data.dates} anoms={anoms} units={units} label={label} line={line} band={band} />}
         legend={
           <>
             <Key swatch={<line x1="0" x2="26" y1="6" y2="6" className="clue-result__line clue-result__line--thin" />}>
@@ -272,9 +402,7 @@ function EvidencePanel({
             values={data.values}
             units={units}
             label={label}
-            reference={avg != null ? { value: avg, className: 'clue-result__mean clue-result__mean--march' } : undefined}
-            scan
-            markers
+            reference={avg != null ? { value: avg, className: 'clue-result__mean' } : undefined}
           />
         }
         legend={
