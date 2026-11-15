@@ -2,6 +2,7 @@
 // If a landmark is nearby, its name and "city, region" are shown instead.
 import type { LocationInfo } from '../../shared/events'
 import './LocationPanel.css'
+import { L } from '../../shared/i18n'
 
 /** Closer than this to a town counts as being "in" it. */
 const INSIDE_KM = 6
@@ -13,7 +14,7 @@ export default function LocationPanel({ info }: { info: LocationInfo }) {
     <section
       className={`location-panel${lm ? ' location-panel--landmark' : ''}`}
       aria-live="polite"
-      aria-label="Current location"
+      aria-label={L('Current location', 'Ubicación actual')}
     >
       {lm ? (
         <>
@@ -25,7 +26,7 @@ export default function LocationPanel({ info }: { info: LocationInfo }) {
       ) : (
         <>
           <p className="location-panel__place">
-            {inside ? info.place : `Near ${info.place}`}
+            {inside ? info.place : L(`Near ${info.place}`, `Cerca de ${info.place}`)}
             {!inside && <span className="location-panel__km">{Math.round(info.km)} km</span>}
           </p>
           {info.region && <p className="location-panel__region">{info.region}</p>}

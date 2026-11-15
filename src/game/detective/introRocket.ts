@@ -9,6 +9,7 @@
 // so moves read as key poses with holds; fast moves get smear frames, speed lines and cyan/
 // magenta multiple-image ghosts. Look and palette come from comicArt.ts (the main menu's style).
 import * as THREE from 'three'
+import { L } from '../../shared/i18n'
 import {
   PAL, canvasTexture, halftone, comicMaterial, captionTexture, swishWordTexture, impactStarTexture,
   dotTileTexture, cornerMaskTexture, stepPop,
@@ -611,9 +612,9 @@ export function createRocketIntro(scene: THREE.Scene, camera: THREE.PerspectiveC
   panelRocket.add(fire)
 
   // Front layers: captions, lettering, impact stars
-  const capA = layer(sheet, flat({ map: keep(captionTexture('Somewhere above Earth...')) }), 10)
-  const capC = layer(sheet, flat({ map: keep(captionTexture('Destination: Spain')) }), 10)
-  const whoosh = layer(sheet, flat({ map: keep(swishWordTexture('Whoosh!')) }), 11)
+  const capA = layer(sheet, flat({ map: keep(captionTexture(L('Somewhere above Earth...', 'En algún lugar sobre la Tierra...'))) }), 10)
+  const capC = layer(sheet, flat({ map: keep(captionTexture(L('Destination: Spain', 'Destino: España'))) }), 10)
+  const whoosh = layer(sheet, flat({ map: keep(swishWordTexture(L('Whoosh!', '¡Fiuuu!'))) }), 11)
   const impactTex = keep(impactStarTexture())
   const impact = layer(sheet, flat({ map: impactTex }), 11)
 

@@ -13,6 +13,7 @@ import type { RiverClearing } from '../map/rivers'
 import { createKit } from './kit'
 import { makeLightBatch, makeLightMesh } from '../scene/nightLights'
 import { LANDMARK_MODELS } from './models'
+import { LANG } from '../../shared/i18n'
 
 export interface LandmarkData {
   id: string
@@ -36,13 +37,17 @@ export interface LandmarkData {
   /** false: visual only, left off the M travel map (the small provincial-capital monuments). Default true. */
   travel?: boolean
   description: string
+  /** Spanish description (shown when the game is in Spanish) */
+  description_es?: string
 }
 
 /** Carga landmarks.json del país (si no existe, no hay monumentos). */
 export async function loadLandmarks(countryId: string): Promise<LandmarkData[]> {
   const res = await fetch(`/maps/countries/${countryId}/landmarks.json`)
   if (!res.ok) return []
-  return (await res.json()).landmarks
+  const list: LandmarkData[] = (await res.json()).landmarks
+  // Spanish game: show the Spanish description (English if a landmark has none)
+  return LANG === 'es' ? list.map((l) => ({ ...l, description: l.description_es ?? l.description })) : list
 }
 
 /** Tamaño general de los monumentos respecto a sus modelos. */

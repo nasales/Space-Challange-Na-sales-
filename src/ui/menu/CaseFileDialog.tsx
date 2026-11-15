@@ -1,6 +1,7 @@
 // A "case file" comic panel shown over the menu, with a caption-box header. Uses the native <dialog> element, so the browser
 // keeps focus inside it and Escape closes it. A click on the backdrop also closes it.
 import { useEffect, useRef, type ReactNode } from 'react'
+import { L } from '../../shared/i18n'
 
 interface CaseFileDialogProps {
   label: string
@@ -44,7 +45,7 @@ export default function CaseFileDialog({ label, title, onClose, children }: Case
             <svg className="case-file__close-icon" viewBox="0 0 20 20" aria-hidden="true">
               <path d="M4 4l12 12M16 4L4 16" />
             </svg>
-            Close
+            {L('Close', 'Cerrar')}
           </button>
         </div>
         <h2 id={titleId} className="case-file__title">

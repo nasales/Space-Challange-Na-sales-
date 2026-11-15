@@ -1,0 +1,277 @@
+{
+  "case_id": "filomena_madrid",
+  "title": "La borrasca Filomena",
+  "place": "Madrid",
+  "intro": {
+    "headline": "Enero de 2021: Madrid bajo la nieve",
+    "paragraphs": [
+      "A principios de enero de 2021 la borrasca Filomena trajo a Madrid su mayor nevada en unos 50 años. Se cerraron calles, carreteras y el aeropuerto, los coches se quedaron atrapados en la nieve y la ciudad estuvo paralizada durante días.",
+      "Cuando pasó la borrasca, el cielo se despejó y llegó una ola de frío. La nieve se convirtió en hielo, y muchos árboles de la ciudad se partieron bajo su peso.",
+      "Las fotos de un Madrid blanco dieron la vuelta al mundo, y hubo quien preguntó: si puede nevar así, ¿de verdad se está calentando el planeta? Un buen detective no responde con una sola foto. En este expediente vas a comparar enero de 2021 con todos los demás eneros desde 1980, y después decidirás tú."
+    ],
+    "question": "Si Madrid tuvo su mayor nevada en medio siglo, ¿significa eso que no se está calentando?"
+  },
+  "scene": {
+    "lines": [
+      {
+        "speaker": "witness",
+        "text": "¡Buenos días, detective! ¿Un periódico? ¿Un crucigrama? ¿No? Entonces vienes por lo de la nevada. Todo el mundo acaba viniendo por eso.",
+        "mood": "happy"
+      },
+      {
+        "speaker": "detective",
+        "text": "Buenos días. Así es. Investigo enero de 2021, cuando la borrasca Filomena azotó Madrid. ¿Estabas aquí?",
+        "mood": "curious"
+      },
+      {
+        "speaker": "witness",
+        "text": "¿Aquí? Aquí mismo, en este quiosco, desde hace cuarenta años. A primeros de enero nevó y nevó, un día entero y una noche.",
+        "mood": "proud"
+      },
+      {
+        "speaker": "witness",
+        "text": "Se paró la ciudad entera. Carreteras cortadas, ni un autobús, hasta cerraron el aeropuerto. Coches tirados en mitad de la calle, enterrados en blanco.",
+        "mood": "explaining"
+      },
+      {
+        "speaker": "detective",
+        "text": "Vi las fotos. ¿Es verdad que la gente bajó esquiando por la Gran Vía?",
+        "mood": "curious"
+      },
+      {
+        "speaker": "witness",
+        "text": "¡Verdad! Esquís en la Gran Vía, guerras de bolas en la Puerta del Sol. Mi nieto hizo un muñeco de nieve más alto que yo.",
+        "mood": "happy"
+      },
+      {
+        "speaker": "witness",
+        "text": "Luego vino la helada. La nieve se hizo hielo, y se partieron un montón de árboles en los parques por el peso.",
+        "mood": "sad"
+      },
+      {
+        "speaker": "witness",
+        "text": "Vendí todos los periódicos con un Madrid blanco en portada. La mayor nevada en cincuenta años, decían todos.",
+        "mood": "proud"
+      },
+      {
+        "speaker": "detective",
+        "text": "Una borrasca así es rara. Hubo quien se preguntó qué significa para el cambio climático. ¿Tú qué piensas, Pilar?",
+        "mood": "curious"
+      },
+      {
+        "speaker": "witness",
+        "text": "Mira, hijo, todos los días salen los periódicos hablando del calentamiento global. Entonces, ¿por qué necesité botas de nieve para abrir el quiosco?",
+        "mood": "insistent"
+      },
+      {
+        "speaker": "witness",
+        "text": "Tuvimos la mayor nevada en cincuenta años. ¡Así que eso del calentamiento global es mentira!",
+        "mood": "confident"
+      },
+      {
+        "speaker": "detective",
+        "text": "Esa es una afirmación clara. Un buen detective no adivina: pone a prueba cada afirmación con pruebas.",
+        "mood": "determined"
+      },
+      {
+        "speaker": "detective",
+        "text": "Así que la pregunta es: si Madrid tuvo su mayor nevada en medio siglo, ¿significa eso que no se está calentando? Vamos a clavar los datos de la NASA en el tablero.",
+        "mood": "determined"
+      },
+      {
+        "speaker": "witness",
+        "text": "Pues clávalos en tu tablero. ¡Tus gráficos dirán lo mismo que mis botas!",
+        "mood": "confident"
+      }
+    ],
+    "claim": "Tuvimos la mayor nevada en cincuenta años, así que el calentamiento global es mentira."
+  },
+  "steps": [],
+  "board": {
+    "title": "¿De verdad Madrid no se está calentando?",
+    "instructions": "Abre cada tarjeta y resuelve su tarea; después tira un hilo rojo hasta lo que dice Pilar: ¿lo apoya, lo contradice o no dice nada?",
+    "items": [
+      {
+        "id": "snow_clipping",
+        "kind": "clipping",
+        "title": "La portada",
+        "teaser": "Del quiosco de Pilar, enero de 2021",
+        "clipping": {
+          "headline": "Madrid, sepultada bajo su mayor nevada en 50 años",
+          "date": "Enero de 2021",
+          "body": "La borrasca Filomena cubrió Madrid de nieve el 8 y el 9 de enero. Cerraron carreteras, trenes y el aeropuerto, y hubo coches atrapados en las calles. Algunos vecinos bajaron esquiando por la Gran Vía. Después llegó una ola de frío, y la nieve se convirtió en hielo."
+        },
+        "text": "Un periódico cuenta la historia de unos pocos días; un gráfico cuenta la historia de meses. Cada punto es la precipitación media de un enero en Madrid, de 1998 a 2025, contando la nieve como el agua en la que se derrite. Datos: NASA GPM IMERG. Un enero normal recibe unos 1,6 mm/día. Recuerda: para que nieve hacen falta humedad y aire frío a la vez.",
+        "chart": {
+          "variable": "PRECIP",
+          "view": "same_month",
+          "month": 1,
+          "highlights": [
+            {
+              "kind": "point",
+              "date": "2021",
+              "label": "Enero de 2021"
+            },
+            {
+              "kind": "point",
+              "date": "2001",
+              "label": "2001 (el más lluvioso)"
+            }
+          ]
+        },
+        "task": {
+          "type": "compare",
+          "prompt": "El recorte dice \"la mayor nevada en 50 años\". Lee el gráfico de lluvia y nieve de enero. ¿Qué explicación encaja con las dos cosas?",
+          "hint": "Busca enero de 2021 en el gráfico. ¿Es el punto más alto? Y piensa: ¿qué más necesita la nieve, aparte de agua?",
+          "success": "Correcto: enero de 2021 tuvo unos 1,9 mm/día, más que un enero normal, pero nueve eneros fueron más lluviosos. La nevada fue excepcional porque la humedad coincidió con aire muy frío.",
+          "options": [
+            {
+              "text": "Enero de 2021 fue más lluvioso de lo normal pero lejos de un récord: la nevada fue excepcional porque la humedad llegó con aire muy frío",
+              "correct": true
+            },
+            {
+              "text": "Enero de 2021 fue el enero más lluvioso del registro, así que la nevada tenía que ser récord también",
+              "correct": false
+            },
+            {
+              "text": "El gráfico muestra que Madrid es cada enero más fría",
+              "correct": false
+            }
+          ]
+        },
+        "relation": "neutral",
+        "relation_feedback": "No dice nada ni a favor ni en contra. La nevada fue real y extrema, pero fue una sola borrasca de unos pocos días. Un solo fenómeno, por raro que sea, describe el tiempo de un mes, no la tendencia de décadas.",
+        "clue": "Filomena: humedad y aire muy frío; enero de 2021 no batió el récord de lluvia."
+      },
+      {
+        "id": "cold_january",
+        "kind": "chart",
+        "title": "Todos los eneros",
+        "teaser": "47 eneros, de 1980 a 2026",
+        "text": "Para juzgar un enero frío, compáralo solo con otros eneros. Este gráfico deja un punto por año: 47 eneros de 1980 a 2026, en °C, así que desaparece la ola verano-invierno. Datos: NASA MERRA-2. Un enero normal aquí ronda los 3,5 °C. Cada punto es un mes entero, así que un punto cuenta la historia de un invierno, no la del clima.",
+        "chart": {
+          "variable": "T2M",
+          "view": "same_month",
+          "month": 1
+        },
+        "task": {
+          "type": "click_point",
+          "prompt": "Pilar dice que aquel invierno fue especial. Haz clic en el enero más frío de este siglo (de 2001 en adelante).",
+          "hint": "Mira solo la mitad derecha del gráfico, de 2001 en adelante. ¿Qué punto está más abajo?",
+          "success": "¡Lo tienes! Enero de 2021, el mes de Filomena, con unos 2,2 °C: el enero más frío de este siglo y el 4.º más frío de los 47. Pilar lo recuerda bien.",
+          "answer": "2021"
+        },
+        "relation": "neutral",
+        "relation_feedback": "Por sí solo no dice nada sobre la tendencia. Enero de 2021 fue de verdad muy frío, como recuerda Pilar. Pero es un punto entre 47: si significa \"no hay calentamiento\" depende de todos los demás.",
+        "clue": "Enero de 2021: unos 2,2 °C, el más frío del siglo, 4.º de 47."
+      },
+      {
+        "id": "january_cards",
+        "kind": "chart",
+        "title": "Cinco eneros",
+        "teaser": "¿Fríos o cálidos? Ordénalos",
+        "text": "Un enero puede ser muy distinto del siguiente, en el mismo mes y en la misma ciudad. Antes de leer una tendencia, un detective tiene que saber lo grandes que son estos saltos: si los eneros sueltos varían varios grados, un enero frío o cálido no puede demostrar gran cosa por sí solo. Ordena las tarjetas y luego fíjate en cuándo caen los años fríos y los cálidos.",
+        "chart": {
+          "variable": "T2M",
+          "view": "same_month",
+          "month": 1
+        },
+        "task": {
+          "type": "order_cards",
+          "prompt": "Ordena estos cinco eneros, del más frío al más cálido.",
+          "hint": "Busca cada año en el gráfico y mira la altura de su punto: más abajo significa más frío.",
+          "success": "Correcto: 1992 (unos 1,2 °C, el más frío del registro), 2021, 2011, 2001, 2024 (unos 5,7 °C). Más de 4 °C de diferencia en el mismo mes: los eneros fríos y cálidos están mezclados a lo largo de las décadas.",
+          "cards": [
+            "2024",
+            "1992",
+            "2011",
+            "2021",
+            "2001"
+          ],
+          "order": "asc"
+        },
+        "relation": "neutral",
+        "relation_feedback": "Por sí solo no dice nada sobre la afirmación. Muestra lo ruidosos que son los eneros sueltos: los fríos y los cálidos están mezclados a lo largo de las décadas, así que ni Filomena ni un enero cálido demuestran nada por sí solos.",
+        "clue": "Los eneros varían más de 4 °C cada año: eso es tiempo, no clima."
+      },
+      {
+        "id": "ruler",
+        "kind": "chart",
+        "title": "Todos los meses",
+        "teaser": "561 meses: encuentra la inclinación",
+        "text": "Ahora cuentan todos los meses: 561 meses, de enero de 1980 a septiembre de 2026. Cada punto es un mes menos el valor normal de ese mes (una anomalía), así que un enero frío y un julio frío comparten la misma escala. Datos: NASA MERRA-2. No sigas puntos sueltos: busca la inclinación general de toda la nube.",
+        "chart": {
+          "variable": "T2M",
+          "view": "anomaly",
+          "highlights": [
+            {
+              "kind": "point",
+              "date": "2021-01",
+              "label": "Enero de 2021"
+            }
+          ]
+        },
+        "task": {
+          "type": "fit_line",
+          "tolerance": 0.3,
+          "prompt": "Arrastra los dos extremos de la regla para que siga la dirección general de la nube de puntos.",
+          "hint": "No persigas un solo punto. Compara el centro de la nube en los años 80 con el centro de la nube en los años 2020.",
+          "success": "Bien: la línea sube. La tendencia real es de unos +0,37 °C por década, alrededor de 1,7 °C en todo el registro. Enero de 2021 queda por debajo: un mes frío dentro de una serie que se calienta."
+        },
+        "relation": "contradicts",
+        "relation_feedback": "Esto va en contra de la afirmación. Teniendo en cuenta todos los meses, Madrid se calienta claramente: unos +0,37 °C por década (intervalo del 95 %: de +0,26 a +0,49), p < 0,001. El mes de Filomena es un punto frío por debajo de una línea que sube.",
+        "clue": "Todos los meses desde 1980: unos +0,37 °C por década, p < 0,001."
+      },
+      {
+        "id": "more_years",
+        "kind": "datacard",
+        "title": "¿Hasta qué punto estamos seguros?",
+        "teaser": "Más años, menos dudas",
+        "text": "Esta tarjeta mide la tendencia desde distintos años de inicio hasta 2026: cada barra es la pendiente y cada bigote, el intervalo del 95 %, donde probablemente está la pendiente real. Una barra rellena es significativa. Mueve el control deslizante y mira cuánto se alarga el bigote. Piensa en los eneros solos: 47 puntos, pendiente de unos +0,2 °C por década, p = 0,069, no demostrada; los 561 meses dan p < 0,001.",
+        "chart": {
+          "variable": "T2M",
+          "view": "window_trends"
+        },
+        "task": {
+          "type": "slider_window",
+          "prompt": "Mueve el control deslizante de 1980 a 2010 y mira el bigote de cada tendencia.",
+          "hint": "Compara la longitud del bigote en 1980 con la de 2010.",
+          "success": "Correcto: desde 1980 el intervalo es estrecho, de +0,26 a +0,49 °C por década; desde 2010 se ensancha hasta +0,60 a +1,58. Más años, intervalo más estrecho: el registro largo es el testigo más sólido.",
+          "question": "¿Qué le pasa al intervalo del 95 % cuando te quedas con menos años?",
+          "options": [
+            {
+              "text": "Se ensancha: con menos años hay más dudas sobre la pendiente real",
+              "correct": true
+            },
+            {
+              "text": "Se estrecha: los años recientes son más precisos",
+              "correct": false
+            },
+            {
+              "text": "Se queda igual: el número de años no importa",
+              "correct": false
+            }
+          ]
+        },
+        "relation": "contradicts",
+        "relation_feedback": "Esto va en contra de la afirmación. Elijas el año de inicio que elijas, de 1980 a 2010, la tendencia es de calentamiento y es significativa. Los eneros solos no llegan a demostrarlo porque tienen menos puntos, no porque Madrid haya dejado de calentarse.",
+        "clue": "Más años, intervalo más estrecho; todo inicio desde 1980 muestra calentamiento significativo."
+      }
+    ],
+    "summary": "Dos tarjetas muestran un enero de verdad frío y nevado entre grandes vaivenes de un año a otro. Otras dos miran décadas de meses. Un recorte cuenta la historia de unos pocos días. Sopésalas todas antes de escribir tu conclusión."
+  },
+  "conclusion": {
+    "prompt": "Si Madrid tuvo su mayor nevada en medio siglo, ¿significa eso que no se está calentando? Escribe tu conclusión con lo que te han mostrado los gráficos.",
+    "variable": "T2M",
+    "placeholder": "Viendo los datos de temperatura de Madrid de 1980 a 2026, creo que..."
+  },
+  "reveal": {
+    "by_variable": {
+      "T2M": "La temperatura del aire en Madrid (de enero de 1980 a septiembre de 2026) sube claramente: unos +0,37 °C por década (intervalo del 95 %: de +0,26 a +0,49 °C por década), p < 0,001, alrededor de 1,7 °C en todo el periodo. Los 47 eneros solos también se inclinan hacia arriba (unos +0,2 °C por década), pero con p = 0,069 esa pendiente no es significativa por sí sola. Enero de 2021 fue el 4.º enero más frío desde 1980.",
+      "PRECIP": "La precipitación de enero en Madrid (de 1998 a 2025) no muestra ninguna tendencia significativa (p = 0,40), y la serie mensual completa tampoco (p = 0,79). Enero de 2021 fue algo más lluvioso que un enero normal, pero lejos del más lluvioso."
+    },
+    "lesson": "Un mes muy frío es tiempo; el clima es la foto de décadas. Madrid se está calentando claramente, y una nevada excepcional no lo contradice. Comparar un mes solo con el mismo mes de otros años es una prueba justa, pero deja menos puntos, así que un cambio real puede ser más difícil de demostrar: un resultado no significativo quiere decir que las pruebas no son lo bastante sólidas, no que nada esté cambiando.",
+    "claim_verdict": "wrong",
+    "claim_text": "Pilar, tu memoria no falla: Filomena fue una borrasca excepcional, y enero de 2021 fue el enero más frío de este siglo. Pero un mes frío es tiempo, no clima. Teniendo en cuenta todos los meses desde 1980, Madrid se ha calentado unos 1,7 °C, así que la nieve no convierte el calentamiento global en mentira."
+  }
+}

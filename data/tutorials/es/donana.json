@@ -1,0 +1,324 @@
+{
+  "case_id": "donana",
+  "title": "Humedales de Doñana",
+  "place": "Doñana",
+  "intro": {
+    "headline": "2023: la mayor laguna de Doñana se queda seca",
+    "paragraphs": [
+      "El Parque Nacional de Doñana está en el suroeste de España, donde el Guadalquivir se encuentra con el Atlántico. Sus marismas y lagunas son de los humedales más importantes de Europa, un lugar de descanso para millones de aves migratorias y Patrimonio de la Humanidad de la UNESCO.",
+      "En 2023 Santa Olalla, la mayor laguna permanente de Doñana, se secó por completo. España llevaba una larga sequía. A la vez, bajo el parque hay un gran acuífero (agua guardada bajo tierra), y a su alrededor muchas fincas bombean agua subterránea para regar sus cultivos. Los científicos llevan años avisando de que está sobreexplotado.",
+      "Entonces, ¿quién se llevó el agua? En este caso tú eres el juez. La acusación y la defensa presentarán sus pruebas, lluvia y humedad del suelo con datos de la NASA, y tú decidirás sobre cada una antes de dictar sentencia."
+    ],
+    "question": "Doñana se está quedando sin agua. ¿Es la lluvia, o algo que los satélites no pueden ver?"
+  },
+  "scene": {
+    "lines": [
+      {
+        "speaker": "witness",
+        "text": "¡Hola, detective! Bajito, por favor: hay flamencos justo detrás de esos juncos. Bienvenido a Doñana.",
+        "mood": "happy"
+      },
+      {
+        "speaker": "detective",
+        "text": "Buenos días. Estoy investigando los humedales de Doñana. Me han dicho que los conoces mejor que nadie.",
+        "mood": "curious"
+      },
+      {
+        "speaker": "witness",
+        "text": "Veinte años guiando a observadores de aves por aquí. Marismas, dunas y lagunas, donde el Guadalquivir se encuentra con el Atlántico. Patrimonio de la Humanidad de la UNESCO, y uno de los grandes humedales de Europa.",
+        "mood": "proud"
+      },
+      {
+        "speaker": "witness",
+        "text": "Cada primavera y cada otoño, millones de aves migratorias paran aquí a descansar y comer en su viaje entre Europa y África. Gansos, patos, espátulas, flamencos.",
+        "mood": "explaining"
+      },
+      {
+        "speaker": "detective",
+        "text": "¿Y Santa Olalla? Leí algo sobre ella en 2023.",
+        "mood": "curious"
+      },
+      {
+        "speaker": "witness",
+        "text": "Santa Olalla es la mayor laguna permanente del parque. Permanente: siempre había estado ahí. En 2023 se secó del todo. Barro agrietado donde antes nadaban los patos.",
+        "mood": "sad"
+      },
+      {
+        "speaker": "witness",
+        "text": "España tuvo una sequía muy larga, ¿sabes? Mes tras mes casi sin una nube sobre la marisma.",
+        "mood": "explaining"
+      },
+      {
+        "speaker": "detective",
+        "text": "También leí que muchas fincas alrededor del parque bombean agua del acuífero que hay debajo para regar sus cultivos.",
+        "mood": "curious"
+      },
+      {
+        "speaker": "witness",
+        "text": "Sí, sí, los pozos. Se discute de ellos en todos los bares de la zona.",
+        "mood": "doubtful"
+      },
+      {
+        "speaker": "witness",
+        "text": "Pero yo llevo veinte años mirando este cielo. Sin lluvia, no hay agua. Así de sencillo.",
+        "mood": "insistent"
+      },
+      {
+        "speaker": "witness",
+        "text": "La laguna se secó solo porque dejó de llover. Apúntalo en tu libreta, detective.",
+        "mood": "confident"
+      },
+      {
+        "speaker": "detective",
+        "text": "Es una afirmación clara. No la vamos a resolver a ojo: la llevaremos a juicio, con los datos de la NASA como pruebas.",
+        "mood": "determined"
+      },
+      {
+        "speaker": "detective",
+        "text": "La acusación dice que fue solo la lluvia; la defensa dice que no tan deprisa. Cada parte trae sus pruebas, y el juez decide sobre cada una.",
+        "mood": "determined"
+      },
+      {
+        "speaker": "witness",
+        "text": "Pues que empiece el juicio. ¡El cielo será mi mejor testigo!",
+        "mood": "confident"
+      }
+    ],
+    "claim": "La laguna se secó solo porque dejó de llover."
+  },
+  "steps": [],
+  "trial": {
+    "title": "El caso de la laguna desaparecida",
+    "charge": "La lluvia, por sí sola, secó la laguna de Santa Olalla.",
+    "instructions": "Abre cada prueba cuando su parte la presente. Haz la tarea y decide: admitirla, rechazarla o declarar las pruebas insuficientes.",
+    "exhibits": [
+      {
+        "id": "rain_book",
+        "side": "prosecution",
+        "title": "El libro de la lluvia",
+        "teaser": "La lluvia cerca de Doñana, año a año",
+        "argument": "Señoría, en Doñana llueve menos cada año. Dejó de llover, y no hay más historia.",
+        "text": "Cada punto es la lluvia media de un año cerca de Doñana, en mm/día, de 1998 a 2024 (solo años completos). Datos: NASA GPM IMERG. Destacan años secos como 2005, 2019 y 2023, y también el muy lluvioso 2010. Una sequía es una racha de años secos: eso es tiempo meteorológico. Una tendencia es un cambio que dura décadas.",
+        "chart": {
+          "variable": "PRECIP",
+          "view": "annual"
+        },
+        "task": {
+          "type": "fit_line",
+          "tolerance": 0.2,
+          "prompt": "Coloca la regla sobre la lluvia anual. ¿De verdad la lluvia va cayendo año tras año?",
+          "hint": "No persigas los años secos del final. Compara el centro de la nube en los 2000 con el centro en los 2020: ¿la bajada es grande o mínima?",
+          "success": "Bien: tu regla está casi plana. La tendencia real es de unos −0,05 mm/día por década, con p = 0,44: un cambio tan pequeño podría salir fácilmente del azar."
+        },
+        "ruling": "reject",
+        "objection": "¡Protesto, señoría! Mire la pendiente, no los años secos. ¿Una línea casi plana demuestra que la lluvia está desapareciendo?",
+        "ruling_feedback": "Rechazada. La prueba no muestra lo que dice la acusación. La lluvia no tiene una tendencia significativa: unos −0,05 mm/día por década, p = 0,44, y el intervalo del 95 % (−0,25 a +0,08) incluye el cero. Los años secos fueron reales, pero una racha de sequía es tiempo meteorológico, no un descenso a largo plazo.",
+        "clue": "Lluvia desde 1998: sin tendencia significativa (−0,05 mm/día por década, p = 0,44)."
+      },
+      {
+        "id": "translator",
+        "side": "defence",
+        "title": "La máquina traductora",
+        "teaser": "Dos pistas, dos idiomas",
+        "argument": "Señoría, la lluvia habla en mm/día y el suelo en kg/m². Antes de compararlas, esta máquina traduce las dos a un mismo idioma: lo raro que es cada mes.",
+        "text": "Una anomalía es un mes menos su valor normal. La oscilación típica (la desviación estándar) es el tamaño habitual de esas subidas y bajadas en cada pista. Divide la anomalía entre la oscilación típica y las unidades se cancelan: lo que queda dice lo raro que fue ese mes, en el mismo idioma para todas las pistas. Los científicos lo llaman puntuación z.",
+        "chart": {
+          "variable": "SOILM",
+          "view": "zscore_pair",
+          "variables": [
+            "SOILM",
+            "PRECIP"
+          ],
+          "range": [
+            "2016-01",
+            "2025-03"
+          ]
+        },
+        "task": {
+          "type": "translate",
+          "readings": [
+            {
+              "variable": "SOILM",
+              "date": "2023-04",
+              "answer": -3.7
+            },
+            {
+              "variable": "PRECIP",
+              "date": "2023-04",
+              "answer": -1.2
+            }
+          ],
+          "prompt": "Mete abril de 2023 en la máquina: ajusta cada dial a anomalía ÷ oscilación típica.",
+          "hint": "Divide la anomalía entre la oscilación típica de la misma pista y conserva el signo menos: lo que está por debajo de lo normal sigue bajo cero.",
+          "success": "¡Traducido! En abril de 2023 el suelo estaba unas 3,7 oscilaciones típicas por debajo de lo normal, y la lluvia unas 1,2. En unidades brutas no podías compararlas; ahora sí: el mes del suelo fue mucho más raro."
+        },
+        "ruling": "admit",
+        "objection": "¿Protesta? No tan deprisa. ¿La máquina ha cambiado lo que dicen los datos, o solo las unidades en que están escritos?",
+        "ruling_feedback": "Admitida. La máquina no cambia ningún dato: solo pone las dos pistas en la misma escala, así que cualquiera de las partes puede usarla. La siguiente prueba lo hace.",
+        "clue": "Puntuación z = anomalía ÷ oscilación típica. Abril de 2023: suelo −3,7, lluvia −1,2."
+      },
+      {
+        "id": "together",
+        "side": "prosecution",
+        "title": "Secos a la vez",
+        "teaser": "Lluvia y suelo en una misma escala",
+        "argument": "Ponga las dos curvas en una misma escala, señoría. Cuando falla la lluvia, el suelo se seca. La sequía tuvo su parte.",
+        "text": "Las dos pistas traducidas a «lo raro que es» y suavizadas: cada punto es la media de los 12 meses que lo rodean. Cero significa normal. Datos: NASA GPM IMERG (lluvia) y NASA GLDAS (suelo). Si dos líneas se mueven juntas, dos cosas están relacionadas. Eso solo no demuestra que una cause la otra, pero aquí la relación tiene sentido: la lluvia moja el suelo.",
+        "chart": {
+          "variable": "SOILM",
+          "view": "zscore_pair",
+          "variables": [
+            "SOILM",
+            "PRECIP"
+          ]
+        },
+        "task": {
+          "type": "sort_moves",
+          "dates": [
+            "2005-04",
+            "2010-04",
+            "2018-10",
+            "2022-04"
+          ],
+          "answers": [
+            "both_dry",
+            "both_wet",
+            "apart",
+            "both_dry"
+          ],
+          "prompt": "Lee las dos líneas en cada mes marcado: ¿estaban las dos más secas de lo normal, las dos más húmedas, o separadas?",
+          "hint": "Por debajo de la línea del cero es más seco de lo normal; por encima, más húmedo. Lee cada línea por separado en la marca y luego compáralas.",
+          "success": "Correcto. Unos tres meses de cada cuatro, las dos líneas están del mismo lado del cero, como en 2005, 2010 y 2022. De vez en cuando se separan, como a finales de 2018."
+        },
+        "ruling": "admit",
+        "objection": "¡Protesto! Lea con atención lo que afirma aquí la acusación: solo que la sequía tuvo su parte. ¿Caen juntas las dos líneas en los años secos?",
+        "ruling_feedback": "Admitida. En las rachas secas, lluvia y suelo caen por debajo de lo normal a la vez, así que la sequía sí tuvo su parte. Moverse juntas no demuestra una causa, pero que la lluvia moje el suelo es una relación razonable. Fíjate en lo que no muestra: un descenso de la lluvia a largo plazo.",
+        "clue": "Años secos: lluvia y suelo bajan de lo normal a la vez. La sequía influyó."
+      },
+      {
+        "id": "soil_slide",
+        "side": "defence",
+        "title": "El lento declive del suelo",
+        "teaser": "El agua del suelo, año a año",
+        "argument": "Señoría, la lluvia no muestra tendencia, y sin embargo el suelo se va secando con las décadas. Algo más que la lluvia tiene que estar implicado.",
+        "text": "Cada punto es el agua media de un año en los 10 cm superiores del suelo cerca de Doñana, en kg/m², de 2000 a 2025. Datos: NASA GLDAS, un modelo alimentado con datos de satélite y de tierra. Un valor p por debajo de 0,05 es la frontera habitual de «significativo»; el intervalo del 95 % es donde probablemente está la pendiente real. Si p cae justo en la frontera y el intervalo casi toca el cero, la prueba está en el límite.",
+        "chart": {
+          "variable": "SOILM",
+          "view": "annual"
+        },
+        "task": {
+          "type": "fit_line",
+          "tolerance": 0.3,
+          "prompt": "Coloca la regla sobre la humedad del suelo anual. ¿Hacia dónde se inclina?",
+          "hint": "Ignora caídas sueltas como la de 2005. Compara el centro de la nube a principios de los 2000 con el centro en los 2020.",
+          "success": "Sí, se inclina hacia abajo: la tendencia real es de unos −0,29 kg/m² por década, unos −0,8 en todo el registro. Ahora lee la letra pequeña: p = 0,0498, y el intervalo del 95 % va de −0,59 a +0,002."
+        },
+        "ruling": "admit",
+        "objection": "¡Protesto! Compare el valor p con 0,05 antes de decidir. Una prueba débil también puede entrar en el expediente, si se valora con cuidado.",
+        "ruling_feedback": "Admitida, con cuidado. El suelo muestra un pequeño descenso que la lluvia no muestra, así que puede haber algo más que la cantidad de lluvia, por ejemplo más agua perdida hacia el aire en los años de calor. Este gráfico no puede decir qué.",
+        "follow_up": {
+          "prompt": "Para que conste: ¿cuánto peso tiene esta prueba?",
+          "options": [
+            {
+              "text": "Una prueba sólida de que el suelo se seca deprisa",
+              "correct": false
+            },
+            {
+              "text": "Una señal débil, en el límite, de que se seca",
+              "correct": true
+            },
+            {
+              "text": "Ninguna prueba en absoluto",
+              "correct": false
+            }
+          ],
+          "hint": "p = 0,0498 está apenas por debajo de 0,05, y el intervalo casi llega al cero. ¿Es eso una prueba sólida, o nada de nada?",
+          "feedback": "Anotado: prueba débil. p = 0,0498 está apenas por debajo de 0,05 y el intervalo del 95 % (−0,59 a +0,002 kg/m² por década) casi llega al cero. Di «una señal débil», nunca «una prueba»."
+        },
+        "clue": "Suelo: −0,29 kg/m² por década, p = 0,0498. Una señal débil, en el límite."
+      },
+      {
+        "id": "aquifer",
+        "side": "defence",
+        "kind": "missing",
+        "title": "Registros del agua subterránea",
+        "teaser": "Carpeta: acuífero y pozos",
+        "argument": "Señoría, las fincas de alrededor del parque bombean agua del acuífero. ¡Eso es lo que vació la laguna!",
+        "text": "La lluvia viene de satélites; la humedad del suelo, de un modelo informático alimentado con lluvia, temperatura y luz solar. Ninguno mira bajo tierra: el acuífero está muy por debajo de los 10 cm superiores del suelo, y el modelo no sabe nada de pozos ni de bombeo. Una carpeta vacía no absuelve a las fincas ni las condena. Significa que esta pregunta no se puede responder con estos datos.",
+        "task": {
+          "type": "missing_data",
+          "options": [
+            {
+              "text": "El nivel del agua subterránea en pozos alrededor del parque, mes a mes",
+              "needed": true
+            },
+            {
+              "text": "Cuánta agua se bombea del acuífero cada año",
+              "needed": true
+            },
+            {
+              "text": "El nivel del agua de la laguna de Santa Olalla a lo largo de los años",
+              "needed": true
+            },
+            {
+              "text": "Más años de datos de lluvia cerca de Doñana",
+              "needed": false
+            },
+            {
+              "text": "La temperatura del aire en Madrid",
+              "needed": false
+            },
+            {
+              "text": "La humedad de los 10 cm superiores del suelo (ya está en el juicio)",
+              "needed": false
+            }
+          ],
+          "prompt": "La carpeta está vacía. ¿Qué registros necesitaría el tribunal para poner a prueba la idea del bombeo? Elige todos los que valgan.",
+          "hint": "La idea trata del agua bajo tierra, del agua que se saca de ahí y de la propia laguna. ¿Qué registros miden eso?",
+          "success": "Exacto: niveles de los pozos, volúmenes bombeados y el nivel de agua de la propia laguna. Con eso el tribunal podría poner a prueba la idea del bombeo; sin eso, no puede."
+        },
+        "ruling": "insufficient",
+        "objection": "¡Protesto! ¿Qué iba a admitir o rechazar exactamente el tribunal? En la carpeta no hay nada que valorar.",
+        "ruling_feedback": "Pruebas insuficientes. Los científicos llevan años avisando de que el acuífero está sobreexplotado, y eso puede importar mucho, pero nada en esta sala lo mide. Un juez cuidadoso ni acepta ni descarta una idea que los datos no pueden poner a prueba.",
+        "clue": "Sin datos del acuífero ni del bombeo: aquí no se puede probar esa idea."
+      }
+    ],
+    "sentence": {
+      "prompt": "El tribunal ha visto todas las pruebas. Sobre la acusación de que la lluvia, por sí sola, secó la laguna de Santa Olalla, ¿cuál es tu veredicto?",
+      "options": [
+        {
+          "verdict": "guilty",
+          "text": "La afirmación se sostiene: dejó de llover, y eso solo secó la laguna.",
+          "correct": false,
+          "objection": "¡Protesto! Recuerde el libro de la lluvia: el registro largo no muestra un descenso significativo de la lluvia. Y el lento declive del suelo apunta a que puede haber algo más."
+        },
+        {
+          "verdict": "not_guilty",
+          "text": "La afirmación es falsa: la lluvia no tuvo nada que ver.",
+          "correct": false,
+          "objection": "¡Protesto! Recuerde las dos líneas en una misma escala: en los años secos, lluvia y suelo cayeron por debajo de lo normal a la vez. La sequía sí tuvo su parte."
+        },
+        {
+          "verdict": "not_proven",
+          "text": "Se sostiene en parte: la sequía fue real y tuvo su parte, pero no hay un descenso de la lluvia a largo plazo, y el suelo apunta a algo más que estos datos no pueden nombrar.",
+          "correct": true
+        }
+      ],
+      "summary": "La afirmación solo se sostiene en parte. Los años secos golpearon Doñana y arrastraron el suelo hacia abajo junto con la lluvia, pero el registro largo no muestra un descenso significativo de la lluvia (p = 0,44). El suelo muestra una tendencia a secarse débil, en el límite (p = 0,0498), que la lluvia no explica, y para poner a prueba el acuífero y el bombeo el tribunal necesitaría datos de agua subterránea."
+    }
+  },
+  "conclusion": {
+    "prompt": "Doñana se está quedando sin agua. ¿Es la lluvia, o algo que los satélites no pueden ver? Escribe tu conclusión con lo que te han mostrado los gráficos, y di cuánta seguridad tienes.",
+    "variable": "SOILM",
+    "placeholder": "Viendo la humedad del suelo y la lluvia cerca de Doñana, creo que..."
+  },
+  "reveal": {
+    "by_variable": {
+      "SOILM": "La humedad de los 10 cm superiores del suelo cerca de Doñana (enero de 2000 a julio de 2026) muestra un pequeño descenso: unos -0,29 kg/m² por década, p = 0,0498. Es justo significativo al nivel del 5 %, pero el intervalo de confianza del 95 % (-0,59 a +0,002 kg/m² por década) casi llega al cero, así que la prueba es débil.",
+      "PRECIP": "La lluvia cerca de Doñana (enero de 1998 a septiembre de 2025) no muestra una tendencia significativa: unos -0,05 mm/día por década, p = 0,44, y el intervalo de confianza del 95 % (-0,25 a +0,08 mm/día por década) incluye el cero."
+    },
+    "lesson": "Expresar cada mes como «lo raro que es» (en desviaciones estándar) te permite comparar pistas con unidades distintas. Aquí los años secos hundieron juntas la lluvia y el suelo, pero el registro largo de lluvia no muestra tendencia, y el suelo muestra una señal débil de secado que la lluvia no explica. Estos registros de satélite y de modelo no miden el acuífero ni el bombeo: para poner a prueba esa idea harían falta datos de agua subterránea. Moverse juntos no demuestra una causa, y una prueba en el límite hay que contarla con cuidado.",
+    "claim_verdict": "partly",
+    "claim_text": "Carmen, la sequía fue real y la lluvia sí tuvo su parte: en los años secos, lluvia y suelo cayeron por debajo de lo normal a la vez. Pero décadas de datos no muestran un descenso significativo de la lluvia cerca de Doñana (unos −0,05 mm/día por década, p = 0,44), y la señal débil, en el límite, de secado del suelo (p = 0,0498) apunta a algo más que estos datos, ciegos al acuífero y al bombeo, no pueden nombrar."
+  }
+}

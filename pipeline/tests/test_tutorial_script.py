@@ -12,7 +12,10 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-TUTORIALS = sorted((ROOT / "data" / "tutorials").glob("*.json"))
+TUTORIALS_EN = sorted((ROOT / "data" / "tutorials").glob("*.json"))
+# Spanish story scripts (same structure, translated text), used when the game is in Spanish
+TUTORIALS_ES = sorted((ROOT / "data" / "tutorials" / "es").glob("*.json"))
+TUTORIALS = TUTORIALS_EN + TUTORIALS_ES
 VARIABLES = {"PRECIP", "T2M", "SOILM"}
 MONTHLY_VIEWS = {"monthly", "climatology", "anomaly", "zscore_pair", "cumulative",
                  "running_mean", "periods"}
@@ -441,7 +444,7 @@ def check_interrogation(inter, data):
             for k in seasons:
                 assert k in data["variables"][var]["extras"]["seasons"], f"{where}: no {k} data"
             if not season_switch_answer(task, data):  # "None of them" is the right answer
-                assert "none" in task["success"].lower(), f"{where}: answer is none, say so"
+                assert re.search(r"\bnone\b|\bningun[oa]\b", task["success"].lower()), f"{where}: answer is none, say so"
             used.add(var)
         elif t == "proof_line":
             for key in ("prompt", "hint", "success"):
@@ -477,7 +480,7 @@ def test_there_is_at_least_one_tutorial():
     assert TUTORIALS
 
 
-@pytest.mark.parametrize("path", TUTORIALS, ids=lambda p: p.stem)
+@pytest.mark.parametrize("path", TUTORIALS, ids=lambda p: f"{p.parent.name}/{p.stem}")
 def test_tutorial_script(path):
     s = load(path)
     for key in ("case_id", "title", "place", "intro", "steps", "conclusion", "reveal"):
@@ -726,3 +729,25 @@ def test_interrogation_validator_rejects(break_it, aneto):
     break_it(inter)
     with pytest.raises((AssertionError, KeyError)):
         check_interrogation(inter, aneto)
+
+
+def _same_shape(en, es, where="script"):
+    """Same keys (in order), list lengths and non-text values; only text may differ."""
+    assert type(en) is type(es), f"{where}: type differs"
+    if isinstance(en, dict):
+        assert list(en) == list(es), f"{where}: keys differ"
+        for k in en:
+            _same_shape(en[k], es[k], f"{where}.{k}")
+    elif isinstance(en, list):
+        assert len(en) == len(es), f"{where}: list length differs"
+        for i, (a, b) in enumerate(zip(en, es)):
+            _same_shape(a, b, f"{where}[{i}]")
+    elif not isinstance(en, str):
+        assert en == es, f"{where}: value differs ({en!r} vs {es!r})"
+
+
+@pytest.mark.parametrize("path", TUTORIALS_ES, ids=lambda p: p.stem)
+def test_spanish_script_matches_english(path):
+    english = ROOT / "data" / "tutorials" / path.name
+    assert english.exists(), f"{path.name}: no English script with the same name"
+    _same_shape(load(english), load(path))

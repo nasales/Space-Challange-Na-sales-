@@ -264,10 +264,6 @@
   align-items: start;
 }
 
-.how-panels--four {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
-}
-
 .how-panel {
   position: relative;
   margin-top: 14px;
@@ -961,7 +957,7 @@
   text-shadow: 2px 2px 0 var(--how-ink);
 }
 
-/* ---- Page 6: big example number ---- */
+/* ---- Big key number ---- */
 .how .how-big {
   margin: 4px 0;
   font-family: var(--how-display);
@@ -986,16 +982,12 @@
   color: var(--how-ink-soft);
 }
 
-/* ---- Page 8: stamped evidence cards ---- */
-.how-tested__lead {
-  font-size: 1.12rem;
-}
-
+/* ---- Stamped evidence cards (key numbers) ---- */
 .how-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
   gap: 22px 18px;
-  margin: 26px 0 0;
+  margin: 24px 0 8px;
   padding: 0;
   list-style: none;
 }
@@ -1083,7 +1075,7 @@
   line-height: 1.4;
 }
 
-/* ---- Page 9: limits as pinned notes, then credits ---- */
+/* ---- Limits as pinned notes, then credits ---- */
 .how-notes {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
@@ -1144,6 +1136,638 @@
 .how .how-credits__data {
   font-size: 0.95rem;
   font-weight: 700;
+  color: var(--how-ink);
+}
+
+/* ---- Chapter 2: the methods and evidence report ---- */
+.how-stack {
+  display: grid;
+  gap: 28px;
+}
+
+.how-stack > .how-cards {
+  margin: 0;
+}
+
+.how-stack > .how-panel {
+  margin-top: 14px;
+}
+
+.how .how-lead {
+  font-size: 1.12rem;
+}
+
+.how .how-intro {
+  max-width: 70ch;
+  margin: 0;
+  font-family: var(--how-type);
+  font-size: 1.05rem;
+  line-height: 1.5;
+}
+
+.how-cards--three {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+}
+
+.how-cards--five {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
+}
+
+.how-cards--five .how-card__value {
+  font-size: 1.9rem;
+}
+
+.how .how-swipe {
+  display: none;
+}
+
+.how-bigs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+  margin-bottom: 10px;
+}
+
+.how .how-big__op {
+  font-family: var(--how-type);
+  font-weight: 700;
+}
+
+/* the rank formulas side by side when there is room */
+.how-eqs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 16px;
+}
+
+.how-eqs > .how-eq {
+  flex: 1 1 220px;
+}
+
+.how-card--src .how-card__value {
+  font-size: 1.9rem;
+}
+
+.how-card--src .how-card__stamp {
+  color: var(--how-blue);
+}
+
+.how-mini-label--red {
+  margin-top: 4px;
+  color: var(--how-red);
+}
+
+/* "The answer, in three parts" */
+.how-parts {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+  counter-reset: how-part;
+}
+
+.how-parts li {
+  position: relative;
+  padding: 8px 12px 8px 50px;
+  border: 3px solid var(--how-ink);
+  background: var(--how-paper);
+  box-shadow: 3px 3px 0 var(--how-ink);
+  counter-increment: how-part;
+}
+
+.how-parts li::before {
+  content: counter(how-part);
+  position: absolute;
+  top: 50%;
+  left: 8px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 3px solid var(--how-ink);
+  border-radius: 50%;
+  background: var(--how-gold);
+  font-family: var(--how-display);
+  font-size: 1.15rem;
+  font-weight: 900;
+  transform: translateY(-50%);
+}
+
+/* 1184 x 6 - 14 = 7090, as a receipt */
+.how-sum {
+  margin: 12px 0 0;
+  padding: 10px 14px;
+  border: 3px dashed var(--how-ink);
+  background: #fff;
+}
+
+.how-sum div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.how-sum dt {
+  font-size: 0.92rem;
+}
+
+.how-sum dd {
+  margin: 0;
+  font-family: var(--how-display);
+  font-size: 1.6rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.how-sum__total {
+  margin-top: 4px;
+  border-top: 3px solid var(--how-ink);
+}
+
+.how-sum__total dt {
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.how-sum__total dd {
+  font-size: 2.2rem;
+  color: var(--how-red);
+  text-shadow: 2px 2px 0 var(--how-ink);
+}
+
+/* p < 0.05 next to the 100 dots */
+.how-verdict {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 3px solid var(--how-ink);
+  background: var(--how-paper);
+}
+
+.how-verdict .how-dots {
+  flex: none;
+  width: 110px;
+  margin: 0;
+}
+
+.how-verdict > div {
+  flex: 1 1 180px;
+}
+
+/* ---- Formulas (MathML) on a small white board; wide ones scroll inside it ---- */
+.how-eq {
+  margin: 10px 0 12px;
+  padding: 10px 12px;
+  border: 3px solid var(--how-ink);
+  background: #fff;
+  box-shadow: 4px 4px 0 var(--how-sea);
+  overflow-x: auto;
+}
+
+.how-eq math {
+  font-size: 1.25rem;
+  color: var(--how-ink);
+}
+
+.how .how-eq__note {
+  margin: 4px 0 0;
+  font-family: var(--how-hand);
+  font-size: 1rem;
+  text-align: center;
+  color: var(--how-ink-soft);
+}
+
+.how-sym {
+  font-family: 'Cambria Math', 'STIX Two Math', 'Latin Modern Math', 'Times New Roman', serif;
+  font-size: 1.08em;
+  font-style: italic;
+}
+
+.how-sym sub {
+  font-size: 0.7em;
+}
+
+/* ---- Real-data figures ---- */
+.how-figure {
+  margin: 0;
+  padding: 16px 16px 12px;
+  border: 4px solid var(--how-ink);
+  background: #fff;
+  box-shadow: var(--how-shadow);
+}
+
+.how-figure__cap {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 2px solid var(--how-ink);
+  font-family: var(--how-type);
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--how-ink-soft);
+}
+
+.how-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+  font-family: var(--how-type);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.how-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.how-legend__dot {
+  width: 13px;
+  height: 13px;
+  border: 2.5px solid var(--how-ink);
+  border-radius: 50%;
+  background: #fff;
+}
+
+.how-legend__dot--up {
+  background: var(--how-red);
+}
+
+.how-legend__dot--down {
+  background: var(--how-blue);
+}
+
+.how-legend__ci {
+  width: 24px;
+  height: 12px;
+  border-inline: 2px solid var(--how-ink);
+  background: linear-gradient(var(--how-ink), var(--how-ink)) center / 100% 2px no-repeat;
+}
+
+.how-legend__zero {
+  width: 0;
+  height: 16px;
+  border-left: 2px dashed var(--how-ink);
+}
+
+.how-legend__box {
+  width: 22px;
+  height: 13px;
+  border: 2px solid var(--how-ink);
+}
+
+.how-legend__box--up {
+  background: var(--how-red);
+}
+
+.how-legend__box--down {
+  background: var(--how-sea);
+}
+
+.how-legend__box--none {
+  background:
+    radial-gradient(circle, var(--how-ink-soft) 0.9px, transparent 1.2px) 0 0 / 4px 4px,
+    #fff;
+}
+
+/* Forest plot: label column + track; the tracks of one panel share their x scale */
+.how-forest__panel {
+  margin: 0 0 18px;
+}
+
+.how-forest__panel:last-child {
+  margin-bottom: 0;
+}
+
+.how-forest__title {
+  margin-bottom: 6px;
+  font-family: var(--how-display);
+  font-size: 1.35rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.how-forest__letter {
+  color: var(--how-red);
+}
+
+.how-forest__row {
+  display: grid;
+  grid-template-columns: minmax(96px, 34%) minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.how-forest__row:nth-child(odd):not(.how-forest__row--axis) {
+  background: rgba(94, 168, 194, 0.13);
+}
+
+.how-forest__label {
+  padding: 2px 0;
+  font-family: var(--how-type);
+  font-size: 0.82rem;
+  line-height: 1.15;
+  text-align: right;
+}
+
+.how-forest__star {
+  margin-left: 2px;
+  font-weight: 700;
+  color: var(--how-red);
+}
+
+.how-forest__track {
+  display: block;
+  width: 100%;
+  height: 28px;
+  overflow: visible;
+}
+
+.how-forest__row--axis .how-forest__track,
+.how-bars__row--axis .how-bars__track {
+  height: 36px;
+}
+
+.how-forest__grid {
+  stroke: rgba(59, 74, 107, 0.15);
+  stroke-width: 1;
+}
+
+.how-forest__zero {
+  stroke: var(--how-ink);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+
+.how-forest__ci line {
+  stroke: var(--how-ink);
+  stroke-width: 2;
+}
+
+.how-forest__dot {
+  stroke: var(--how-ink);
+  stroke-width: 2.5;
+}
+
+.how-forest__dot--up {
+  fill: var(--how-red);
+}
+
+.how-forest__dot--down {
+  fill: var(--how-blue);
+}
+
+.how-forest__dot--open {
+  fill: #fff;
+}
+
+.how-forest__tick,
+.how-forest__unit,
+.how-bars__tick,
+.how-bars__unit {
+  fill: var(--how-ink-soft);
+  font-family: var(--how-type);
+  font-size: 11px;
+}
+
+.how-forest__unit,
+.how-bars__unit {
+  font-weight: 700;
+}
+
+/* Table of the featured series (scrolls sideways inside its own box on phones) */
+.how-table {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 4px solid var(--how-ink);
+  background: #fff;
+  box-shadow: var(--how-shadow);
+}
+
+.how-table:focus-visible {
+  outline: 3px solid var(--how-gold);
+  outline-offset: 3px;
+}
+
+.how-table table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+  font-family: var(--how-type);
+  font-size: 0.88rem;
+  line-height: 1.3;
+}
+
+.how-table th,
+.how-table td {
+  padding: 6px 10px;
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.how-table thead th {
+  background: var(--how-ink);
+  color: var(--how-paper);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.how-table tbody th {
+  min-width: 9em;
+  font-weight: 700;
+  white-space: normal;
+}
+
+.how-table tbody tr {
+  border-top: 1px solid rgba(59, 74, 107, 0.25);
+}
+
+.how-table tbody tr.how-table__first {
+  border-top: 2px solid var(--how-ink);
+}
+
+.how-table abbr {
+  text-decoration: none;
+}
+
+.how-table__num {
+  font-variant-numeric: tabular-nums;
+}
+
+.how-table__yes {
+  font-weight: 700;
+  color: var(--how-red);
+}
+
+/* Stacked bars of the map cells */
+.how-bars__row {
+  display: grid;
+  grid-template-columns: minmax(96px, 30%) minmax(0, 1fr) 4.2em;
+  align-items: center;
+  gap: 10px;
+}
+
+.how-bars__label {
+  font-family: var(--how-type);
+  font-size: 0.85rem;
+  line-height: 1.1;
+  text-align: right;
+}
+
+.how-bars__label small {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--how-ink-soft);
+}
+
+.how-bars__track {
+  display: block;
+  width: 100%;
+  height: 34px;
+  overflow: visible;
+}
+
+.how-bars__none {
+  fill: url(#how-bars-dots);
+}
+
+.how-bars__up {
+  fill: var(--how-red);
+}
+
+.how-bars__down {
+  fill: var(--how-sea);
+}
+
+.how-bars__frame {
+  fill: none;
+  stroke: var(--how-ink);
+  stroke-width: 2;
+}
+
+.how-bars__chance {
+  stroke: var(--how-ink);
+  stroke-width: 2;
+  stroke-dasharray: 4 3;
+}
+
+.how-bars__dot {
+  fill: var(--how-ink-soft);
+}
+
+.how-bars__value {
+  font-family: var(--how-display);
+  font-size: 1.15rem;
+  font-weight: 900;
+}
+
+.how-bars__defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+/* phones: each bar gets the full width, its label goes above it */
+@media (max-width: 560px) {
+  .how .how-swipe {
+    display: block;
+    margin: -14px 0 0;
+  }
+
+  .how-figure {
+    padding: 12px 10px 10px;
+  }
+
+  .how-bars__row {
+    grid-template-columns: minmax(0, 1fr) 3.8em;
+    gap: 0 8px;
+  }
+
+  .how-bars__label {
+    grid-column: 1 / -1;
+    margin-top: 6px;
+    text-align: left;
+  }
+
+  .how-bars__label small {
+    display: inline;
+    margin-left: 6px;
+  }
+
+  .how-bars__row--axis > span:first-child {
+    display: none;
+  }
+
+  .how-bars__track {
+    height: 28px;
+  }
+
+  .how-forest__row {
+    grid-template-columns: minmax(84px, 36%) minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .how-forest__label {
+    font-size: 0.76rem;
+  }
+}
+
+/* ---- References ---- */
+.how-refs {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0 0 0 1.8em;
+  font-family: var(--how-type);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.how-refs li {
+  padding-left: 0.3em;
+}
+
+.how-refs li::marker {
+  font-family: var(--how-display);
+  font-weight: 900;
+  color: var(--how-red);
+}
+
+.how-refs--data {
+  margin: 4px 0 12px;
+  font-size: 0.85rem;
+}
+
+.how-refs__link {
+  color: var(--how-blue);
+  overflow-wrap: anywhere;
+}
+
+.how-refs__link:hover {
+  color: var(--how-red);
+}
+
+.how-refs__link:focus-visible {
+  outline: 3px solid var(--how-gold);
+  outline-offset: 2px;
+}
+
+.how-credits code {
+  padding: 0 4px;
+  background: rgba(22, 27, 46, 0.08);
+  font-family: var(--how-type);
   color: var(--how-ink);
 }
 

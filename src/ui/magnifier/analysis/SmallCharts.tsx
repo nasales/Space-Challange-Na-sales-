@@ -8,6 +8,7 @@
 import type { CSSProperties } from 'react'
 import { MONTH_NAMES, fmt, fmtSigned, fmtTick, mean, niceTicks, yearTicks, type AnnualMean, type SeasonalComparison } from './analysis'
 import ChartBox from './ChartBox'
+import { L, LANG } from '../../../shared/i18n'
 import { extremes, linePath, scale, type Frame } from './chartKit'
 
 function YAxis({ frame, ticks, sy, units }: { frame: Frame; ticks: ReturnType<typeof niceTicks>; sy: (v: number) => number; units: string }) {
@@ -34,12 +35,22 @@ function YAxis({ frame, ticks, sy, units }: { frame: Frame; ticks: ReturnType<ty
 export function SeasonalChart({ cmp, units, title }: { cmp: SeasonalComparison | null; units: string; title: string }) {
   const nums = cmp ? [...cmp.first.months, ...cmp.last.months].filter((v): v is number => v != null) : []
   if (!cmp || nums.length === 0) {
-    return <p className="clue-result__empty">The record is too short to compare its first and last years.</p>
+    return (
+      <p className="clue-result__empty">
+        {L(
+          'The record is too short to compare its first and last years.',
+          'La serie es demasiado corta para comparar sus primeros y últimos años.',
+        )}
+      </p>
+    )
   }
   const diff = cmp.first.mean != null && cmp.last.mean != null ? cmp.last.mean - cmp.first.mean : null
   const label =
-    `Seasonal cycle of ${title} in ${units}: average of each calendar month in ${cmp.first.label} and in ${cmp.last.label}.` +
-    (diff != null ? ` The last period is ${fmtSigned(diff)} ${units} compared with the first, on average.` : '')
+    LANG === 'es'
+      ? `Ciclo estacional de ${title} en ${units}: media de cada mes del año en ${cmp.first.label} y en ${cmp.last.label}.` +
+        (diff != null ? ` El último periodo está ${fmtSigned(diff)} ${units} respecto al primero, de media.` : '')
+      : `Seasonal cycle of ${title} in ${units}: average of each calendar month in ${cmp.first.label} and in ${cmp.last.label}.` +
+        (diff != null ? ` The last period is ${fmtSigned(diff)} ${units} compared with the first, on average.` : '')
 
   return (
     <ChartBox>
@@ -104,15 +115,25 @@ const annualOverall = (annual: AnnualMean[]) => mean(annual.map((a) => a.mean))
 export function AnnualChart({ annual, units, title }: { annual: AnnualMean[]; units: string; title: string }) {
   const overall = annualOverall(annual)
   if (annual.length < 2 || overall == null) {
-    return <p className="clue-result__empty">Not enough complete years (10 months or more) to draw yearly averages.</p>
+    return (
+      <p className="clue-result__empty">
+        {L(
+          'Not enough complete years (10 months or more) to draw yearly averages.',
+          'No hay años completos suficientes (10 meses o más) para dibujar medias anuales.',
+        )}
+      </p>
+    )
   }
   const first = annual[0].year
   const last = annual[annual.length - 1].year
   const values = annual.map((a) => a.mean)
   const above = annual.filter((a) => a.mean > overall).length
   const label =
-    `Bar chart of the yearly average of ${title} in ${units}, ${first} to ${last}. ` +
-    `${above} of ${annual.length} years are above the average of all years (${fmt(overall)} ${units}).`
+    LANG === 'es'
+      ? `Gráfico de barras de la media anual de ${title} en ${units}, de ${first} a ${last}. ` +
+        `${above} de ${annual.length} años están por encima de la media de todos los años (${fmt(overall)} ${units}).`
+      : `Bar chart of the yearly average of ${title} in ${units}, ${first} to ${last}. ` +
+        `${above} of ${annual.length} years are above the average of all years (${fmt(overall)} ${units}).`
 
   return (
     <ChartBox>
@@ -153,8 +174,9 @@ export function AnnualChart({ annual, units, title }: { annual: AnnualMean[]; un
               const ex = extremes(values)
               if (!ex || ex.hi === ex.lo) return null
               return [
-                { a: annual[ex.hi], word: 'Highest', up: true },
-                { a: annual[ex.lo], word: 'Lowest', up: false },
+                { a: annual[ex.hi], word: L('Highest', 'Máximo'), up: true },
+                { a: annual[ex.lo], word: L('Lowest', 'Mínimo'), up: false },
+
               ].map(({ a, word, up }) => {
                 const x = sx(a.year)
                 const barEnd = sy(a.mean)

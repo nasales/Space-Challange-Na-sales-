@@ -3,10 +3,14 @@
 // case file works offline and never calls a live API. Each file is a separate lazy chunk.
 import type { TutorialData, TutorialScript } from '../../shared/tutorial'
 import { fixText } from './format'
+import { L, LANG } from '../../shared/i18n'
+import { CASE_VARIABLE_NAMES_ES, CASES_ES } from '../../shared/casesEs'
 
 type Lazy<T> = Record<string, () => Promise<T>>
 
 const scripts: Lazy<TutorialScript> = import.meta.glob<TutorialScript>('/data/tutorials/*.json', { import: 'default' })
+// Spanish story scripts (same structure as the English ones), used when the language is Spanish
+const scriptsEs: Lazy<TutorialScript> = import.meta.glob<TutorialScript>('/data/tutorials/es/*.json', { import: 'default' })
 const datas: Lazy<TutorialData> = import.meta.glob<TutorialData>('/data/tutorial_data/*.json', { import: 'default' })
 
 // Case titles for the "near case" hint (small file, bundled with the hint).
@@ -18,6 +22,7 @@ const caseIndex =
   Object.values(import.meta.glob<CaseIndexEntry[]>('/data/cases_index.json', { eager: true, import: 'default' }))[0] ?? []
 
 export function caseTitle(caseId: string): string {
+  if (LANG === 'es' && CASES_ES[caseId]) return CASES_ES[caseId].title
   return caseIndex.find((c) => c.id === caseId)?.title ?? caseId
 }
 
@@ -52,9 +57,11 @@ export function hasTutorial(caseId: string): boolean {
 function cleanData(data: TutorialData): TutorialData {
   const variables: TutorialData['variables'] = {}
   for (const [key, s] of Object.entries(data.variables ?? {})) {
-    variables[key] = { ...s, name: fixText(s.name ?? key), units: fixText(s.units ?? ''), dataset: fixText(s.dataset ?? '') }
+    const nameEs = LANG === 'es' ? CASE_VARIABLE_NAMES_ES[s.variable ?? key] ?? CASE_VARIABLE_NAMES_ES[key] : undefined
+    variables[key] = { ...s, name: nameEs ?? fixText(s.name ?? key), units: fixText(s.units ?? ''), dataset: fixText(s.dataset ?? '') }
   }
-  return { ...data, place: fixText(data.place ?? ''), variables }
+  const placeEs = LANG === 'es' ? CASES_ES[data.case_id]?.place : undefined
+  return { ...data, place: placeEs ?? fixText(data.place ?? ''), variables }
 }
 
 export interface LoadedTutorial {
@@ -63,10 +70,11 @@ export interface LoadedTutorial {
 }
 
 export async function loadTutorial(caseId: string): Promise<LoadedTutorial> {
-  const script = scripts[`${SCRIPT_DIR}${caseId}.json`]
+  // Spanish script when the language is Spanish and it exists; otherwise the English one
+  const script = (LANG === 'es' ? scriptsEs[`${SCRIPT_DIR}es/${caseId}.json`] : undefined) ?? scripts[`${SCRIPT_DIR}${caseId}.json`]
   const data = datas[`${DATA_DIR}${caseId}.json`]
   if (!script || !data) {
-    throw new Error(`The case file "${caseId}" is not ready yet.`)
+    throw new Error(L(`The case file "${caseId}" is not ready yet.`, `El expediente "${caseId}" aún no está listo.`))
   }
   const [s, d] = await Promise.all([script(), data()])
   return { script: s, data: cleanData(d) }

@@ -8,6 +8,7 @@ import type { GuideCue, HudState, LensFocusState } from '../../shared/events'
 import type { GuideAnchorStore } from './anchor'
 import { GUIDE_NAME, GUIDE_ROLE, GUIDE_STEPS, type GuideStep } from './guideSteps'
 import RobotFace from './RobotFace'
+import { L } from '../../shared/i18n'
 import './Guide.css'
 
 /** Milliseconds per character of the typewriter */
@@ -201,23 +202,23 @@ function GuideStepBox({ step, index, total, anchors, onCue, onNext, onSkip, hud,
                 </span>
                 <span>{step.action}</span>
                 <span className="guide-tour__tick" aria-live="polite">
-                  {reached ? 'Done!' : ''}
+                  {reached ? L('Done!', '¡Hecho!') : ''}
                 </span>
               </p>
             )}
           </div>
           <div className="guide-tour__footer">
             <button type="button" className="guide-button guide-button--small" onMouseDown={noFocus} onClick={onSkip}>
-              Skip tutorial
+              {L('Skip tutorial', 'Saltar tutorial')}
             </button>
-            <span className="guide-tour__progress" aria-label={`Step ${index + 1} of ${total}`}>
+            <span className="guide-tour__progress" aria-label={L(`Step ${index + 1} of ${total}`, `Paso ${index + 1} de ${total}`)}>
               {Array.from({ length: total }, (_, i) => (
                 <i key={i} className={i < index ? 'is-past' : i === index ? 'is-now' : ''} />
               ))}
             </span>
             {canNext && (
               <button type="button" className="guide-button guide-button--small guide-button--main" onMouseDown={noFocus} onClick={advance}>
-                {index + 1 >= total ? 'Finish' : 'Next'} <kbd>Enter</kbd>
+                {index + 1 >= total ? L('Finish', 'Terminar') : L('Next', 'Siguiente')} <kbd>Enter</kbd>
               </button>
             )}
           </div>

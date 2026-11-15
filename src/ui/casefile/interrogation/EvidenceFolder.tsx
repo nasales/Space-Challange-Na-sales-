@@ -9,6 +9,7 @@ import { fixText } from '../format'
 import { VERDICTS, VERDICT_LABEL, verdictHint } from './labels'
 import SuspectArt from './SuspectArt'
 import { InterrogationTaskView } from './tasks'
+import { L } from '../../../shared/i18n'
 
 interface Props {
   evidence: InterrogationEvidence
@@ -47,15 +48,15 @@ export default function EvidenceFolder({ evidence, n, suspect, suspectN, data, s
     <div className="ixfolder" role="dialog" aria-modal="true" aria-labelledby={`ixfolder-title-${evidence.id}`}>
       <div className="ixfolder__sheet">
         <span className="ixfolder__tab" aria-hidden="true">
-          Evidence {n}
+          {L(`Evidence ${n}`, `Prueba ${n}`)}
         </span>
         <button type="button" className="ixfolder__close" onClick={onClose}>
-          Back to the table <kbd>Esc</kbd>
+          {L('Back to the table', 'Volver a la mesa')} <kbd>Esc</kbd>
         </button>
 
         <div className="ixfolder__side">
           <p className="ixfolder__kind">
-            Folder {n} · to put to {suspect.name}
+            {L(`Folder ${n} · to put to ${suspect.name}`, `Carpeta ${n} · para presentar a ${suspect.name}`)}
           </p>
           <h2 id={`ixfolder-title-${evidence.id}`} className="ixfolder__title" ref={headingRef} tabIndex={-1}>
             {evidence.title}
@@ -69,7 +70,9 @@ export default function EvidenceFolder({ evidence, n, suspect, suspectN, data, s
             </div>
             <figcaption>
               <b>{suspect.name}</b>
-              <span>Alibi: &ldquo;{fixText(suspect.alibi)}&rdquo;</span>
+              <span>
+                {L('Alibi:', 'Coartada:')} &ldquo;{fixText(suspect.alibi)}&rdquo;
+              </span>
             </figcaption>
           </figure>
         </div>
@@ -79,12 +82,12 @@ export default function EvidenceFolder({ evidence, n, suspect, suspectN, data, s
 
           {solved && (
             <div className="ixconfront" ref={confrontRef}>
-              <h3 className="ixconfront__title">Confront {suspect.name}</h3>
+              <h3 className="ixconfront__title">{L(`Confront ${suspect.name}`, `Enfréntate a ${suspect.name}`)}</h3>
               <p className="ixconfront__alibi">
-                <span>{suspect.name} says:</span> &ldquo;{fixText(suspect.alibi)}&rdquo;
+                <span>{L(`${suspect.name} says:`, `${suspect.name} dice:`)}</span> &ldquo;{fixText(suspect.alibi)}&rdquo;
               </p>
-              <p className="ixconfront__ask">What does this evidence do to the alibi?</p>
-              <div className="ixconfront__choices" role="group" aria-label="What this evidence does to the alibi">
+              <p className="ixconfront__ask">{L('What does this evidence do to the alibi?', '¿Qué le hace esta prueba a la coartada?')}</p>
+              <div className="ixconfront__choices" role="group" aria-label={L('What this evidence does to the alibi', 'Qué le hace esta prueba a la coartada')}>
                 {VERDICTS.map((v) => (
                   <button
                     key={v}
@@ -101,20 +104,20 @@ export default function EvidenceFolder({ evidence, n, suspect, suspectN, data, s
               <div aria-live="polite">
                 {pick && !right && (
                   <p key={pick.n} className="evtask__feedback evtask__feedback--wrong">
-                    <b>{suspect.name} smiles.</b> {verdictHint(pick.v, evidence.verdict)} Try again.
+                    <b>{L(`${suspect.name} smiles.`, `${suspect.name} sonríe.`)}</b> {verdictHint(pick.v, evidence.verdict)} {L('Try again.', 'Inténtalo de nuevo.')}
                   </p>
                 )}
                 {right && (
                   <div className="ixconfront__done">
                     <p className="evtask__feedback evtask__feedback--right">
                       {!confronted && <Burst />}
-                      <b>Right call.</b> {fixText(evidence.verdict_feedback)}
+                      <b>{L('Right call.', 'Bien visto.')}</b> {fixText(evidence.verdict_feedback)}
                     </p>
                     <p className="evlink__clue">
-                      <span>Clue for the notebook</span> {fixText(evidence.clue)}
+                      <span>{L('Clue for the notebook', 'Pista para la libreta')}</span> {fixText(evidence.clue)}
                     </p>
                     <button type="button" className="evbtn evbtn--primary evbtn--big" onClick={confronted ? onClose : onConfront} autoFocus>
-                      {confronted ? 'Back to the table' : 'File it'}
+                      {confronted ? L('Back to the table', 'Volver a la mesa') : L('File it', 'Archivarla')}
                     </button>
                   </div>
                 )}

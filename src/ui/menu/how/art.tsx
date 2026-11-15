@@ -3,6 +3,7 @@
 // always shown inside <Illustration>, which labels them as made-up.
 import type { ReactNode } from 'react'
 import { ANOMALIES, ODD_INDEX, SCATTER, SEASONAL, SEN, STICKY, WHITENED } from './demoData'
+import { L } from '../../../shared/i18n'
 
 const W = 300
 
@@ -10,7 +11,7 @@ const W = 300
 export function Illustration({ children, note }: { children: ReactNode; note?: string }) {
   return (
     <figure className="how-fig">
-      <span className="how-fig__tag">Illustration</span>
+      <span className="how-fig__tag">{L('Illustration', 'Ilustración')}</span>
       {children}
       {note && <figcaption className="how-fig__note">{note}</figcaption>}
     </figure>
@@ -44,7 +45,7 @@ export function LineChart({ values, label, height = 110, zero = false, tone = 'i
 }
 
 export function SeasonalChart() {
-  return <LineChart values={SEASONAL} label="Made-up monthly temperatures: a big up-and-down wave every year" />
+  return <LineChart values={SEASONAL} label={L('Made-up monthly temperatures: a big up-and-down wave every year', 'Temperaturas mensuales inventadas: una gran ola de subidas y bajadas cada año')} />
 }
 
 export function AnomalyChart() {
@@ -53,7 +54,10 @@ export function AnomalyChart() {
       values={ANOMALIES}
       zero
       tone="red"
-      label="The same made-up values as anomalies: small wiggles around zero, with the yearly wave gone"
+      label={L(
+        'The same made-up values as anomalies: small wiggles around zero, with the yearly wave gone',
+        'Los mismos valores inventados como anomalías: pequeñas oscilaciones en torno a cero, sin la ola anual',
+      )}
     />
   )
 }
@@ -67,7 +71,10 @@ export function StickyChart() {
       height={90}
       zero
       range={stickyRange}
-      label="Made-up series with no trend whose months lean on each other: it drifts and looks like a trend"
+      label={L(
+        'Made-up series with no trend whose months lean on each other: it drifts and looks like a trend',
+        'Serie inventada sin tendencia cuyos meses se apoyan unos en otros: se desvía y parece una tendencia',
+      )}
     />
   )
 }
@@ -80,7 +87,10 @@ export function WhitenedChart() {
       zero
       tone="blue"
       range={stickyRange}
-      label="The same series after pre-whitening: quick jumps around zero, no fake drift"
+      label={L(
+        'The same series after pre-whitening: quick jumps around zero, no fake drift',
+        'La misma serie tras el preblanqueo: saltos rápidos en torno a cero, sin desvío falso',
+      )}
     />
   )
 }
@@ -105,7 +115,10 @@ export function SenScatter() {
   ]
   const odd = SCATTER[ODD_INDEX]
   return (
-    <svg className="how-chart" viewBox={`0 0 ${W} ${h}`} role="img" aria-label="Made-up yearly points with lines between pairs of points and the Sen trend line; one odd year sits far below the rest">
+    <svg className="how-chart" viewBox={`0 0 ${W} ${h}`} role="img" aria-label={L(
+        'Made-up yearly points with lines between pairs of points and the Sen trend line; one odd year sits far below the rest',
+        'Puntos anuales inventados con líneas entre pares de puntos y la recta de tendencia de Sen; un año raro queda muy por debajo del resto',
+      )}>
       {pairs.map(([a, b]) => (
         <line key={`${a}-${b}`} className="how-chart__pair" x1={x(SCATTER[a].x)} y1={y(SCATTER[a].y)} x2={x(SCATTER[b].x)} y2={y(SCATTER[b].y)} />
       ))}
@@ -122,7 +135,7 @@ export function SenScatter() {
       ))}
       <circle className="how-chart__odd" cx={x(odd.x)} cy={y(odd.y)} r={11} />
       <text className="how-chart__text how-chart__text--red" x={x(odd.x) - 16} y={y(odd.y) + 3} textAnchor="end">
-        odd year
+        {L('odd year', 'año raro')}
       </text>
     </svg>
   )
@@ -132,7 +145,7 @@ export function SenScatter() {
 export function DotGrid100() {
   const red = new Set([13, 37, 58, 72, 96])
   return (
-    <svg className="how-dots" viewBox="0 0 200 200" role="img" aria-label="A grid of 100 dots with 5 of them highlighted in red">
+    <svg className="how-dots" viewBox="0 0 200 200" role="img" aria-label={L('A grid of 100 dots with 5 of them highlighted in red', 'Una cuadrícula de 100 puntos con 5 de ellos marcados en rojo')}>
       {Array.from({ length: 100 }, (_, i) => (
         <circle
           key={i}
@@ -157,17 +170,17 @@ export function SlopeFan() {
   const hi = 0.38
   const pt = (s: number, dir: 1 | -1) => `${cx + dir * run},${cy - dir * s * run}`
   return (
-    <svg className="how-chart" viewBox={`0 0 ${W} ${h}`} role="img" aria-label="A trend line with a shaded fan showing the range of likely slopes">
+    <svg className="how-chart" viewBox={`0 0 ${W} ${h}`} role="img" aria-label={L('A trend line with a shaded fan showing the range of likely slopes', 'Una recta de tendencia con un abanico sombreado que muestra el rango de pendientes probables')}>
       <polygon className="how-chart__band" points={`${pt(hi, -1)} ${cx},${cy} ${pt(lo, -1)}`} />
       <polygon className="how-chart__band" points={`${pt(lo, 1)} ${cx},${cy} ${pt(hi, 1)}`} />
       <line className="how-chart__edge" x1={cx - run} y1={cy + hi * run} x2={cx + run} y2={cy - hi * run} />
       <line className="how-chart__edge" x1={cx - run} y1={cy + lo * run} x2={cx + run} y2={cy - lo * run} />
       <line className="how-chart__trend" x1={cx - run} y1={cy + mid * run} x2={cx + run} y2={cy - mid * run} />
       <text className="how-chart__text" x={cx + run} y={cy - hi * run - 6} textAnchor="end">
-        steepest likely
+        {L('steepest likely', 'la más empinada probable')}
       </text>
       <text className="how-chart__text" x={cx + run} y={cy - lo * run + 16} textAnchor="end">
-        gentlest likely
+        {L('gentlest likely', 'la más suave probable')}
       </text>
     </svg>
   )
@@ -177,7 +190,7 @@ export function SlopeFan() {
 export function MonthRuler() {
   const block = 27
   return (
-    <svg className="how-ruler" viewBox="0 0 300 52" role="img" aria-label="A ruler of 10 years, each with 12 month ticks: 120 months">
+    <svg className="how-ruler" viewBox="0 0 300 52" role="img" aria-label={L('A ruler of 10 years, each with 12 month ticks: 120 months', 'Una regla de 10 años, cada uno con 12 marcas de mes: 120 meses')}>
       {Array.from({ length: 10 }, (_, yr) => (
         <g key={yr} transform={`translate(${10 + yr * block} 6)`}>
           <rect className={yr % 2 ? 'how-ruler__year how-ruler__year--alt' : 'how-ruler__year'} width={block} height={22} />
@@ -187,10 +200,10 @@ export function MonthRuler() {
         </g>
       ))}
       <text className="how-ruler__text" x={10} y={46}>
-        year 1
+        {L('year 1', 'año 1')}
       </text>
       <text className="how-ruler__text" x={290} y={46} textAnchor="end">
-        year 10 = 120 months
+        {L('year 10 = 120 months', 'año 10 = 120 meses')}
       </text>
     </svg>
   )
@@ -224,7 +237,10 @@ export function SpainGrid() {
   cells.push(...ISLANDS)
   const bars = [3, 4, 6, 8, 10, 13, 15, 14, 11, 8, 5, 3]
   return (
-    <svg className="how-grid" viewBox="0 0 300 150" role="img" aria-label="Spain drawn as a grid of squares, one square picked, with twelve bars for its twelve monthly values">
+    <svg className="how-grid" viewBox="0 0 300 150" role="img" aria-label={L(
+        'Spain drawn as a grid of squares, one square picked, with twelve bars for its twelve monthly values',
+        'España dibujada como una cuadrícula, con un cuadrado elegido y doce barras para sus doce valores mensuales',
+      )}>
       <g transform="translate(4 8)">
         {cells.map(([col, r]) => {
           const picked = col === PICKED[0] && r === PICKED[1]
@@ -247,14 +263,14 @@ export function SpainGrid() {
           <rect key={i} className="how-grid__bar" x={5 + i * 5} y={50 - b * 2.6} width={4} height={b * 2.6} />
         ))}
         <text className="how-grid__text" x={35} y={60} textAnchor="middle">
-          12 months
+          {L('12 months', '12 meses')}
         </text>
       </g>
       <text className="how-grid__text how-grid__text--big" x={226} y={30}>
         ~28 km
       </text>
       <text className="how-grid__text" x={226} y={44}>
-        per square
+        {L('per square', 'por cuadrado')}
       </text>
     </svg>
   )
@@ -375,7 +391,7 @@ export function IconStamp(props: IconProps) {
       <path className="how-icon__fill-ink-soft" d="M26 6h12v14l8 8v8H18v-8l8-8z" />
       <rect className="how-icon__fill-paper" x={10} y={42} width={44} height={16} transform="rotate(-6 32 50)" />
       <text className="how-icon__stamp" x={32} y={54} textAnchor="middle" transform="rotate(-6 32 50)">
-        CHECK
+        {L('CHECK', 'VISTO')}
       </text>
     </Icon>
   )

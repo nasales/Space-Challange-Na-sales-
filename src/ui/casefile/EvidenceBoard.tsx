@@ -18,6 +18,7 @@ import { fixText } from './format'
 import { useKeyShield } from './keys'
 import type { LoadedTutorial } from './loader'
 import Notebook, { type NotebookClue } from './Notebook'
+import { L } from '../../shared/i18n'
 import './CaseFile.css'
 import './board/EvidenceBoard.css'
 
@@ -144,24 +145,24 @@ export default function EvidenceBoard({ tutorial, witness, onClose, onFinished }
 
   const slots = SLOTS[Math.max(1, items.length)] ?? SLOTS[6]
   const openItem = items.find((i) => i.id === open) ?? null
-  const progress = `${linked.length} / ${items.length} linked`
+  const progress = L(`${linked.length} / ${items.length} linked`, `${linked.length} / ${items.length} enlazadas`)
 
   if (!board) return null
 
   return (
-    <dialog ref={dialogRef} className="evboard" aria-label={`Evidence board: ${board.title}`} onCancel={(e) => e.preventDefault()}>
+    <dialog ref={dialogRef} className="evboard" aria-label={L(`Evidence board: ${board.title}`, `Tablón de pruebas: ${board.title}`)} onCancel={(e) => e.preventDefault()}>
       <div className="evboard__layout">
         <div className="evboard__main">
           <header className="evboard__head">
             <div className="evboard__titles">
-              <p className="evboard__label">Evidence board · {script.title}</p>
+              <p className="evboard__label">{L(`Evidence board · ${script.title}`, `Tablón de pruebas · ${script.title}`)}</p>
               <h1 className="evboard__title">{board.title}</h1>
             </div>
             {allLinked && view === 'board' ? (
               <div className="evboard__instructions evboard__instructions--done">
-                <span>Every card is linked. Time to decide.</span>
+                <span>{L('Every card is linked. Time to decide.', 'Todas las tarjetas están enlazadas. Hora de decidir.')}</span>
                 <button type="button" className="evbtn evbtn--primary" onClick={() => setView('summary')}>
-                  See the whole picture
+                  {L('See the whole picture', 'Ver el panorama completo')}
                 </button>
               </div>
             ) : (
@@ -177,7 +178,7 @@ export default function EvidenceBoard({ tutorial, witness, onClose, onFinished }
                 {progress}
               </p>
               <button type="button" className="evbtn evbtn--leave" onClick={() => setConfirming(true)}>
-                Leave case <kbd>Esc</kbd>
+                {L('Leave case', 'Dejar el caso')} <kbd>Esc</kbd>
               </button>
             </div>
           </header>
@@ -204,19 +205,19 @@ export default function EvidenceBoard({ tutorial, witness, onClose, onFinished }
                       <small>{witness.role}</small>
                     </>
                   ) : (
-                    'The witness'
+                    L('The witness', 'El testigo')
                   )}
                 </figcaption>
               </figure>
               <div className="evclaim">
                 <span className="evpin evpin--claim" ref={claimPinRef} aria-hidden="true" />
-                <p className="evclaim__label">The claim</p>
+                <p className="evclaim__label">{L('The claim', 'La afirmación')}</p>
                 <blockquote className="evclaim__text">&ldquo;{claim ?? script.intro.question}&rdquo;</blockquote>
                 {linked.length > 0 && <ClaimTally items={items} linked={linked} />}
               </div>
               {linked.length === 0 && (
                 <p className="evboard__start" aria-hidden="true">
-                  Pick a card to start
+                  {L('Pick a card to start', 'Elige una tarjeta para empezar')}
                 </p>
               )}
             </div>
@@ -246,7 +247,7 @@ export default function EvidenceBoard({ tutorial, witness, onClose, onFinished }
           </div>
         </div>
 
-        <Notebook claim={claim} witnessName={witness?.name} clues={clues} total={items.length} emptyText="Link each card to the claim to note a clue here." />
+        <Notebook claim={claim} witnessName={witness?.name} clues={clues} total={items.length} emptyText={L('Link each card to the claim to note a clue here.', 'Enlaza cada tarjeta con la afirmación para anotar aquí una pista.')} />
       </div>
 
       {openItem && (
@@ -270,18 +271,18 @@ export default function EvidenceBoard({ tutorial, witness, onClose, onFinished }
         <div className="evboard__dim evboard__dim--light">
           <section className="evsummary" role="dialog" aria-modal="true" aria-labelledby="evsummary-title">
             <span className="evpin evpin--focus" aria-hidden="true" />
-            <p className="evsummary__label">Every card is linked</p>
+            <p className="evsummary__label">{L('Every card is linked', 'Todas las tarjetas están enlazadas')}</p>
             <h2 id="evsummary-title" className="evsummary__title" tabIndex={-1} ref={(el) => el?.focus({ preventScroll: true })}>
-              The whole picture
+              {L('The whole picture', 'El panorama completo')}
             </h2>
             <p className="evsummary__text">{fixText(board.summary)}</p>
             <ClaimTally items={items} linked={linked} wide />
             <div className="evsummary__nav">
               <button type="button" className="evbtn" onClick={() => setView('board')}>
-                Look at the board
+                {L('Look at the board', 'Mirar el tablón')}
               </button>
               <button type="button" className="evbtn evbtn--primary evbtn--big" onClick={() => onFinished(clues)}>
-                Close the case
+                {L('Close the case', 'Cerrar el caso')}
               </button>
             </div>
           </section>
@@ -291,13 +292,13 @@ export default function EvidenceBoard({ tutorial, witness, onClose, onFinished }
       {confirming && (
         <div className="evboard__dim evboard__dim--light">
           <div className="evconfirm" role="alertdialog" aria-labelledby="evconfirm-text">
-            <p id="evconfirm-text">Leave this case? Your answers in this case will be lost.</p>
+            <p id="evconfirm-text">{L('Leave this case? Your answers in this case will be lost.', '¿Dejar este caso? Perderás tus respuestas de este caso.')}</p>
             <div className="evsummary__nav">
               <button type="button" className="evbtn" onClick={() => setConfirming(false)} autoFocus>
-                Keep investigating
+                {L('Keep investigating', 'Seguir investigando')}
               </button>
               <button type="button" className="evbtn evbtn--danger" onClick={onClose}>
-                Back to the map
+                {L('Back to the map', 'Volver al mapa')}
               </button>
             </div>
           </div>
@@ -330,7 +331,7 @@ function BoardCard({
   refPin: (el: HTMLSpanElement | null) => void
   onOpen: () => void
 }) {
-  const state = linked ? 'linked' : solved ? 'solved, not linked yet' : 'face down'
+  const state = linked ? L('linked', 'enlazada') : solved ? L('solved, not linked yet', 'resuelta, aún sin enlazar') : L('face down', 'boca abajo')
   return (
     <div
       className={`evcard evcard--${item.kind}${linked ? ' is-up' : ''}${fresh ? ' is-fresh' : ''}`}
@@ -342,14 +343,17 @@ function BoardCard({
         ref={refCard}
         className="evcard__btn"
         onClick={onOpen}
-        aria-label={`Evidence ${n}, ${KIND_LABEL[item.kind]}: ${linked ? item.title : item.teaser}. ${state}${linked ? `, ${RELATION_TAG[item.relation].toLowerCase()}` : ''}.`}
+        aria-label={L(
+          `Evidence ${n}, ${KIND_LABEL[item.kind]}: ${linked ? item.title : item.teaser}. ${state}${linked ? `, ${RELATION_TAG[item.relation].toLowerCase()}` : ''}.`,
+          `Prueba ${n}, ${KIND_LABEL[item.kind]}: ${linked ? item.title : item.teaser}. ${state}${linked ? `, ${RELATION_TAG[item.relation].toLowerCase()}` : ''}.`,
+        )}
       >
         <span className="evcard__inner" aria-hidden="true">
           <span className="evcard__face evcard__face--down">
             <span className="evcard__num">#{n}</span>
             <KindIcon kind={item.kind} />
             <span className="evcard__teaser">{fixText(item.teaser)}</span>
-            {solved && !linked ? <span className="evcard__stamp">Solved · link it</span> : <span className="evcard__open">Open</span>}
+            {solved && !linked ? <span className="evcard__stamp">{L('Solved · link it', 'Resuelta · enlázala')}</span> : <span className="evcard__open">{L('Open', 'Abrir')}</span>}
           </span>
           <span className="evcard__face evcard__face--up">
             <span className="evcard__num">#{n}</span>
@@ -391,7 +395,7 @@ function ClaimTally({ items, linked, wide }: { items: EvidenceItem[]; linked: st
   const count = (rel: EvidenceRelation) => linked.filter((id) => items.find((i) => i.id === id)?.relation === rel).length
   const parts: [EvidenceRelation, number][] = (['supports', 'contradicts', 'neutral'] as EvidenceRelation[]).map((r) => [r, count(r)])
   return (
-    <ul className={`evclaim__tally${wide ? ' evclaim__tally--wide' : ''}`} aria-label="Links so far">
+    <ul className={`evclaim__tally${wide ? ' evclaim__tally--wide' : ''}`} aria-label={L('Links so far', 'Enlaces hasta ahora')}>
       {parts.map(([rel, c]) => (
         <li key={rel} className={`evtag evtag--${rel}${c === 0 ? ' is-zero' : ''}`}>
           {c} · {RELATION_TAG[rel]}

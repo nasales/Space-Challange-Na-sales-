@@ -19,6 +19,7 @@ import Notebook, { type NotebookClue } from './Notebook'
 import { Gavel, Lawyer, Scales, SoundBlock } from './trial/art'
 import ExhibitView from './trial/ExhibitView'
 import { RULING_STAMP, SIDE_LABEL, SIDE_ROLE, VERDICT_LABEL, letterOf } from './trial/labels'
+import { L } from '../../shared/i18n'
 import './CaseFile.css'
 import './board/EvidenceBoard.css'
 import './trial/Trial.css'
@@ -86,12 +87,12 @@ export default function Trial({ tutorial, witness, onClose, onFinished }: Props)
   const openEx = open != null ? exhibits[open] : null
 
   return (
-    <dialog ref={dialogRef} className="trial" aria-label={`Courtroom: ${trial.title}`} onCancel={(e) => e.preventDefault()}>
+    <dialog ref={dialogRef} className="trial" aria-label={L(`Courtroom: ${trial.title}`, `Sala del tribunal: ${trial.title}`)} onCancel={(e) => e.preventDefault()}>
       <div className="trial__layout">
         <div className="trial__main">
           <header className="trial__head">
             <div className="trial__titles">
-              <p className="trial__label">In court · {script.title}</p>
+              <p className="trial__label">{L(`In court · ${script.title}`, `En el tribunal · ${script.title}`)}</p>
               <h1 className="trial__title">{fixText(trial.title)}</h1>
             </div>
             <div className="trial__charge">
@@ -101,12 +102,14 @@ export default function Trial({ tutorial, witness, onClose, onFinished }: Props)
                 </span>
               )}
               <p>
-                <span className="trial__charge-label">The charge{witness ? `, brought by ${witness.name}` : ''}</span>
+                <span className="trial__charge-label">
+                  {witness ? L(`The charge, brought by ${witness.name}`, `La acusación, presentada por ${witness.name}`) : L('The charge', 'La acusación')}
+                </span>
                 <span className="trial__charge-text">&ldquo;{fixText(trial.charge)}&rdquo;</span>
               </p>
             </div>
             <button type="button" className="evbtn evbtn--leave" onClick={() => setConfirming(true)}>
-              Leave case <kbd>Esc</kbd>
+              {L('Leave case', 'Dejar el caso')} <kbd>Esc</kbd>
             </button>
           </header>
 
@@ -135,18 +138,20 @@ export default function Trial({ tutorial, witness, onClose, onFinished }: Props)
                     className={`trplacard trplacard--${current.side}${current.kind === 'missing' ? ' trplacard--missing' : ''}`}
                     onClick={() => setOpen(heard)}
                   >
-                    <span className="trplacard__letter">Exhibit {letterOf(heard)}</span>
+                    <span className="trplacard__letter">{L(`Exhibit ${letterOf(heard)}`, `Prueba ${letterOf(heard)}`)}</span>
                     <span className="trplacard__title">{fixText(current.title)}</span>
                     <span className="trplacard__teaser">{fixText(current.teaser)}</span>
-                    <span className="trplacard__by">Presented by the {SIDE_LABEL[current.side].toLowerCase()}</span>
-                    <span className="trplacard__open">{solved.has(current.id) ? 'Rule on it' : 'Examine it'}</span>
+                    <span className="trplacard__by">
+                      {L(`Presented by the ${SIDE_LABEL[current.side].toLowerCase()}`, `Presentada por la ${SIDE_LABEL[current.side].toLowerCase()}`)}
+                    </span>
+                    <span className="trplacard__open">{solved.has(current.id) ? L('Rule on it', 'Decide sobre ella') : L('Examine it', 'Examínala')}</span>
                   </button>
                 ) : (
                   <button type="button" ref={easelRef} className="trplacard trplacard--sentence" onClick={() => setView('sentence')}>
-                    <span className="trplacard__letter">All exhibits heard</span>
-                    <span className="trplacard__title">Pass sentence</span>
-                    <span className="trplacard__teaser">Both sides rest their case. The court awaits your verdict.</span>
-                    <span className="trplacard__open">Go to the sentence</span>
+                    <span className="trplacard__letter">{L('All exhibits heard', 'Todas las pruebas vistas')}</span>
+                    <span className="trplacard__title">{L('Pass sentence', 'Dictar sentencia')}</span>
+                    <span className="trplacard__teaser">{L('Both sides rest their case. The court awaits your verdict.', 'Ambas partes han terminado. El tribunal espera tu veredicto.')}</span>
+                    <span className="trplacard__open">{L('Go to the sentence', 'Ir a la sentencia')}</span>
                   </button>
                 )}
               </div>
@@ -168,7 +173,7 @@ export default function Trial({ tutorial, witness, onClose, onFinished }: Props)
               <SoundBlock />
               <Gavel />
             </div>
-            <ol className="trdocket" aria-label="Docket: the exhibits">
+            <ol className="trdocket" aria-label={L('Docket: the exhibits', 'Orden del día: las pruebas')}>
               {exhibits.map((ex, i) => {
                 const done = i < heard
                 const now = i === heard
@@ -179,10 +184,13 @@ export default function Trial({ tutorial, witness, onClose, onFinished }: Props)
                       className={`trdocket__tag trdocket__tag--${ex.side}${done ? ' is-done' : now ? ' is-now' : ''}`}
                       disabled={!done && !now}
                       onClick={() => setOpen(i)}
-                      aria-label={`Exhibit ${letterOf(i)}, ${SIDE_LABEL[ex.side]}: ${done ? `${ex.title}, ${RULING_STAMP[ex.ruling].toLowerCase()}` : now ? `${ex.title}, now presented` : 'not presented yet'}`}
+                      aria-label={L(
+                        `Exhibit ${letterOf(i)}, ${SIDE_LABEL[ex.side]}: ${done ? `${ex.title}, ${RULING_STAMP[ex.ruling].toLowerCase()}` : now ? `${ex.title}, now presented` : 'not presented yet'}`,
+                        `Prueba ${letterOf(i)}, ${SIDE_LABEL[ex.side]}: ${done ? `${ex.title}, ${RULING_STAMP[ex.ruling].toLowerCase()}` : now ? `${ex.title}, presentándose ahora` : 'aún sin presentar'}`,
+                      )}
                     >
                       <span className="trdocket__letter">{letterOf(i)}</span>
-                      <span className="trdocket__name">{done || now ? fixText(ex.title) : 'Not yet'}</span>
+                      <span className="trdocket__name">{done || now ? fixText(ex.title) : L('Not yet', 'Todavía no')}</span>
                       {done && <span className={`trdocket__stamp trstamp--${ex.ruling}`}>{RULING_STAMP[ex.ruling]}</span>}
                     </button>
                   </li>
@@ -190,7 +198,7 @@ export default function Trial({ tutorial, witness, onClose, onFinished }: Props)
               })}
             </ol>
             <p className="trial__plate" aria-hidden="true">
-              Your Honour
+              {L('Your Honour', 'Señoría')}
             </p>
           </div>
         </div>
@@ -200,7 +208,7 @@ export default function Trial({ tutorial, witness, onClose, onFinished }: Props)
           witnessName={witness?.name}
           clues={clues}
           total={exhibits.length}
-          emptyText="Rule on each exhibit to enter a clue into the record."
+          emptyText={L('Rule on each exhibit to enter a clue into the record.', 'Decide sobre cada prueba para que conste una pista en acta.')}
         />
       </div>
 
@@ -236,13 +244,13 @@ export default function Trial({ tutorial, witness, onClose, onFinished }: Props)
       {confirming && (
         <div className="evboard__dim evboard__dim--light">
           <div className="evconfirm" role="alertdialog" aria-labelledby="trconfirm-text">
-            <p id="trconfirm-text">Leave the courtroom? Your rulings in this case will be lost.</p>
+            <p id="trconfirm-text">{L('Leave the courtroom? Your rulings in this case will be lost.', '¿Salir de la sala? Perderás tus decisiones de este caso.')}</p>
             <div className="evsummary__nav">
               <button type="button" className="evbtn" onClick={() => setConfirming(false)} autoFocus>
-                Stay in court
+                {L('Stay in court', 'Quedarme en la sala')}
               </button>
               <button type="button" className="evbtn evbtn--danger" onClick={onClose}>
-                Back to the map
+                {L('Back to the map', 'Volver al mapa')}
               </button>
             </div>
           </div>
@@ -255,7 +263,7 @@ export default function Trial({ tutorial, witness, onClose, onFinished }: Props)
 function LawyerTable({ side, active, rested, children }: { side: 'prosecution' | 'defence'; active: boolean; rested: boolean; children?: ReactNode }) {
   return (
     <div className={`trtable trtable--${side}${active ? ' is-active' : ''}`}>
-      <div className="trtable__speech">{children ?? (rested ? <p className="trtable__rest">We rest our case.</p> : null)}</div>
+      <div className="trtable__speech">{children ?? (rested ? <p className="trtable__rest">{L('We rest our case.', 'No hay más preguntas.')}</p> : null)}</div>
       <div className="trtable__figure">
         <Lawyer side={side} talking={active} />
       </div>
@@ -274,7 +282,7 @@ function Bubble({ side, letter, text }: { side: 'prosecution' | 'defence'; lette
   return (
     <div className={`trbubble trbubble--${side}`} aria-live="polite">
       <p className="trbubble__who">
-        {SIDE_LABEL[side]} · Exhibit {letter}
+        {L(`${SIDE_LABEL[side]} · Exhibit ${letter}`, `${SIDE_LABEL[side]} · Prueba ${letter}`)}
       </p>
       <p className="trbubble__text">{fixText(text)}</p>
     </div>
@@ -329,16 +337,16 @@ function Sentence({
 
   return (
     <section className={`trsentence is-${stage}`} role="dialog" aria-modal="true" aria-labelledby="trsentence-title">
-      <p className="trsentence__label">The sentence</p>
+      <p className="trsentence__label">{L('The sentence', 'La sentencia')}</p>
       <h2 id="trsentence-title" className="trsentence__title" ref={headingRef} tabIndex={-1}>
-        How do you find?
+        {L('How do you find?', '¿Cuál es tu veredicto?')}
       </h2>
       <p className="trsentence__charge">
-        The charge: <b>&ldquo;{fixText(charge)}&rdquo;</b>
+        {L('The charge:', 'La acusación:')} <b>&ldquo;{fixText(charge)}&rdquo;</b>
       </p>
       {stage === 'choose' && <p className="trsentence__prompt">{fixText(sentence.prompt)}</p>}
 
-      <div className="trverdicts" role="group" aria-label="Verdicts">
+      <div className="trverdicts" role="group" aria-label={L('Verdicts', 'Veredictos')}>
         {sentence.options.map((o) => {
           const isPick = pick?.v === o.verdict
           const state = isPick ? (o.correct ? ' is-right' : ' is-wrong') : ''
@@ -363,7 +371,7 @@ function Sentence({
         {picked && !picked.correct && stage === 'choose' && (
           <div key={pick?.n} className="trobjection trobjection--bench">
             <span className="trobjection__burst" aria-hidden="true">
-              Objection!
+              {L('Objection!', '¡Protesto!')}
             </span>
             <p>{fixText(picked.objection ?? '')}</p>
           </div>
@@ -374,7 +382,7 @@ function Sentence({
         <div className="trsentence__gavel" aria-hidden="true">
           <SoundBlock />
           <Gavel className="is-striking" />
-          <span className="trsentence__bang">Order!</span>
+          <span className="trsentence__bang">{L('Order!', '¡Orden!')}</span>
         </div>
       )}
 
@@ -388,12 +396,12 @@ function Sentence({
       <div className="evsummary__nav">
         {stage === 'choose' && (
           <button type="button" className="evbtn" onClick={onBack}>
-            Back to the court
+            {L('Back to the court', 'Volver a la sala')}
           </button>
         )}
         {stage === 'done' && (
           <button type="button" ref={doneRef} className="evbtn evbtn--primary evbtn--big" onClick={onFinished}>
-            Close the case
+            {L('Close the case', 'Cerrar el caso')}
           </button>
         )}
       </div>

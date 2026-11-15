@@ -2,6 +2,7 @@
 // the two lawyers behind their tables, the gavel, the scales on the back wall and the
 // empty exhibit folder. Fictional adults only; no real people, no logos.
 import type { TrialSide } from '../../../shared/tutorial'
+import { L } from '../../../shared/i18n'
 
 const INK = '#161b2e'
 
@@ -96,13 +97,13 @@ export function Scales() {
 /** An empty manila folder with a "not submitted" stamp */
 export function EmptyFolder({ title }: { title: string }) {
   return (
-    <div className="trfolder" role="img" aria-label={`Folder "${title}": empty, not submitted`}>
+    <div className="trfolder" role="img" aria-label={L(`Folder "${title}": empty, not submitted`, `Carpeta «${title}»: vacía, no presentada`)}>
       <span className="trfolder__tab">{title}</span>
       <span className="trfolder__inside" aria-hidden="true">
-        <span className="trfolder__nothing">( empty )</span>
+        <span className="trfolder__nothing">{L('( empty )', '( vacía )')}</span>
       </span>
       <span className="trfolder__stamp" aria-hidden="true">
-        Not submitted
+        {L('Not submitted', 'No presentada')}
       </span>
     </div>
   )

@@ -14,6 +14,7 @@ import { Burst, TaskView } from '../board/tasks'
 import { keyLabel } from '../board/taskData'
 import { EmptyFolder } from './art'
 import { MOVE_LABEL, MOVES } from './labels'
+import { L } from '../../../shared/i18n'
 
 type OwnTask = Exclude<TrialTask, EvidenceTask>
 type OwnOf<T extends OwnTask['type']> = Extract<OwnTask, { type: T }>
@@ -44,14 +45,14 @@ function Feedback({ verdict, task }: { verdict: Verdict; task: OwnTask }) {
     <div aria-live="polite" className="evtask__live" ref={ref}>
       {verdict.state === 'wrong' && (
         <p key={verdict.n} className="evtask__feedback evtask__feedback--wrong">
-          <b>Not quite.</b> {verdict.extra ? `${verdict.extra} ` : ''}
-          {fixText(task.hint)} Try again.
+          <b>{L('Not quite.', 'No exactamente.')}</b> {verdict.extra ? `${verdict.extra} ` : ''}
+          {fixText(task.hint)} {L('Try again.', 'Inténtalo de nuevo.')}
         </p>
       )}
       {verdict.state === 'right' && (
         <p className="evtask__feedback evtask__feedback--right">
           <Burst />
-          <b>Solved!</b> {fixText(task.success)}
+          <b>{L('Solved!', '¡Resuelto!')}</b> {fixText(task.success)}
         </p>
       )}
     </div>
@@ -61,7 +62,12 @@ function Feedback({ verdict, task }: { verdict: Verdict; task: OwnTask }) {
 function Chart({ spec, data, overlay }: { spec?: ChartSpec; data: TutorialData; overlay?: (g: ChartGeom) => ReactNode }) {
   if (!spec) return null
   const series = data.variables[spec.variable]
-  if (!series) return <p className="evtask__msg">The data for {spec.variable} is missing from this case file.</p>
+  if (!series)
+    return (
+      <p className="evtask__msg">
+        {L(`The data for ${spec.variable} is missing from this case file.`, `Faltan los datos de ${spec.variable} en este expediente.`)}
+      </p>
+    )
   return <TimeSeriesChart spec={spec} series={series} variables={data.variables} overlay={overlay} />
 }
 
@@ -141,8 +147,14 @@ export function TranslateTask({ exhibit, task, data, done, onSolved }: Props<'tr
     } else {
       const off = rows.find((r, i) => !ok[i] && r.info)
       const i = off ? rows.indexOf(off) : -1
-      const dir = off?.info && i >= 0 ? (dials[i] > off.info.z ? 'too high' : 'too low') : ''
-      wrong(off?.info ? `The ${off.info.name.toLowerCase()} dial is ${dir}.` : undefined)
+      const high = !!off?.info && i >= 0 && dials[i] > off.info.z
+      wrong(
+        off?.info
+          ? high
+            ? L(`The ${off.info.name.toLowerCase()} dial is too high.`, `El dial de ${off.info.name.toLowerCase()} está demasiado alto.`)
+            : L(`The ${off.info.name.toLowerCase()} dial is too low.`, `El dial de ${off.info.name.toLowerCase()} está demasiado bajo.`)
+          : undefined,
+      )
     }
   }
 
@@ -151,7 +163,7 @@ export function TranslateTask({ exhibit, task, data, done, onSolved }: Props<'tr
       <p className="evtask__prompt">{fixText(task.prompt)}</p>
       <div className={`trmachine${solved ? ' is-done' : ''}`}>
         <p className="trmachine__plate" aria-hidden="true">
-          <span>Translator</span> units in · &ldquo;how unusual&rdquo; out
+          <span>{L('Translator', 'Traductor')}</span> {L('units in · “how unusual” out', 'entran unidades · sale «lo inusual»')}
         </p>
         <div className="trmachine__slots">
           {rows.map((r, i) =>
@@ -162,14 +174,14 @@ export function TranslateTask({ exhibit, task, data, done, onSolved }: Props<'tr
                 </p>
                 <p className="trslot__sum">
                   <span className="trslot__chip">
-                    <small>Anomaly</small>
+                    <small>{L('Anomaly', 'Anomalía')}</small>
                     {fmt2(r.info.anomaly)} {r.info.units}
                   </span>
                   <span className="trslot__op" aria-hidden="true">
                     ÷
                   </span>
                   <span className="trslot__chip">
-                    <small>Typical swing</small>
+                    <small>{L('Typical swing', 'Oscilación típica')}</small>
                     {sig(r.info.sd)} {r.info.units}
                   </span>
                   <span className="trslot__op" aria-hidden="true">
@@ -178,7 +190,7 @@ export function TranslateTask({ exhibit, task, data, done, onSolved }: Props<'tr
                 </p>
                 <Gauge value={dials[i]} />
                 <div className="trslot__dial">
-                  <button type="button" disabled={solved} onClick={() => set(i, dials[i] - 0.1)} aria-label={`Lower the ${r.info.name} dial`}>
+                  <button type="button" disabled={solved} onClick={() => set(i, dials[i] - 0.1)} aria-label={L(`Lower the ${r.info.name} dial`, `Bajar el dial de ${r.info.name}`)}>
                     −
                   </button>
                   <input
@@ -188,30 +200,30 @@ export function TranslateTask({ exhibit, task, data, done, onSolved }: Props<'tr
                     step={0.1}
                     value={dials[i]}
                     disabled={solved}
-                    aria-label={`${r.info.name} dial, in typical swings`}
-                    aria-valuetext={`${fmt1(dials[i])} typical swings`}
+                    aria-label={L(`${r.info.name} dial, in typical swings`, `Dial de ${r.info.name}, en oscilaciones típicas`)}
+                    aria-valuetext={L(`${fmt1(dials[i])} typical swings`, `${fmt1(dials[i])} oscilaciones típicas`)}
                     onChange={(e) => set(i, Number(e.target.value))}
                   />
-                  <button type="button" disabled={solved} onClick={() => set(i, dials[i] + 0.1)} aria-label={`Raise the ${r.info.name} dial`}>
+                  <button type="button" disabled={solved} onClick={() => set(i, dials[i] + 0.1)} aria-label={L(`Raise the ${r.info.name} dial`, `Subir el dial de ${r.info.name}`)}>
                     +
                   </button>
                 </div>
                 <p className="trslot__out" aria-live="polite">
-                  <b>{fmt1(dials[i])}</b> typical swings
+                  <b>{fmt1(dials[i])}</b> {L('typical swings', 'oscilaciones típicas')}
                 </p>
               </div>
             ) : (
               <p key={`${r.variable}-${r.date}`} className="evtask__msg">
-                No anomaly for {r.variable} in {r.date} in this case file.
+                {L(`No anomaly for ${r.variable} in ${r.date} in this case file.`, `No hay anomalía de ${r.variable} en ${r.date} en este expediente.`)}
               </p>
             ),
           )}
         </div>
         {!solved && (
           <div className="evtask__row evtask__row--end">
-            <p className="evtask__help">Drag each dial, or use − and + (steps of 0.1).</p>
+            <p className="evtask__help">{L('Drag each dial, or use − and + (steps of 0.1).', 'Arrastra cada dial, o usa − y + (pasos de 0,1).')}</p>
             <button type="button" className="evbtn evbtn--primary" onClick={check}>
-              Translate
+              {L('Translate', 'Traducir')}
             </button>
           </div>
         )}
@@ -219,7 +231,7 @@ export function TranslateTask({ exhibit, task, data, done, onSolved }: Props<'tr
       <Feedback verdict={verdict} task={task} />
       {solved && exhibit.chart && (
         <div className="trprintout">
-          <p className="trprintout__label">The machine prints every month, translated and smoothed over 12 months:</p>
+          <p className="trprintout__label">{L('The machine prints every month, translated and smoothed over 12 months:', 'La máquina imprime cada mes, traducido y suavizado a 12 meses:')}</p>
           <Chart spec={exhibit.chart} data={data} />
         </div>
       )}
@@ -258,13 +270,13 @@ export function SortMovesTask({ exhibit, task, data, done, onSolved }: Props<'so
     if (verdict.state === 'wrong') setVerdict({ state: 'idle' })
   }
   const check = () => {
-    if (picks.some((p) => p == null)) return wrong('Pick an answer for every marked month first.')
+    if (picks.some((p) => p == null)) return wrong(L('Pick an answer for every marked month first.', 'Primero elige una respuesta para cada mes marcado.'))
     const ok = picks.map((p, i) => p === answers[i])
     setChecked(ok)
     if (ok.every(Boolean)) {
       setVerdict({ state: 'right' })
       onSolved()
-    } else wrong(`${ok.filter(Boolean).length} of ${ok.length} are right.`)
+    } else wrong(L(`${ok.filter(Boolean).length} of ${ok.length} are right.`, `${ok.filter(Boolean).length} de ${ok.length} son correctas.`))
   }
 
   // a dashed line and a letter tag at each marked month, through both lines
@@ -296,7 +308,7 @@ export function SortMovesTask({ exhibit, task, data, done, onSolved }: Props<'so
             <span className="trmoves__date">
               <b aria-hidden="true">{i + 1}</b> {keyLabel(d)}
             </span>
-            <span className="trmoves__choices" role="group" aria-label={`Mark ${i + 1}, ${keyLabel(d)}`}>
+            <span className="trmoves__choices" role="group" aria-label={L(`Mark ${i + 1}, ${keyLabel(d)}`, `Marca ${i + 1}, ${keyLabel(d)}`)}>
               {MOVES.map((m) => (
                 <button
                   key={m}
@@ -315,9 +327,9 @@ export function SortMovesTask({ exhibit, task, data, done, onSolved }: Props<'so
       </ol>
       {!solved && (
         <div className="evtask__row evtask__row--end">
-          <p className="evtask__help">Below zero = drier than usual; above zero = wetter.</p>
+          <p className="evtask__help">{L('Below zero = drier than usual; above zero = wetter.', 'Bajo cero = más seco de lo habitual; sobre cero = más húmedo.')}</p>
           <button type="button" className="evbtn evbtn--primary" onClick={check}>
-            Check my reading
+            {L('Check my reading', 'Comprobar mi lectura')}
           </button>
         </div>
       )}
@@ -349,7 +361,10 @@ export function MissingDataTask({ exhibit, task, done, onSolved }: Props<'missin
       onSolved()
     } else
       wrong(
-        `You picked ${hits} of the ${need} records the court needs${extra ? `, and ${extra} that would not test the idea` : ''}.`,
+        L(
+          `You picked ${hits} of the ${need} records the court needs${extra ? `, and ${extra} that would not test the idea` : ''}.`,
+          `Has elegido ${hits} de los ${need} registros que necesita el tribunal${extra ? `, y ${extra} que no pondrían a prueba la idea` : ''}.`,
+        ),
       )
   }
   return (
@@ -357,7 +372,7 @@ export function MissingDataTask({ exhibit, task, done, onSolved }: Props<'missin
       <p className="evtask__prompt">{fixText(task.prompt)}</p>
       <EmptyFolder title={exhibit.title} />
       <fieldset className="trrequest">
-        <legend>Records the court could ask for</legend>
+        <legend>{L('Records the court could ask for', 'Registros que el tribunal podría pedir')}</legend>
         {task.options.map((o, i) => {
           const state = checked && on[i] ? (o.needed ? ' is-ok' : ' is-off') : ''
           return (
@@ -379,9 +394,9 @@ export function MissingDataTask({ exhibit, task, done, onSolved }: Props<'missin
       </fieldset>
       {!solved && (
         <div className="evtask__row evtask__row--end">
-          <p className="evtask__help">Pick every record that would test the idea, and nothing else.</p>
+          <p className="evtask__help">{L('Pick every record that would test the idea, and nothing else.', 'Elige todos los registros que pondrían a prueba la idea, y nada más.')}</p>
           <button type="button" className="evbtn evbtn--primary" onClick={check}>
-            Request these records
+            {L('Request these records', 'Pedir estos registros')}
           </button>
         </div>
       )}

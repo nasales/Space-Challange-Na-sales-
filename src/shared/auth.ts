@@ -7,6 +7,7 @@
 // The session persists in the browser (supabase-js default: localStorage).
 import { useEffect, useState } from 'react'
 import type { AuthChangeEvent, Session, SupabaseClient, User } from '@supabase/supabase-js'
+import { L } from './i18n'
 
 const URL_ = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.replace(/\/+$/, '')
 const KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined
@@ -14,7 +15,7 @@ const KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined
 /** False when the Supabase env vars are missing: the Account screen says so and Play still works. */
 export const authConfigured = Boolean(URL_ && KEY)
 
-const DISABLED_MESSAGE = 'Accounts are not available in this build.'
+const DISABLED_MESSAGE = L('Accounts are not available in this build.', 'Las cuentas no están disponibles en esta versión.')
 
 let clientPromise: Promise<SupabaseClient> | null = null
 
@@ -47,7 +48,7 @@ export interface SignUpResult extends AuthResult {
 
 function message(err: unknown): string {
   if (err instanceof Error && err.message) return err.message
-  return 'Something went wrong. Please try again.'
+  return L('Something went wrong. Please try again.', 'Algo ha fallado. Inténtalo de nuevo.')
 }
 
 export async function signUp(email: string, password: string): Promise<SignUpResult> {

@@ -10,8 +10,9 @@ import TimeSeriesChart from '../TimeSeriesChart'
 import { baseUnits, sig, signed } from '../format'
 
 /** Same precision for a slope and its range (two decimals), with a true minus sign */
-const fixed2 = (x: number) => (x > 0 ? '+' : x < 0 ? '−' : '') + Math.abs(x).toFixed(2)
+const fixed2 = (x: number) => (x > 0 ? '+' : x < 0 ? '−' : '') + fmtNumber(Math.abs(x), 2)
 import { TREND_VIEWS, keyLabel, viewTrend, yearlyValues } from './taskData'
+import { fmtNumber, L } from '../../../shared/i18n'
 
 type TaskOf<T extends EvidenceTask['type']> = Extract<EvidenceTask, { type: T }>
 
@@ -36,14 +37,14 @@ export function Feedback({ verdict, task }: { verdict: Verdict; task: Pick<Evide
     <div aria-live="polite" className="evtask__live" ref={ref}>
       {verdict.state === 'wrong' && (
         <p key={verdict.n} className="evtask__feedback evtask__feedback--wrong">
-          <b>Not quite.</b> {verdict.extra ? `${verdict.extra} ` : ''}
-          {task.hint} Try again.
+          <b>{L('Not quite.', 'No exactamente.')}</b> {verdict.extra ? `${verdict.extra} ` : ''}
+          {task.hint} {L('Try again.', 'Inténtalo de nuevo.')}
         </p>
       )}
       {verdict.state === 'right' && (
         <p className="evtask__feedback evtask__feedback--right">
           <Burst />
-          <b>Solved!</b> {task.success}
+          <b>{L('Solved!', '¡Resuelto!')}</b> {task.success}
         </p>
       )}
     </div>
@@ -74,7 +75,12 @@ function seriesOf(data: TutorialData, spec?: ChartSpec): TutorialSeries | undefi
 function Chart({ spec, data, overlay }: { spec?: ChartSpec; data: TutorialData; overlay?: (g: ChartGeom) => ReactNode }) {
   const series = seriesOf(data, spec)
   if (!spec) return null
-  if (!series) return <p className="evtask__msg">The data for {spec.variable} is missing from this case file.</p>
+  if (!series)
+    return (
+      <p className="evtask__msg">
+        {L(`The data for ${spec.variable} is missing from this case file.`, `Faltan los datos de ${spec.variable} en este expediente.`)}
+      </p>
+    )
   return <TimeSeriesChart spec={spec} series={series} variables={data.variables} overlay={overlay} />
 }
 
@@ -110,7 +116,7 @@ export function ClickPointTask({ item, task, data, done, onSolved }: TaskProps<'
     if (key === task.answer) {
       setVerdict({ state: 'right' })
       onSolved()
-    } else wrong(`That is ${keyLabel(key)}.`)
+    } else wrong(L(`That is ${keyLabel(key)}.`, `Ese es ${keyLabel(key)}.`))
   }
 
   const overlay = (g: ChartGeom) => {
@@ -145,11 +151,11 @@ export function ClickPointTask({ item, task, data, done, onSolved }: TaskProps<'
         className={`evhit${solved ? ' is-solved' : ''}`}
         tabIndex={solved ? -1 : 0}
         role="slider"
-        aria-label="Pick a point on the chart: arrow keys move, Enter picks"
+        aria-label={L('Pick a point on the chart: arrow keys move, Enter picks', 'Elige un punto de la gráfica: las flechas lo mueven, Intro lo elige')}
         aria-valuemin={0}
         aria-valuemax={pts.length - 1}
         aria-valuenow={cursor ?? 0}
-        aria-valuetext={cur ? `${keyLabel(cur.key)}: ${sig(cur.value)} ${units}` : 'No point selected yet'}
+        aria-valuetext={cur ? `${keyLabel(cur.key)}: ${sig(cur.value)} ${units}` : L('No point selected yet', 'Aún no hay ningún punto elegido')}
         onKeyDown={onKey}
         onFocus={() => cursor == null && setCursor(pts.length - 1)}
       >
@@ -197,7 +203,14 @@ export function ClickPointTask({ item, task, data, done, onSolved }: TaskProps<'
     <div className="evtask">
       <Prompt>{task.prompt}</Prompt>
       <Chart spec={spec} data={data} overlay={solved ? undefined : overlay} />
-      {!solved && <p className="evtask__help">Hover the chart and click a point, or Tab to the chart and use the arrow keys and Enter.</p>}
+      {!solved && (
+        <p className="evtask__help">
+          {L(
+            'Hover the chart and click a point, or Tab to the chart and use the arrow keys and Enter.',
+            'Pasa el ratón por la gráfica y haz clic en un punto, o ve con Tab a la gráfica y usa las flechas e Intro.',
+          )}
+        </p>
+      )}
       <Feedback verdict={verdict} task={task} />
     </div>
   )
@@ -219,15 +232,31 @@ export function FitLineTask({ item, task, data, done, onSolved }: TaskProps<'fit
   const userSlope = ends && ends[1].x !== ends[0].x ? (ends[1].y - ends[0].y) / (ends[1].x - ends[0].x) : null
 
   if (!item.chart || !series) return <Chart spec={item.chart} data={data} />
-  if (!real) return <p className="evtask__msg">This chart has no trend line to compare a ruler with.</p>
+  if (!real) return <p className="evtask__msg">{L('This chart has no trend line to compare a ruler with.', 'Esta gráfica no tiene línea de tendencia con la que comparar una regla.')}</p>
 
   const check = () => {
-    if (userSlope == null) return wrong(ends ? 'Move the ends of the ruler apart first.' : 'Your ruler is flat: drag its ends to follow the cloud of points.')
+    if (userSlope == null)
+      return wrong(
+        ends
+          ? L('Move the ends of the ruler apart first.', 'Primero separa los extremos de la regla.')
+          : L('Your ruler is flat: drag its ends to follow the cloud of points.', 'Tu regla está plana: arrastra sus extremos para seguir la nube de puntos.'),
+      )
     const s = Math.sign(userSlope)
     const r = Math.sign(real.slopePerYear)
-    if (s !== r) return wrong(s === 0 ? 'Your ruler is flat.' : `Your ruler goes ${s > 0 ? 'up' : 'down'}.`)
+    if (s !== r)
+      return wrong(
+        s === 0
+          ? L('Your ruler is flat.', 'Tu regla está plana.')
+          : s > 0
+            ? L('Your ruler goes up.', 'Tu regla sube.')
+            : L('Your ruler goes down.', 'Tu regla baja.'),
+      )
     if (task.tolerance != null && Math.abs(userSlope * 10 - real.slopePerYear * 10) > task.tolerance) {
-      return wrong(`Right direction, but your ruler is too ${Math.abs(userSlope) > Math.abs(real.slopePerYear) ? 'steep' : 'flat'}.`)
+      return wrong(
+        Math.abs(userSlope) > Math.abs(real.slopePerYear)
+          ? L('Right direction, but your ruler is too steep.', 'Buena dirección, pero tu regla está demasiado inclinada.')
+          : L('Right direction, but your ruler is too flat.', 'Buena dirección, pero tu regla está demasiado plana.'),
+      )
     }
     setVerdict({ state: 'right' })
     onSolved()
@@ -268,11 +297,15 @@ export function FitLineTask({ item, task, data, done, onSolved }: TaskProps<'fit
         className="evruler__handle"
         tabIndex={solved ? -1 : 0}
         role="slider"
-        aria-label={`${i === 0 ? 'Left' : 'Right'} end of the ruler: arrow keys move it`}
+        aria-label={
+          i === 0
+            ? L('Left end of the ruler: arrow keys move it', 'Extremo izquierdo de la regla: las flechas lo mueven')
+            : L('Right end of the ruler: arrow keys move it', 'Extremo derecho de la regla: las flechas lo mueven')
+        }
         aria-valuemin={Math.round(g.iy(g.plot.bottom) * 100) / 100}
         aria-valuemax={Math.round(g.iy(g.plot.top) * 100) / 100}
         aria-valuenow={Math.round(cur[i].y * 100) / 100}
-        aria-valuetext={`${sig(cur[i].y)} ${u} in ${Math.round(cur[i].x)}`}
+        aria-valuetext={L(`${sig(cur[i].y)} ${u} in ${Math.round(cur[i].x)}`, `${sig(cur[i].y)} ${u} en ${Math.round(cur[i].x)}`)}
         onPointerDown={(e) => {
           if (solved) return
           e.currentTarget.setPointerCapture(e.pointerId)
@@ -318,22 +351,34 @@ export function FitLineTask({ item, task, data, done, onSolved }: TaskProps<'fit
       <div className="evtask__row">
         <p className="evtask__readout" aria-live="polite">
           {userSlope == null
-            ? 'Your ruler: flat. Drag its round ends.'
-            : `Your ruler: ${signed(userSlope * 10)} ${u} per decade.`}
+            ? L('Your ruler: flat. Drag its round ends.', 'Tu regla: plana. Arrastra sus extremos redondos.')
+            : L(`Your ruler: ${signed(userSlope * 10)} ${u} per decade.`, `Tu regla: ${signed(userSlope * 10)} ${u} por década.`)}
           {solved && (
             <>
               {' '}
-              <span className="evtask__real">Real trend line (red): {signed(real.slopePerYear * 10)} {u} per decade.</span>
+              <span className="evtask__real">
+                {L(
+                  `Real trend line (red): ${signed(real.slopePerYear * 10)} ${u} per decade.`,
+                  `Línea de tendencia real (roja): ${signed(real.slopePerYear * 10)} ${u} por década.`,
+                )}
+              </span>
             </>
           )}
         </p>
         {!solved && (
           <button type="button" className="evbtn evbtn--primary" onClick={check}>
-            Check my ruler
+            {L('Check my ruler', 'Comprobar mi regla')}
           </button>
         )}
       </div>
-      {!solved && <p className="evtask__help">Drag the round ends, or Tab to one and use the arrow keys (Shift = bigger steps).</p>}
+      {!solved && (
+        <p className="evtask__help">
+          {L(
+            'Drag the round ends, or Tab to one and use the arrow keys (Shift = bigger steps).',
+            'Arrastra los extremos redondos, o ve con Tab a uno y usa las flechas (Mayús = pasos más grandes).',
+          )}
+        </p>
+      )}
       <Feedback verdict={verdict} task={task} />
     </div>
   )
@@ -382,7 +427,7 @@ export function OrderCardsTask({ item, task, data, done, onSolved }: TaskProps<'
     if (ok.every(Boolean)) {
       setVerdict({ state: 'right' })
       onSolved()
-    } else wrong(`${ok.filter(Boolean).length} of ${ok.length} are in the right place.`)
+    } else wrong(L(`${ok.filter(Boolean).length} of ${ok.length} are in the right place.`, `${ok.filter(Boolean).length} de ${ok.length} están en su sitio.`))
   }
 
   // the chart marks every card's year, so the player can read each value
@@ -397,18 +442,20 @@ export function OrderCardsTask({ item, task, data, done, onSolved }: TaskProps<'
           ],
         }
       : item.chart
-  const first = task.order === 'desc' ? 'Highest' : 'Lowest'
-  const last = task.order === 'desc' ? 'lowest' : 'highest'
+  const first = task.order === 'desc' ? L('Highest', 'Mayor') : L('Lowest', 'Menor')
+  const last = task.order === 'desc' ? L('lowest', 'menor') : L('highest', 'mayor')
 
   return (
     <div className="evtask">
       <Prompt>{task.prompt}</Prompt>
-      {missing.length > 0 && <p className="evtask__msg">No data for {missing.join(', ')} in this chart.</p>}
+      {missing.length > 0 && (
+        <p className="evtask__msg">{L(`No data for ${missing.join(', ')} in this chart.`, `No hay datos de ${missing.join(', ')} en esta gráfica.`)}</p>
+      )}
       <div className="evorder">
         <span className="evorder__end" aria-hidden="true">
           {first}
         </span>
-        <ol className="evorder__row" id={listId} aria-label={`Cards in order, ${first.toLowerCase()} first`}>
+        <ol className="evorder__row" id={listId} aria-label={L(`Cards in order, ${first.toLowerCase()} first`, `Tarjetas en orden, de ${first.toLowerCase()} a ${last}`)}>
           {order.map((card, i) => {
             const isDrag = drag?.card === card
             const state = checked ? (checked[i] ? 'is-ok' : 'is-off') : ''
@@ -455,16 +502,16 @@ export function OrderCardsTask({ item, task, data, done, onSolved }: TaskProps<'
                 </span>
                 <span className="evpolaroid__year">{card}</span>
                 <span className="evpolaroid__sr">
-                  Position {i + 1}: {card}
+                  {L(`Position ${i + 1}: ${card}`, `Posición ${i + 1}: ${card}`)}
                   {solved ? `, ${sig(values.get(Number(card)) ?? NaN)} ${u}` : ''}
-                  {checked ? (checked[i] ? ', right place' : ', wrong place') : ''}
+                  {checked ? (checked[i] ? L(', right place', ', en su sitio') : L(', wrong place', ', fuera de su sitio')) : ''}
                 </span>
                 {!solved && (
                   <span className="evpolaroid__moves">
-                    <button type="button" onClick={() => move(card, -1)} disabled={i === 0} aria-label={`Move ${card} left`}>
+                    <button type="button" onClick={() => move(card, -1)} disabled={i === 0} aria-label={L(`Move ${card} left`, `Mover ${card} a la izquierda`)}>
                       ◀
                     </button>
-                    <button type="button" onClick={() => move(card, 1)} disabled={i === order.length - 1} aria-label={`Move ${card} right`}>
+                    <button type="button" onClick={() => move(card, 1)} disabled={i === order.length - 1} aria-label={L(`Move ${card} right`, `Mover ${card} a la derecha`)}>
                       ▶
                     </button>
                   </span>
@@ -479,9 +526,9 @@ export function OrderCardsTask({ item, task, data, done, onSolved }: TaskProps<'
       </div>
       {!solved && (
         <div className="evtask__row evtask__row--end">
-          <p className="evtask__help">Drag a polaroid sideways, or use its arrow buttons.</p>
+          <p className="evtask__help">{L('Drag a polaroid sideways, or use its arrow buttons.', 'Arrastra una polaroid a un lado, o usa sus botones de flecha.')}</p>
           <button type="button" className="evbtn evbtn--primary" onClick={check}>
-            Check the order
+            {L('Check the order', 'Comprobar el orden')}
           </button>
         </div>
       )}
@@ -503,7 +550,8 @@ export function SliderWindowTask({ item, task, data, done, onSolved }: TaskProps
   const [picked, setPicked] = useState<number | null>(done ? task.options.findIndex((o) => o.correct) : null)
   const solved = verdict.state === 'right'
   const sliderId = useId()
-  if (!series || wt.length === 0) return <p className="evtask__msg">The trend by start year is not in this case file.</p>
+  if (!series || wt.length === 0)
+    return <p className="evtask__msg">{L('The trend by start year is not in this case file.', 'La tendencia por año de inicio no está en este expediente.')}</p>
   const w = wt[Math.min(at, wt.length - 1)]
   const u = baseUnits(series.units)
   const spec: ChartSpec = item.chart ?? { variable: series.variable, view: 'window_trends' }
@@ -526,7 +574,7 @@ export function SliderWindowTask({ item, task, data, done, onSolved }: TaskProps
       <Chart spec={spec} data={data} overlay={overlay} />
       <div className="evslider">
         <label htmlFor={sliderId} className="evslider__label">
-          Start year: <b>{w.start_year}</b>
+          {L('Start year:', 'Año de inicio:')} <b>{w.start_year}</b>
         </label>
         <input
           id={sliderId}
@@ -535,7 +583,7 @@ export function SliderWindowTask({ item, task, data, done, onSolved }: TaskProps
           max={wt.length - 1}
           step={1}
           value={at}
-          aria-valuetext={`From ${w.start_year}`}
+          aria-valuetext={L(`From ${w.start_year}`, `Desde ${w.start_year}`)}
           onChange={(e) => {
             setAt(Number(e.target.value))
             setMoved(true)
@@ -546,9 +594,19 @@ export function SliderWindowTask({ item, task, data, done, onSolved }: TaskProps
           <span>{wt[wt.length - 1].start_year}</span>
         </div>
         <p className="evslider__words" aria-live="polite">
-          From {w.start_year} to the end of the record: <b>{fixed2(w.slope_per_year * 10)} {u} per decade</b>, likely between{' '}
-          {fixed2(w.ci_low * 10)} and {fixed2(w.ci_high * 10)} (95% range).{' '}
-          {w.significant ? 'The bar is filled: significant (p < 0.05).' : 'The bar is hollow: not significant.'} Fewer years, wider range.
+          {L(`From ${w.start_year} to the end of the record:`, `Desde ${w.start_year} hasta el final del registro:`)}{' '}
+          <b>
+            {fixed2(w.slope_per_year * 10)} {u} {L('per decade', 'por década')}
+          </b>
+          ,{' '}
+          {L(
+            `likely between ${fixed2(w.ci_low * 10)} and ${fixed2(w.ci_high * 10)} (95% range).`,
+            `probablemente entre ${fixed2(w.ci_low * 10)} y ${fixed2(w.ci_high * 10)} (rango del 95 %).`,
+          )}{' '}
+          {w.significant
+            ? L('The bar is filled: significant (p < 0.05).', 'La barra está rellena: significativa (p < 0,05).')
+            : L('The bar is hollow: not significant.', 'La barra está hueca: no significativa.')}{' '}
+          {L('Fewer years, wider range.', 'Menos años, rango más ancho.')}
         </p>
       </div>
       {moved ? (
@@ -566,7 +624,12 @@ export function SliderWindowTask({ item, task, data, done, onSolved }: TaskProps
           }}
         />
       ) : (
-        <p className="evtask__help">Move the slider to see the trend from each start year; then a question appears.</p>
+        <p className="evtask__help">
+          {L(
+            'Move the slider to see the trend from each start year; then a question appears.',
+            'Mueve el control para ver la tendencia desde cada año de inicio; luego aparece una pregunta.',
+          )}
+        </p>
       )}
       <Feedback verdict={verdict} task={task} />
     </div>
@@ -616,7 +679,7 @@ function Options({
 
 /** A threshold written in the rule ("above 4.5 °C", "below 0"), drawn as a dashed line */
 function ruleLine(rule: string): number | null {
-  const m = rule.match(/(?:above|below|over|under|more than|less than|warmer than|colder than|>|<)\s*(−|-)?\s*(\d+(?:[.,]\d+)?)/i)
+  const m = rule.match(/(?:above|below|over|under|more than|less than|warmer than|colder than|por encima de|por debajo de|más de|menos de|>|<)\s*(−|-)?\s*(\d+(?:[.,]\d+)?)/i)
   if (!m) return null
   const v = Number(m[2].replace(',', '.'))
   return m[1] ? -v : v
@@ -661,7 +724,12 @@ export function TallyTask({ item, task, data, done, onSolved }: TaskProps<'tally
     if (ok.every(Boolean)) {
       setVerdict({ state: 'right' })
       onSolved()
-    } else wrong(task.periods.length > 1 ? `${ok.filter(Boolean).length} of ${ok.length} counts are right.` : undefined)
+    } else
+      wrong(
+        task.periods.length > 1
+          ? L(`${ok.filter(Boolean).length} of ${ok.length} counts are right.`, `${ok.filter(Boolean).length} de ${ok.length} recuentos son correctos.`)
+          : undefined,
+      )
   }
 
   const setAt = (i: number, v: string) => {
@@ -674,7 +742,7 @@ export function TallyTask({ item, task, data, done, onSolved }: TaskProps<'tally
     <div className="evtask">
       <Prompt>{task.prompt}</Prompt>
       <p className="evtally__rule">
-        <span>Rule</span> {task.rule}
+        <span>{L('Rule', 'Regla')}</span> {task.rule}
       </p>
       <Chart spec={spec} data={data} overlay={overlay} />
       <form
@@ -690,7 +758,7 @@ export function TallyTask({ item, task, data, done, onSolved }: TaskProps<'tally
             <div className="evtally__input">
               <button
                 type="button"
-                aria-label={`One less for ${p.label}`}
+                aria-label={L(`One less for ${p.label}`, `Uno menos para ${p.label}`)}
                 disabled={solved}
                 onClick={() => setAt(i, String(Math.max(0, (Number(counts[i]) || 0) - 1)))}
               >
@@ -707,7 +775,7 @@ export function TallyTask({ item, task, data, done, onSolved }: TaskProps<'tally
               />
               <button
                 type="button"
-                aria-label={`One more for ${p.label}`}
+                aria-label={L(`One more for ${p.label}`, `Uno más para ${p.label}`)}
                 disabled={solved}
                 onClick={() => setAt(i, String((Number(counts[i]) || 0) + 1))}
               >
@@ -718,7 +786,7 @@ export function TallyTask({ item, task, data, done, onSolved }: TaskProps<'tally
         ))}
         {!solved && (
           <button type="submit" className="evbtn evbtn--primary">
-            Check my counts
+            {L('Check my counts', 'Comprobar mis recuentos')}
           </button>
         )}
       </form>
@@ -771,6 +839,6 @@ export function TaskView(p: { item: EvidenceItem; data: TutorialData; done: bool
     case 'compare':
       return <CompareTask {...p} task={t} />
     default:
-      return <p className="evtask__msg">This task type is not supported yet.</p>
+      return <p className="evtask__msg">{L('This task type is not supported yet.', 'Este tipo de tarea aún no está disponible.')}</p>
   }
 }

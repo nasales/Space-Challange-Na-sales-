@@ -14,6 +14,7 @@ import {
 } from '../../shared/outfit'
 import panelBg from '../assets/menu/panel-bg.svg'
 import './Wardrobe.css'
+import { L } from '../../shared/i18n'
 
 interface WardrobeProps {
   outfit: Outfit
@@ -27,19 +28,34 @@ const PART_TILT = [-3, 2.5, -2, 3]
 const CARD_TILT = [-2.5, 2, -1.5, 2.5, -2, 1.5]
 
 // Comic sound effect shown by each fabric card's hover show (one per card position).
-const CARD_SFX = ['Snip!', 'Ooh!', 'Snazzy!', 'Sharp!', 'Swank!', 'Nice!']
+const CARD_SFX = [
+  L('Snip!', '¡Tris!'),
+  L('Ooh!', '¡Oooh!'),
+  L('Snazzy!', '¡Qué estilo!'),
+  L('Sharp!', '¡Elegante!'),
+  L('Swank!', '¡Con clase!'),
+  L('Nice!', '¡Genial!'),
+]
+
+// Spanish "the fabric for the ..." needs the right article for each part.
+const FABRIC_FOR_ES: Record<OutfitPart, string> = {
+  coat: 'Elige la tela de la gabardina',
+  hat: 'Elige la tela del sombrero',
+  scarf: 'Elige la tela de la bufanda',
+  trousers: 'Elige la tela de los pantalones',
+}
 
 // Comic sound effect shown by each part sheet's hover show.
 const PART_SFX: Record<OutfitPart, string> = {
-  coat: 'Swish!',
-  hat: 'Tip!',
-  scarf: 'Flap!',
-  trousers: 'Hup!',
+  coat: L('Swish!', '¡Fiu!'),
+  hat: L('Tip!', '¡Toc!'),
+  scarf: L('Flap!', '¡Flap!'),
+  trousers: L('Hup!', '¡Hop!'),
 }
 
 function colorName(part: OutfitPart, color: string) {
   const preset = OUTFIT_PRESETS[part].find((p) => p.color.toLowerCase() === color.toLowerCase())
-  return preset ? preset.name : 'Custom'
+  return preset ? preset.name : L('Custom', 'Personalizado')
 }
 
 // Small ink drawings of each piece, filled with the color the player picked.
@@ -119,30 +135,32 @@ export default function Wardrobe({ outfit, onChange, onBack, preview }: Wardrobe
       <div className="wardrobe__panel">
         <div className="wardrobe__page" style={pageStyle} data-kbd={keyboard || undefined}>
           <header className="wr-head">
-            <button type="button" className="wr-back" onClick={onBack} aria-label="Back to the menu (Escape)">
+            <button type="button" className="wr-back" onClick={onBack} aria-label={L('Back to the menu (Escape)', 'Volver al menú (Escape)')}>
               <span className="wr-sheet wr-back__paper">
                 <span className="wr-pin" aria-hidden="true" />
                 <svg className="wr-back__arrow" viewBox="0 0 32 24" aria-hidden="true" focusable="false">
                   <path d="M13 3L3 12l10 9v-5.5h16v-7H13z" />
                 </svg>
-                <span className="wr-back__word">Back</span>
+                <span className="wr-back__word">{L('Back', 'Volver')}</span>
                 <span className="wr-back__key">Esc</span>
               </span>
               <span className="wr-sfx wr-sfx--back" aria-hidden="true">
-                See ya!
+                {L('See ya!', '¡Hasta luego!')}
               </span>
             </button>
 
             <div className="wr-masthead">
               <h1 className="wr-title" id={`${uid}-title`}>
-                Wardrobe
+                {L('Wardrobe', 'Vestuario')}
               </h1>
-              <p className="wr-tagline">Dress your detective. Every clue needs a good coat.</p>
+              <p className="wr-tagline">
+                {L('Dress your detective. Every clue needs a good coat.', 'Viste a tu detective. Toda pista merece una buena gabardina.')}
+              </p>
             </div>
           </header>
 
           <fieldset className="wr-parts">
-            <legend className="wr-legend">Pick a piece</legend>
+            <legend className="wr-legend">{L('Pick a piece', 'Elige una prenda')}</legend>
             <div className="wr-parts__row">
               <svg className="wr-parts__string" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true">
                 <path className="wr-string-ink" d="M12.5 3 Q25 8 37.5 3 Q50 8 62.5 3 Q75 8 87.5 3" />
@@ -187,7 +205,9 @@ export default function Wardrobe({ outfit, onChange, onBack, preview }: Wardrobe
           </fieldset>
 
           <fieldset className={`wr-swatches${dealt ? ' is-dealing' : ''}`} key={part}>
-            <legend className="wr-legend">Choose the fabric for the {partLabel.toLowerCase()}</legend>
+            <legend className="wr-legend">
+              {L(`Choose the fabric for the ${partLabel.toLowerCase()}`, FABRIC_FOR_ES[part])}
+            </legend>
             <div className="wr-cards">
               {OUTFIT_PRESETS[part].map(({ name, color }, i) => {
                 const key = `${part}:${color}`
@@ -214,7 +234,7 @@ export default function Wardrobe({ outfit, onChange, onBack, preview }: Wardrobe
                       <span className="wr-card__name">{name}</span>
                       {i === 0 && (
                         <span className="wr-card__original" aria-hidden="true">
-                          Original
+                          {L('Original', 'Original')}
                         </span>
                       )}
                       <span className="wr-card__marker" aria-hidden="true" />
@@ -224,7 +244,7 @@ export default function Wardrobe({ outfit, onChange, onBack, preview }: Wardrobe
                     </span>
                     {picked === key && (
                       <span className="wr-pow" aria-hidden="true">
-                        Pow!
+                        {L('Pow!', '¡Pum!')}
                       </span>
                     )}
                   </label>
@@ -247,16 +267,16 @@ export default function Wardrobe({ outfit, onChange, onBack, preview }: Wardrobe
               disabled={isDefault}
             >
               <span className="wr-reset__burst" aria-hidden="true" />
-              <span className="wr-reset__stamp">Reset look</span>
+              <span className="wr-reset__stamp">{L('Reset look', 'Restablecer look')}</span>
               {resetCount > 0 && isDefault && (
                 <span key={resetCount} className="wr-reset__slam" aria-hidden="true">
-                  Reset!
+                  {L('Reset!', '¡Como nuevo!')}
                 </span>
               )}
             </button>
           </footer>
 
-          <p className="wr-credit">Data: NASA MERRA-2</p>
+          <p className="wr-credit">{L('Data: NASA MERRA-2', 'Datos: NASA MERRA-2')}</p>
         </div>
       </div>
 

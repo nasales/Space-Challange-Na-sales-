@@ -3,6 +3,7 @@
 import { useId, type CSSProperties } from 'react'
 import { playSfx, setSoundSettings, useSoundSettings, type SoundSettings } from '../../shared/sound'
 import './SoundSliders.css'
+import { L } from '../../shared/i18n'
 
 interface Props {
   /** Extra class for placement */
@@ -10,8 +11,8 @@ interface Props {
 }
 
 const ROWS: { key: keyof SoundSettings; label: string; name: string }[] = [
-  { key: 'music', label: 'Music', name: 'Music volume' },
-  { key: 'sfx', label: 'Effects', name: 'Sound effects volume' },
+  { key: 'music', label: L('Music', 'Música'), name: L('Music volume', 'Volumen de la música') },
+  { key: 'sfx', label: L('Effects', 'Efectos'), name: L('Sound effects volume', 'Volumen de los efectos') },
 ]
 
 export default function SoundSliders({ className }: Props) {
@@ -20,7 +21,7 @@ export default function SoundSliders({ className }: Props) {
   return (
     <div className={`sound-sliders${className ? ` ${className}` : ''}`} role="group" aria-labelledby={`${id}-title`}>
       <p id={`${id}-title`} className="sound-sliders__title">
-        Sound
+        {L('Sound', 'Sonido')}
       </p>
       {ROWS.map(({ key, label, name }) => {
         const value = Math.round(settings[key] * 100)
@@ -36,7 +37,7 @@ export default function SoundSliders({ className }: Props) {
               value={value}
               style={{ '--fill': `${value}%` } as CSSProperties}
               aria-label={name}
-              aria-valuetext={value === 0 ? 'Off' : `${value} %`}
+              aria-valuetext={value === 0 ? L('Off', 'Apagado') : `${value} %`}
               onChange={(e) => {
                 setSoundSettings({ [key]: Number(e.target.value) / 100 })
                 // Effects slider: a tick at the new level, so the player hears it
@@ -48,7 +49,7 @@ export default function SoundSliders({ className }: Props) {
               }}
             />
             <span className="sound-sliders__value" aria-hidden="true">
-              {value === 0 ? 'Off' : value}
+              {value === 0 ? L('Off', 'No') : value}
             </span>
           </label>
         )

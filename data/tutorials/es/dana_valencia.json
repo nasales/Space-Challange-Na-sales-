@@ -1,0 +1,372 @@
+{
+  "case_id": "dana_valencia",
+  "title": "La DANA de Valencia",
+  "place": "Valencia",
+  "intro": {
+    "headline": "29 de octubre de 2024: la tormenta que cambió Valencia",
+    "paragraphs": [
+      "El 29 de octubre de 2024 una DANA golpeó la provincia de Valencia, en el este de España. En pocas horas cayó más lluvia de la que algunos lugares reciben en meses. Las riadas arrasaron pueblos, calles y carreteras, y murieron más de 220 personas.",
+      "DANA significa \"depresión aislada en niveles altos\": una bolsa de aire frío que se desprende en lo alto de la atmósfera. En otoño, con el Mediterráneo todavía caliente, puede alimentar tormentas que se quedan horas sobre la misma zona.",
+      "Tras una catástrofe así, mucha gente se pregunta: ¿es el cambio climático? ¿Llueve cada vez más? Un buen detective no adivina. En este expediente vas a leer los datos de la NASA para Valencia paso a paso, y después decidirás tú."
+    ],
+    "question": "Después de las inundaciones de la DANA de 2024, ¿llueve cada vez más en Valencia, o lo que cambia es otra cosa?"
+  },
+  "scene": {
+    "lines": [
+      {
+        "speaker": "witness",
+        "text": "Bon dia, detective! Aquí, junto a los naranjos. Vienes por lo de la riada, ¿no?", "mood": "happy"
+      },
+      {
+        "speaker": "detective",
+        "text": "Bon dia. Así es. Investigo lo que pasó aquí en octubre de 2024. ¿Me lo cuentas?", "mood": "curious"
+      },
+      {
+        "speaker": "witness",
+        "text": "El 29 de octubre. Una DANA se plantó encima de nosotros y soltó la lluvia de meses en pocas horas.", "mood": "sad"
+      },
+      {
+        "speaker": "detective",
+        "text": "¿Una DANA?", "mood": "curious"
+      },
+      {
+        "speaker": "witness",
+        "text": "Una bolsa de aire frío allá arriba que se suelta y se queda quieta. Sobre un mar caliente de otoño, alimenta tormentas durante horas.", "mood": "explaining"
+      },
+      {
+        "speaker": "witness",
+        "text": "Los barrancos se llenaron en minutos. Las riadas cruzaron pueblos y carreteras. Murieron más de 220 personas.", "mood": "sad"
+      },
+      {
+        "speaker": "detective",
+        "text": "Lo siento mucho. Fue un día terrible para toda la región.", "mood": "sad"
+      },
+      {
+        "speaker": "witness",
+        "text": "Durante semanas sacamos barro de las casas de los vecinos. Ayudó todo el mundo, jóvenes y mayores.", "mood": "proud"
+      },
+      {
+        "speaker": "witness",
+        "text": "Ahora en la radio todos dicen \"cambio climático\". Que un mundo más cálido da más combustible a las tormentas, dicen.", "mood": "doubtful"
+      },
+      {
+        "speaker": "detective",
+        "text": "Mucha gente se pregunta lo mismo. ¿Y tú qué piensas, Vicent?", "mood": "curious"
+      },
+      {
+        "speaker": "witness",
+        "text": "Mira, xiquet, llevo toda la vida mirando este cielo. Aquí el tiempo está cambiando, y cada año llueve más. ¡Te lo digo yo!", "mood": "insistent"
+      },
+      {
+        "speaker": "detective",
+        "text": "Esa es una afirmación clara. Un buen detective no adivina: pone a prueba cada afirmación con pruebas.", "mood": "determined"
+      },
+      {
+        "speaker": "detective",
+        "text": "Así que la pregunta es: ¿llueve cada vez más en Valencia, o lo que cambia es otra cosa? Vamos a leer los datos de la NASA.", "mood": "determined"
+      },
+      {
+        "speaker": "witness",
+        "text": "Venga, adelante. ¡Ya verás como tengo razón!", "mood": "confident"
+      }
+    ],
+    "claim": "Aquí el tiempo está cambiando, y cada año llueve más."
+  },
+  "steps": [
+    {
+      "id": "monthly_series",
+      "title": "Un punto por mes",
+      "text": "Vamos a comprobar lo que dice Vicent. Esta línea es una serie temporal: un punto por cada mes desde enero de 1998 hasta septiembre de 2025. Cada punto es la lluvia media por día de ese mes, en milímetros por día (mm/día), sobre el cuadrado de terreno que contiene Valencia. El tiempo avanza de izquierda a derecha. El punto marcado es octubre de 2024, el mes de la DANA. Datos: NASA GPM IMERG.",
+      "chart": {
+        "variable": "PRECIP",
+        "view": "monthly",
+        "highlights": [
+          {
+            "kind": "point",
+            "date": "2024-10",
+            "label": "Octubre de 2024 (DANA)"
+          }
+        ]
+      },
+      "question": {
+        "prompt": "¿Qué muestra un punto de esta línea?",
+        "options": [
+          {
+            "text": "La lluvia media por día durante un mes",
+            "correct": true,
+            "feedback": "Correcto: un punto, un mes."
+          },
+          {
+            "text": "La lluvia total de un año entero",
+            "correct": false,
+            "feedback": "Cuenta los puntos que hay entre dos años en el eje del tiempo: son muchos, no uno solo. Vuelve a leer el texto: ¿qué representa cada punto?"
+          },
+          {
+            "text": "La lluvia de un solo día",
+            "correct": false,
+            "feedback": "La línea abarca casi 28 años. Un punto por día serían más de 10.000 puntos. Fíjate en las unidades y en el texto: cada punto es una media de un periodo más largo."
+          }
+        ]
+      },
+      "takeaway": "Una serie temporal es una historia contada punto a punto: aquí, un punto por mes.",
+      "clue": "Registro de lluvia: un punto por mes, de ene 1998 a sep 2025."
+    },
+    {
+      "id": "seasons",
+      "title": "El mismo ciclo cada año",
+      "text": "La lluvia en Valencia sigue las estaciones. Este gráfico promedia todos los eneros juntos, todos los febreros juntos, y así sucesivamente, para mostrar un año normal. Esto se llama climatología. Como el ciclo se repite cada año, un detective siempre compara lo comparable: un octubre con otros octubres, nunca un octubre con un julio.",
+      "chart": {
+        "variable": "PRECIP",
+        "view": "climatology"
+      },
+      "question": {
+        "prompt": "¿Qué parte del año suele ser la más seca en Valencia?",
+        "options": [
+          {
+            "text": "El verano (de junio a agosto)",
+            "correct": true,
+            "feedback": "Sí: julio es el punto más bajo del año normal."
+          },
+          {
+            "text": "El otoño (de septiembre a noviembre)",
+            "correct": false,
+            "feedback": "Busca septiembre, octubre y noviembre en el gráfico. ¿Están cerca de la parte baja o de la parte alta de la línea?"
+          },
+          {
+            "text": "El invierno (de diciembre a febrero)",
+            "correct": false,
+            "feedback": "Los meses de invierno no son los más bajos aquí. Sigue la línea a lo largo de todo el año y busca dónde baja más."
+          }
+        ]
+      },
+      "takeaway": "Las estaciones se repiten cada año, así que compara cada mes con el mismo mes de otros años.",
+      "clue": "Lo más seco, en verano (julio). Compara octubres con octubres."
+    },
+    {
+      "id": "anomalies",
+      "title": "Quitando las estaciones",
+      "text": "Ahora a cada mes se le resta el valor normal de ese mes. Lo que queda se llama anomalía: cuánto más húmedo o más seco fue un mes de lo habitual para esa época del año. Cero es un mes normal. Los puntos por encima de cero fueron más lluviosos de lo normal; los de debajo, más secos. El ciclo de las estaciones desaparece, y los meses raros saltan a la vista.",
+      "chart": {
+        "variable": "PRECIP",
+        "view": "anomaly",
+        "highlights": [
+          {
+            "kind": "point",
+            "date": "2024-10",
+            "label": "Octubre de 2024"
+          }
+        ]
+      },
+      "question": {
+        "prompt": "Un punto en +2 en este gráfico significa que ese mes tuvo...",
+        "options": [
+          {
+            "text": "2 mm/día más de lluvia de lo normal para ese mes",
+            "correct": true,
+            "feedback": "Exacto: una anomalía es la diferencia con lo normal."
+          },
+          {
+            "text": "2 mm/día de lluvia en total",
+            "correct": false,
+            "feedback": "Fíjate en la línea del cero: no significa \"nada de lluvia\", sino \"lluvia normal\". Entonces, ¿qué mide un valor por encima de cero?"
+          },
+          {
+            "text": "2 días de lluvia en el mes",
+            "correct": false,
+            "feedback": "Mira las unidades del eje: siguen siendo mm/día, no días. El gráfico muestra una cantidad de lluvia comparada con lo normal."
+          }
+        ]
+      },
+      "takeaway": "Una anomalía te dice lo raro que fue un mes, una vez quitadas las estaciones.",
+      "clue": "Oct 2024: unos 1,4 mm/día más lluvioso que un octubre normal."
+    },
+    {
+      "id": "october_2024",
+      "title": "Un mes terrible",
+      "text": "En octubre de 2024 este cuadrado recibió de media unos 3,6 mm/día, más que un octubre normal (unos 2,3). Pero no es el punto más alto: el mes más lluvioso del registro es octubre de 2000. ¿Cómo puede ser? Una tormenta de pocas horas se promedia en todo un mes y en un cuadrado de unos 10 km, y buena parte de la lluvia más intensa cayó tierra adentro, al oeste de la ciudad. La riada que vivió Vicent fue real; la media mensual simplemente la esconde.",
+      "chart": {
+        "variable": "PRECIP",
+        "view": "monthly",
+        "highlight_max": true,
+        "highlights": [
+          {
+            "kind": "point",
+            "date": "2024-10",
+            "label": "Octubre de 2024 (DANA)"
+          }
+        ]
+      },
+      "question": {
+        "prompt": "¿Es octubre de 2024 el punto más alto de este registro de lluvia?",
+        "options": [
+          {
+            "text": "No, hay varios meses más altos, como octubre de 2000",
+            "correct": true,
+            "feedback": "Correcto: la tormenta más mortífera no es el punto más alto aquí."
+          },
+          {
+            "text": "Sí, es el punto más alto",
+            "correct": false,
+            "feedback": "Compara el punto de octubre de 2024 con el máximo marcado. ¿Cuál es más alto?"
+          },
+          {
+            "text": "No, es el punto más bajo",
+            "correct": false,
+            "feedback": "Vuelve a mirar: octubre de 2024 está por encima de la mayoría de los meses. Es alto, pero no el más alto."
+          }
+        ]
+      },
+      "takeaway": "Un fenómeno extremo es un solo punto; por sí solo no puede decirte hacia dónde va la serie.",
+      "clue": "Oct 2024: 3,6 mm/día. Mucho, pero el récord es oct 2000."
+    },
+    {
+      "id": "trend_noise",
+      "title": "Línea de tendencia y ruido",
+      "text": "Vicent dice que cada año llueve más. Si fuera así, esta línea debería subir. La recta es la tendencia: la mejor pendiente única a través de todos los meses. Solo sube unos 0,02 mm/día cada 10 años. Los altibajos a su alrededor se llaman ruido: el tiempo normal, que cambia de un mes a otro. En Valencia el ruido es enorme, con saltos de varios mm/día, mientras que la tendencia es casi plana.",
+      "chart": {
+        "variable": "PRECIP",
+        "view": "anomaly",
+        "show_trend": true
+      },
+      "question": {
+        "prompt": "Comparado con los saltos de un mes a otro, ¿cuánto cambia la línea de tendencia?",
+        "options": [
+          {
+            "text": "Muy poco: la línea es casi plana",
+            "correct": true,
+            "feedback": "Sí: el ruido es mucho mayor que la tendencia."
+          },
+          {
+            "text": "Más que los saltos",
+            "correct": false,
+            "feedback": "Compara la altura de los picos más altos con lo que sube la recta de izquierda a derecha. ¿Qué es mayor?"
+          },
+          {
+            "text": "Baja en picado",
+            "correct": false,
+            "feedback": "Sigue la recta desde el borde izquierdo hasta el derecho. ¿Baja mucho o se queda cerca del cero?"
+          }
+        ]
+      },
+      "takeaway": "Una tendencia resume décadas; los puntos sueltos, por extremos que sean, son sobre todo ruido.",
+      "clue": "Tendencia de lluvia casi plana: unos +0,02 mm/día por década."
+    },
+    {
+      "id": "significance",
+      "title": "¿Podría ser casualidad?",
+      "text": "La lluvia sube y baja por azar, así que incluso sin ningún cambio real una línea puede inclinarse un poco. El valor p es la probabilidad de obtener una pendiente así de grande si en realidad nada estuviera cambiando. Para la lluvia aquí, p = 0,67: 67 de cada 100, así que podría ser casualidad sin problema. El intervalo de confianza del 95 %, de -0,14 a +0,18 mm/día por década, incluye el cero. Esta es la prueba clave de lo que dice Vicent sobre la lluvia.",
+      "chart": {
+        "variable": "PRECIP",
+        "view": "annual",
+        "show_trend": true
+      },
+      "question": {
+        "prompt": "Con p = 0,67, ¿qué puede decir el detective sobre la lluvia en Valencia?",
+        "options": [
+          {
+            "text": "Los datos no muestran una tendencia clara: una pendiente tan pequeña podría salir por casualidad",
+            "correct": true,
+            "feedback": "Muy bien: \"ninguna tendencia significativa\" también es una respuesta válida."
+          },
+          {
+            "text": "La lluvia está aumentando claramente",
+            "correct": false,
+            "feedback": "La línea sube un poco, pero una tendencia solo se considera significativa cuando p es menor que 0,05 (5 de cada 100). ¿Es 0,67 menor que 0,05?"
+          },
+          {
+            "text": "Esto demuestra que la lluvia en Valencia nunca cambia",
+            "correct": false,
+            "feedback": "Mira el intervalo de confianza: va desde una pequeña bajada hasta una pequeña subida. No encontrar un cambio claro no es lo mismo que demostrar que no lo hay."
+          }
+        ]
+      },
+      "takeaway": "No significativa quiere decir \"sin pruebas claras de cambio\", no \"prueba de que nada cambia\".",
+      "clue": "Lluvia: p = 0,67, el intervalo incluye el cero. Sin tendencia clara."
+    },
+    {
+      "id": "temperature",
+      "title": "Ahora mira el aire",
+      "text": "Vicent también dijo que el tiempo está cambiando. Mismos pasos, otra pista: la temperatura media anual del aire en Valencia desde 1980. Datos: NASA MERRA-2. La tendencia es de unos +0,3 °C por década, alrededor de 1,5 °C en todo el periodo. Aquí p < 0,001: menos de 1 entre 1.000, así que es muy improbable que sea casualidad. El intervalo de confianza, de +0,22 a +0,41 °C por década, está entero por encima de cero.",
+      "chart": {
+        "variable": "T2M",
+        "view": "annual",
+        "show_trend": true
+      },
+      "question": {
+        "prompt": "¿Cómo son los años más recientes comparados con los años 80?",
+        "options": [
+          {
+            "text": "Más cálidos",
+            "correct": true,
+            "feedback": "Sí: los años recientes quedan muy por encima de los 80."
+          },
+          {
+            "text": "Más o menos iguales",
+            "correct": false,
+            "feedback": "Compara los puntos del extremo izquierdo con los del extremo derecho. ¿Están a la misma altura?"
+          },
+          {
+            "text": "Más fríos",
+            "correct": false,
+            "feedback": "Sigue la línea de tendencia de izquierda a derecha. ¿Baja o sube?"
+          }
+        ]
+      },
+      "takeaway": "La temperatura en Valencia muestra una subida clara y significativa.",
+      "clue": "Aire: unos +0,3 °C por década, p < 0,001. Calentamiento claro."
+    },
+    {
+      "id": "compare",
+      "title": "Dos pistas, una al lado de otra",
+      "text": "Esta es la anomalía de temperatura: cada mes comparado con su valor normal, igual que hiciste con la lluvia. La línea de tendencia sube sin parar a través del ruido. Así que las dos pistas cuentan historias distintas: la lluvia da muchos saltos sin una tendencia clara, mientras que la temperatura no deja de subir. Un detective informa de las dos, las mantiene separadas y comprueba cada mitad de lo que dice Vicent por su cuenta.",
+      "chart": {
+        "variable": "T2M",
+        "view": "anomaly",
+        "show_trend": true,
+        "highlights": [
+          {
+            "kind": "point",
+            "date": "2024-10",
+            "label": "Octubre de 2024"
+          }
+        ]
+      },
+      "question": {
+        "prompt": "¿Qué variable muestra una tendencia clara y significativa en Valencia?",
+        "options": [
+          {
+            "text": "Solo la temperatura",
+            "correct": true,
+            "feedback": "Correcto: la temperatura sube claramente; la lluvia no tiene una tendencia clara."
+          },
+          {
+            "text": "Solo la lluvia",
+            "correct": false,
+            "feedback": "Recuerda el valor p de la lluvia (0,67) y compáralo con el de la temperatura (menor que 0,001). ¿Cuál es menor que 0,05?"
+          },
+          {
+            "text": "La lluvia y la temperatura",
+            "correct": false,
+            "feedback": "Piensa en la línea de tendencia de la lluvia: ¿era significativa? Solo uno de los dos valores p es menor que 0,05."
+          }
+        ]
+      },
+      "takeaway": "Distintas variables pueden contar historias distintas sobre el mismo lugar.",
+      "clue": "Dos pistas, dos historias: lluvia plana, temperatura en alza."
+    }
+  ],
+  "conclusion": {
+    "prompt": "Después de las inundaciones de la DANA de 2024, ¿llueve cada vez más en Valencia, o lo que cambia es otra cosa? Escribe tu conclusión con lo que te han mostrado los gráficos.",
+    "variable": "PRECIP",
+    "placeholder": "Viendo los datos de lluvia de Valencia de 1998 a 2025, creo que..."
+  },
+  "reveal": {
+    "by_variable": {
+      "PRECIP": "La lluvia en Valencia (de enero de 1998 a septiembre de 2025) no muestra ninguna tendencia significativa: la pendiente es de unos +0,02 mm/día por década, p = 0,67, y el intervalo de confianza del 95 % (de -0,14 a +0,18 mm/día por década) incluye el cero. Octubre de 2024 fue más lluvioso que un octubre normal, pero es un fenómeno aislado, no una tendencia.",
+      "T2M": "La temperatura del aire en Valencia (de enero de 1980 a septiembre de 2026) sube claramente: unos +0,31 °C por década (intervalo del 95 %: de +0,22 a +0,41 °C por década), p < 0,001, alrededor de 1,5 °C en todo el periodo."
+    },
+    "lesson": "Un fenómeno extremo, aunque sea mortal, no es una tendencia. Una tendencia no significativa es un resultado válido: los datos de lluvia no muestran un cambio claro, lo que no demuestra que nada cambie. Lo que sí cambia claramente aquí es la temperatura. Los científicos saben que el aire más cálido puede contener más vapor de agua, y esa es una de las razones por las que estudian si los aguaceros intensos son cada vez más fuertes; este registro mensual de lluvia no puede responder a eso por sí solo.",
+    "claim_verdict": "partly",
+    "claim_text": "Vicent, la tormenta fue real y terrible, y tienes razón en que algo está cambiando: el aire aquí está unos 1,5 °C más caliente que en 1980. Pero el registro mensual de lluvia no muestra una tendencia clara, así que estos datos no respaldan que \"cada año llueve más\"."
+  }
+}

@@ -20,6 +20,7 @@ import TimeSeriesChart from '../TimeSeriesChart'
 import { baseUnits, formatP } from '../format'
 import { ALPHA, SEASON_MONTHS, SEASON_TAB } from './labels'
 import { exhibitP, seasonSwitchAnswer, trendOf, type TaskOf } from './taskData'
+import { L, LANG } from '../../../shared/i18n'
 
 interface Props<T extends InterrogationTask['type']> {
   evidence: InterrogationEvidence
@@ -30,7 +31,8 @@ interface Props<T extends InterrogationTask['type']> {
 }
 
 /** p-value for a proof card: exact down to 0.0001 (formatP stops at "p < 0.001") */
-const pText = (p: number) => (p < 0.0001 ? 'p < 0.0001' : p < 0.001 ? `p = ${Number(p.toPrecision(2))}` : formatP(p))
+const pText = (p: number) => (p < 0.001 ? fmtP4(p) : formatP(p))
+const fmtP4 = (p: number) => { const t = p < 0.0001 ? 'p < 0.0001' : `p = ${Number(p.toPrecision(2))}`; return LANG === 'es' ? t.replace('.', ',') : t }
 
 /** Two decimals with a true minus sign, for slopes per decade */
 const fixed2 = (x: number) => (x > 0 ? '+' : x < 0 ? '−' : '') + Math.abs(x).toFixed(2)
@@ -45,7 +47,7 @@ function useVerdict(done: boolean) {
 
 type Tab = 'year' | SeasonId
 
-const tabName = (t: Tab) => (t === 'year' ? 'Whole year' : SEASON_TAB[t])
+const tabName = (t: Tab) => (t === 'year' ? L('Whole year', 'Todo el año') : SEASON_TAB[t])
 
 export function SeasonSwitchTask({ task, data, done, onSolved }: Props<'season_switch'>) {
   const series = data.variables[task.variable]
@@ -58,7 +60,12 @@ export function SeasonSwitchTask({ task, data, done, onSolved }: Props<'season_s
   const [verdict, setVerdict, wrong] = useVerdict(done)
   const tabRefs = useRef(new Map<Tab, HTMLButtonElement>())
   const solved = verdict.state === 'right'
-  if (!series) return <p className="evtask__msg">The data for {task.variable} is missing from this case file.</p>
+  if (!series)
+    return (
+      <p className="evtask__msg">
+        {L(`The data for ${task.variable} is missing from this case file.`, `Faltan los datos de ${task.variable} en este expediente.`)}
+      </p>
+    )
   const u = baseUnits(series.units)
 
   const open = (t: Tab) => {
@@ -96,25 +103,28 @@ export function SeasonSwitchTask({ task, data, done, onSolved }: Props<'season_s
     if (verdict.state === 'wrong') setVerdict({ state: 'idle' })
   }
   const check = () => {
-    if (!none && ticked.size === 0) return wrong('Tick at least one box, or "None of them".')
+    if (!none && ticked.size === 0) return wrong(L('Tick at least one box, or "None of them".', 'Marca al menos una casilla, o «Ninguna».'))
     const ok = none ? answer.size === 0 : answer.size === ticked.size && [...ticked].every((s) => answer.has(s))
     if (ok) {
       setVerdict({ state: 'right' })
       onSolved()
       return
     }
-    if (none) return wrong('At least one season matches.')
+    if (none) return wrong(L('At least one season matches.', 'Al menos una estación cumple.'))
     const hits = [...ticked].filter((s) => answer.has(s)).length
     const missing = answer.size - hits
     wrong(
-      `${hits} of your ${ticked.size} ${ticked.size === 1 ? 'tick is' : 'ticks are'} right${missing > 0 ? `, and ${missing === 1 ? 'one season is' : `${missing} seasons are`} missing` : ''}.`,
+      L(
+        `${hits} of your ${ticked.size} ${ticked.size === 1 ? 'tick is' : 'ticks are'} right${missing > 0 ? `, and ${missing === 1 ? 'one season is' : `${missing} seasons are`} missing` : ''}.`,
+        `${hits} de tus ${ticked.size} ${ticked.size === 1 ? 'marca es correcta' : 'marcas son correctas'}${missing > 0 ? `, y ${missing === 1 ? 'falta una estación' : `faltan ${missing} estaciones`}` : ''}.`,
+      ),
     )
   }
 
   return (
     <div className="evtask ixtask">
       <p className="evtask__prompt">{task.prompt}</p>
-      <div className="ixtabs" role="tablist" aria-label="Whole year or one season">
+      <div className="ixtabs" role="tablist" aria-label={L('Whole year or one season', 'Todo el año o una estación')}>
         {tabs.map((t) => (
           <button
             key={t}
@@ -131,7 +141,7 @@ export function SeasonSwitchTask({ task, data, done, onSolved }: Props<'season_s
             onKeyDown={onTabKey}
           >
             {tabName(t)}
-            <small>{t === 'year' ? 'all months' : SEASON_MONTHS[t]}</small>
+            <small>{t === 'year' ? L('all months', 'todos los meses') : SEASON_MONTHS[t]}</small>
           </button>
         ))}
       </div>
@@ -140,13 +150,13 @@ export function SeasonSwitchTask({ task, data, done, onSolved }: Props<'season_s
         {tr && (
           <p className="ixreadout" aria-live="polite">
             <b className="ixreadout__slope">
-              {fixed2(tr.slope)} {u} per decade
+              {fixed2(tr.slope)} {u} {L('per decade', 'por década')}
             </b>
             <span>
-              95% range {fixed2(tr.lo)} to {fixed2(tr.hi)}
+              {L(`95% range ${fixed2(tr.lo)} to ${fixed2(tr.hi)}`, `Rango del 95 %: de ${fixed2(tr.lo)} a ${fixed2(tr.hi)}`)}
             </span>
             <span className={`ixreadout__p${tr.p < ALPHA ? ' is-sig' : ''}`}>
-              {formatP(tr.p)} · {tr.p < ALPHA ? 'significant' : 'not significant'}
+              {formatP(tr.p)} · {tr.p < ALPHA ? L('significant', 'significativa') : L('not significant', 'no significativa')}
             </span>
           </p>
         )}
@@ -173,16 +183,18 @@ export function SeasonSwitchTask({ task, data, done, onSolved }: Props<'season_s
                 if (verdict.state === 'wrong') setVerdict({ state: 'idle' })
               }}
             />
-            <span>None of them</span>
+            <span>{L('None of them', 'Ninguna')}</span>
           </label>
         </div>
         {!solved && (
           <div className="evtask__row evtask__row--end">
             <p className="evtask__help">
-              {seen.size < tabs.length ? `Visit every tab first: ${seen.size} of ${tabs.length} seen.` : 'Every tab seen. Tick your answer.'}
+              {seen.size < tabs.length
+                ? L(`Visit every tab first: ${seen.size} of ${tabs.length} seen.`, `Primero visita todas las pestañas: ${seen.size} de ${tabs.length} vistas.`)
+                : L('Every tab seen. Tick your answer.', 'Todas las pestañas vistas. Marca tu respuesta.')}
             </p>
             <button type="button" className="evbtn evbtn--primary" onClick={check}>
-              Check
+              {L('Check', 'Comprobar')}
             </button>
           </div>
         )}
@@ -223,9 +235,12 @@ function SlopeBars({
   return (
     <figure className="ixbars">
       <figcaption className="ixbars__cap">
-        Trend of each tab, {units} per decade{rule === 'faster_than_year' ? ' (dashed line: the whole year)' : ' (filled = significant)'}
+        {L(`Trend of each tab, ${units} per decade`, `Tendencia de cada pestaña, ${units} por década`)}
+        {rule === 'faster_than_year'
+          ? L(' (dashed line: the whole year)', ' (línea discontinua: todo el año)')
+          : L(' (filled = significant)', ' (rellena = significativa)')}
       </figcaption>
-      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Trend of every tab you visited">
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={L('Trend of every tab you visited', 'Tendencia de cada pestaña que has visitado')}>
         <line x1={0} x2={W} y1={y(0)} y2={y(0)} className="ixbars__zero" />
         <text x={4} y={y(0) - 4} className="ixbars__axis">
           0
@@ -323,13 +338,13 @@ export function ProofLineTask({ evidence, task, data, done, onSolved }: Props<'p
   })
 
   const check = () => {
-    if (place.some((s) => s == null)) return wrong('Put every card on one side of the line first.')
+    if (place.some((s) => s == null)) return wrong(L('Put every card on one side of the line first.', 'Primero pon cada tarjeta a un lado de la línea.'))
     const ok = place.map((s, i) => s === answer[i])
     setChecked(ok)
     if (ok.every(Boolean)) {
       setVerdict({ state: 'right' })
       onSolved()
-    } else wrong(`${ok.filter(Boolean).length} of ${ok.length} are on the right side.`)
+    } else wrong(L(`${ok.filter(Boolean).length} of ${ok.length} are on the right side.`, `${ok.filter(Boolean).length} de ${ok.length} están en el lado correcto.`))
   }
 
   const chip = (i: number) => {
@@ -345,20 +360,24 @@ export function ProofLineTask({ evidence, task, data, done, onSolved }: Props<'p
         {...pointer(i)}
       >
         <span className="ixchip__label">{x.label}</span>
-        <span className="ixchip__p">{p == null ? 'no data' : pText(p)}</span>
+        <span className="ixchip__p">{p == null ? L('no data', 'sin datos') : pText(p)}</span>
         {!solved && (
           <span className="ixchip__moves">
-            <button type="button" onClick={() => put(i, 'proven')} disabled={place[i] === 'proven'} aria-label={`Put ${x.label} beyond reasonable doubt`}>
+            <button type="button" onClick={() => put(i, 'proven')} disabled={place[i] === 'proven'} aria-label={L(`Put ${x.label} beyond reasonable doubt`, `Poner ${x.label} en más allá de toda duda razonable`)}>
               ◀
             </button>
-            <button type="button" onClick={() => put(i, 'doubt')} disabled={place[i] === 'doubt'} aria-label={`Put ${x.label} on reasonable doubt`}>
+            <button type="button" onClick={() => put(i, 'doubt')} disabled={place[i] === 'doubt'} aria-label={L(`Put ${x.label} on reasonable doubt`, `Poner ${x.label} en duda razonable`)}>
               ▶
             </button>
           </span>
         )}
         <span className="ixchip__sr">
-          {place[i] === 'proven' ? 'beyond reasonable doubt' : place[i] === 'doubt' ? 'reasonable doubt' : 'not placed yet'}
-          {checked ? (checked[i] ? ', right side' : ', wrong side') : ''}
+          {place[i] === 'proven'
+            ? L('beyond reasonable doubt', 'más allá de toda duda razonable')
+            : place[i] === 'doubt'
+              ? L('reasonable doubt', 'duda razonable')
+              : L('not placed yet', 'aún sin colocar')}
+          {checked ? (checked[i] ? L(', right side', ', lado correcto') : L(', wrong side', ', lado equivocado')) : ''}
         </span>
       </li>
     )
@@ -373,33 +392,33 @@ export function ProofLineTask({ evidence, task, data, done, onSolved }: Props<'p
         <TimeSeriesChart spec={evidence.chart} series={data.variables[evidence.chart.variable]} variables={data.variables} />
       )}
       {idx.some((i) => place[i] == null) && (
-        <ul className={`ixtray${over === 'tray' ? ' is-over' : ''}`} data-zone="tray" aria-label="Trends not placed yet">
+        <ul className={`ixtray${over === 'tray' ? ' is-over' : ''}`} data-zone="tray" aria-label={L('Trends not placed yet', 'Tendencias aún sin colocar')}>
           {idx.filter((i) => place[i] == null).map(chip)}
         </ul>
       )}
       <div className="ixproof">
         <section className={`ixproof__zone ixproof__zone--proven${over === 'proven' ? ' is-over' : ''}`} data-zone="proven">
           <h4>
-            Beyond reasonable doubt <small>p &lt; 0.05 · significant</small>
+            {L('Beyond reasonable doubt', 'Más allá de toda duda razonable')} <small>{L('p < 0.05 · significant', 'p < 0,05 · significativa')}</small>
           </h4>
-          <ul aria-label="Beyond reasonable doubt">{idx.filter((i) => place[i] === 'proven').map(chip)}</ul>
+          <ul aria-label={L('Beyond reasonable doubt', 'Más allá de toda duda razonable')}>{idx.filter((i) => place[i] === 'proven').map(chip)}</ul>
         </section>
         <div className="ixproof__line" aria-hidden="true">
-          <span>p = 0.05</span>
+          <span>{L('p = 0.05', 'p = 0,05')}</span>
         </div>
         <section className={`ixproof__zone ixproof__zone--doubt${over === 'doubt' ? ' is-over' : ''}`} data-zone="doubt">
           <h4>
-            Reasonable doubt <small>p ≥ 0.05 · not significant</small>
+            {L('Reasonable doubt', 'Duda razonable')} <small>{L('p ≥ 0.05 · not significant', 'p ≥ 0,05 · no significativa')}</small>
           </h4>
-          <ul aria-label="Reasonable doubt">{idx.filter((i) => place[i] === 'doubt').map(chip)}</ul>
+          <ul aria-label={L('Reasonable doubt', 'Duda razonable')}>{idx.filter((i) => place[i] === 'doubt').map(chip)}</ul>
         </section>
       </div>
       {solved && <PScale exhibits={task.exhibits} ps={ps} />}
       {!solved && (
         <div className="evtask__row evtask__row--end">
-          <p className="evtask__help">Drag each card to a side, or use its arrow buttons.</p>
+          <p className="evtask__help">{L('Drag each card to a side, or use its arrow buttons.', 'Arrastra cada tarjeta a un lado, o usa sus botones de flecha.')}</p>
           <button type="button" className="evbtn evbtn--primary" onClick={check}>
-            Check the line
+            {L('Check the line', 'Comprobar la línea')}
           </button>
         </div>
       )}
@@ -411,18 +430,23 @@ export function ProofLineTask({ evidence, task, data, done, onSolved }: Props<'p
 /** After solving: every exhibit on a logarithmic p-value ruler, with the 0.05 line */
 function PScale({ exhibits, ps }: { exhibits: ProofExhibit[]; ps: (number | null)[] }) {
   const W = 600
-  const L = 20
+  const PL = 20
   const R = W - 20
   const min = -4 // 0.0001
-  const x = (p: number) => L + ((Math.max(min, Math.log10(Math.max(p, 1e-12))) - min) / (0 - min)) * (R - L)
+  const x = (p: number) => PL + ((Math.max(min, Math.log10(Math.max(p, 1e-12))) - min) / (0 - min)) * (R - PL)
   const ticks = [0.0001, 0.001, 0.01, 0.05, 0.1, 1]
   const rows = exhibits.map((e, i) => ({ e, p: ps[i] })).filter((r): r is { e: ProofExhibit; p: number } => r.p != null)
   const H = 46 + rows.length * 20
   return (
     <figure className="ixpscale">
-      <figcaption className="ixbars__cap">Where each p-value falls (log scale: each step is 10 times smaller)</figcaption>
-      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="p-values on a scale with the 0.05 line">
-        <rect x={L} y={8} width={x(ALPHA) - L} height={H - 30} className="ixpscale__proven" />
+      <figcaption className="ixbars__cap">
+        {L(
+          'Where each p-value falls (log scale: each step is 10 times smaller)',
+          'Dónde cae cada valor p (escala logarítmica: cada paso es 10 veces más pequeño)',
+        )}
+      </figcaption>
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={L('p-values on a scale with the 0.05 line', 'Valores p en una escala con la línea de 0,05')}>
+        <rect x={PL} y={8} width={x(ALPHA) - PL} height={H - 30} className="ixpscale__proven" />
         {ticks.map((t) => (
           <g key={t}>
             <line x1={x(t)} x2={x(t)} y1={8} y2={H - 22} className={t === ALPHA ? 'ixpscale__alpha' : 'ixpscale__tick'} />

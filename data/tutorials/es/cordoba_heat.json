@@ -1,0 +1,277 @@
+{
+  "case_id": "cordoba_heat",
+  "title": "Calor en Córdoba",
+  "place": "Córdoba",
+  "intro": {
+    "headline": "Agosto de 2021: unos 47 °C cerca de Córdoba",
+    "paragraphs": [
+      "En agosto de 2021, una estación meteorológica cerca de Córdoba, en el sur de España, midió unos 47 °C, la temperatura más alta registrada oficialmente en España.",
+      "Córdoba está en el valle bajo del Guadalquivir, lejos de la brisa fresca del mar. Cada pocos veranos las noticias hablan de un nuevo récord de calor. Un detective no se fía solo de los titulares: en este caso clavarás datos de la NASA en un tablón de pruebas y decidirás por ti mismo."
+    ],
+    "question": "Córdoba no para de batir récords de calor. ¿De verdad cada verano es más caluroso, o solo fueron años malos?"
+  },
+  "scene": {
+    "lines": [
+      {
+        "speaker": "witness",
+        "text": "¡Buenas tardes, detective! Ponte a la sombra de este olivo. Ahí fuera el sol muerde.",
+        "mood": "happy"
+      },
+      {
+        "speaker": "detective",
+        "text": "Gracias. Vengo por el calor de Córdoba. Dicen que este valle no deja de batir récords.",
+        "mood": "curious"
+      },
+      {
+        "speaker": "witness",
+        "text": "El valle del Guadalquivir es bajo y está lejos del mar. En verano el aire caliente se queda aquí días y días, como en un horno.",
+        "mood": "explaining"
+      },
+      {
+        "speaker": "witness",
+        "text": "En agosto de 2021 una estación cerca de Córdoba marcó unos 47 °C. La temperatura más alta registrada oficialmente en España.",
+        "mood": "sad"
+      },
+      {
+        "speaker": "detective",
+        "text": "¿Y cómo es trabajar el olivar en un verano así?",
+        "mood": "curious"
+      },
+      {
+        "speaker": "witness",
+        "text": "Empezamos a las seis de la mañana y paramos antes de mediodía. Después, el suelo te quema a través de las botas.",
+        "mood": "explaining"
+      },
+      {
+        "speaker": "witness",
+        "text": "Los árboles también sufren. En los peores veranos la aceituna se queda pequeña y la cosecha es corta.",
+        "mood": "sad"
+      },
+      {
+        "speaker": "witness",
+        "text": "Algunos de estos olivos los plantó mi abuelo. Tres generaciones de mi familia han sudado debajo de ellos.",
+        "mood": "proud"
+      },
+      {
+        "speaker": "witness",
+        "text": "En la radio ya hablan de olas de calor todos los años. Hay quien dice que es pura mala suerte.",
+        "mood": "doubtful"
+      },
+      {
+        "speaker": "detective",
+        "text": "¿Y tú qué piensas, Rafael?",
+        "mood": "curious"
+      },
+      {
+        "speaker": "witness",
+        "text": "¿Mala suerte? Qué va, hombre. Lo noto en la espalda. ¡Cada verano es más caluroso que el anterior! Estoy seguro.",
+        "mood": "insistent"
+      },
+      {
+        "speaker": "detective",
+        "text": "Esa es una afirmación clara, y podemos ponerla a prueba. Un buen detective no adivina: mira las pruebas.",
+        "mood": "determined"
+      },
+      {
+        "speaker": "detective",
+        "text": "Así que la pregunta es: ¿cada verano es más caluroso, o solo fueron años malos? Vamos a clavar los datos de la NASA en el tablón.",
+        "mood": "determined"
+      },
+      {
+        "speaker": "witness",
+        "text": "Venga, adelante. ¡Los datos dirán lo que mi espalda ya sabe!",
+        "mood": "confident"
+      }
+    ],
+    "claim": "Cada verano es más caluroso que el anterior."
+  },
+  "steps": [],
+  "board": {
+    "title": "¿Cada verano es más caluroso que el anterior?",
+    "instructions": "La afirmación de Rafael tiene dos partes: los veranos son cada vez más calurosos y cada verano supera al anterior. Abre cada tarjeta, resuelve su tarea y únela a la afirmación con hilo rojo.",
+    "items": [
+      {
+        "id": "record_clipping",
+        "kind": "clipping",
+        "title": "El titular de los 47 °C",
+        "teaser": "Periódico, agosto de 2021",
+        "text": "Un titular y una gráfica pueden tener razón los dos y aun así no coincidir. Antes de decidir, mira qué mide cada uno: cuánto tiempo y cuánto terreno. El periódico habla de un termómetro en una estación; cada punto de esta gráfica es una media mensual sobre un cuadrado de terreno. Data: NASA MERRA-2.",
+        "clipping": {
+          "headline": "El día más caluroso de la historia de España: unos 47 °C cerca de Córdoba",
+          "body": "Una ola de calor azotó el sur de España en agosto de 2021. Una estación meteorológica cerca de Córdoba midió unos 47 °C, la temperatura más alta registrada oficialmente en el país.",
+          "date": "Agosto de 2021"
+        },
+        "chart": {
+          "variable": "T2M",
+          "view": "monthly",
+          "range": [
+            "2019-01",
+            "2024-12"
+          ],
+          "highlight_max": true,
+          "highlights": [
+            {
+              "kind": "point",
+              "date": "2021-08",
+              "label": "Agosto de 2021 (récord de 47 °C)"
+            }
+          ]
+        },
+        "task": {
+          "type": "compare",
+          "prompt": "El periódico dice 47 °C. La gráfica dice unos 29 °C para agosto de 2021. ¿Qué explicación es la correcta?",
+          "hint": "Fíjate en qué promedia un punto de la gráfica: ¿cuántas horas y sobre cuánto terreno?",
+          "success": "Exacto: los 47 °C fueron una tarde en una estación; cada punto promedia días y noches sobre un cuadrado de unos 50 km de lado. Aquí agosto de 2021 marca unos 29,0 °C, alrededor de 1 °C por encima de un agosto normal, y ni siquiera es el mes más caluroso (julio de 2022, unos 31,2 °C).",
+          "options": [
+            {
+              "text": "Miden cosas distintas: una tarde en una estación frente a una media mensual de días y noches sobre un cuadrado grande.",
+              "correct": true
+            },
+            {
+              "text": "Los datos de la NASA están mal: se les pasó la ola de calor.",
+              "correct": false
+            },
+            {
+              "text": "Los 47 °C se midieron otro año.",
+              "correct": false
+            }
+          ]
+        },
+        "relation": "neutral",
+        "relation_feedback": "No dice nada sobre la afirmación: una tarde de récord es un suceso, no una tendencia, y no nos dice si cada verano superó al anterior. Para juzgarlo, compara muchos veranos medidos de la misma forma.",
+        "clue": "Los 47 °C fueron una tarde en una estación; la gráfica muestra medias mensuales."
+      },
+      {
+        "id": "summer_polaroids",
+        "kind": "chart",
+        "title": "Seis veranos, un ranking",
+        "teaser": "Polaroids de seis veranos",
+        "text": "Cada polaroid es un verano: la temperatura media de junio, julio y agosto (JJA), para que el ciclo anual no nos líe. Si ordenamos los 47 veranos del más caluroso al más fresco, sale un ranking. Si nada estuviera cambiando, los veranos más calurosos podrían salir de cualquier parte de los 47 años, y solo unos 2 de los 10 primeros serían recientes. Aquí 6 de los 10 más calurosos son de los últimos 10 años (2017-2026).",
+        "chart": {
+          "variable": "T2M",
+          "view": "season",
+          "season": "JJA",
+          "recent_years": 10
+        },
+        "task": {
+          "type": "order_cards",
+          "prompt": "Arrastra las seis polaroids y ordénalas del verano más caluroso al más fresco.",
+          "hint": "Busca cada año en la gráfica: cuanto más alto esté su punto, más caluroso fue ese verano.",
+          "success": "Correcto: 2022, 2025, 2003, 1989, 2018, 1997. Los dos más calurosos son recientes, pero 1989 supera a 2018.",
+          "cards": [
+            "1989",
+            "2022",
+            "1997",
+            "2018",
+            "2003",
+            "2025"
+          ],
+          "order": "desc"
+        },
+        "relation": "supports",
+        "relation_feedback": "Apoya la primera parte de la afirmación: los veranos más calurosos se amontonan al final del registro, como pasa cuando una serie se calienta. No puede probar la segunda parte: un verano antiguo (1989) supera a uno reciente (2018).",
+        "clue": "6 de los 10 veranos más calurosos son de 2017-2026."
+      },
+      {
+        "id": "the_2018_drop",
+        "kind": "chart",
+        "title": "El verano que rompió la regla",
+        "teaser": "Veranos de 2014 a 2026, en orden",
+        "text": "Ahora los veranos en orden temporal. Si cada verano fuera más caluroso que el anterior, los puntos subirían como una escalera. No lo hacen: en 24 de los 46 pasos de 1980 a 2026, un verano fue más fresco que el anterior. Incluso de 2015 a 2026, 6 de los 12 veranos quedaron por debajo del anterior. El tiempo sigue variando mucho de un año a otro.",
+        "chart": {
+          "variable": "T2M",
+          "view": "season",
+          "season": "JJA",
+          "range": [
+            "2014",
+            "2026"
+          ]
+        },
+        "task": {
+          "type": "click_point",
+          "prompt": "Haz clic en el verano con la mayor caída: el que quedó más por debajo del verano justo anterior.",
+          "hint": "Busca el escalón hacia abajo más empinado entre dos puntos vecinos.",
+          "success": "Sí: el verano de 2018 (unos 26,1 °C) fue casi 2 °C más fresco que el de 2017 (unos 28,0 °C).",
+          "answer": "2018"
+        },
+        "relation": "contradicts",
+        "relation_feedback": "Contradice la afirmación tal como la dijo Rafael: si cada verano fuera más caluroso que el anterior, no habría ningún escalón hacia abajo. Hay muchos, y el de 2018 es el mayor de los últimos años.",
+        "clue": "No todo verano es más caluroso: 2018 fue 1,9 °C más fresco que 2017."
+      },
+      {
+        "id": "summer_ruler",
+        "kind": "chart",
+        "title": "Una regla entre los veranos",
+        "teaser": "Todos los veranos, de 1980 a 2026",
+        "text": "Una tendencia es el cambio lento escondido bajo los altibajos. Ajústala primero a ojo y luego compárala con la línea real, una pendiente de Sen. Dos números dicen cuánto podemos fiarnos: el valor p es la probabilidad de una pendiente así de grande si nada estuviera cambiando, y el intervalo de confianza del 95% indica dónde está probablemente la pendiente real. Si ese intervalo queda entero por encima de cero, el calentamiento es significativo.",
+        "chart": {
+          "variable": "T2M",
+          "view": "season",
+          "season": "JJA"
+        },
+        "task": {
+          "type": "fit_line",
+          "prompt": "Arrastra los dos extremos de la regla para que pase por el centro de la nube de veranos.",
+          "hint": "No persigas puntos sueltos: deja más o menos la mitad de los veranos por encima de la regla y la mitad por debajo, en los dos extremos.",
+          "success": "¡Buen ajuste! La tendencia real es de unos +0,47 °C por década, unos 2,2 °C de 1980 a 2026. p = 0,0002 y el intervalo del 95%, de +0,26 a +0,70 °C por década, queda entero por encima de cero: calentamiento significativo. Aun así, los veranos siguen dispersos por encima y por debajo de la línea.",
+          "tolerance": 0.3
+        },
+        "relation": "supports",
+        "relation_feedback": "Apoya la primera parte de la afirmación: los veranos se calientan claramente, y el resultado es significativo. Pero la mayoría de los puntos quedan fuera de la línea, por encima o por debajo: una tendencia es una subida media, no una promesa para cada año.",
+        "clue": "Los veranos se calientan unos 0,47 °C por década, p = 0,0002: significativo."
+      },
+      {
+        "id": "hot_month_tally",
+        "kind": "datacard",
+        "title": "Contando meses muy calurosos",
+        "teaser": "Meses por encima de 28 °C, año a año",
+        "text": "Otra forma de leer una serie es contar cuántas veces cruza una línea. Cada barra es un año: cuántos de sus meses tuvieron una media de más de 28 °C, días y noches juntos. Un recuento de diez años es robusto: un verano raro no lo cambia mucho. Comparar dos periodos de la misma duración muestra si los meses calurosos se han vuelto habituales.",
+        "chart": {
+          "variable": "T2M",
+          "view": "threshold_count",
+          "threshold_id": "above_28"
+        },
+        "task": {
+          "type": "tally",
+          "prompt": "Cuenta los meses por encima de 28 °C en cada periodo y escribe los dos totales.",
+          "rule": "Suma las barras (meses por encima de 28 °C) de todos los años del periodo.",
+          "hint": "Suma la altura de cada barra del periodo: una barra de 2 cuenta como 2 meses.",
+          "success": "Correcto: 5 meses calurosos en 1980-1989 y 19 en 2016-2025, casi cuatro veces más.",
+          "periods": [
+            {
+              "label": "1980-1989",
+              "from": "1980",
+              "to": "1989"
+            },
+            {
+              "label": "2016-2025",
+              "from": "2016",
+              "to": "2025"
+            }
+          ],
+          "answers": [
+            5,
+            19
+          ]
+        },
+        "relation": "supports",
+        "relation_feedback": "Apoya la primera parte de la afirmación: los meses muy calurosos pasaron de uno cada dos años a unos dos al año. Es un total de diez años, así que no dice nada de que cada verano supere al anterior.",
+        "clue": "Meses por encima de 28 °C: 5 en 1980-1989, 19 en 2016-2025."
+      }
+    ],
+    "summary": "Los veranos de Córdoba se están calentando claramente: los veranos más calurosos y los meses muy calurosos se amontonan en los últimos años. Pero los veranos siguen subiendo y bajando, y más o menos la mitad fueron más frescos que el año anterior."
+  },
+  "conclusion": {
+    "prompt": "Córdoba no para de batir récords de calor. ¿De verdad cada verano es más caluroso, o solo fueron años malos? Escribe tu conclusión usando las pruebas del tablón.",
+    "variable": "T2M",
+    "placeholder": "Viendo las temperaturas de verano en Córdoba de 1980 a 2026, creo que..."
+  },
+  "reveal": {
+    "by_variable": {
+      "T2M": "La temperatura de verano (junio a agosto) en Córdoba sube claramente de 1980 a 2026: unos +0,47 °C por década (intervalo del 95%: +0,26 a +0,70 °C por década), p = 0,0002, y 6 de los 10 veranos más calurosos son de 2017 a 2026. El registro mensual completo (enero de 1980 a septiembre de 2026) también sube: unos +0,33 °C por década, p < 0,001. Data: NASA MERRA-2."
+    },
+    "lesson": "Una tendencia de calentamiento no hace que cada verano sea más caluroso que el anterior: hace que los veranos calurosos sean mucho más frecuentes, y por eso los récords se amontonan al final de la serie. Y un récord diario en una estación no es lo mismo que una media mensual sobre un cuadrado grande.",
+    "claim_verdict": "partly",
+    "claim_text": "Rafael, tu espalda acierta en lo general: los veranos de Córdoba son unos 2 °C más calurosos que en 1980, y los meses muy calurosos son mucho más habituales. Pero no todos los veranos superan al anterior: 2018 fue casi 2 °C más fresco que 2017."
+  }
+}
