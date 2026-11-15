@@ -82,7 +82,6 @@ export default function MapLoader({ status, progress, outfit }: { status: GameSt
             aria-valuenow={percent}
           >
             <div className="map-loader__fill" />
-            <span className="map-loader__percent">{percent}%</span>
           </div>
         </div>
       </div>
