@@ -17,6 +17,7 @@ import {
   yearTicks,
   useWidth,
   type Box,
+  type ChartGeom,
   type ViewResult,
 } from './chartKit'
 import { Key, Marks, XAxis, YGrid } from './chartParts'
@@ -110,7 +111,7 @@ function lineChart(a: LineArgs): ViewResult {
   // ---- y domain
   const ys = nums.map((p) => p.y)
   if (trend) ys.push(trend.ya, trend.yb)
-  const { ticks: yTicks, sy } = yScale(ys, P.t, H - P.b, { ticks: narrow ? 4 : 5, zero: a.zero || a.bars, integer: a.bars })
+  const { ticks: yTicks, sy, yMin, yMax } = yScale(ys, P.t, H - P.b, { ticks: narrow ? 4 : 5, zero: a.zero || a.bars, integer: a.bars })
 
   // ---- x ticks
   const xTicks: { x: number; label: string }[] = []
@@ -283,7 +284,17 @@ function lineChart(a: LineArgs): ViewResult {
       <Marks placed={placed} />
     </>
   )
-  return { H, body, summary, keys: trend ? <Key kind="trend">Trend line</Key> : null }
+  const geom: ChartGeom = {
+    W,
+    H,
+    plot: { left: P.l, right: W - P.r, top: P.t, bottom: H - P.b },
+    pts: main.pts.flatMap((p) => (p.y == null ? [] : [{ px: sx(p.x), py: sy(p.y), key: p.key, value: p.y }])),
+    sx,
+    sy,
+    ix: (px) => x0 + ((px - P.l) / (plotW || 1)) * (x1 - x0),
+    iy: (py) => yMin + (1 - (py - P.t) / (plotH || 1)) * (yMax - yMin),
+  }
+  return { H, body, summary, keys: trend ? <Key kind="trend">Trend line</Key> : null, geom }
 }
 
 // ---- views -----------------------------------------------------------------------------------
@@ -466,11 +477,17 @@ export default function TimeSeriesChart({
   spec,
   series,
   variables,
+  overlay,
 }: {
   spec: ChartSpec
   series: TutorialSeries
   /** every variable of the case (needed by zscore_pair and season_scatter) */
   variables?: Record<string, TutorialSeries>
+  /**
+   * Extra SVG drawn on top of the chart (evidence-board tasks: hit targets, a ruler, a highlight).
+   * Only views that report their geometry (line views, window_trends) call it.
+   */
+  overlay?: (g: ChartGeom) => ReactNode
 }) {
   const [boxRef, W] = useWidth<HTMLDivElement>(640)
   const uid = useId().replace(/:/g, '')
@@ -483,8 +500,16 @@ export default function TimeSeriesChart({
         {'empty' in out ? (
           <p className="casefile-chart__empty">{out.empty}</p>
         ) : (
-          <svg width={W} height={out.H} viewBox={`0 0 ${W} ${out.H}`} role="img" aria-label={out.summary}>
+          <svg
+            width={W}
+            height={out.H}
+            viewBox={`0 0 ${W} ${out.H}`}
+            // with an interactive overlay the chart is a group (its controls stay reachable)
+            role={overlay && out.geom ? 'group' : 'img'}
+            aria-label={out.summary}
+          >
             {out.body}
+            {overlay && out.geom && overlay(out.geom)}
           </svg>
         )}
       </div>

@@ -20,9 +20,11 @@ interface Props {
   total: number
   /** Static copy on the case-closed screen (no folding, no animation) */
   variant?: 'side' | 'closed'
+  /** Shown while no clue is noted yet */
+  emptyText?: string
 }
 
-export default function Notebook({ claim, witnessName, clues, total, variant = 'side' }: Props) {
+export default function Notebook({ claim, witnessName, clues, total, variant = 'side', emptyText = 'Solve each step to note a clue here.' }: Props) {
   const [open, setOpen] = useState(false)
   const side = variant === 'side'
   return (
@@ -58,7 +60,7 @@ export default function Notebook({ claim, witnessName, clues, total, variant = '
         )}
         <div aria-live="polite">
           {clues.length === 0 ? (
-            <p className="notebook__empty">Solve each step to note a clue here.</p>
+            <p className="notebook__empty">{emptyText}</p>
           ) : (
             <ol className="notebook__clues">
               {clues.map((c) => (

@@ -11,6 +11,31 @@ export interface ViewOut {
   summary: string
   keys: ReactNode
   note?: string
+  /** Pixel geometry for interactive overlays (evidence-board tasks); line views and window_trends */
+  geom?: ChartGeom
+}
+
+/** One drawn point, in pixels, with the date key it came from ("YYYY-MM", "YYYY" or "MM") */
+export interface GeomPoint {
+  px: number
+  py: number
+  key: string
+  value: number
+}
+
+/**
+ * Where a chart drew its data, so a caller can draw on top of it (TimeSeriesChart `overlay`).
+ * sx/sy map data -> pixels and ix/iy pixels -> data (x = decimal year, y = value on the y axis).
+ */
+export interface ChartGeom {
+  W: number
+  H: number
+  plot: { left: number; right: number; top: number; bottom: number }
+  pts: GeomPoint[]
+  sx: (x: number) => number
+  sy: (y: number) => number
+  ix: (px: number) => number
+  iy: (py: number) => number
 }
 
 export type ViewResult = ViewOut | { empty: string }

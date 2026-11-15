@@ -2,7 +2,7 @@
 // ranking (sorted bars), periods (two histograms), season_scatter (one dot per year) and
 // window_trends (one trend per start year). Same comic look as TimeSeriesChart.
 import type { ChartSpec, TutorialSeries } from '../../shared/tutorial'
-import { SEASON_LABEL, SEASON_NAME, frame, niceTicks, overlaps, placeLabels, textBox, yScale, type Anchor, type Box, type ViewResult } from './chartKit'
+import { SEASON_LABEL, SEASON_NAME, frame, niceTicks, overlaps, placeLabels, textBox, yScale, type Anchor, type Box, type ChartGeom, type ViewResult } from './chartKit'
 import { Key, Marks, XAxis, YGrid } from './chartParts'
 import { baseUnits, formatDate, sig, signed } from './format'
 
@@ -321,7 +321,7 @@ export function windowTrendsView(spec: ChartSpec, series: TutorialSeries, W: num
   const { narrow, H, P, plotW } = frame(W, { t: 4 + 16 * Math.min(2, marked.size) })
   const dec = (v: number) => v * 10
   const vals = wt.flatMap((w) => [dec(w.slope_per_year), dec(w.ci_low), dec(w.ci_high)])
-  const { ticks: yTicks, sy } = yScale(vals, P.t, H - P.b, { ticks: narrow ? 4 : 5, zero: true })
+  const { ticks: yTicks, sy, yMin, yMax } = yScale(vals, P.t, H - P.b, { ticks: narrow ? 4 : 5, zero: true })
   const band = plotW / wt.length
   const cx = (i: number) => P.l + band * (i + 0.5)
   const barW = Math.max(4, Math.min(34, band * 0.5))
@@ -389,5 +389,16 @@ export function windowTrendsView(spec: ChartSpec, series: TutorialSeries, W: num
       <Key kind="whisker">95% range</Key>
     </>
   )
-  return { H, body, summary, keys, note: long ? undefined : 'Labels: the year each trend starts from.' }
+  // x in the geometry = bar index (0, 1, 2...); y = slope per decade
+  const geom: ChartGeom = {
+    W,
+    H,
+    plot: { left: P.l, right: W - P.r, top: P.t, bottom: H - P.b },
+    pts: wt.map((w, i) => ({ px: cx(i), py: sy(dec(w.slope_per_year)), key: String(w.start_year), value: dec(w.slope_per_year) })),
+    sx: cx,
+    sy,
+    ix: (px) => (px - P.l) / band - 0.5,
+    iy: (py) => yMin + (1 - (py - P.t) / (H - P.b - P.t || 1)) * (yMax - yMin),
+  }
+  return { H, body, summary, keys, note: long ? undefined : 'Labels: the year each trend starts from.', geom }
 }

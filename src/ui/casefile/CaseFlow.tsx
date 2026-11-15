@@ -1,5 +1,6 @@
 // Full flow of a featured case, opened with Space in a case zone:
-//   scene (witness dialogue, if the script has one) -> tutorial (case file + notebook)
+//   scene (witness dialogue, if the script has one) -> tutorial (case file + notebook, or the
+//   evidence board when the script has `board`, EvidenceBoard.tsx)
 //   -> final test (the case's level from src/levels, rendered by the app shell)
 //   -> case closed (stamp, verdict on the witness's claim, statistics) -> back to the map.
 // A case without a tutorial script goes straight to its level, as before.
@@ -12,6 +13,7 @@ import { getWitness } from '../../shared/witness'
 import type { AnchorStore } from './anchors'
 import CaseClosed, { type LevelResult } from './CaseClosed'
 import CaseFile from './CaseFile'
+import EvidenceBoard from './EvidenceBoard'
 import { hasTutorial, loadTutorial, type LoadedTutorial } from './loader'
 import type { NotebookClue } from './Notebook'
 import WitnessScene, { type Speaker } from './WitnessScene'
@@ -145,6 +147,17 @@ export default function CaseFlow({ caseId, renderLevel, onClose, onSolved, onDia
     )
   }
 
+  const concluded = (text: string, noted: NotebookClue[]) => {
+    setConclusion(text)
+    setClues(noted)
+    setPhase('level')
+  }
+
+  // Cases with an evidence board play it instead of the case-file steps
+  if ((phase === 'tutorial' || phase === 'scene') && tutorial?.script.board) {
+    return <EvidenceBoard tutorial={tutorial} witness={witness} onClose={onClose} onConcluded={concluded} />
+  }
+
   if ((phase === 'tutorial' || phase === 'scene') && tutorial) {
     return (
       <CaseFile
@@ -155,11 +168,7 @@ export default function CaseFlow({ caseId, renderLevel, onClose, onSolved, onDia
           claim: tutorial.script.scene?.claim,
           witnessName: witness?.name,
           brief: !!tutorial.script.scene,
-          onConcluded: (text, noted) => {
-            setConclusion(text)
-            setClues(noted)
-            setPhase('level')
-          },
+          onConcluded: concluded,
         }}
       />
     )

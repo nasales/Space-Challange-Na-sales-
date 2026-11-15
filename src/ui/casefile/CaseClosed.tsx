@@ -94,7 +94,7 @@ export default function CaseClosed({ tutorial, witness, conclusion, clues, resul
               </blockquote>
             )}
 
-            {clues.length > 0 && <Notebook variant="closed" clues={clues} total={script.steps.length} />}
+            {clues.length > 0 && <Notebook variant="closed" clues={clues} total={script.board?.items.length ?? script.steps.length} />}
 
             <h3 className="caseclosed__section">What the statistics say</h3>
             {/*

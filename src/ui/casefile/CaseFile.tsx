@@ -385,7 +385,7 @@ function Step({
   )
 }
 
-function Conclusion({
+export function Conclusion({
   script,
   text,
   onText,
