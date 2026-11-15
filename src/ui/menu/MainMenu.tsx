@@ -163,8 +163,8 @@ export default function MainMenu({ onPlay, onWardrobe, onAccount, character }: M
         <div className="board" style={boardStyle} data-kbd={keyboard || undefined}>
           <header className="board__masthead" style={pinStyle('title', -1.5)}>
             <h1 className="board__title">
-              <span className="board__title-top">Earth Trend</span>
-              <span className="board__title-big">Detective</span>
+              <span className="board__title-top">John</span>
+              <span className="board__title-big">Datason</span>
             </h1>
             <p className="board__tagline">Follow the clues. Read the data. Crack the climate case.</p>
           </header>
