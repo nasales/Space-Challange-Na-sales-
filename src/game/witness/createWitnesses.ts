@@ -11,14 +11,26 @@
 // detective from far away, waves when he comes close and again now and then, and glows warmly
 // while the detective is in the case zone. All of it hides during the dialogue.
 //
+// Some witnesses have a small trade prop (witnessProps.ts: Pilar's newspaper kiosk, Rafael's olive
+// crates) at their side, on flat free ground; the detective walks round it and the dialogue camera
+// ray-casts it like a monument.
+//
+// Where they stand (checked with Playwright screenshots, 2026-11-15): Vicent (Valencia) on the
+// lawn of the Ciudad de las Artes; Pilar (Madrid) on the plaza on the north side of the Puerta de
+// Alcala garden fence, her kiosk on her right; Rafael (Cordoba) in the Patio de los Naranjos of the
+// Mezquita (open courtyard ground, never its roofs: the zone centre is on the prayer hall roof),
+// his crates on his right. All three inside their ring (0.85-0.93 of the radius).
+//
 //   const witnesses = createWitnesses(WITNESSES, caseMarkers, site)
 //   scene.add(witnesses.group)
 //   witnesses.update(dt, detectiveX, detectiveZ, dialogue, { camera, distance })   // every frame
 //   witnesses.get(caseId)                                     // { witness, x, z, y } or undefined
+//   witnesses.props / witnesses.blocks(x, z, margin)          // trade props (witnessProps.ts): camera occluders, not walkable
 import * as THREE from 'three'
 import { createWitness } from './createWitness'
 import { createTalkIndicator } from './createTalkIndicator'
 import { createWitnessTrail } from './createWitnessTrail'
+import { createWitnessProp, PROP_SIZE, WITNESS_EXTRAS } from './witnessProps'
 import type { Witness } from '../../shared/witness'
 import type { LineMood } from '../../shared/tutorial'
 
@@ -69,6 +81,10 @@ const BUBBLE_MAX_CAMERA = 2500
 const POINTER_HIDE = 20
 /** Same climb limit as the zone ring: the trail lies on plazas, never on roofs. */
 const TRAIL_MAX_CLIMB = 6
+/** A prop's footprint may differ from the witness's ground by at most this much (world units). */
+const PROP_MAX_STEP = 1
+/** Turns tried round the witness for his prop, from its preferred place (rad). */
+const PROP_TURNS = [0, 0.6, -0.6, 1.2, -1.2, 1.8, -1.8]
 
 /** What the placement needs to know about the map (all in world units). */
 export interface WitnessSite {
@@ -116,6 +132,8 @@ type PlacedWitness = {
   zone: { x: number; z: number; radius: number }
   x: number; z: number; y: number; rest: number
   waveClock: number; againClock: number; wasNear: boolean; glow: number
+  /** His trade prop, if any: centre and radius of its footprint (world units) */
+  prop: { x: number; z: number; radius: number; kind: string; dispose: () => void } | null
 }
 
 /** Finds a free, flat spot for a witness in the zone (best score); null if there is none. */
@@ -172,12 +190,16 @@ export function findWitnessSpot(zone: { x: number; z: number; radius: number }, 
       if (!free(x, z, CLEARANCE) || !flat(x, z) || !clearFront(x, z)) continue
       const open = openness(x, z)
       if (open < MIN_OPEN) continue
+      // Prefer: inside the ring near its rim, open all round, near a road, on bare ground rather than a plaza
+      const base = (OPEN_DIRECTIONS - open) * 1.5 + (site.nearRoad(x, z, 25) ? 0 : 6) + (site.surfaceAt(x, z) - site.heightAt(x, z)) +
+        Math.abs(f - BEST_FRACTION) * 8 + (f > 1 ? OUTSIDE_PENALTY : 0)
+      // The framing term only adds to the score, so the costly test (ray casts) is skipped for
+      // spots that cannot win anyway
+      if (base >= bestScore) continue
       // The dialogue camera must see both characters from a low 3/4 view (monument shells, arches)
       const framing = site.framing ? site.framing(x, site.surfaceAt(x, z), z) : GOOD_FRAMING
       if (framing === 0) continue
-      // Prefer: inside the ring near its rim, open all round, near a road, on bare ground rather than a plaza
-      const score = (OPEN_DIRECTIONS - open) * 1.5 + (site.nearRoad(x, z, 25) ? 0 : 6) + (site.surfaceAt(x, z) - site.heightAt(x, z)) +
-        Math.abs(f - BEST_FRACTION) * 8 + (f > 1 ? OUTSIDE_PENALTY : 0) + (GOOD_FRAMING - Math.min(GOOD_FRAMING, framing)) * 4
+      const score = base + (GOOD_FRAMING - Math.min(GOOD_FRAMING, framing)) * 4
       if (score < bestScore) {
         bestScore = score
         best = { x, z }
@@ -191,6 +213,9 @@ export function createWitnesses(list: Partial<Record<string, Witness>>, zones: C
   const group = new THREE.Group()
   group.name = 'witnesses'
   const placed: PlacedWitness[] = []
+  const props = new THREE.Group()
+  props.name = 'witness-props'
+  group.add(props)
   for (const w of Object.values(list)) {
     if (!w) continue
     const zone = zones.positionOf(w.caseId)
@@ -200,12 +225,27 @@ export function createWitnesses(list: Partial<Record<string, Witness>>, zones: C
       console.warn(`No free spot for the witness of ${w.caseId}`)
       continue
     }
-    const witness = createWitness(w.look)
+    const extras = WITNESS_EXTRAS[w.caseId]
+    const witness = createWitness(w.look, extras?.style)
     const y = site.surfaceAt(spot.x, spot.z)
     witness.root.position.set(spot.x, y, spot.z)
     witness.root.userData.caseId = w.caseId
     // At rest he faces the zone centre (where the detective comes from)
     const rest = Math.atan2(-(zone.x - spot.x), -(zone.z - spot.z))
+    // His trade prop (kiosk, crates) on free flat ground behind him or at his side; none if no room
+    let prop: PlacedWitness['prop'] = null
+    if (extras?.prop) {
+      const { kind, place } = extras.prop
+      const size = PROP_SIZE[kind]
+      const at = placeProp(spot.x, y, spot.z, rest, place === 'behind' ? Math.PI : -Math.PI / 2, size, site)
+      if (at) {
+        const p = createWitnessProp(kind)
+        p.group.position.set(at.x, y, at.z)
+        p.group.rotation.y = at.heading
+        props.add(p.group)
+        prop = { x: at.x, z: at.z, radius: Math.hypot(size.halfW, size.halfD), kind, dispose: p.dispose }
+      } else console.warn(`No room for the ${kind} of the witness of ${w.caseId}`)
+    }
     const bubble = createTalkIndicator()
     // Trail from near the "!" to him (on the ground or a plaza, never over a roof)
     const trailGround = (x: number, z: number) => {
@@ -215,14 +255,21 @@ export function createWitnesses(list: Partial<Record<string, Witness>>, zones: C
     const from = { x: zone.x + (spot.x - zone.x) * TRAIL_START, z: zone.z + (spot.z - zone.z) * TRAIL_START }
     const trail = createWitnessTrail(from, spot, trailGround, site.surfaceAt)
     group.add(witness.root, bubble.group, trail.group)
-    placed.push({ witness, bubble, trail, caseId: w.caseId, zone, x: spot.x, z: spot.z, y, rest, waveClock: 0, againClock: 0, wasNear: false, glow: 0 })
+    placed.push({ witness, bubble, trail, caseId: w.caseId, zone, x: spot.x, z: spot.z, y, rest, waveClock: 0, againClock: 0, wasNear: false, glow: 0, prop })
   }
   const headTop = new THREE.Vector3()
   const pointerAt = { x: 0, z: 0 }
 
   return {
     group,
+    /** The witnesses' trade props: the dialogue camera must see past them (ray-cast, like monuments) */
+    props,
     get: (caseId: string) => placed.find((p) => p.caseId === caseId),
+    /** True if (x, z) is on a witness's prop (plus margin): the detective walks round them. */
+    blocks(x: number, z: number, margin = 0) {
+      for (const p of placed) if (p.prop && Math.hypot(x - p.prop.x, z - p.prop.z) < p.prop.radius + margin) return true
+      return false
+    },
 
     update(dt: number, dx: number, dz: number, dialogue: WitnessDialogue, view?: WitnessView) {
       for (const p of placed) {
@@ -271,7 +318,44 @@ export function createWitnesses(list: Partial<Record<string, Witness>>, zones: C
         p.witness.dispose()
         p.bubble.dispose()
         p.trail.dispose()
+        p.prop?.dispose()
       }
     },
   }
+}
+
+/**
+ * Where a witness's prop stands: `side` rad from his facing (PI: behind him, -PI/2: his right),
+ * turned a little if needed, on flat free ground (no house, water, wall or fence: the monument
+ * height maps are in surfaceAt) and with its nearest side `gap` from him. Behind him it turns with
+ * the placement (its front towards his back); at his side its front looks the way he does (the
+ * kiosk counter faces the zone centre, where the detective comes from). Null if there is no room.
+ */
+function placeProp(
+  x: number, y: number, z: number, facing: number, side: number,
+  size: { halfW: number; halfD: number; gap: number }, site: WitnessSite,
+) {
+  // Facing convention: heading h looks towards (-sin h, -cos h)
+  for (const turn of PROP_TURNS) {
+    const a = facing + side + turn
+    const ux = -Math.sin(a), uz = -Math.cos(a)
+    const behind = side === Math.PI
+    const dist = (behind ? size.halfD : size.halfW) + size.gap
+    const cx = x + ux * dist, cz = z + uz * dist
+    // A kiosk faces the way he faces (he stands at its counter); crates line up beside him
+    const heading = behind ? facing + turn : facing
+    const cos = Math.cos(heading), sin = Math.sin(heading)
+    let ok = true
+    for (let i = -2; i <= 2 && ok; i++) {
+      for (let j = -2; j <= 2 && ok; j++) {
+        const lx = (i / 2) * (size.halfW + 0.5), lz = (j / 2) * (size.halfD + 0.5)
+        // Local to world (rotation about Y by heading)
+        const px = cx + lx * cos + lz * sin, pz = cz - lx * sin + lz * cos
+        ok = site.isLand(px, pz) && !site.blocked(px, pz, 1) && !site.nearRiver(px, pz, 1) &&
+          Math.abs(site.surfaceAt(px, pz) - y) <= PROP_MAX_STEP
+      }
+    }
+    if (ok) return { x: cx, z: cz, heading }
+  }
+  return null
 }
