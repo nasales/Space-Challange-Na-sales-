@@ -1,6 +1,7 @@
 // Full flow of a featured case, opened with Space in a case zone:
 //   scene (witness dialogue, if the script has one) -> tutorial (case file + notebook, or the
-//   evidence board when the script has `board`, EvidenceBoard.tsx)
+//   evidence board when the script has `board`, EvidenceBoard.tsx, or the courtroom trial when it
+//   has `trial`, Trial.tsx)
 //   -> case closed (stamp, verdict on the witness's claim, statistics) -> back to the map.
 // Finishing the tutorial solves the case (its marker turns green).
 // Escape: scene = skip the scene; case file / board = their own "close?" question;
@@ -15,6 +16,7 @@ import CaseFile from './CaseFile'
 import EvidenceBoard from './EvidenceBoard'
 import { hasTutorial, loadTutorial, type LoadedTutorial } from './loader'
 import type { NotebookClue } from './Notebook'
+import Trial from './Trial'
 import WitnessScene, { type Speaker } from './WitnessScene'
 
 export interface DialogueState {
@@ -118,6 +120,11 @@ export default function CaseFlow({ caseId, onClose, onSolved, onDialogue, anchor
     setClues(noted)
     onSolved?.(caseId)
     setPhase('closed')
+  }
+
+  // Cases with a courtroom trial (Trial.tsx) play it instead of the case-file steps
+  if ((phase === 'tutorial' || phase === 'scene') && tutorial?.script.trial) {
+    return <Trial tutorial={tutorial} witness={witness} onClose={onClose} onFinished={finished} />
   }
 
   // Cases with an evidence board play it instead of the case-file steps
