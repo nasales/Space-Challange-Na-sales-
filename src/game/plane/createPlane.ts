@@ -39,6 +39,12 @@ const FLIGHT_MAX_TIME = 4.6
 /** Extra flight seconds per km of distance (until FLIGHT_MAX_TIME). */
 const FLIGHT_TIME_PER_KM = 0.004
 /**
+ * Softer take-off and landing: the ground track follows an ease-in-out of this power (2 = quad,
+ * 3 = cubic; the old sine ease is about 2.2). A little extra time keeps the cruise speed the same.
+ */
+const TRACK_EASE_POWER = 2.8
+const EASE_EXTRA_TIME = 0.4
+/**
  * Cruise height above the trip's start and end (world units): grows with distance, within these
  * limits. The minimum keeps the plane above the floating case markers (about 260 units tall).
  */
@@ -69,7 +75,8 @@ export interface TravelTarget {
 type Phase = 'idle' | 'toPlane' | 'flying' | 'toDetective'
 
 const smooth = (t: number) => t * t * (3 - 2 * t)
-const easeInOutSine = (t: number) => -(Math.cos(Math.PI * t) - 1) / 2
+/** Ease-in-out of power p: slow start, slow end (p = 3 is the usual easeInOutCubic). */
+const easeInOutPow = (t: number, p: number) => (t < 0.5 ? 2 ** (p - 1) * t ** p : 1 - (2 - 2 * t) ** p / 2)
 const wrapAngle = (a: number) => Math.atan2(Math.sin(a), Math.cos(a))
 
 /**
@@ -171,7 +178,7 @@ export function createPlane() {
 
   /** Point of the flight path at progress u (0..1): smooth ground track plus a smooth arc up and down. */
   const pathAt = (u: number) => {
-    const k = easeInOutSine(u)
+    const k = easeInOutPow(u, TRACK_EASE_POWER)
     const x = from.x + (to.x - from.x) * k
     const z = from.z + (to.z - from.z) * k
     const base = from.y + (to.y - from.y) * smooth(u)
@@ -192,7 +199,7 @@ export function createPlane() {
     Object.assign(from, { x: s.x, y: s.y, z: s.z, heading: s.heading })
     Object.assign(to, { x: target.x, y: ground(target.x, target.z), z: target.z, heading: target.heading })
     const km = Math.hypot(to.x - from.x, to.z - from.z) / UNITS_PER_KM
-    duration = Math.min(FLIGHT_MAX_TIME, Math.max(FLIGHT_MIN_TIME, FLIGHT_MIN_TIME + km * FLIGHT_TIME_PER_KM))
+    duration = Math.min(FLIGHT_MAX_TIME, Math.max(FLIGHT_MIN_TIME, FLIGHT_MIN_TIME + km * FLIGHT_TIME_PER_KM)) + EASE_EXTRA_TIME
     cruise = Math.min(CRUISE_MAX, Math.max(CRUISE_MIN, km * CRUISE_PER_KM)) + Math.max(0, Math.max(from.y, to.y) - Math.min(from.y, to.y)) * 0.3
     tripHeading = km > 0.01 ? Math.atan2(-(to.x - from.x), -(to.z - from.z)) : from.heading
     onLanded = landed ?? null
@@ -289,6 +296,12 @@ export function createPlane() {
     /** True from the swap into the plane until he is back on his feet. */
     get active() {
       return phase !== 'idle'
+    },
+    /** Progress of the whole trip, 0 at the start of the first swap to 1 when he is back on his feet. */
+    get progress() {
+      const total = 2 * MORPH_TIME + duration
+      const done = phase === 'toPlane' ? t : phase === 'flying' ? MORPH_TIME + t : phase === 'toDetective' ? MORPH_TIME + duration + t : total // idle: trip over (or none)
+      return Math.min(1, done / total)
     },
     /** True only while airborne (between the two swaps). */
     get flying() {

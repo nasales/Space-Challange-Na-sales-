@@ -323,6 +323,14 @@ export function createChaseCamera(camera: THREE.PerspectiveCamera, dom: HTMLElem
       return distance
     },
     startIntro,
+    /** Zoom the player asked for (1 = default chase distance). */
+    get zoom() {
+      return targetZoom
+    },
+    /** Sets the zoom at once (e.g. the fast-travel flight eases it in); the wheel still works after. */
+    setZoom(z: number) {
+      zoom = targetZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z))
+    },
     /** True while the intro swoop plays (the player has no control yet). */
     get introActive() {
       return introT >= 0

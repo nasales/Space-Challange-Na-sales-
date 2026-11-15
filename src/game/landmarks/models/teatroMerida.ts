@@ -107,6 +107,11 @@ export function buildTeatroMerida(kit: Kit): THREE.Group {
   }
   // Side wings closing the stage (parascaenia)
   for (const side of [-1, 1]) g.add(kit.box(6, 12, STAGE_D + 4, WALL, side * (FRONS_W / 2 + 2), 0, -STAGE_D / 2 - 2))
+
+  // ---- Night lights: the three doors glow, floodlights on the columns and the statues ----
+  for (const [x, w, h] of [[-15, 2.6, 4.4], [0, 3.6, 5.6], [15, 2.6, 4.4]]) g.add(kit.lightPanel(w, h, x, 1.6, FRONS_Z + 0.5, 0, 0.8))
+  for (const x of [-24, -12, 0, 12, 24]) g.add(kit.lightHalo(4.5, x, 6, FRONS_Z + 4, 0.45))
+  for (const x of [-18.9, -9.5, 9.5, 18.9]) g.add(kit.lightHalo(2.5, x, upY + 2, FRONS_Z + 2.5, 0.5))
   return g
 }
 

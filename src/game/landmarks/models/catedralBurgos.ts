@@ -196,6 +196,13 @@ export function buildCatedralBurgos(kit: Kit): THREE.Group {
     t.position.x = side * (F_W / 2 + T_W / 2 + 0.3)
     g.add(t)
   }
+
+  // ---- Night lights: rose window and doors lit from inside, belfries, floodlights on the façade ----
+  g.add(kit.lightPanel(7.6, 7.6, 0, 16.5 - 3.8, front + 0.7, 0, 0.9))
+  for (const [x, w, h] of [[-6.4, 3, 4], [0, 4, 5.2], [6.4, 3, 4]]) g.add(kit.lightPanel(w, h, x, 0, front + 0.8, 0, 0.8))
+  for (const x of [-6.4, 6.4]) g.add(kit.lightPanel(2, 5, x, 13, front + 0.7, 0, 0.6))
+  for (const side of [-1, 1]) g.add(kit.lightHalo(4, side * (F_W / 2 + T_W / 2 + 0.3), T_H - 6, T_W / 2 + 1, 0.7))
+  for (const x of [-12, 0, 12]) g.add(kit.lightHalo(5.5, x, 3, front + 6, 0.35))
   return g
 }
 

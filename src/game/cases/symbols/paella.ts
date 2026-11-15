@@ -95,7 +95,9 @@ export function buildPaella(kit: SymbolKit) {
   }
 
   pan.position.y = CENTRE_Y
-  pan.rotation.x = TILT
+  pan.rotation.x = TILT // top towards +Z
   root.add(pan)
+  // Tilted: createCaseMarkers turns its +Z side to the camera instead of spinning it
+  root.userData.facesCamera = true
   return root
 }

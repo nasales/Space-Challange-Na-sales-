@@ -175,6 +175,8 @@ interface Marker {
   baseY: number
   phase: number
   done: boolean
+  /** The symbol faces the camera instead of spinning (see update()). */
+  facesCamera: boolean
 }
 
 export function createCaseMarkers(cases: CaseMarkerData[]) {
@@ -198,13 +200,14 @@ export function createCaseMarkers(cases: CaseMarkerData[]) {
     holder.name = c.title
     holder.userData.caseId = c.id
     holder.position.set(x, baseY, z)
-    holder.add(buildMarkerMesh(open.marker, done.marker, symbolKit, c.id))
+    const symbol = buildMarkerMesh(open.marker, done.marker, symbolKit, c.id)
+    holder.add(symbol)
     const radius = ZONE_RADIUS_OVERRIDE[c.id] ?? ZONE_RADIUS
     const zone = buildZoneMesh(open.zone, radius)
     zone.userData.caseId = c.id
     zone.position.set(x, 0, z)
     group.add(holder, zone)
-    return { id: c.id, x, z, holder, zone, radius, baseY, phase: i * 1.7, done: false } // own phase: no lockstep
+    return { id: c.id, x, z, holder, zone, radius, baseY, phase: i * 1.7, done: false, facesCamera: !!symbol.userData.facesCamera } // own phase: no lockstep
   })
   let clock = 0
 
@@ -246,12 +249,17 @@ export function createCaseMarkers(cases: CaseMarkerData[]) {
       }
     },
 
-    /** Slow bob and spin of the "!", pulse of the zones. */
-    update(dt: number) {
+    /**
+     * Slow bob and spin of the symbols, pulse of the zones. A symbol tagged userData.facesCamera
+     * (the tilted paella) turns its +Z side to the camera instead of spinning, so it never shows
+     * its underside.
+     */
+    update(dt: number, cameraPos?: THREE.Vector3) {
       clock += dt
       for (const m of markers) {
         m.holder.position.y = m.baseY + Math.sin(clock * BOB_SPEED + m.phase) * BOB_AMPLITUDE
-        m.holder.rotation.y += SPIN_SPEED * dt
+        if (cameraPos && m.facesCamera) m.holder.rotation.y = Math.atan2(cameraPos.x - m.x, cameraPos.z - m.z)
+        else m.holder.rotation.y += SPIN_SPEED * dt
       }
       const pulse = 0.5 + 0.5 * Math.sin(clock * ZONE_PULSE_SPEED)
       for (const f of fills) f.opacity = ZONE_FILL_MIN + (ZONE_FILL_MAX - ZONE_FILL_MIN) * pulse

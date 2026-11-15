@@ -150,6 +150,14 @@ export function buildBasilicaPilar(kit: Kit): THREE.Group {
       g.add(t)
     }
   }
+
+  // ---- Night lights: main door and niche, windows on the square side, lanterns of the domes, towers ----
+  g.add(kit.lightPanel(5, 8, 0, 0, D / 2 + 1.6, 0, 0.85))
+  g.add(kit.lightPanel(2.4, 3.4, 0, 10.2, D / 2 + 1.6, 0, 0.7))
+  for (let x = -L / 2 + 6; x <= L / 2 - 6 + 1e-6; x += 12.66) g.add(kit.lightPanel(1.8, 3.6, x + 3.17, 14, D / 2 + 0.5, 0, 0.6))
+  g.add(kit.lightHalo(3.5, 0, roofY + 9 + 2, 0, 0.7))
+  for (const x of [-22, 22]) g.add(kit.lightHalo(2.6, x, roofY + 6.2 + 1.4, 0, 0.6))
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) g.add(kit.lightHalo(3, sx * (L / 2 + 1), 30, sz * (D / 2 + 1), 0.6))
   return g
 }
 

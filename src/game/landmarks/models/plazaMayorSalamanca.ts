@@ -32,6 +32,7 @@ function innerSide(kit: Kit) {
   const xs = Array.from({ length: ARCHES }, (_, i) => -IN / 2 + step * (i + 0.5))
   // Arcade: a plate with round arches, dark behind
   g.add(kit.slab(IN, 4.6, 0.2, DARK, 0, 0, z + 0.1))
+  for (const x of xs) g.add(kit.lightPanel(step * 0.55, 2.4, x, 0.9, z + 1.4, 0, 0.75)) // night: the arcade glows
   const arcade = kit.facade(IN, 5.2, 1, xs.map((x) => ({ x, width: step * 0.66, height: 2.7, arch: true })), STONE)
   arcade.position.z = z + 0.7
   g.add(arcade)
@@ -78,6 +79,7 @@ export function buildPlazaMayorSalamanca(kit: Kit): THREE.Group {
       // Street lamps
       g.add(kit.box(0.3, 4, 0.3, IRON, (sx * IN) / 4, FY, (sz * IN) / 4))
       g.add(kit.mesh(new THREE.IcosahedronGeometry(0.5, 1), 0xffe9a8, (sx * IN) / 4, FY + 4.3, (sz * IN) / 4))
+      g.add(kit.lightHalo(2.2, (sx * IN) / 4, FY + 4.3, (sz * IN) / 4, 0.8)) // night: the lamps glow
     }
   }
 
@@ -129,6 +131,8 @@ export function buildPlazaMayorSalamanca(kit: Kit): THREE.Group {
   const belfry = kit.facade(10, 5.5, 1.4, [-3, 0, 3].map((x) => ({ x, width: 1.8, height: 2.2, arch: true, bottom: 1.2 })), STONE)
   belfry.position.set(0, H + 6.6, hallZ - 1.6)
   g.add(belfry)
+  g.add(kit.lightHalo(2.2, 0, H + 3.4, hallZ + 0.2, 0.7)) // night: clock and bells lit
+  for (const x of [-3, 0, 3]) g.add(kit.lightHalo(1.4, x, H + 6.6 + 2.4, hallZ - 0.6, 0.6))
   for (const x of [-3, 0, 3]) g.add(kit.mesh(new THREE.IcosahedronGeometry(0.6, 1), GOLD, x, H + 6.6 + 2.2, hallZ - 1.6))
   g.add(kit.pediment(10.6, 2.4, 1.8, STONE_D, H + 12.1).translateZ(hallZ - 1.6))
   for (const x of [-5, 5]) {

@@ -32,7 +32,13 @@ export const MAP_HEIGHT = MAP_BOUNDS.north - MAP_BOUNDS.south
 /** Icon drawn inside each landmark badge. */
 export type Glyph = 'arch' | 'spires' | 'tower' | 'castle' | 'modern' | 'dome' | 'theatre' | 'houses' | 'plaza'
 
-export const TRAVEL_LANDMARKS: { id: string; glyph: Glyph }[] = [
+/**
+ * Landmarks left off the travel map (they stay in the 3D world): Peñafiel Castle sits too close to
+ * the Segovia and Burgos badges and is not a main destination.
+ */
+export const HIDDEN_FROM_MAP = new Set(['castillo-penafiel'])
+
+export const TRAVEL_LANDMARKS: { id: string; glyph: Glyph }[] = ([
   { id: 'sagrada-familia', glyph: 'spires' },
   { id: 'alhambra', glyph: 'castle' },
   { id: 'acueducto-segovia', glyph: 'arch' },
@@ -43,13 +49,13 @@ export const TRAVEL_LANDMARKS: { id: string; glyph: Glyph }[] = [
   { id: 'puerta-de-alcala', glyph: 'arch' },
   { id: 'catedral-santiago', glyph: 'spires' },
   { id: 'torre-hercules', glyph: 'tower' },
-  { id: 'castillo-penafiel', glyph: 'castle' },
+  { id: 'castillo-penafiel', glyph: 'castle' }, // hidden: see HIDDEN_FROM_MAP
   { id: 'catedral-burgos', glyph: 'spires' },
   { id: 'teatro-merida', glyph: 'theatre' },
   { id: 'basilica-pilar', glyph: 'dome' },
   { id: 'casas-colgadas', glyph: 'houses' },
   { id: 'plaza-mayor-salamanca', glyph: 'plaza' },
-]
+] as { id: string; glyph: Glyph }[]).filter((l) => !HIDDEN_FROM_MAP.has(l.id))
 
 /** SVG path data (24 x 24 box) of each glyph, filled with ink. Original simple shapes. */
 export const GLYPHS: Record<Glyph, string> = {

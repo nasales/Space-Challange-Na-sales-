@@ -65,6 +65,11 @@ const ZONES_TO = 0.88
 /** Fast travel: fog pushed back by this many world units per unit of plane altitude (near, far). */
 const FLIGHT_FOG_NEAR = 1.5
 const FLIGHT_FOG_FAR = 6
+/**
+ * Fast travel: over the trip the camera zoom eases (in log scale) from the player's zoom to this one,
+ * close behind the detective (chase camera MIN_ZOOM is 0.7), so he lands with the camera near him.
+ */
+const FLIGHT_LANDING_ZOOM = 0.8
 
 /** Only the 3D canvas. The HUD and status messages live in src/ui, fed through the callbacks. */
 export default function GameView({ onStatus, onHud, onLensFocus, onProgress, focusLens = false, outfit, paused = false, completedCases, travelTo, onTravel }: GameViewProps) {
@@ -269,6 +274,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
         const plane = createPlane()
         scene.add(plane.root)
         let travelSeq = -1 // last travel request handled (TravelRequest.seq)
+        let travelZoomFrom = 1 // camera zoom when the trip started
         // Landing spot: walkable land on the plaza, nothing in the way
         const canLand = (x: number, z: number) => main.isExploredLand(x, z) && !scenery.blocks(x, z) && towns.surfaceAt(x, z) === -Infinity
         if (import.meta.env.DEV) Object.assign(window, { __travel: { plane, approachOf: (id: string) => landmarks.approachOf(id, canLand) } })
@@ -336,13 +342,19 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
           const travel = callbacks.current.travelTo
           if (travel && travel.seq !== travelSeq && !plane.active && !introBefore) {
             travelSeq = travel.seq
+            travelZoomFrom = chase.zoom
             const target = landmarks.approachOf(travel.landmarkId, canLand)
             if (target && plane.start(carState, target, surfaceAt, () => callbacks.current.onTravel?.('landed'))) callbacks.current.onTravel?.('flying')
             else callbacks.current.onTravel?.('landed') // unknown landmark: nothing to do
           }
           const travelling = plane.active
           const input = top || lensFlying || introBefore || callbacks.current.paused || travelling ? { throttle: 0, steer: 0, turbo: false } : keyboard.read()
-          if (travelling) plane.update(carState, detective.root, dt) // the flight moves carState (no physics)
+          if (travelling) {
+            plane.update(carState, detective.root, dt) // the flight moves carState (no physics)
+            // Camera: from the player's zoom to close behind him, smoothly, done by the landing
+            const k = plane.progress * plane.progress * (3 - 2 * plane.progress)
+            chase.setZoom(travelZoomFrom * Math.exp(Math.log(FLIGHT_LANDING_ZOOM / travelZoomFrom) * k))
+          }
           else stepCar(carState, input, ground, dt)
           detective.setFocus(chase.stepFocus(wantLens, dt))
           detective.update(carState, dt)
@@ -373,7 +385,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
             shownCompleted = callbacks.current.completedCases
             for (const c of CASES) caseMarkers.setCompleted(c.id, !!shownCompleted?.includes(c.id))
           }
-          caseMarkers.update(dt)
+          caseMarkers.update(dt, camera.position)
           for (const z of zones) {
             z.water.update(dt)
             z.roads.update(dt)
