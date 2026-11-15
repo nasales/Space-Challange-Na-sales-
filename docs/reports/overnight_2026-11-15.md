@@ -67,7 +67,38 @@ For Diego, night of 2026-11-15. Plan: `docs/evidence_board.md`. Everything on `d
   approach angles; from the Mezquita roof Rafael is hidden (only his "…" bubble shows).
 ### Tests
 - Both agents wrote a board validator; I kept the Filomena one (generic) and checked the Córdoba
-  script passes it (recount of the tally included). 340 pipeline/stats tests pass.
+  script passes it (recount of the tally included). (340 tests then; 347 after the final merge.)
+
+### QA (full in-game run, desktop) — verdict **PASS**
+- check.sh, tsc, eslint, build: pass; 347 pipeline/stats tests pass. Zero console errors.
+- Only 5 "!" on the map. Filomena and Córdoba play end to end: zone hint, arrows, talk icon,
+  focus mode, walk-up, 14 lines with emotes, board (all 5 items, wrong answers and wrong links
+  tried, mouse and keyboard), strings, notebook, summary, conclusion, Ivan's level (2/2), CASE
+  CLOSED with the right verdict, marker green, back to the map with HUD and control. DANA still
+  works; magnifier and pause menu still work; Esc on the board behaves.
+- Every number and task answer in both scripts recomputed from the data: all correct.
+### Fixed after QA (main session, `c0135eb`)
+- Several card texts gave the answer before the task (Filomena cold January, January cards, snow
+  clipping, start-year slider; Córdoba 47 °C clipping): texts now explain *how to read* the
+  evidence; the facts moved into the success message.
+- Filomena "cold January" link changed from *supports* to *says nothing*: one cold month cannot
+  support "global warming is a lie" (it was teaching the opposite of the lesson).
+- Filomena ruler now needs a sensible slope (±0.3 °C/decade), not just "goes up".
+- Wording: flat ruler message, slider says "significant (p < 0.05)" instead of "a clear trend",
+  same precision for slope and range; tally axis says "months per year"; a timer cleaned up.
 
 ## Open questions for Diego
-(filled in at the end)
+1. **Try both boards** (`npm run dev`, Play, walk to Madrid / Córdoba; or `?casefile=filomena_madrid`
+   and `?casefile=cordoba_heat` for the flow without the map). Is the corkboard what you imagined?
+   Too easy / too hard? Should the DANA move to the board format too?
+2. **Spanish words in the dialogue** ("¡Buenos días", "Mira, hijo", "Buenas tardes", "No, hombre"),
+   like Vicent's Valencian ones: keep as flavour (my choice) or translate (AGENTS.md rule 5)?
+3. **Bug for the Game owner / Ivan (older than tonight):** the detective can walk up onto the
+   Puerta de Alcalá and the Mezquita (every point of the monuments counts as walkable), and the
+   Madrid and Córdoba rings sit on them, so following the "!" may climb the roof.
+   `[MEDIUM] Detective walks onto the Puerta de Alcalá / Mezquita roofs — walk from ~95 units SE of
+   __game.caseMarkers.positionOf('filomena_madrid') towards the centre; carState.y ≈ 166 vs ground 38`
+4. Small leftovers not fixed (cosmetic): Esc on the "Leave this case?" box does not return focus
+   to the button; the detective can walk through the witnesses (same as Vicent); in Córdoba an
+   orange tree can fill the left edge of the dialogue frame from some angles.
+5. Nothing was merged into main and no PR was opened, as you asked.
