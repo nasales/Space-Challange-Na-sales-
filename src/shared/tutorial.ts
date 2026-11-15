@@ -56,13 +56,18 @@ export interface TutorialScript {
     /** The witness's claim, in quotes, pinned at the top of the detective's notebook */
     claim: string
   }
-  /** Quiz-style lesson steps (DANA format). Empty when the case uses `board`. */
+  /** Quiz-style lesson steps (DANA format). Empty when the case uses `board` or `trial`. */
   steps: TutorialStep[]
   /**
    * Evidence board (detective corkboard): when present, the UI shows it instead of `steps`.
    * See docs/evidence_board.md.
    */
   board?: EvidenceBoard
+  /**
+   * Courtroom trial (the player is the judge): when present, the UI shows it instead of `steps`.
+   * See the Trial types below.
+   */
+  trial?: Trial
   /** Last screen: the player writes their own conclusion (normal game loop) */
   conclusion: {
     prompt: string
@@ -160,6 +165,95 @@ export type EvidenceTask = { prompt: string; hint: string; success: string } & (
   | { type: 'tally'; rule: string; periods: { label: string; from: string; to: string }[]; answers: number[] }
   | { type: 'compare'; options: { text: string; correct: boolean }[] }
 )
+
+/**
+ * Courtroom trial (third format, first used by `donana`): the witness's claim is on trial and the
+ * player is the judge. The prosecution argues the claim is true, the defence argues against it;
+ * they take turns presenting exhibits (A, B, C...). For each exhibit the player first solves a
+ * small hands-on task, then rules on it. At the end the player passes sentence on the charge.
+ */
+export interface Trial {
+  /** Name of the case on the bench, e.g. "The case of the vanishing lagoon" */
+  title: string
+  /** The charge the court decides on: the witness's claim, as a statement */
+  charge: string
+  /** One sentence shown before the first exhibit (how to play the trial) */
+  instructions: string
+  /** 4-6 exhibits, presented in this order (letters A, B, C... follow the order) */
+  exhibits: TrialExhibit[]
+  sentence: TrialSentence
+}
+
+/** prosecution: argues the claim is true; defence: argues against it */
+export type TrialSide = 'prosecution' | 'defence'
+/**
+ * admit: solid evidence for what its side says; reject: it does not show what the lawyer says;
+ * insufficient: the court cannot decide with these data (needs more data)
+ */
+export type TrialRuling = 'admit' | 'reject' | 'insufficient'
+
+export interface TrialExhibit {
+  id: string
+  side: TrialSide
+  /** 'missing': an exhibit that was never submitted (an empty folder; no chart) */
+  kind?: 'exhibit' | 'missing'
+  /** Label on the exhibit tag */
+  title: string
+  /** Short note on the closed exhibit tag, e.g. "Rain near Doñana, every year" */
+  teaser: string
+  /** What the lawyer says when presenting it (one or two sentences, no quotes) */
+  argument: string
+  /** What the exhibit shows / teaches (<= 80 words, plain English) */
+  text: string
+  /** The chart shown with the task (existing views); missing exhibits have none */
+  chart?: ChartSpec
+  task: TrialTask
+  /** The right ruling */
+  ruling: TrialRuling
+  /** Shown after a wrong ruling: an objection from the bench or the other side, a hint */
+  objection: string
+  /** Shown after the right ruling */
+  ruling_feedback: string
+  /** Optional question after the right ruling, e.g. how much weight the exhibit carries */
+  follow_up?: { prompt: string; options: { text: string; correct: boolean }[]; hint: string; feedback: string }
+  /** Notebook entry (<= 15 words) */
+  clue: string
+}
+
+/**
+ * Hands-on tasks of a trial exhibit: any evidence-board task (EvidenceTask, on the exhibit's
+ * chart), or one of the trial's own:
+ * - translate: the "translator machine". For each reading (a month of a variable) the UI shows
+ *   its anomaly and the typical swing (population standard deviation of all the variable's
+ *   anomalies) from the data; the player sets a dial to anomaly / swing. `answer` = that z-score
+ *   rounded to one decimal (accepted within +/- 0.25). Then the exhibit's chart is "printed".
+ * - sort_moves: on a zscore_pair chart, for each date (YYYY-MM) the player says whether both
+ *   smoothed lines are below zero (both_dry), above zero (both_wet) or on opposite sides (apart);
+ *   `answers` must match the data (zscore_smooth12 of both variables)
+ * - missing_data: an empty folder; the player picks every record that would be needed to test
+ *   the lawyer's idea (`needed: true`), and none of the others
+ */
+export type TrialTask =
+  | EvidenceTask
+  | ({ prompt: string; hint: string; success: string } & (
+      | { type: 'translate'; readings: { variable: string; date: string; answer: number }[] }
+      | { type: 'sort_moves'; dates: string[]; answers: TrialMove[] }
+      | { type: 'missing_data'; options: { text: string; needed: boolean }[] }
+    ))
+
+export type TrialMove = 'both_dry' | 'both_wet' | 'apart'
+
+/**
+ * The final sentence on the charge. Verdicts map to reveal.claim_verdict:
+ * guilty = the claim is right, not_guilty = it is wrong, not_proven = partly right.
+ * Exactly one option is correct (and matches claim_verdict).
+ */
+export interface TrialSentence {
+  prompt: string
+  options: { verdict: 'guilty' | 'not_guilty' | 'not_proven'; text: string; correct: boolean; objection?: string }[]
+  /** Read out after the gavel: the overall picture in 2-3 sentences */
+  summary: string
+}
 
 export interface TutorialStep {
   id: string

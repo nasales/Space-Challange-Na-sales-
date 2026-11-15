@@ -197,50 +197,171 @@ def check_board(board, data):
         if chart:
             used |= check_chart(it["id"], chart, data)
 
-        task = it["task"]
-        t = task["type"]
-        assert t in TASK_TYPES, f"{where}: task type {t}"
-        for key in ("prompt", "hint", "success"):
-            assert str(task.get(key, "")).strip(), f"{where}: task needs {key}"
-        if t != "compare":
-            assert chart, f"{where}: task {t} needs a chart"
-        if t == "click_point":
-            assert task["answer"] in chart_dates(chart, data), \
-                f"{where}: answer {task['answer']} not on the chart"
-        elif t == "fit_line":
-            assert chart["view"] in TREND_VIEWS, f"{where}: fit_line needs a view with a trend"
-            if "tolerance" in task:
-                assert task["tolerance"] > 0, f"{where}: tolerance"
-        elif t == "order_cards":
+        check_task(where, it["task"], chart, data)
+    return used
+
+
+def check_task(where, task, chart, data):
+    """Check one EvidenceTask (evidence board or trial) against its chart and the data."""
+    t = task["type"]
+    assert t in TASK_TYPES, f"{where}: task type {t}"
+    for key in ("prompt", "hint", "success"):
+        assert str(task.get(key, "")).strip(), f"{where}: task needs {key}"
+    if t != "compare":
+        assert chart, f"{where}: task {t} needs a chart"
+    if t == "click_point":
+        assert task["answer"] in chart_dates(chart, data), \
+            f"{where}: answer {task['answer']} not on the chart"
+    elif t == "fit_line":
+        assert chart["view"] in TREND_VIEWS, f"{where}: fit_line needs a view with a trend"
+        if "tolerance" in task:
+            assert task["tolerance"] > 0, f"{where}: tolerance"
+    elif t == "order_cards":
+        series = yearly_series(chart, data)
+        assert series is not None, f"{where}: order_cards needs a yearly chart"
+        cards = task["cards"]
+        assert len(cards) >= 3 and len(set(cards)) == len(cards), f"{where}: cards"
+        for c in cards:
+            assert c in series, f"{where}: card {c} not in the yearly series"
+        assert len({series[c] for c in cards}) == len(cards), f"{where}: cards tie"
+        assert task["order"] in ("asc", "desc"), f"{where}: order {task['order']}"
+    elif t == "slider_window":
+        assert chart["view"] == "window_trends", f"{where}: slider_window needs window_trends"
+        assert task["question"].strip(), f"{where}: question"
+        check_options(where, task["options"])
+    elif t == "tally":
+        assert task["rule"].strip(), f"{where}: rule"
+        periods, answers = task["periods"], task["answers"]
+        assert periods and len(periods) == len(answers), f"{where}: periods vs answers"
+        dates = chart_dates(chart, data)
+        for per in periods:
+            assert per["label"].strip() and per["from"] <= per["to"], f"{where}: period"
+            for d in (per["from"], per["to"]):
+                assert d in dates, f"{where}: period date {d} not on the chart"
+        assert all(isinstance(a, int) and a >= 0 for a in answers), f"{where}: answers"
+        if chart["view"] == "threshold_count":  # machine-checkable: sum the counts
             series = yearly_series(chart, data)
-            assert series is not None, f"{where}: order_cards needs a yearly chart"
-            cards = task["cards"]
-            assert len(cards) >= 3 and len(set(cards)) == len(cards), f"{where}: cards"
-            for c in cards:
-                assert c in series, f"{where}: card {c} not in the yearly series"
-            assert len({series[c] for c in cards}) == len(cards), f"{where}: cards tie"
-            assert task["order"] in ("asc", "desc"), f"{where}: order {task['order']}"
-        elif t == "slider_window":
-            assert chart["view"] == "window_trends", f"{where}: slider_window needs window_trends"
-            assert task["question"].strip(), f"{where}: question"
-            check_options(where, task["options"])
-        elif t == "tally":
-            assert task["rule"].strip(), f"{where}: rule"
-            periods, answers = task["periods"], task["answers"]
-            assert periods and len(periods) == len(answers), f"{where}: periods vs answers"
-            dates = chart_dates(chart, data)
-            for per in periods:
-                assert per["label"].strip() and per["from"] <= per["to"], f"{where}: period"
-                for d in (per["from"], per["to"]):
-                    assert d in dates, f"{where}: period date {d} not on the chart"
-            assert all(isinstance(a, int) and a >= 0 for a in answers), f"{where}: answers"
-            if chart["view"] == "threshold_count":  # machine-checkable: sum the counts
-                series = yearly_series(chart, data)
-                for per, a in zip(periods, answers):
-                    n = sum(v for y, v in series.items() if per["from"] <= y <= per["to"])
-                    assert n == a, f"{where}: {per['label']} answer {a}, data says {n}"
-        elif t == "compare":
-            check_options(where, task["options"])
+            for per, a in zip(periods, answers):
+                n = sum(v for y, v in series.items() if per["from"] <= y <= per["to"])
+                assert n == a, f"{where}: {per['label']} answer {a}, data says {n}"
+    elif t == "compare":
+        check_options(where, task["options"])
+
+
+# --- courtroom trial (Trial in src/shared/tutorial.ts) ---------------------------------------
+
+SIDES = {"prosecution", "defence"}
+RULINGS = {"admit", "reject", "insufficient"}
+TRIAL_TASKS = {"translate", "sort_moves", "missing_data"}
+MOVES = {"both_dry", "both_wet", "apart"}
+SENTENCE_VERDICTS = {"guilty": "right", "not_guilty": "wrong", "not_proven": "partly"}
+Z_TOL = 0.05       # script answer vs data (the UI accepts +/- 0.25 from the player)
+MIN_MOVE_Z = 0.15  # sort_moves: both lines must be clearly away from zero at each date
+
+
+def zscore(data, var, date):
+    """Anomaly / population standard deviation of all the variable's anomalies (as the UI does)."""
+    import statistics
+    an = data["variables"][var]["anomaly"]
+    vals = [v for v in an["values"] if v is not None]
+    a = dict(zip(an["dates"], an["values"])).get(date)
+    assert a is not None, f"no anomaly for {var} {date}"
+    return a / statistics.pstdev(vals)
+
+
+def smooth_z(data, var, date):
+    z = data["variables"][var]["extras"]["zscore_smooth12"]
+    return dict(zip(z["dates"], z["values"])).get(date)
+
+
+def check_trial_task(where, task, chart, data):
+    """Trial-only tasks; returns the variables they use."""
+    t = task["type"]
+    for key in ("prompt", "hint", "success"):
+        assert str(task.get(key, "")).strip(), f"{where}: task needs {key}"
+    if t == "translate":
+        readings = task["readings"]
+        assert readings, f"{where}: translate needs readings"
+        for r in readings:
+            assert r["variable"] in data["variables"], f"{where}: variable {r['variable']}"
+            z = zscore(data, r["variable"], r["date"])
+            assert abs(z - r["answer"]) <= Z_TOL, \
+                f"{where}: {r['variable']} {r['date']} answer {r['answer']}, data says {z:.2f}"
+        return {r["variable"] for r in readings}
+    if t == "sort_moves":
+        assert chart and chart["view"] == "zscore_pair", f"{where}: sort_moves needs zscore_pair"
+        a, b = chart["variables"]
+        dates, answers = task["dates"], task["answers"]
+        assert dates and len(dates) == len(answers) and len(set(dates)) == len(dates), \
+            f"{where}: dates vs answers"
+        assert set(answers) <= MOVES, f"{where}: answers {answers}"
+        for d, ans in zip(dates, answers):
+            za, zb = smooth_z(data, a, d), smooth_z(data, b, d)
+            assert za is not None and zb is not None, f"{where}: no smoothed value on {d}"
+            assert min(abs(za), abs(zb)) >= MIN_MOVE_Z, f"{where}: {d} too close to zero"
+            real = "both_dry" if za < 0 and zb < 0 else "both_wet" if za > 0 and zb > 0 else "apart"
+            assert ans == real, f"{where}: {d} answer {ans}, data says {real}"
+        return set()
+    if t == "missing_data":
+        opts = task["options"]
+        assert len(opts) >= 3 and all(o["text"].strip() for o in opts), f"{where}: options"
+        needed = [o["needed"] for o in opts]
+        assert any(needed) and not all(needed), f"{where}: needs right and wrong options"
+        return set()
+    raise AssertionError(f"{where}: task type {t}")
+
+
+def check_trial(trial, data, reveal):
+    """Check a Trial against TutorialData; returns the variables its charts and tasks use."""
+    for key in ("title", "charge", "instructions"):
+        assert str(trial.get(key, "")).strip(), f"trial: missing {key}"
+    exhibits = trial["exhibits"]
+    assert MIN_ITEMS <= len(exhibits) <= MAX_ITEMS, f"trial: {len(exhibits)} exhibits"
+    ids = [ex["id"] for ex in exhibits]
+    assert all(ids) and len(ids) == len(set(ids)), "trial: exhibit ids must be unique"
+    assert {ex["side"] for ex in exhibits} == SIDES, "trial: both sides must present exhibits"
+    used = set()
+    for ex in exhibits:
+        where = f"exhibit {ex['id']}"
+        assert ex["side"] in SIDES, f"{where}: side {ex['side']}"
+        kind = ex.get("kind", "exhibit")
+        assert kind in ("exhibit", "missing"), f"{where}: kind {kind}"
+        for key in ("title", "teaser", "argument", "text", "objection", "ruling_feedback", "clue"):
+            assert str(ex.get(key, "")).strip(), f"{where}: missing {key}"
+        assert len(ex["text"].split()) <= MAX_WORDS, f"{where}: text too long"
+        assert len(ex["clue"].split()) <= MAX_CLUE_WORDS, f"{where}: clue too long"
+        assert ex["ruling"] in RULINGS, f"{where}: ruling {ex['ruling']}"
+        chart = ex.get("chart")
+        if kind == "missing":
+            assert not chart, f"{where}: a missing exhibit has no chart"
+            assert ex["task"]["type"] == "missing_data", f"{where}: missing exhibit task"
+            assert ex["ruling"] == "insufficient", f"{where}: a missing exhibit is insufficient"
+        if chart:
+            used |= check_chart(ex["id"], chart, data)
+        task = ex["task"]
+        if task["type"] in TRIAL_TASKS:
+            used |= check_trial_task(where, task, chart, data)
+        else:
+            check_task(where, task, chart, data)
+        fu = ex.get("follow_up")
+        if fu:
+            assert fu["prompt"].strip() and fu["hint"].strip() and fu["feedback"].strip(), \
+                f"{where}: follow_up text"
+            check_options(f"{where} follow_up", fu["options"])
+    assert len({ex["ruling"] for ex in exhibits}) >= 2, "trial: rulings should not all be the same"
+
+    sentence = trial["sentence"]
+    assert sentence["prompt"].strip() and sentence["summary"].strip(), "trial: sentence text"
+    opts = sentence["options"]
+    assert {o["verdict"] for o in opts} == set(SENTENCE_VERDICTS), "trial: one option per verdict"
+    check_options("trial sentence", opts)
+    for o in opts:
+        if not o["correct"]:
+            assert str(o.get("objection", "")).strip(), f"trial sentence {o['verdict']}: objection"
+    right = next(o for o in opts if o["correct"])["verdict"]
+    assert "claim_verdict" in reveal, "trial: reveal needs claim_verdict"
+    assert SENTENCE_VERDICTS[right] == reveal["claim_verdict"], \
+        f"trial: sentence {right} does not match claim_verdict {reveal['claim_verdict']}"
     return used
 
 
@@ -262,12 +383,16 @@ def test_tutorial_script(path):
 
     ids = [step["id"] for step in s["steps"]]
     assert len(ids) == len(set(ids)), "step ids must be unique"
-    if "board" in s:
-        assert s["steps"] == [], "a case with a board has no quiz steps"
+    assert not ("board" in s and "trial" in s), "a case has a board or a trial, not both"
+    if "board" in s or "trial" in s:
+        assert s["steps"] == [], "a case with a board or a trial has no quiz steps"
     else:
         assert s["steps"], "no steps"
 
     used = check_board(s["board"], data) if "board" in s else set()
+    if "trial" in s:
+        assert s.get("scene"), "a trial needs the witness scene (its claim is the charge)"
+        used |= check_trial(s["trial"], data, s["reveal"])
     for step in s["steps"]:
         for key in ("id", "title", "text", "chart", "takeaway"):
             assert step.get(key), f"step {step.get('id')}: missing {key}"
@@ -411,3 +536,40 @@ def test_board_validator_accepts(aneto):
 def test_board_validator_rejects(override, aneto):
     with pytest.raises((AssertionError, KeyError)):
         check_board(_board(**override), aneto)
+
+
+# --- the trial validator itself, on the real Donana trial with one thing broken ------------
+
+@pytest.fixture(scope="module")
+def donana():
+    return load(ROOT / "data" / "tutorials" / "donana.json"), tutorial_data("donana")
+
+
+def test_trial_validator_accepts(donana):
+    s, data = donana
+    assert check_trial(s["trial"], data, s["reveal"]) == {"SOILM", "PRECIP"}
+
+
+def _ex(t, task_type):
+    return next(e for e in t["exhibits"] if e["task"]["type"] == task_type)
+
+
+@pytest.mark.parametrize("breaker", [
+    lambda t, r: _ex(t, "translate")["task"]["readings"][0].update(answer=-2.0),     # wrong z
+    lambda t, r: _ex(t, "sort_moves")["task"]["answers"].reverse(),                   # wrong signs
+    lambda t, r: _ex(t, "sort_moves")["task"].update(dates=["2005-04"], answers=["both_dry", "apart"]),
+    lambda t, r: _ex(t, "missing_data")["task"].update(options=[{"text": "x", "needed": True}] * 3),
+    lambda t, r: _ex(t, "missing_data").update(ruling="admit"),
+    lambda t, r: t["exhibits"][0].update(ruling="maybe"),
+    lambda t, r: t["exhibits"][0].update(side="jury"),
+    lambda t, r: r.update(claim_verdict="wrong"),                                     # sentence mismatch
+    lambda t, r: t["sentence"]["options"][0].update(correct=True),                    # two correct
+    lambda t, r: t.update(exhibits=t["exhibits"][:2]),                                # too few
+])
+def test_trial_validator_rejects(breaker, donana):
+    import copy
+    s, data = donana
+    t, r = copy.deepcopy(s["trial"]), copy.deepcopy(s["reveal"])
+    breaker(t, r)
+    with pytest.raises((AssertionError, KeyError)):
+        check_trial(t, data, r)
