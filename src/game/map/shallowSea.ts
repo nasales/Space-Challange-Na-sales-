@@ -18,6 +18,8 @@ export const COAST_SHALLOWS_KM = 32 // was 16
 export const ENCLOSED_SEAS: { bounds: Bounds; radiusKm: number }[] = [
   // Balearic Sea: Cabo de Palos .. Cap de Creus on the mainland, out to Formentera, Mallorca and Menorca
   { bounds: { west: -1.5, east: 4.7, south: 37.5, north: 42.6 }, radiusKm: 220 },
+  // Canary Islands: the sea between the seven islands (real lon/lat; the lane to the mainland is canarySeaLane.ts)
+  { bounds: { west: -18.3, east: -13.3, south: 27.6, north: 29.45 }, radiusKm: 140 },
 ]
 
 /** Cell size (km) of the coarse grid the enclosed seas are worked out on. */
