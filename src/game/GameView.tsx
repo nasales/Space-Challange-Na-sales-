@@ -7,7 +7,7 @@ import { loadWorldData } from './map/worldData'
 import { buildToyMap } from './map/buildToyMap'
 import { buildWorldTexture } from './map/buildWorldTexture'
 import { addRelief, smoothHeights } from './map/terrace'
-import { lonLatToWorld, worldToLonLat, UNITS_PER_KM } from './map/projection'
+import { lonLatToWorld, worldToLonLat, UNITS_PER_KM, SEA_Y } from './map/projection'
 import { createScene } from './scene/createScene'
 import { createTerrain } from './scene/createTerrain'
 import { createWorldTerrain } from './scene/createWorldTerrain'
@@ -36,7 +36,9 @@ import { createRivers } from './scene/createRivers'
 import { loadRoads, roadsInBounds } from './roads/roadData'
 import { createRoads } from './roads/createRoads'
 import { createCaseMarkers } from './cases/createCaseMarkers'
-import { createCanaryPortal } from './portal/createCanaryPortal'
+import { createSeaLane } from './scene/createSeaLane'
+import { laneFordAtWorld } from './map/canarySeaLane'
+import { toDisplayLonLat } from './map/canaryInset'
 import { CASES } from '../levels/data'
 import type { GameStatus, GameViewProps, HudState } from '../shared/events'
 import './GameView.css'
@@ -239,30 +241,35 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
         scene.add(scenery.group)
         await progress(0.96)
 
-        // Canary Islands portal (prototype): a glowing frame round the corner box and two gates
-        // (Cádiz <-> Tenerife) that take the detective from one to the other
-        const portal = createCanaryPortal()
-        portal.place({
-          heightAt: (x, z) => terrainAt(x, z)?.heightAt(x, z) ?? 0,
-          isFree: (x, z) =>
-            (terrainAt(x, z)?.isExploredLand(x, z) ?? false) && !towns.blocks(x, z, 15) && !scenery.blocks(x, z) && landmarks.distance(x, z) > 40 && !nearRoad(x, z, 4),
-        })
-        scene.add(portal.group)
+        // Sea lane to the Canary Islands (prototype): its water in the gap between the two zones
+        const seaLane = createSeaLane(
+          zoneBounds.map((b) => {
+            const sw = toDisplayLonLat(b.west, b.south), ne = toDisplayLonLat(b.east, b.north)
+            return { west: sw.lon, south: sw.lat, east: ne.lon, north: ne.lat }
+          }),
+        )
+        scene.add(seaLane.mesh)
 
         // El detective: empieza en Madrid, mirando hacia la Puerta de Alcalá
         // Ground under the detective: the terrain of the zone he is in (mainland or Canary Islands)
         // or, over a house or a monument, its roof. So he climbs houses and monuments like mountain steps (no collisions)
-        const zoneTerrain = (x: number, z: number) => terrainAt(x, z) ?? main
-        const surfaceAt = (x: number, z: number) => Math.max(zoneTerrain(x, z).heightAt(x, z), towns.surfaceAt(x, z), landmarks.surfaceAt(x, z), roadSurfaceAt(x, z))
+        // Between the zones, on the sea lane to the Canary Islands, the ground is the sea surface
+        const zoneHeightAt = (x: number, z: number) => {
+          const t = terrainAt(x, z)
+          return t ? t.heightAt(x, z) : laneFordAtWorld(x, z) ? SEA_Y : main.heightAt(x, z)
+        }
+        const surfaceAt = (x: number, z: number) => Math.max(zoneHeightAt(x, z), towns.surfaceAt(x, z), landmarks.surfaceAt(x, z), roadSurfaceAt(x, z))
         // For the camera: ground without monuments (it treats monuments as walls, see chaseCamera)
-        const groundNoLandmarks = (x: number, z: number) => Math.max(zoneTerrain(x, z).heightAt(x, z), towns.surfaceAt(x, z), roadSurfaceAt(x, z))
-        const isFord = (x: number, z: number) => terrainAt(x, z)?.isFord(x, z) ?? false
+        const groundNoLandmarks = (x: number, z: number) => Math.max(zoneHeightAt(x, z), towns.surfaceAt(x, z), roadSurfaceAt(x, z))
+        // Shallow sea of the zone, or of the sea lane to the Canary Islands in the gap between zones
+        const isFord = (x: number, z: number) => terrainAt(x, z)?.isFord(x, z) ?? laneFordAtWorld(x, z)
         const ground: Ground = {
           heightAt: surfaceAt,
           // Land, or the shallow sea (by boat): along the coast and across to the islands
           isDrivable: (x, z) => {
             const t = terrainAt(x, z)
-            return !!t && (t.isExploredLand(x, z) || t.isFord(x, z)) && !scenery.blocks(x, z)
+            if (!t) return laneFordAtWorld(x, z) // open sea between the zones: only the lane
+            return (t.isExploredLand(x, z) || t.isFord(x, z)) && !scenery.blocks(x, z)
           },
         }
         const madrid = lonLatToWorld(-3.7038, 40.4168)
@@ -289,7 +296,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
         const top = wantsTopView() ? createTopViewCamera(camera, renderer.domElement) : null
         if (!top) chase.startIntro() // swoop from far above Spain down to the detective; control starts when it lands
         // Development only: access from the console / Playwright for debugging
-        if (import.meta.env.DEV) Object.assign(window, { __game: { carState, camera, chase, top, ground, detective, boat, renderer, scene, day, nightLights, towns, houses, scenery, sceneryItems, landmarks, caseMarkers, portal, main } })
+        if (import.meta.env.DEV) Object.assign(window, { __game: { carState, camera, chase, top, ground, detective, boat, renderer, scene, day, nightLights, towns, houses, scenery, sceneryItems, landmarks, caseMarkers, main } })
 
         const fog = scene.fog as THREE.Fog
         const ink = createInkOutline(renderer) // contornos negros de cómic
@@ -339,7 +346,6 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
           const introBefore = chase.introActive
           const input = top || lensFlying || introBefore || callbacks.current.paused ? { throttle: 0, steer: 0, turbo: false } : keyboard.read()
           stepCar(carState, input, ground, dt)
-          if (portal.update(carState, dt)) carState.y = surfaceAt(carState.x, carState.z) // through a gate: land on the ground there
           detective.setFocus(chase.stepFocus(wantLens, dt))
           detective.update(carState, dt)
           const afloat = boat.update(carState, isFord(carState.x, carState.z), detective, dt)
@@ -439,7 +445,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
           lighting.dispose()
           clouds.dispose()
           caseMarkers.dispose()
-          portal.dispose()
+          seaLane.dispose()
           ink.dispose()
           dispose()
           if (import.meta.env.DEV) delete (window as { __game?: unknown }).__game
