@@ -12,8 +12,8 @@ export const HOVER_SCALE = 1.2
 /** Toggle key (KeyboardEvent.code). Esc also closes. */
 export const TOGGLE_KEY = 'KeyM'
 
-// ---- Map frame (degrees): the mainland and the Balearic Islands ----
-export const MAP_BOUNDS = { west: -9.9, east: 4.75, south: 35.55, north: 44.05 }
+// ---- Map frame (degrees): the mainland and the Balearic Islands, plus room for the Canary box ----
+export const MAP_BOUNDS = { west: -9.9, east: 4.75, south: 34.75, north: 44.05 } // south was 35.55
 /** Same equirectangular projection as the game (src/game/map/projection.ts): longitude measured at 40 N. */
 const LON_SCALE = Math.cos((40 * Math.PI) / 180)
 /** Countries drawn around Spain, grey like the unexplored world in the game. */
@@ -28,9 +28,35 @@ export function project(lon: number, lat: number) {
 export const MAP_WIDTH = (MAP_BOUNDS.east - MAP_BOUNDS.west) * LON_SCALE
 export const MAP_HEIGHT = MAP_BOUNDS.north - MAP_BOUNDS.south
 
+// ---- Canary Islands box: drawn smaller in the south-west corner, like the classic maps of Spain ----
+/** Real area (degrees) that goes into the box. */
+const CANARY_REAL = { west: -18.4, east: -13.2, south: 27.45, north: 29.55 }
+/** South-west corner of the box on the map (degrees) and its scale. */
+const CANARY_BOX = { west: -9.7, south: 34.9, scale: 0.8 }
+/** The box on the map (degrees), for its frame line. */
+export const CANARY_FRAME = {
+  west: CANARY_BOX.west,
+  south: CANARY_BOX.south,
+  east: CANARY_BOX.west + (CANARY_REAL.east - CANARY_REAL.west) * CANARY_BOX.scale,
+  north: CANARY_BOX.south + (CANARY_REAL.north - CANARY_REAL.south) * CANARY_BOX.scale,
+}
+
+/** Real lon/lat of a point of Spain -> lon/lat where the map draws it (only the Canary Islands move). */
+export function toMapLonLat(lon: number, lat: number): [number, number] {
+  const b = CANARY_REAL
+  if (lon < b.west || lon > b.east || lat < b.south || lat > b.north) return [lon, lat]
+  return [CANARY_BOX.west + (lon - b.west) * CANARY_BOX.scale, CANARY_BOX.south + (lat - b.south) * CANARY_BOX.scale]
+}
+
+/** Like project(), for Spain's own outline, places and the detective: the Canary Islands go in their box. */
+export function projectSpain(lon: number, lat: number) {
+  const [mapLon, mapLat] = toMapLonLat(lon, lat)
+  return project(mapLon, mapLat)
+}
+
 // ---- Landmarks you can fly to (ids from public/maps/countries/ESP/landmarks.json) ----
 /** Icon drawn inside each landmark badge. */
-export type Glyph = 'arch' | 'spires' | 'tower' | 'castle' | 'modern' | 'dome' | 'theatre' | 'houses' | 'plaza'
+export type Glyph = 'arch' | 'spires' | 'tower' | 'castle' | 'modern' | 'dome' | 'theatre' | 'houses' | 'plaza' | 'plane'
 
 /**
  * Landmarks left off the travel map (they stay in the 3D world): Peñafiel Castle sits too close to
@@ -77,4 +103,6 @@ export const GLYPHS: Record<Glyph, string> = {
   houses: 'M2 22V9l5-4 5 4v13zM12 14V9l4-3 4 3v5zM5 12h3v3H5zM14 10h3v2h-3zM12 14h10v8H12z',
   // Plaza mayor: arcaded square with a central clock tower
   plaza: 'M2 11h20v11H2zM10 6h4v5h-4zM11 3h2v3h-2zM4 15h3v7H4zM10.5 15h3v7h-3zM17 15h3v7h-3z',
+  // Airfield (shared/travelSpots.ts): a small plane seen from above
+  plane: 'M11 2h2l1 7 8 4v2l-8-2-.5 5 2.5 2v1.5L12 20l-4 1.5V20l2.5-2-.5-5-8 2v-2l8-4z',
 }

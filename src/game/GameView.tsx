@@ -7,7 +7,7 @@ import { loadWorldData } from './map/worldData'
 import { buildToyMap } from './map/buildToyMap'
 import { buildWorldTexture } from './map/buildWorldTexture'
 import { addRelief, smoothHeights } from './map/terrace'
-import { lonLatToWorld, worldToLonLat, UNITS_PER_KM, SEA_Y } from './map/projection'
+import { lonLatToWorld, worldToLonLat, UNITS_PER_KM } from './map/projection'
 import { createScene } from './scene/createScene'
 import { createTerrain } from './scene/createTerrain'
 import { createWorldTerrain } from './scene/createWorldTerrain'
@@ -42,9 +42,8 @@ import { loadRoads, roadsInBounds } from './roads/roadData'
 import { createRoads } from './roads/createRoads'
 import { createGuideBot } from './guide/createGuideBot'
 import { createCaseMarkers } from './cases/createCaseMarkers'
-import { createSeaLane } from './scene/createSeaLane'
-import { laneFordAtWorld, setLaneCoast } from './map/canarySeaLane'
-import { sinkAfricaInCanaryZone, toDisplayLonLat } from './map/canaryInset'
+import { sinkAfricaInCanaryZone } from './map/canaryInset'
+import { TRAVEL_SPOTS } from '../shared/travelSpots'
 import { createWitnesses } from './witness/createWitnesses'
 import { createDialogue, type DialogueScene } from './witness/dialogueCamera'
 import { CASES as ALL_CASES } from '../levels/data'
@@ -83,6 +82,11 @@ const FLIGHT_FOG_FAR = 6
  * close behind the detective (chase camera MIN_ZOOM is 0.7), so he lands with the camera near him.
  */
 const FLIGHT_LANDING_ZOOM = 0.8
+/** Airfields of the travel map (shared/travelSpots.ts): the landing spot is searched in rings of this step out to this radius (world units). */
+const SPOT_SEARCH_STEP = 8
+const SPOT_SEARCH_RADIUS = 480
+/** Free room kept between the landing spot and the nearest house or monument (world units). */
+const SPOT_HOUSE_GAP = 10
 
 
 /** Head top of a character above his feet, plus the bubble margin (world units), for the witness placement. */
@@ -326,29 +330,19 @@ export default function GameView({
         scene.add(scenery.group)
         await progress(0.96)
 
-        // Sea lane to the Canary Islands (prototype): its water in the gap between the two zones
-        setLaneCoast(world) // the water and the boat stop at the African coast
-        const seaLane = createSeaLane(
-          zoneBounds.map((b) => {
-            const sw = toDisplayLonLat(b.west, b.south), ne = toDisplayLonLat(b.east, b.north)
-            return { west: sw.lon, south: sw.lat, east: ne.lon, north: ne.lat }
-          }),
-        )
-        scene.add(seaLane.mesh)
-
         // El detective: empieza en Madrid, mirando hacia la Puerta de Alcalá
         // Ground under the detective: the terrain of the zone he is in (mainland or Canary Islands)
         // or, over a house or a monument, its roof. So he climbs houses and monuments like mountain steps (no collisions)
-        // Between the zones, on the sea lane to the Canary Islands, the ground is the sea surface
+        // No sea joins the two zones: the Canary Islands are reached by plane (travel map, M)
         const zoneHeightAt = (x: number, z: number) => {
           const t = terrainAt(x, z)
-          return t ? t.heightAt(x, z) : laneFordAtWorld(x, z) ? SEA_Y : main.heightAt(x, z)
+          return (t ?? main).heightAt(x, z)
         }
         const surfaceAt = (x: number, z: number) => Math.max(zoneHeightAt(x, z), towns.surfaceAt(x, z), landmarks.surfaceAt(x, z), roadSurfaceAt(x, z))
         // For the camera: ground without monuments (it treats monuments as walls, see chaseCamera)
         const groundNoLandmarks = (x: number, z: number) => Math.max(zoneHeightAt(x, z), towns.surfaceAt(x, z), roadSurfaceAt(x, z))
-        // Shallow sea of the zone, or of the sea lane to the Canary Islands in the gap between zones
-        const isFord = (x: number, z: number) => terrainAt(x, z)?.isFord(x, z) ?? laneFordAtWorld(x, z)
+        // Shallow sea of the zone he is in
+        const isFord = (x: number, z: number) => terrainAt(x, z)?.isFord(x, z) ?? false
         // Witness trade props (kiosk, crates; set once the witnesses are placed, below) block the way too
         let witnessPropAt: (x: number, z: number, margin?: number) => boolean = () => false
         const ground: Ground = {
@@ -356,7 +350,7 @@ export default function GameView({
           // Land, or the shallow sea (by boat): along the coast and across to the islands
           isDrivable: (x, z) => {
             const t = terrainAt(x, z)
-            if (!t) return laneFordAtWorld(x, z) // open sea between the zones: only the lane
+            if (!t) return false // open sea between the zones
             return (t.isExploredLand(x, z) || t.isFord(x, z)) && !scenery.blocks(x, z) && !witnessPropAt(x, z) && !bulls.blocks(x, z)
           },
         }
@@ -378,8 +372,27 @@ export default function GameView({
         let travelSeq = -1 // last travel request handled (TravelRequest.seq)
         let travelZoomFrom = 1 // camera zoom when the trip started
         // Landing spot: walkable land on the plaza, nothing in the way
-        const canLand = (x: number, z: number) => main.isExploredLand(x, z) && !scenery.blocks(x, z) && towns.surfaceAt(x, z) === -Infinity
-        if (import.meta.env.DEV) Object.assign(window, { __travel: { plane, approachOf: (id: string) => landmarks.approachOf(id, canLand) } })
+        const canLand = (x: number, z: number) => !!terrainAt(x, z)?.isExploredLand(x, z) && !scenery.blocks(x, z) && towns.surfaceAt(x, z) === -Infinity
+        /**
+         * Landing spot of a travel-map airfield (shared/travelSpots.ts, e.g. the Canary Islands, which
+         * have no monument): the free ground nearest to its point, clear of houses, facing the town.
+         */
+        const spotTarget = (id: string) => {
+          const spot = TRAVEL_SPOTS.find((s) => s.id === id)
+          if (!spot) return null
+          const c = lonLatToWorld(spot.lon, spot.lat)
+          for (let r = 0; r <= SPOT_SEARCH_RADIUS; r += SPOT_SEARCH_STEP) {
+            const n = Math.max(1, Math.round((2 * Math.PI * r) / SPOT_SEARCH_STEP))
+            for (let k = 0; k < n; k++) {
+              const a = (k / n) * 2 * Math.PI
+              const x = c.x + Math.sin(a) * r, z = c.z + Math.cos(a) * r
+              if (!canLand(x, z) || !ground.isDrivable(x, z) || towns.blocks(x, z, SPOT_HOUSE_GAP) || landmarks.distance(x, z) < SPOT_HOUSE_GAP) continue
+              return { x, z, heading: r > 0 ? Math.atan2(-(c.x - x), -(c.z - z)) : 0 }
+            }
+          }
+          return null
+        }
+        if (import.meta.env.DEV) Object.assign(window, { __travel: { plane, approachOf: (id: string) => landmarks.approachOf(id, canLand) ?? spotTarget(id) } })
         // ---- Tutorial robot (GameViewProps.guide): hovers where the current step needs it ----
         const guideBot = createGuideBot()
         scene.add(guideBot.root)
@@ -565,9 +578,9 @@ export default function GameView({
           if (travel && travel.seq !== travelSeq && !plane.active && !introBefore) {
             travelSeq = travel.seq
             travelZoomFrom = chase.zoom
-            const target = landmarks.approachOf(travel.landmarkId, canLand)
+            const target = landmarks.approachOf(travel.landmarkId, canLand) ?? spotTarget(travel.landmarkId) // a monument, or an airfield
             if (target && plane.start(carState, target, surfaceAt, () => callbacks.current.onTravel?.('landed'))) callbacks.current.onTravel?.('flying')
-            else callbacks.current.onTravel?.('landed') // unknown landmark: nothing to do
+            else callbacks.current.onTravel?.('landed') // unknown place: nothing to do
           }
           const travelling = plane.active
           // Tutorial robot: its spot is chosen when the step's place changes. On a 'hold' step the
@@ -763,7 +776,6 @@ export default function GameView({
           lighting.dispose()
           clouds.dispose()
           caseMarkers.dispose()
-          seaLane.dispose()
           witnesses.dispose()
           guideBot.dispose()
           ink.dispose()

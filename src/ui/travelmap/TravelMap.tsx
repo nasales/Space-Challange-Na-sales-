@@ -1,9 +1,12 @@
 // Fast travel map: M opens a full-screen map of Spain with the landmarks; click one (or Tab to it
 // and press Enter) and the detective flies there by plane. M or Esc closes it.
 // The overlay only listens and draws; the app shell decides when it may open and starts the trip.
+// The Canary Islands sit in a box in the south-west corner; their badges are airfields (shared/travelSpots.ts).
 // Map data: the same public files the game loads (Natural Earth outlines and rivers, landmarks.json).
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { TRAVEL_SPOTS } from '../../shared/travelSpots'
 import {
+  CANARY_FRAME,
   CLOSE_MS,
   GLYPHS,
   HOVER_SCALE,
@@ -17,6 +20,8 @@ import {
   TRAVEL_LANDMARKS,
   ZOOM_FROM,
   project,
+  projectSpain,
+  toMapLonLat,
   type Glyph,
 } from './travelConfig'
 import './TravelMap.css'
@@ -54,10 +59,10 @@ interface MapShapes {
 type Ring = [number, number][]
 
 /** SVG path of polygon rings, in map units. */
-function ringsToPath(rings: Ring[]) {
+function ringsToPath(rings: Ring[], toMap: (lon: number, lat: number) => { x: number; y: number } = project) {
   return rings
     .map((ring) => ring.map(([lon, lat], i) => {
-      const { x, y } = project(lon, lat)
+      const { x, y } = toMap(lon, lat)
       return `${i ? 'L' : 'M'}${x.toFixed(3)} ${y.toFixed(3)}`
     }).join('') + 'Z')
     .join('')
@@ -78,7 +83,9 @@ function loadShapes(): Promise<MapShapes> {
     type C = { id: string; polygons: Ring[][] }
     const countries = world.countries as C[]
     const rings = (c: C | undefined) => (c ? c.polygons.flat().filter(ringInView) : [])
-    const spain = ringsToPath(rings(countries.find((c) => c.id === 'ESP')))
+    // Spain: its Canary Islands rings are moved into their box before the frame test
+    const esp = countries.find((c) => c.id === 'ESP')
+    const spain = ringsToPath(esp ? esp.polygons.flat().filter((ring) => ringInView(ring.map(([lon, lat]) => toMapLonLat(lon, lat)))) : [], projectSpain)
     const neighbours = ringsToPath(NEIGHBOURS.flatMap((id) => rings(countries.find((c) => c.id === id))))
     const riverPath = (rivers.rivers as { rank: number; lines: Ring[] }[])
       .filter((r) => r.rank <= RIVER_RANK)
@@ -94,6 +101,7 @@ function loadShapes(): Promise<MapShapes> {
       const l = byId.get(id)
       return l ? [{ id, name: l.name, city: l.city, lat: l.lat, lon: l.lon, glyph }] : []
     })
+    landmarks.push(...TRAVEL_SPOTS.map((s) => ({ ...s, glyph: 'plane' as const }))) // airfields (Canary Islands)
     return { spain, neighbours, rivers: riverPath, landmarks }
   })
   shapesPromise.catch(() => {
@@ -104,7 +112,7 @@ function loadShapes(): Promise<MapShapes> {
 
 /** Position on the map as CSS percentages. */
 function place(lon: number, lat: number): CSSProperties {
-  const { x, y } = project(lon, lat)
+  const { x, y } = projectSpain(lon, lat)
   return { left: `${(x / MAP_WIDTH) * 100}%`, top: `${(y / MAP_HEIGHT) * 100}%` }
 }
 
@@ -214,6 +222,13 @@ export default function TravelMap({ open, canOpen, onOpenChange, onTravel, posit
             {shapes && (
               <>
                 <path d={shapes.neighbours} className="travel-map__neighbours" />
+                <rect
+                  className="travel-map__inset"
+                  x={project(CANARY_FRAME.west, 0).x}
+                  y={project(0, CANARY_FRAME.north).y}
+                  width={project(CANARY_FRAME.east, 0).x - project(CANARY_FRAME.west, 0).x}
+                  height={CANARY_FRAME.north - CANARY_FRAME.south}
+                />
                 <path d={shapes.spain} className="travel-map__shadow" transform="translate(0.09 0.11)" />
                 <path d={shapes.spain} className="travel-map__spain" />
                 <path d={shapes.rivers} className="travel-map__rivers" />
@@ -260,7 +275,7 @@ export default function TravelMap({ open, canOpen, onOpenChange, onTravel, posit
 
         <footer className="travel-map__footer">
           <span>
-            Click a landmark to fly there · <kbd>M</kbd> or <kbd>Esc</kbd> to close
+            Click a badge to fly there · <kbd>M</kbd> or <kbd>Esc</kbd> to close
           </span>
           <span className="travel-map__credit">Map: Natural Earth</span>
         </footer>
