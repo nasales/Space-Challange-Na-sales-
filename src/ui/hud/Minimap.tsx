@@ -2,8 +2,10 @@
 // drawn as an arrow at his position, turned to where he faces. The map itself (land, rivers,
 // roads, cities, monuments) is drawn once into an offscreen canvas in the game's comic look;
 // each HUD tick only redraws that image and moves the arrow, so it stays cheap.
+// The Canary Islands are drawn smaller in a dashed box in the south-west corner (shared/canaryBox.ts).
 import { useEffect, useRef, useState } from 'react'
 import { KM_PER_DEG_LAT, KM_PER_DEG_LON, UNITS_PER_KM } from '../../shared/projection'
+import { canaryBox, worldLonLatToReal } from '../../shared/canaryBox'
 import './Minimap.css'
 
 /** Offscreen map resolution: pixels per real kilometre (sharp at minimap size on high-DPI screens). */
@@ -26,6 +28,9 @@ const ARROW = '#e5322d'
 
 const COUNTRY_DIR = '/maps/countries/ESP/'
 
+/** Canary Islands box: in the sea south-west of the peninsula (corner in degrees, scale). */
+const CANARY = canaryBox(-9.85, 35.42, 0.55)
+
 interface Bounds { west: number; east: number; south: number; north: number }
 type Ring = [number, number][]
 interface MapImage {
@@ -42,9 +47,10 @@ const toPx = (b: Bounds, lon: number, lat: number): [number, number] => [
   (b.north - lat) * KM_PER_DEG_LAT * PX_PER_KM,
 ]
 
-function tracePath(ctx: CanvasRenderingContext2D, b: Bounds, ring: Ring, close: boolean) {
+/** @param spain the points belong to Spain: those in the Canary Islands go into their box */
+function tracePath(ctx: CanvasRenderingContext2D, b: Bounds, ring: Ring, close: boolean, spain = true) {
   ring.forEach(([lon, lat], i) => {
-    const [x, y] = toPx(b, lon, lat)
+    const [x, y] = spain ? toPx(b, ...CANARY.toMap(lon, lat)) : toPx(b, lon, lat)
     if (i === 0) ctx.moveTo(x, y)
     else ctx.lineTo(x, y)
   })
@@ -90,7 +96,8 @@ async function buildMapImage(): Promise<MapImage | null> {
   ctx.lineCap = 'round'
   const px = canvas.width / REF_CSS_WIDTH // offscreen pixels per minimap CSS pixel
 
-  ctx.fillStyle = seaPattern(ctx, px)
+  const sea = seaPattern(ctx, px)
+  ctx.fillStyle = sea
   ctx.fillRect(0, 0, canvas.width, canvas.height)
 
   // Countries: Spain in warm sand, neighbours in grey, all with ink outlines (Spain's thicker)
@@ -100,13 +107,29 @@ async function buildMapImage(): Promise<MapImage | null> {
   countries.sort((a, c) => Number(a.id === 'ESP') - Number(c.id === 'ESP')) // Spain last, on top
   for (const country of countries) {
     const spain = country.id === 'ESP'
-    ctx.beginPath()
-    for (const poly of country.polygons) for (const ring of poly) tracePath(ctx, b, ring, true)
-    ctx.fillStyle = spain ? LAND : NEIGHBOUR
-    ctx.fill('evenodd')
-    ctx.strokeStyle = INK
-    ctx.lineWidth = (spain ? 1.6 : 0.9) * px
-    ctx.stroke()
+    if (spain) {
+      // Canary Islands box, over the neighbours and under Spain: sea with a dashed ink frame
+      const [x0, y0] = toPx(b, CANARY.frame.west, CANARY.frame.north)
+      const [x1, y1] = toPx(b, CANARY.frame.east, CANARY.frame.south)
+      ctx.fillStyle = sea
+      ctx.fillRect(x0, y0, x1 - x0, y1 - y0)
+      ctx.strokeStyle = INK
+      ctx.lineWidth = 0.9 * px
+      ctx.setLineDash([3 * px, 2 * px])
+      ctx.strokeRect(x0, y0, x1 - x0, y1 - y0)
+      ctx.setLineDash([])
+    }
+    // The islands in the box are small: a thinner outline, or the ink would cover them
+    const boxed = (poly: Ring[]) => spain && CANARY.toMap(poly[0][0][0], poly[0][0][1])[0] !== poly[0][0][0]
+    for (const inBox of [false, true]) {
+      ctx.beginPath()
+      for (const poly of country.polygons) if (boxed(poly) === inBox) for (const ring of poly) tracePath(ctx, b, ring, true, spain)
+      ctx.fillStyle = spain ? LAND : NEIGHBOUR
+      ctx.fill('evenodd')
+      ctx.strokeStyle = INK
+      ctx.lineWidth = (inBox ? 0.7 : spain ? 1.6 : 0.9) * px
+      ctx.stroke()
+    }
   }
 
   // Rivers: thin blue strokes
@@ -131,7 +154,7 @@ async function buildMapImage(): Promise<MapImage | null> {
   ctx.lineWidth = 0.8 * px
   for (const p of places?.places ?? []) {
     if (p.pop < CITY_MIN_POP) continue
-    const [x, y] = toPx(b, p.lon, p.lat)
+    const [x, y] = toPx(b, ...CANARY.toMap(p.lon, p.lat))
     ctx.beginPath()
     ctx.arc(x, y, (p.pop >= 1_000_000 ? 2.4 : 1.7) * px, 0, Math.PI * 2)
     ctx.fillStyle = CITY
@@ -141,7 +164,7 @@ async function buildMapImage(): Promise<MapImage | null> {
 
   // Monuments: small gold diamonds
   for (const lm of landmarks?.landmarks ?? []) {
-    const [x, y] = toPx(b, lm.lon, lm.lat)
+    const [x, y] = toPx(b, ...CANARY.toMap(lm.lon, lm.lat))
     const r = 2.2 * px
     ctx.beginPath()
     ctx.moveTo(x, y - r)
@@ -214,9 +237,10 @@ export default function Minimap({ x, z, heading }: { x: number; z: number; headi
     ctx.imageSmoothingQuality = 'high'
     ctx.drawImage(image.canvas, 0, 0, w, image.canvas.height * scale)
 
-    // World units -> offscreen pixels -> device pixels of this canvas
-    const ax = ((x / UNITS_PER_KM) - image.bounds.west * KM_PER_DEG_LON) * PX_PER_KM * scale
-    const ay = ((z / UNITS_PER_KM) + image.bounds.north * KM_PER_DEG_LAT) * PX_PER_KM * scale
+    // World units -> real lon/lat -> where the map draws it (the Canary Islands in their box) -> device pixels
+    const [lon, lat] = CANARY.toMap(...worldLonLatToReal(x / UNITS_PER_KM / KM_PER_DEG_LON, -z / UNITS_PER_KM / KM_PER_DEG_LAT))
+    const [mx, my] = toPx(image.bounds, lon, lat)
+    const ax = mx * scale, ay = my * scale
     // Heading 0 faces north (screen up); forward is (-sin h, -cos h), so the arrow turns by -h
     ctx.setTransform(dpr, 0, 0, dpr, ax, ay)
     ctx.rotate(-heading)
