@@ -59,6 +59,8 @@ export interface GameCallbacks {
   onLensFocus?: (state: LensFocusState) => void
   /** Map loading progress, 0 to 1 (1 just before status 'ready'), for the loading bar */
   onProgress?: (progress: number) => void
+  /** Fast travel (M map): the plane trip has started ('flying') or he is back on his feet ('landed') */
+  onTravel?: (state: TravelState) => void
 }
 
 /** Props of the game view: the callbacks plus what the app shell tells the game. */
@@ -74,4 +76,16 @@ export interface GameViewProps extends GameCallbacks {
   paused?: boolean
   /** Featured case ids already solved (their markers are drawn green) */
   completedCases?: readonly string[]
+  /** Fast travel (M map): fly the detective to this landmark; a new `seq` starts a new trip */
+  travelTo?: TravelRequest | null
 }
+
+// ---- Fast travel (M map) ----
+/** A trip asked for from the travel map: landmark id (as in landmarks.json) and a counter, so the same place can be asked twice. */
+export interface TravelRequest {
+  landmarkId: string
+  seq: number
+}
+
+/** 'flying': the trip has started (no control until 'landed'); 'landed': he stands on the plaza again. */
+export type TravelState = 'flying' | 'landed'

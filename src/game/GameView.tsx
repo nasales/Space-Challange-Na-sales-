@@ -19,6 +19,7 @@ import { createDayCycle, readDayParams } from './scene/dayCycle'
 import { createNightLights } from './scene/nightLights'
 import { createDetective } from './detective/createDetective'
 import { createRowBoat } from './boat/createRowBoat'
+import { createPlane } from './plane/createPlane'
 import { createDust } from './effects/createDust'
 import { createFootprints } from './effects/createFootprints'
 import { placeTowns } from './towns/placeTowns'
@@ -60,14 +61,17 @@ function makeTexture(canvas: HTMLCanvasElement, renderer: THREE.WebGLRenderer) {
 /** Part of the loading bar used by the terrain zones (the slowest step by far). */
 const ZONES_FROM = 0.15
 const ZONES_TO = 0.88
+/** Fast travel: fog pushed back by this many world units per unit of plane altitude (near, far). */
+const FLIGHT_FOG_NEAR = 1.5
+const FLIGHT_FOG_FAR = 6
 
 /** Only the 3D canvas. The HUD and status messages live in src/ui, fed through the callbacks. */
-export default function GameView({ onStatus, onHud, onLensFocus, onProgress, focusLens = false, outfit, paused = false, completedCases }: GameViewProps) {
+export default function GameView({ onStatus, onHud, onLensFocus, onProgress, focusLens = false, outfit, paused = false, completedCases, travelTo, onTravel }: GameViewProps) {
   const container = useRef<HTMLDivElement>(null)
   // Latest callbacks (and pause flag), read from inside the animation loop without restarting the scene
-  const callbacks = useRef({ onStatus, onHud, onLensFocus, onProgress, focusLens, paused, completedCases })
+  const callbacks = useRef({ onStatus, onHud, onLensFocus, onProgress, focusLens, paused, completedCases, travelTo, onTravel })
   useEffect(() => {
-    callbacks.current = { onStatus, onHud, onLensFocus, onProgress, focusLens, paused, completedCases }
+    callbacks.current = { onStatus, onHud, onLensFocus, onProgress, focusLens, paused, completedCases, travelTo, onTravel }
   })
   const setStatus = (status: GameStatus) => callbacks.current.onStatus?.(status)
   const setHud = (hud: HudState) => callbacks.current.onHud?.(hud)
@@ -260,6 +264,13 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
         const boat = createRowBoat()
         scene.add(boat.root)
         const rowing = { ...carState } // his state as the running effects see it in the boat: no steps, no skids
+        // ---- Fast travel (M map): he turns into a small plane and flies to a landmark's plaza ----
+        const plane = createPlane()
+        scene.add(plane.root)
+        let travelSeq = -1 // last travel request handled (TravelRequest.seq)
+        // Landing spot: walkable land on the plaza, nothing in the way
+        const canLand = (x: number, z: number) => main.isExploredLand(x, z) && !scenery.blocks(x, z) && towns.surfaceAt(x, z) === -Infinity
+        if (import.meta.env.DEV) Object.assign(window, { __travel: { plane, approachOf: (id: string) => landmarks.approachOf(id, canLand) } })
         // Efectos al correr: nubecitas de polvo en cada pisada y huellas en el suelo
         const dust = createDust()
         const footprints = createFootprints()
@@ -315,13 +326,23 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
           // Intro swoop: no control (and no HUD) until the camera lands on the chase view.
           // The pause panel or an open case level also make the game ignore the keyboard
           const introBefore = chase.introActive
-          const input = lensFlying || introBefore || callbacks.current.paused ? { throttle: 0, steer: 0, turbo: false } : keyboard.read()
-          stepCar(carState, input, ground, dt)
+          // ---- Fast travel: a new request from the travel map starts the plane trip ----
+          const travel = callbacks.current.travelTo
+          if (travel && travel.seq !== travelSeq && !plane.active && !introBefore) {
+            travelSeq = travel.seq
+            const target = landmarks.approachOf(travel.landmarkId, canLand)
+            if (target && plane.start(carState, target, surfaceAt, () => callbacks.current.onTravel?.('landed'))) callbacks.current.onTravel?.('flying')
+            else callbacks.current.onTravel?.('landed') // unknown landmark: nothing to do
+          }
+          const travelling = plane.active
+          const input = lensFlying || introBefore || callbacks.current.paused || travelling ? { throttle: 0, steer: 0, turbo: false } : keyboard.read()
+          if (travelling) plane.update(carState, detective.root, dt) // the flight moves carState (no physics)
+          else stepCar(carState, input, ground, dt)
           detective.setFocus(chase.stepFocus(wantLens, dt))
           detective.update(carState, dt)
-          const afloat = boat.update(carState, main.isFord(carState.x, carState.z), detective, dt)
-          // In the boat there are no footsteps: no dust puffs and no footprints on the water
-          const walker = afloat > 0.5 ? Object.assign(rowing, carState, { speed: 0, accel: 0, yawRate: 0 }) : carState
+          const afloat = boat.update(carState, !travelling && main.isFord(carState.x, carState.z), detective, dt)
+          // In the boat (or the plane) there are no footsteps: no dust puffs and no footprints
+          const walker = afloat > 0.5 || travelling ? Object.assign(rowing, carState, { speed: 0, accel: 0, yawRate: 0 }) : carState
           dust.update(walker, surfaceAt, detective.stridePhase, dt)
           footprints.update(walker, surfaceAt, detective.stridePhase)
           const lens = chase.focus > 0 ? { center: detective.lensPosition(), normal: detective.lensNormal(), radius: detective.lensRadius() } : null
@@ -359,6 +380,10 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
           // so the near fog must not move away with it (tree pop-in, ink reaching too far)
           fog.near = 240 + d * 1.5
           fog.far = 1200 + d * 6
+          // Fast travel: high up, the fog moves away so the map below stays visible
+          const altitude = plane.altitude(carState)
+          fog.near += altitude * FLIGHT_FOG_NEAR
+          fog.far += altitude * FLIGHT_FOG_FAR
           camera.near = Math.max(0.05, d / 300)
           camera.far = d * 20 + 1000 * UNITS_PER_KM
           camera.updateProjectionMatrix()
@@ -383,6 +408,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
           detective.dispose()
           detectiveRef.current = null
           boat.dispose()
+          plane.dispose()
           dust.dispose()
           footprints.dispose()
           landmarks.dispose()
@@ -405,6 +431,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
           ink.dispose()
           dispose()
           if (import.meta.env.DEV) delete (window as { __game?: unknown }).__game
+          if (import.meta.env.DEV) delete (window as { __travel?: unknown }).__travel
         }
       })
       .catch((err) => {

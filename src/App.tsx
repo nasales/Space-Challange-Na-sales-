@@ -12,7 +12,8 @@ import PauseMenu from './ui/pause/PauseMenu'
 import Wardrobe from './ui/wardrobe/Wardrobe'
 import DbTest from './ui/dbtest/DbTest'
 import DbStatus from './ui/status/DbStatus'
-import type { GameStatus, HudState, LensFocusState } from './shared/events'
+import TravelMap from './ui/travelmap/TravelMap'
+import type { GameStatus, HudState, LensFocusState, TravelRequest } from './shared/events'
 import { loadOutfit, type Outfit } from './shared/outfit'
 import { loadCompleted, markCompleted } from './shared/progress'
 import { startBackgroundMusic } from './shared/music'
@@ -79,11 +80,26 @@ function Game() {
   const completedList = useMemo(() => [...completed], [completed])
   // Background music from the menu on (it starts on the first click or key press)
   useEffect(startBackgroundMusic, [])
+  // ---- Fast travel (M map): pick a landmark, the detective flies there by plane ----
+  const [travelMapOpen, setTravelMapOpen] = useState(false)
+  const [travelTo, setTravelTo] = useState<TravelRequest | null>(null)
+  const [flying, setFlying] = useState(false)
+  const canOpenTravelMap = screen === 'game' && status === 'ready' && !paused && !openCase && !focusLens && lensState === 'out' && !flying
+  const startTravel = (landmarkId: string) => {
+    setTravelMapOpen(false)
+    setFlying(true) // until the game reports 'landed'
+    setTravelTo((prev) => ({ landmarkId, seq: (prev?.seq ?? 0) + 1 }))
+  }
+  // Map open or plane in the air: Space (magnifier, case level) and Esc (pause) wait
+  const travelBusy = travelMapOpen || flying
   const zoneCase = hud?.caseZone && getLevel(hud.caseZone) ? hud.caseZone : null
-  const canOpenCase = screen === 'game' && status === 'ready' && !!hud?.stopped && !!zoneCase && !openCase && !paused
+  const canOpenCase = screen === 'game' && status === 'ready' && !!hud?.stopped && !!zoneCase && !openCase && !paused && !travelBusy
   const exitToMenu = () => {
     // GameView unmounts and disposes its scene; reset the game state so Play starts fresh
     setPaused(false)
+    setTravelMapOpen(false)
+    setFlying(false)
+    setTravelTo(null)
     setOpenCase(null)
     setFocusLens(false)
     setLensState('out')
@@ -146,14 +162,16 @@ function Game() {
         onLensFocus={setLensState}
         onProgress={setLoadProgress}
         outfit={outfit}
-        paused={paused || !!openCase}
+        paused={paused || !!openCase || travelMapOpen}
         completedCases={completedList}
+        travelTo={travelTo}
+        onTravel={(state) => setFlying(state === 'flying')}
       />
       <Hud status={status} hud={hud} />
       <MapLoader status={status} progress={loadProgress} outfit={outfit} />
       {/* Outside case zones Space opens the magnifier picker, as before */}
       <VariablePicker
-        canOpen={status === 'ready' && !!hud?.stopped && !paused && !zoneCase && !openCase}
+        canOpen={status === 'ready' && !!hud?.stopped && !paused && !zoneCase && !openCase && !travelBusy}
         lensState={lensState}
         onOpenChange={setFocusLens}
         location={hud?.location ?? null}
@@ -161,11 +179,19 @@ function Game() {
       {/* After the picker, so the picker's Esc handler runs first and wins; a case level has its own Esc */}
       <PauseMenu
         open={paused}
-        canOpen={status === 'ready' && !focusLens && lensState === 'out' && !openCase}
+        canOpen={status === 'ready' && !focusLens && lensState === 'out' && !openCase && !travelBusy}
         onOpenChange={setPaused}
         onMainMenu={exitToMenu}
       />
-      {zoneCase && !openCase && !paused && (
+      {/* Fast travel map (M): opens only when nothing else is up; picking a landmark starts the flight */}
+      <TravelMap
+        open={travelMapOpen}
+        canOpen={canOpenTravelMap}
+        onOpenChange={setTravelMapOpen}
+        onTravel={startTravel}
+        position={hud?.location ?? null}
+      />
+      {zoneCase && !openCase && !paused && !travelBusy && (
         <div className="case-zone-hint" style={HINT_STYLE}>
           {hud?.stopped ? 'Press Space' : 'Stop and press Space'} to investigate {getCaseEntry(zoneCase)?.title ?? zoneCase}
         </div>
