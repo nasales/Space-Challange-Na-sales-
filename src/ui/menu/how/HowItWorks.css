@@ -1,0 +1,1376 @@
+/* "How it works" walkthrough: full-screen comic pages over the menu.
+   Same print look as the menu and the case files: thick ink lines, paper panels, gold caption
+   boxes, Ben-Day halftone dots, hard offset shadows with a cyan/magenta misregistration ghost.
+   Tokens live on .how so the page renders even without the menu's own variables. */
+.how {
+  --how-ink: #161b2e;
+  --how-ink-soft: #3b4a6b;
+  --how-paper: #fff8e7;
+  --how-gold: #f2c14e;
+  --how-red: #e5322d;
+  --how-sea: #5ea8c2;
+  --how-blue: #2457a6;
+  --how-green: #2f7d4f;
+  --how-manila: #ecd29a;
+  --how-skin: #f3c9a0;
+  --how-cyan: rgba(0, 164, 214, 0.85);
+  --how-magenta: rgba(226, 0, 122, 0.75);
+  --how-display: var(--font-display, 'Big Shoulders Display', 'Arial Narrow', 'Roboto Condensed', sans-serif);
+  --how-type: var(--font-type, 'Courier Prime', 'Courier New', Courier, monospace);
+  --how-hand: var(--font-hand, 'Kalam', 'Segoe Print', 'Bradley Hand', cursive);
+  --how-shadow: 6px 6px 0 var(--how-ink);
+
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: none;
+  color: var(--how-ink);
+  background:
+    radial-gradient(circle, rgba(255, 248, 231, 0.12) 1.2px, transparent 1.6px) 0 0 / 7px 7px,
+    var(--how-ink);
+  overflow: hidden;
+}
+
+.how[open] {
+  display: flex;
+}
+
+.how::backdrop {
+  background: var(--how-ink, #161b2e);
+}
+
+.how ::selection {
+  background: var(--how-gold);
+  color: var(--how-ink);
+}
+
+.how__frame {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  width: min(1120px, 100%);
+  height: 100%;
+  margin: 0 auto;
+  padding: 18px 24px 16px;
+}
+
+/* ---- Header: caption label, chapter tabs, close ---- */
+.how__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+}
+
+.how__label {
+  margin: 0;
+  padding: 6px 14px 4px;
+  border: 3px solid var(--how-ink);
+  outline: 3px solid var(--how-paper);
+  background: var(--how-gold);
+  font-family: var(--how-display);
+  font-size: clamp(1.4rem, 1rem + 1.4vw, 2rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transform: rotate(-2deg);
+  box-shadow: 5px 5px 0 var(--how-red);
+}
+
+.how__chapters {
+  display: flex;
+  flex: 1;
+  gap: 10px;
+  min-width: 0;
+}
+
+.how__chapter {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 5px 14px 6px;
+  border: 3px solid var(--how-paper);
+  background: transparent;
+  color: var(--how-paper);
+  font-family: var(--how-display);
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background-color 0.12s ease-out,
+    color 0.12s ease-out,
+    transform 0.12s ease-out;
+}
+
+.how__chapter-n {
+  margin-bottom: 3px;
+  font-family: var(--how-type);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  opacity: 0.8;
+}
+
+.how__chapter:hover {
+  transform: translateY(-2px);
+}
+
+.how__chapter[aria-current='true'] {
+  border-color: var(--how-ink);
+  outline: 3px solid var(--how-paper);
+  background: var(--how-paper);
+  color: var(--how-ink);
+  box-shadow: 4px 4px 0 var(--how-cyan);
+}
+
+.how__close {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  padding: 6px 14px 6px 10px;
+  border: 3px solid var(--how-ink);
+  outline: 3px solid var(--how-paper);
+  background: var(--how-paper);
+  color: var(--how-ink);
+  font-family: var(--how-display);
+  font-size: 1.1rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transform: rotate(2deg);
+  transition:
+    background-color 0.12s ease-out,
+    color 0.12s ease-out;
+}
+
+.how__close svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3.5;
+  stroke-linecap: round;
+}
+
+.how__close:hover {
+  background: var(--how-red);
+  color: #fff;
+}
+
+.how button:focus-visible {
+  outline: 3px solid var(--how-gold);
+  outline-offset: 3px;
+}
+
+/* ---- Stage: the comic page (scrolls when a page is taller than the screen) ---- */
+.how__stage {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 4px solid var(--how-ink);
+  outline: 5px solid var(--how-paper);
+  outline-offset: -1px;
+  background: var(--how-paper);
+  scrollbar-color: var(--how-ink-soft) transparent;
+}
+
+.how__page {
+  position: relative;
+  min-height: 100%;
+  padding: 22px 26px 28px;
+  isolation: isolate;
+  animation: how-page-in 0.3s steps(3, end);
+}
+
+/* Ben-Day dots in the corner, cyan for chapter 1 and magenta for chapter 2 */
+.how__page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: -1;
+  width: 45%;
+  height: 220px;
+  background: radial-gradient(circle, rgba(94, 168, 194, 0.55) 1.5px, transparent 2px) 0 0 / 9px 9px;
+  mask-image: linear-gradient(225deg, black, transparent 70%);
+  pointer-events: none;
+}
+
+.how__page--ch2::before {
+  background-image: radial-gradient(circle, rgba(226, 0, 122, 0.3) 1.5px, transparent 2px);
+}
+
+@keyframes how-page-in {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+}
+
+.how__kicker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin: 0 0 6px;
+  font-family: var(--how-type);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--how-ink-soft);
+}
+
+.how__kicker-count {
+  padding: 1px 7px;
+  background: var(--how-ink);
+  color: var(--how-paper);
+  letter-spacing: 0.06em;
+}
+
+.how__title {
+  max-width: 22ch;
+  margin: 0 0 22px;
+  font-family: var(--how-display);
+  font-size: clamp(2rem, 1.3rem + 2.6vw, 3.4rem);
+  font-weight: 900;
+  line-height: 0.95;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  text-wrap: balance;
+  text-shadow:
+    3px 2px 0 var(--how-cyan),
+    -2px -1px 0 var(--how-magenta);
+}
+
+/* ---- Panels ---- */
+.how-panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 26px 22px;
+  align-items: start;
+}
+
+.how-panels--four {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+}
+
+.how-panel {
+  position: relative;
+  margin-top: 14px;
+  padding: 26px 18px 16px;
+  border: 4px solid var(--how-ink);
+  background: var(--how-paper);
+  box-shadow:
+    var(--how-shadow),
+    -3px -3px 0 var(--how-cyan);
+  animation: how-panel-in 0.36s steps(3, end) both;
+}
+
+.how-panel:nth-child(2) {
+  animation-delay: 0.08s;
+}
+
+.how-panel:nth-child(3) {
+  animation-delay: 0.16s;
+}
+
+.how-panel:nth-child(4) {
+  animation-delay: 0.24s;
+}
+
+@keyframes how-panel-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94) rotate(-1deg);
+  }
+}
+
+.how-panel--manila {
+  background:
+    radial-gradient(circle, rgba(22, 27, 46, 0.1) 1.2px, transparent 1.6px) 0 0 / 6px 6px,
+    var(--how-manila);
+}
+
+.how-panel--sea {
+  background:
+    radial-gradient(circle, rgba(255, 248, 231, 0.25) 1.4px, transparent 1.9px) 0 0 / 7px 7px,
+    var(--how-sea);
+}
+
+.how-panel--wide {
+  grid-column: 1 / -1;
+}
+
+.how-panel__cap {
+  position: absolute;
+  top: -16px;
+  left: -10px;
+  max-width: calc(100% + 4px);
+  margin: 0;
+  padding: 5px 12px;
+  border: 3px solid var(--how-ink);
+  background: var(--how-gold);
+  font-family: var(--how-type);
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transform: rotate(-1.5deg);
+}
+
+.how-panel__body,
+.how-strip__step,
+.how-note,
+.how-card {
+  font-family: var(--how-type);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.how-panel__body p,
+.how-strip__step p,
+.how-note p {
+  margin: 0 0 8px;
+}
+
+.how-panel__body p:last-child,
+.how-note p:last-child {
+  margin-bottom: 0;
+}
+
+.how strong {
+  font-weight: 700;
+  background: linear-gradient(transparent 58%, rgba(242, 193, 78, 0.75) 58%);
+}
+
+/* ---- Illustration frames and charts ---- */
+.how-fig {
+  position: relative;
+  margin: 4px 0 14px;
+  padding: 22px 8px 6px;
+  border: 3px solid var(--how-ink);
+  background:
+    linear-gradient(rgba(59, 74, 107, 0.09) 1px, transparent 1px) 0 0 / 100% 22px,
+    #fff;
+}
+
+.how-fig__tag {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  padding: 2px 8px;
+  background: var(--how-ink);
+  color: var(--how-paper);
+  font-family: var(--how-type);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.how-fig__note {
+  margin-top: 2px;
+  font-family: var(--how-hand);
+  font-size: 1.05rem;
+  line-height: 1.2;
+  color: var(--how-ink-soft);
+}
+
+.how-mini-label {
+  display: block;
+  font-family: var(--how-type);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.how-mini-label--blue {
+  margin-top: 4px;
+  color: var(--how-blue);
+}
+
+.how-chart,
+.how-dots,
+.how-ruler,
+.how-grid {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.how-chart__line,
+.how-chart__ghost {
+  fill: none;
+  stroke-width: 2.6;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.how-chart__line {
+  stroke: var(--how-ink);
+}
+
+.how-chart--red .how-chart__line {
+  stroke: var(--how-red);
+}
+
+.how-chart--blue .how-chart__line {
+  stroke: var(--how-blue);
+}
+
+.how-chart__ghost {
+  stroke: var(--how-cyan);
+  opacity: 0.55;
+}
+
+.how-chart__zero {
+  stroke: var(--how-ink-soft);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+}
+
+.how-chart__pair {
+  stroke: var(--how-ink-soft);
+  stroke-width: 1.2;
+  opacity: 0.45;
+}
+
+.how-chart__trend {
+  stroke: var(--how-red);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.how-chart__dot {
+  fill: var(--how-gold);
+  stroke: var(--how-ink);
+  stroke-width: 2;
+}
+
+.how-chart__odd {
+  fill: none;
+  stroke: var(--how-red);
+  stroke-width: 2.5;
+  stroke-dasharray: 4 3;
+}
+
+.how-chart__band {
+  fill: rgba(94, 168, 194, 0.35);
+}
+
+.how-chart__edge {
+  stroke: var(--how-blue);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+}
+
+.how-chart__text,
+.how-ruler__text,
+.how-grid__text {
+  fill: var(--how-ink);
+  font-family: var(--how-type);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.how-chart__text--red {
+  fill: var(--how-red);
+}
+
+.how-dots {
+  max-width: 180px;
+  margin: 0 auto 12px;
+}
+
+.how-dots__dot {
+  fill: #fff;
+  stroke: var(--how-ink);
+  stroke-width: 2;
+}
+
+.how-dots__hit {
+  fill: var(--how-red);
+  stroke: var(--how-ink);
+  stroke-width: 2;
+}
+
+.how-ruler {
+  margin-bottom: 12px;
+}
+
+.how-ruler__year {
+  fill: var(--how-paper);
+  stroke: var(--how-ink);
+  stroke-width: 2;
+}
+
+.how-ruler__year--alt {
+  fill: var(--how-gold);
+}
+
+.how-ruler__tick {
+  stroke: var(--how-ink);
+  stroke-width: 1;
+}
+
+.how-grid {
+  margin-bottom: 12px;
+}
+
+.how-grid__cell {
+  fill: var(--how-paper);
+  stroke: var(--how-ink);
+  stroke-width: 1.5;
+}
+
+.how-grid__cell--picked {
+  fill: var(--how-red);
+  stroke-width: 2.5;
+}
+
+.how-grid__lead {
+  fill: none;
+  stroke: var(--how-ink);
+  stroke-width: 2;
+  stroke-dasharray: 4 3;
+}
+
+.how-grid__card {
+  fill: #fff;
+  stroke: var(--how-ink);
+  stroke-width: 2.5;
+}
+
+.how-grid__bar {
+  fill: var(--how-sea);
+  stroke: var(--how-ink);
+  stroke-width: 0.8;
+}
+
+.how-grid__text--big {
+  font-family: var(--how-display);
+  font-size: 22px;
+  font-weight: 900;
+}
+
+/* ---- Icons ---- */
+.how-icon {
+  display: block;
+  width: 64px;
+  height: 64px;
+  overflow: visible;
+}
+
+.how-icon * {
+  stroke: var(--how-ink);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.how-icon__line,
+.how-icon__thin,
+.how-icon__red,
+.how-icon__beam,
+.how-icon__speed,
+.how-icon__handle {
+  fill: none;
+}
+
+.how-icon__thin {
+  stroke-width: 1.5;
+}
+
+.how-icon__red {
+  stroke: var(--how-red);
+  stroke-width: 3;
+}
+
+.how-icon__beam {
+  stroke: var(--how-gold);
+  stroke-width: 3;
+  stroke-dasharray: 3 4;
+}
+
+.how-icon__speed {
+  stroke-width: 2;
+}
+
+.how-icon__handle {
+  stroke-width: 8;
+}
+
+.how-icon__fill-paper {
+  fill: var(--how-paper);
+}
+
+.how-icon__fill-gold {
+  fill: var(--how-gold);
+}
+
+.how-icon__fill-sea {
+  fill: var(--how-sea);
+}
+
+.how-icon__fill-red {
+  fill: var(--how-red);
+}
+
+.how-icon__fill-ink {
+  fill: var(--how-ink);
+}
+
+.how-icon__fill-ink-soft {
+  fill: var(--how-ink-soft);
+}
+
+.how-icon__fill-skin {
+  fill: var(--how-skin);
+}
+
+.how-icon__fill-glass {
+  fill: rgba(94, 168, 194, 0.35);
+  stroke-width: 4;
+}
+
+.how-icon__key,
+.how-icon__stamp,
+.how-icon__q {
+  stroke: none;
+  font-family: var(--how-display);
+  font-weight: 900;
+}
+
+.how-icon__key {
+  fill: var(--how-ink);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+}
+
+.how-icon__stamp {
+  fill: var(--how-red);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+.how-icon__q {
+  fill: var(--how-ink);
+  font-size: 20px;
+}
+
+/* ---- Page 1: data sources ---- */
+.how-sources {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 10px;
+  margin-bottom: 14px;
+}
+
+.how-sources__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--how-hand);
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.how-sources__plus {
+  font-family: var(--how-display);
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--how-red);
+}
+
+/* ---- Speech bubble with the detective ---- */
+.how-say {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.how-say .how-icon {
+  flex: none;
+}
+
+.how .how-say__bubble {
+  position: relative;
+  flex: 1;
+  margin: 0 0 18px;
+  padding: 10px 14px;
+  border: 3px solid var(--how-ink);
+  border-radius: 26px 24px 28px 22px / 24px 28px 22px 26px;
+  background: #fff;
+  box-shadow: 4px 4px 0 var(--how-ink);
+  font-family: var(--how-hand);
+  font-size: 1.2rem;
+  line-height: 1.25;
+}
+
+/* tail pointing down-left at the detective */
+.how-say__bubble::after {
+  content: '';
+  position: absolute;
+  left: -14px;
+  bottom: 10px;
+  width: 18px;
+  height: 16px;
+  border-left: 3px solid var(--how-ink);
+  border-bottom: 3px solid var(--how-ink);
+  background: #fff;
+  transform: skewY(-30deg);
+}
+
+/* ---- Page 2: told vs finding out ---- */
+.how-versus {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.how-versus__no,
+.how-versus__yes {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.how-versus__note {
+  padding: 10px 12px;
+  border: 2px solid var(--how-ink);
+  background: #fde58a;
+  font-family: var(--how-hand);
+  font-size: 1.05rem;
+  line-height: 1.1;
+  transform: rotate(-4deg);
+  box-shadow: 3px 3px 0 var(--how-ink);
+}
+
+/* big red cross over the "answer" note */
+.how-versus__x {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  width: 70px;
+  height: 64px;
+  transform: translateX(-50%);
+  background:
+    linear-gradient(45deg, transparent 45%, var(--how-red) 45%, var(--how-red) 55%, transparent 55%),
+    linear-gradient(-45deg, transparent 45%, var(--how-red) 45%, var(--how-red) 55%, transparent 55%);
+}
+
+.how-versus__label {
+  font-family: var(--how-type);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.how-versus__vs {
+  font-family: var(--how-display);
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--how-red);
+  transform: rotate(-8deg);
+}
+
+/* ---- Page 3: the comic strip of steps ---- */
+.how-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  gap: 26px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.how-strip__step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 12px;
+  padding: 20px 12px 14px;
+  border: 4px solid var(--how-ink);
+  background: var(--how-paper);
+  box-shadow:
+    var(--how-shadow),
+    -3px -3px 0 var(--how-cyan);
+  text-align: center;
+  animation: how-panel-in 0.36s steps(3, end) both;
+}
+
+.how-strip__step:nth-child(2n) {
+  background:
+    radial-gradient(circle, rgba(22, 27, 46, 0.1) 1.2px, transparent 1.6px) 0 0 / 6px 6px,
+    var(--how-manila);
+}
+
+.how-strip__step:nth-child(2) {
+  animation-delay: 0.06s;
+}
+.how-strip__step:nth-child(3) {
+  animation-delay: 0.12s;
+}
+.how-strip__step:nth-child(4) {
+  animation-delay: 0.18s;
+}
+.how-strip__step:nth-child(5) {
+  animation-delay: 0.24s;
+}
+.how-strip__step:nth-child(6) {
+  animation-delay: 0.3s;
+}
+
+/* arrow between steps */
+.how-strip__step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  right: -16px;
+  top: 50%;
+  z-index: 1;
+  border: 9px solid transparent;
+  border-left: 12px solid var(--how-red);
+  transform: translateY(-50%);
+}
+
+.how-strip__n {
+  position: absolute;
+  top: -16px;
+  left: -10px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 3px solid var(--how-ink);
+  border-radius: 50%;
+  background: var(--how-gold);
+  font-family: var(--how-display);
+  font-size: 1.3rem;
+  font-weight: 900;
+}
+
+.how-strip__art {
+  margin-bottom: 8px;
+}
+
+.how-strip__title {
+  margin: 0 0 4px;
+  font-family: var(--how-display);
+  font-size: 1.5rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.how-strip__step p {
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
+/* ---- Page 4: case folders and any point ---- */
+.how-folders {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.how-folders__item {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 7px 12px;
+  border: 3px solid var(--how-ink);
+  background: var(--how-paper);
+  font-family: var(--how-display);
+  font-size: 1.3rem;
+  font-weight: 800;
+  line-height: 1.1;
+  text-transform: uppercase;
+  box-shadow: 3px 3px 0 var(--how-ink);
+  transform: rotate(calc((var(--i) - 2) * 0.6deg));
+}
+
+.how-folders__no {
+  flex: none;
+  padding: 1px 6px;
+  background: var(--how-red);
+  color: #fff;
+  font-family: var(--how-type);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.how-anywhere {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 140px;
+  margin-bottom: 14px;
+  border: 3px solid var(--how-ink);
+  background:
+    linear-gradient(var(--how-ink) 1.5px, transparent 1.5px) 0 0 / 28px 28px,
+    linear-gradient(90deg, var(--how-ink) 1.5px, transparent 1.5px) 0 0 / 28px 28px,
+    var(--how-manila);
+}
+
+.how-anywhere .how-icon {
+  width: 72px;
+  height: 72px;
+}
+
+.how-anywhere__q {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  font-family: var(--how-display);
+  font-size: 2.4rem;
+  font-weight: 900;
+  color: var(--how-red);
+  transform: rotate(10deg);
+  text-shadow: 2px 2px 0 var(--how-ink);
+}
+
+/* ---- Page 6: big example number ---- */
+.how .how-big {
+  margin: 4px 0;
+  font-family: var(--how-display);
+  font-size: 2.6rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--how-red);
+  text-shadow: 2px 2px 0 var(--how-ink);
+}
+
+.how-big small {
+  display: block;
+  font-size: 1.1rem;
+  color: var(--how-ink);
+  text-shadow: none;
+  text-transform: uppercase;
+}
+
+.how .how-small {
+  font-family: var(--how-hand);
+  font-size: 1rem;
+  color: var(--how-ink-soft);
+}
+
+/* ---- Page 8: stamped evidence cards ---- */
+.how-tested__lead {
+  font-size: 1.12rem;
+}
+
+.how-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: 22px 18px;
+  margin: 26px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.how-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 14px 14px;
+  border: 4px solid var(--how-ink);
+  background: #fff;
+  box-shadow: var(--how-shadow);
+  animation: how-panel-in 0.36s steps(3, end) both;
+}
+
+.how-card:nth-child(2) {
+  animation-delay: 0.06s;
+}
+.how-card:nth-child(3) {
+  animation-delay: 0.12s;
+}
+.how-card:nth-child(4) {
+  animation-delay: 0.18s;
+}
+.how-card:nth-child(5) {
+  animation-delay: 0.24s;
+}
+.how-card:nth-child(6) {
+  animation-delay: 0.3s;
+}
+
+.how-card--alt {
+  background:
+    radial-gradient(circle, rgba(22, 27, 46, 0.1) 1.2px, transparent 1.6px) 0 0 / 6px 6px,
+    var(--how-manila);
+}
+
+.how-card__stamp {
+  position: absolute;
+  top: -14px;
+  right: -8px;
+  padding: 1px 8px;
+  border: 3px solid currentColor;
+  background: var(--how-paper);
+  color: var(--how-green);
+  font-family: var(--how-display);
+  font-size: 0.95rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transform: rotate(7deg);
+  animation: how-stamp 0.4s cubic-bezier(0.2, 1.4, 0.4, 1) 0.35s both;
+}
+
+.how-card--alt .how-card__stamp {
+  color: var(--how-red);
+}
+
+@keyframes how-stamp {
+  from {
+    opacity: 0;
+    transform: rotate(7deg) scale(2.2);
+  }
+}
+
+.how-card__value {
+  font-family: var(--how-display);
+  font-size: 2.3rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.how-card__label {
+  margin: 2px 0 6px;
+  font-family: var(--how-type);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--how-ink-soft);
+}
+
+.how-card__detail {
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+/* ---- Page 9: limits as pinned notes, then credits ---- */
+.how-notes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+  gap: 22px 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.how-note {
+  position: relative;
+  padding: 18px 16px 14px;
+  border: 3px solid var(--how-ink);
+  background: #fde58a;
+  box-shadow: 5px 5px 0 var(--how-ink);
+  transform: rotate(calc((var(--i) - 2) * 0.8deg));
+  animation: how-panel-in 0.36s steps(3, end) both;
+  animation-delay: calc(var(--i) * 0.06s);
+}
+
+/* push pin */
+.how-note::before {
+  content: '';
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  border: 3px solid var(--how-ink);
+  border-radius: 50%;
+  background: var(--how-red);
+  transform: translateX(-50%);
+}
+
+.how-note__title {
+  margin: 0 0 6px;
+  font-family: var(--how-display);
+  font-size: 1.4rem;
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.how-credits {
+  margin-top: 28px;
+  padding-top: 12px;
+  border-top: 3px dashed var(--how-ink-soft);
+  font-family: var(--how-type);
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--how-ink-soft);
+}
+
+.how-credits p {
+  margin: 0 0 4px;
+}
+
+.how .how-credits__data {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--how-ink);
+}
+
+/* ---- Footer: back, page dots, next ---- */
+.how__foot {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.how__nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 6px 18px;
+  border: 3px solid var(--how-ink);
+  outline: 3px solid var(--how-paper);
+  background: var(--how-paper);
+  color: var(--how-ink);
+  font-family: var(--how-display);
+  font-size: 1.35rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 var(--how-cyan);
+  transition:
+    transform 0.12s ease-out,
+    box-shadow 0.12s ease-out;
+}
+
+.how__nav span {
+  font-size: 0.85em;
+}
+
+.how__nav--next {
+  background: var(--how-gold);
+  box-shadow: 4px 4px 0 var(--how-red);
+}
+
+.how__nav:hover:not([aria-disabled='true']) {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 var(--how-cyan);
+}
+
+.how__nav--next:hover {
+  box-shadow: 6px 6px 0 var(--how-red);
+}
+
+.how__nav:active:not([aria-disabled='true']) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--how-cyan);
+}
+
+.how__nav[aria-disabled='true'] {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.how__dots {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.how__dot-item--split {
+  margin-left: 14px;
+}
+
+.how__dot {
+  display: block;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 3px solid var(--how-paper);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  transition: transform 0.12s ease-out;
+}
+
+.how__dot:hover {
+  transform: scale(1.15);
+}
+
+.how__dot[aria-current='step'] {
+  background: var(--how-gold);
+  box-shadow: 0 0 0 3px var(--how-ink), 0 0 0 5px var(--how-gold);
+}
+
+.how__dot--ch2[aria-current='step'] {
+  background: var(--how-red);
+}
+
+.how__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---- Phones and narrow windows ---- */
+@media (max-width: 700px) {
+  .how__frame {
+    gap: 10px;
+    padding: 12px 16px;
+  }
+
+  .how__label {
+    order: 1;
+  }
+
+  .how__close {
+    order: 2;
+    padding: 5px 10px 5px 8px;
+    font-size: 1rem;
+  }
+
+  .how__chapters {
+    order: 3;
+    flex-basis: 100%;
+  }
+
+  .how__chapter {
+    flex: 1;
+    min-width: 0;
+    padding: 4px 10px 5px;
+    font-size: 1rem;
+  }
+
+  .how__page {
+    padding: 16px 14px 22px;
+  }
+
+  .how__title {
+    margin-bottom: 18px;
+  }
+
+  .how-panel {
+    padding: 24px 14px 14px;
+  }
+
+  /* the strip runs down the page: arrows point down */
+  .how-strip__step:not(:last-child)::after {
+    right: auto;
+    top: auto;
+    left: 50%;
+    bottom: -22px;
+    border: 9px solid transparent;
+    border-top: 12px solid var(--how-red);
+    transform: translateX(-50%);
+  }
+
+  .how__foot {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      'dots dots'
+      'back next';
+    gap: 10px;
+  }
+
+  .how__dots {
+    grid-area: dots;
+  }
+
+  .how__nav--back {
+    grid-area: back;
+    justify-content: center;
+  }
+
+  .how__nav--next {
+    grid-area: next;
+    justify-content: center;
+  }
+
+  .how__nav {
+    font-size: 1.15rem;
+  }
+}
+
+/* mid widths: a 3 x 2 grid (arrows would point at the wrong panel); wide: one row of six */
+@media (min-width: 701px) and (max-width: 1000px) {
+  .how-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .how-strip__step:not(:last-child)::after {
+    display: none;
+  }
+}
+
+@media (min-width: 1001px) {
+  .how-strip {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .how__page,
+  .how-panel,
+  .how-strip__step,
+  .how-card,
+  .how-card__stamp,
+  .how-note {
+    animation: none;
+  }
+
+  .how__chapter,
+  .how__close,
+  .how__nav,
+  .how__dot {
+    transition: none;
+  }
+
+  .how__chapter:hover,
+  .how__dot:hover,
+  .how__nav:hover:not([aria-disabled='true']) {
+    transform: none;
+  }
+}

@@ -40,6 +40,27 @@
   pointer-events: none;
 }
 
+/* The map tutorial points at the minimap and the location panel: a gold frame that pulses */
+.hud__corner.is-highlighted {
+  outline: 4px dashed #f2c14e;
+  outline-offset: 8px;
+  border-radius: 6px;
+  animation: hud-highlight 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes hud-highlight {
+  to {
+    outline-color: #e5322d;
+    outline-offset: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hud__corner.is-highlighted {
+    animation: none;
+  }
+}
+
 @media (max-width: 600px), (max-height: 500px) {
   .hud__corner {
     top: 12px;
