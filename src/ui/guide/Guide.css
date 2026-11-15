@@ -351,10 +351,11 @@
   margin-top: 8px;
 }
 
+/* Footer: Skip in the bottom-left corner of the box, progress dots in the middle, Next on the right */
 .guide-tour__progress {
   display: inline-flex;
   gap: 5px;
-  margin-right: auto;
+  margin: 0 auto;
 }
 
 .guide-tour__progress i {
