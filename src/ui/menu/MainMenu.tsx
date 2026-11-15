@@ -10,6 +10,7 @@ import panelBg from '../assets/menu/panel-bg.svg'
 import playArt from '../assets/menu/play.svg'
 import wardrobeArt from '../assets/menu/wardrobe.svg'
 import { signOut, useSession } from '../../shared/auth'
+import SoundSliders from '../settings/SoundSliders'
 import CaseFileDialog from './CaseFileDialog'
 import { FEATURED } from './featuredCases'
 import { Credits, FeaturedCases, HowItWorks } from './menuFiles'
@@ -171,6 +172,7 @@ export default function MainMenu({ onPlay, onWardrobe, onAccount, character }: M
             className="board__sheet board-play"
             style={pinStyle('play', -3)}
             onClick={onPlay}
+            data-sfx="confirm"
             autoFocus
             aria-label="Play: open the case"
           >
@@ -198,6 +200,7 @@ export default function MainMenu({ onPlay, onWardrobe, onAccount, character }: M
             className="board__sheet board-card"
             style={pinStyle('wardrobe', 3)}
             onClick={onWardrobe}
+            data-sfx="open"
             aria-label="Wardrobe: dress your detective"
           >
             <span className="sheet board-card__body">
@@ -219,6 +222,7 @@ export default function MainMenu({ onPlay, onWardrobe, onAccount, character }: M
             className="board__sheet board-folder"
             style={pinStyle('cases', -2.5)}
             onClick={() => setOpenFile('cases')}
+            data-sfx="open"
             ref={(el) => {
               triggers.current.cases = el
             }}
@@ -248,6 +252,7 @@ export default function MainMenu({ onPlay, onWardrobe, onAccount, character }: M
             className="board__sheet board-note"
             style={pinStyle('how', 2.5)}
             onClick={() => setOpenFile('how')}
+            data-sfx="open"
             ref={(el) => {
               triggers.current.how = el
             }}
@@ -274,6 +279,7 @@ export default function MainMenu({ onPlay, onWardrobe, onAccount, character }: M
             className="board__sheet board-tag"
             style={pinStyle('credits', -4)}
             onClick={() => setOpenFile('credits')}
+            data-sfx="open"
             ref={(el) => {
               triggers.current.credits = el
             }}
@@ -315,6 +321,7 @@ export default function MainMenu({ onPlay, onWardrobe, onAccount, character }: M
         <div className="main-menu__dots" aria-hidden="true" />
         <div className="main-menu__character">{character}</div>
         <AccountBadge onAccount={onAccount} />
+        <SoundSliders className="menu-sound" />
       </div>
 
       {file && FileBody && (
