@@ -39,7 +39,7 @@
         "kind": "clipping",
         "title": "The 47 °C headline",
         "teaser": "Newspaper, August 2021",
-        "text": "A headline and a chart can both be right and still disagree. The 47 °C was one afternoon at one weather station. Each point of the chart averages every hour of a month, nights included, over a square about 50 km wide. August 2021 is about 29.0 °C here: about 1 °C above a normal August, and not even the hottest month (July 2022, about 31.2 °C). Data: NASA MERRA-2.",
+        "text": "A headline and a chart can both be right and still disagree. Before you decide, read what each one measures: how long a time, and how much land. The newspaper reports a thermometer at a weather station; each point of this chart is a monthly mean over a square of land. Data: NASA MERRA-2.",
         "clipping": {
           "headline": "Spain's hottest day on record: about 47 °C near Córdoba",
           "body": "A heatwave hit southern Spain in August 2021. A weather station near Córdoba measured about 47 °C, the highest temperature ever officially recorded in the country.",
@@ -58,7 +58,7 @@
           "type": "compare",
           "prompt": "The newspaper says 47 °C. The chart says about 29 °C for August 2021. Which explanation is right?",
           "hint": "Read what one point of the chart averages: how many hours, and over how much land?",
-          "success": "Exactly: averaging days, nights and a 50 km square smooths away a single hot afternoon.",
+          "success": "Exactly: the 47 °C was one afternoon at one station; each point averages days and nights over a square about 50 km wide. August 2021 is about 29.0 °C here, about 1 °C above a normal August, and not even the hottest month (July 2022, about 31.2 °C).",
           "options": [
             { "text": "They measure different things: one afternoon at one station, against a monthly mean of days and nights over a big square.", "correct": true },
             { "text": "The NASA data are wrong: they missed the heatwave.", "correct": false },

@@ -101,7 +101,7 @@
           "date": "January 2021",
           "body": "Storm Filomena covered Madrid in snow on 8 and 9 January. Roads, trains and the airport closed, and cars were left stuck in the streets. Some residents skied down Gran Vía. A cold wave followed, and the snow froze into ice."
         },
-        "text": "A newspaper tells the story of a few days; a chart tells the story of months. Each point here is the average precipitation of one January in Madrid, 1998 to 2025, with snow counted as the water it melts into. Data: NASA GPM IMERG. January 2021 had about 1.9 mm/day: wetter than a normal January (about 1.6), but nine Januaries were wetter. Snow needs cold air and moisture at the same time.",
+        "text": "A newspaper tells the story of a few days; a chart tells the story of months. Each point here is the average precipitation of one January in Madrid, 1998 to 2025, with snow counted as the water it melts into. Data: NASA GPM IMERG. A normal January gets about 1.6 mm/day. Remember: snow needs moisture and cold air at the same time.",
         "chart": {
           "variable": "PRECIP",
           "view": "same_month",
@@ -123,7 +123,7 @@
           "type": "compare",
           "prompt": "The clipping says \"biggest snowfall in 50 years\". Read the chart of January rain and snow. Which explanation fits both?",
           "hint": "Find January 2021 on the chart. Is it the tallest point? Then think: what else, besides water, does snow need?",
-          "success": "Right: the month was not record wet. The snow was rare because moisture met very cold air.",
+          "success": "Right: January 2021 had about 1.9 mm/day, wetter than a normal January, but nine Januaries were wetter. The snow was rare because moisture met very cold air.",
           "options": [
             {
               "text": "January 2021 was wetter than normal but far from a record: the snow was rare because moisture arrived with very cold air",
@@ -148,7 +148,7 @@
         "kind": "chart",
         "title": "Every January",
         "teaser": "47 Januaries, 1980 to 2026",
-        "text": "To judge a cold January, compare it only with other Januaries. This chart keeps one point per year: 47 Januaries from 1980 to 2026, in °C, so the summer-winter wave is gone. Data: NASA MERRA-2. January 2021 averaged about 2.2 °C, while a normal January is about 3.5 °C. It was the coldest January of this century and the 4th coldest of all 47. Pilar remembers well: it was a very cold month.",
+        "text": "To judge a cold January, compare it only with other Januaries. This chart keeps one point per year: 47 Januaries from 1980 to 2026, in °C, so the summer-winter wave is gone. Data: NASA MERRA-2. A normal January here is about 3.5 °C. Each point is a whole month, so one point tells the story of one winter, not of the climate.",
         "chart": {
           "variable": "T2M",
           "view": "same_month",
@@ -158,11 +158,11 @@
           "type": "click_point",
           "prompt": "Pilar says that winter was special. Click the coldest January of this century (from 2001 on).",
           "hint": "Look only at the right half of the chart, from 2001 on. Which point sits lowest?",
-          "success": "Found it: January 2021, the month of Filomena, at about 2.2 °C.",
+          "success": "Found it: January 2021, the month of Filomena, at about 2.2 °C: the coldest January of this century and the 4th coldest of all 47. Pilar remembers well.",
           "answer": "2021"
         },
-        "relation": "supports",
-        "relation_feedback": "This backs up what Pilar lived: January 2021 really was very cold, the coldest January this century. It is the evidence her claim stands on. But it is one point; whether it means \"no warming\" depends on all the others.",
+        "relation": "neutral",
+        "relation_feedback": "On its own this says nothing about the trend. January 2021 really was very cold, as Pilar remembers. But it is one point among 47: whether it means \"no warming\" depends on all the others.",
         "clue": "January 2021: about 2.2 °C, coldest January this century, 4th coldest of 47."
       },
       {
@@ -170,7 +170,7 @@
         "kind": "chart",
         "title": "Five Januaries",
         "teaser": "Cold or warm? Put them in order",
-        "text": "One January can be very different from the next. The coldest card here, 1992, averaged about 1.2 °C, the coldest January in the record. The warmest card, 2024, averaged about 5.7 °C. That is a gap of more than 4 °C in the same month and the same city. January 2021 and January 2024 are only three years apart, yet they differ by about 3.5 °C. These big swings are weather, and they hide slow changes.",
+        "text": "One January can be very different from the next, in the same month and the same city. Before reading a trend, a detective must know how big these jumps are: if single Januaries swing by several degrees, one cold or warm January cannot prove much by itself. Sort the cards, then look at where the cold and the warm years fall in time.",
         "chart": {
           "variable": "T2M",
           "view": "same_month",
@@ -180,7 +180,7 @@
           "type": "order_cards",
           "prompt": "Put these five Januaries in order, from the coldest to the warmest.",
           "hint": "Find each year on the chart and read the height of its point: lower means colder.",
-          "success": "Right: 1992, 2021, 2011, 2001, 2024. Cold and warm Januaries are mixed across the decades.",
+          "success": "Right: 1992 (about 1.2 °C, the coldest in the record), 2021, 2011, 2001, 2024 (about 5.7 °C). More than 4 °C apart in the same month: cold and warm Januaries are mixed across the decades.",
           "cards": [
             "2024",
             "1992",
@@ -213,6 +213,7 @@
         },
         "task": {
           "type": "fit_line",
+          "tolerance": 0.3,
           "prompt": "Drag the two ends of the ruler so it follows the general direction of the cloud of points.",
           "hint": "Do not chase one point. Compare the middle of the cloud in the 1980s with the middle of the cloud in the 2020s.",
           "success": "Good: the line climbs. The real trend is about +0.37 °C per decade, about 1.7 °C over the whole record. January 2021 sits below it, a cold month inside a warming series."
@@ -226,7 +227,7 @@
         "kind": "datacard",
         "title": "How sure are we?",
         "teaser": "More years, less doubt",
-        "text": "This card measures the trend from different start years to 2026: bar = slope, whisker = 95% range. From 1980 the range is narrow, +0.26 to +0.49 °C per decade. From 2010 it widens to +0.60 to +1.58: fewer years, more doubt. The Januaries alone suffer the same way: with only 47 points, their slope (+0.2 °C per decade, p = 0.069) is not proven, while all 561 months give p < 0.001.",
+        "text": "This card measures the trend from different start years to 2026: each bar is the slope, each whisker the 95% range, where the true slope probably lies. A filled bar is significant. Move the slider and watch how long the whisker gets. Think of the Januaries alone: 47 points, slope about +0.2 °C per decade, p = 0.069, not proven; all 561 months give p < 0.001.",
         "chart": {
           "variable": "T2M",
           "view": "window_trends"
@@ -235,7 +236,7 @@
           "type": "slider_window",
           "prompt": "Move the slider from 1980 to 2010 and watch the whisker of each trend.",
           "hint": "Compare the length of the whisker at 1980 with the one at 2010.",
-          "success": "Right: more years, narrower range. That is why the long record is the strongest witness.",
+          "success": "Right: from 1980 the range is narrow, +0.26 to +0.49 °C per decade; from 2010 it widens to +0.60 to +1.58. More years, narrower range: the long record is the strongest witness.",
           "question": "What happens to the 95% range when you keep fewer years?",
           "options": [
             {

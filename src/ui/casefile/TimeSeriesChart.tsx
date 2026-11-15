@@ -385,7 +385,7 @@ function renderView(spec: ChartSpec, series: TutorialSeries, variables: Record<s
         ...common,
         layers: [{ pts: range(yearlyPts(tc.years, tc.counts)), kind: 'main' }],
         bars: true,
-        unitsLabel: tc.label,
+        unitsLabel: 'months per year',
         valueUnits: 'months',
         trendEnds:
           spec.show_trend && tc.years.length > 1 ? [tc.years[0], tc.trend.line[0], tc.years[tc.years.length - 1], tc.trend.line[1]] : null,

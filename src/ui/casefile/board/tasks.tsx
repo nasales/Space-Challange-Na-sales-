@@ -8,6 +8,9 @@ import type { ChartSpec, EvidenceItem, EvidenceTask, Highlight, TutorialData, Tu
 import type { ChartGeom } from '../chartKit'
 import TimeSeriesChart from '../TimeSeriesChart'
 import { baseUnits, sig, signed } from '../format'
+
+/** Same precision for a slope and its range (two decimals), with a true minus sign */
+const fixed2 = (x: number) => (x > 0 ? '+' : x < 0 ? '−' : '') + Math.abs(x).toFixed(2)
 import { TREND_VIEWS, keyLabel, viewTrend, yearlyValues } from './taskData'
 
 type TaskOf<T extends EvidenceTask['type']> = Extract<EvidenceTask, { type: T }>
@@ -219,7 +222,7 @@ export function FitLineTask({ item, task, data, done, onSolved }: TaskProps<'fit
   if (!real) return <p className="evtask__msg">This chart has no trend line to compare a ruler with.</p>
 
   const check = () => {
-    if (userSlope == null) return wrong('Move the ends of the ruler apart first.')
+    if (userSlope == null) return wrong(ends ? 'Move the ends of the ruler apart first.' : 'Your ruler is flat: drag its ends to follow the cloud of points.')
     const s = Math.sign(userSlope)
     const r = Math.sign(real.slopePerYear)
     if (s !== r) return wrong(s === 0 ? 'Your ruler is flat.' : `Your ruler goes ${s > 0 ? 'up' : 'down'}.`)
@@ -543,9 +546,9 @@ export function SliderWindowTask({ item, task, data, done, onSolved }: TaskProps
           <span>{wt[wt.length - 1].start_year}</span>
         </div>
         <p className="evslider__words" aria-live="polite">
-          From {w.start_year} to the end of the record: <b>{signed(w.slope_per_year * 10)} {u} per decade</b>, likely between{' '}
-          {signed(w.ci_low * 10)} and {signed(w.ci_high * 10)} (95% range).{' '}
-          {w.significant ? 'The bar is filled: a clear trend.' : 'The bar is hollow: the trend is not clear.'} Fewer years, wider range.
+          From {w.start_year} to the end of the record: <b>{fixed2(w.slope_per_year * 10)} {u} per decade</b>, likely between{' '}
+          {fixed2(w.ci_low * 10)} and {fixed2(w.ci_high * 10)} (95% range).{' '}
+          {w.significant ? 'The bar is filled: significant (p < 0.05).' : 'The bar is hollow: not significant.'} Fewer years, wider range.
         </p>
       </div>
       {moved ? (

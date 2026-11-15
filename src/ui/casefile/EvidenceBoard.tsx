@@ -88,11 +88,15 @@ export default function EvidenceBoard({ tutorial, witness, onClose, onConcluded 
     else setConfirming(true)
   })
 
+  // Opens the summary a moment after the last string is pinned (cleared if the board closes first)
+  const summaryTimer = useRef<number | undefined>(undefined)
+  useEffect(() => () => window.clearTimeout(summaryTimer.current), [])
+
   const link = (id: string) => {
     setLinked((l) => (l.includes(id) ? l : [...l, id]))
     setFresh(id)
     closeCard()
-    if (linked.length + 1 === items.length) window.setTimeout(() => setView('summary'), 1500)
+    if (linked.length + 1 === items.length) summaryTimer.current = window.setTimeout(() => setView('summary'), 1500)
   }
 
   // ---- red strings: measured from the pins on screen
