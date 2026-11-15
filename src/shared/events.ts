@@ -74,6 +74,11 @@ export interface GameCallbacks {
   onDialogueAnchors?: (anchors: DialogueAnchors | null) => void
   /** Fast travel (M map): the plane trip has started ('flying') or he is back on his feet ('landed') */
   onTravel?: (state: TravelState) => void
+  /**
+   * While `guide` is set: screen position (CSS px, viewport) just above the guide robot's head,
+   * for its speech bubble; null while the robot is off screen or hidden. Only changes are sent.
+   */
+  onGuideAnchor?: (anchor: { x: number; y: number } | null) => void
 }
 
 export interface DialogueAnchors {
@@ -107,6 +112,22 @@ export interface GameViewProps extends GameCallbacks {
   speakingMood?: LineMood | null
   /** Fast travel (M map): fly the detective to this landmark; a new `seq` starts a new trip */
   travelTo?: TravelRequest | null
+  /** Tutorial robot (src/ui/guide): shown while set, flying to where the current step needs it; null hides it */
+  guide?: GuideCue | null
+}
+
+// ---- Tutorial robot ----
+/** What the tutorial asks of the guide robot in the current step. */
+export interface GuideCue {
+  /**
+   * Where the robot hovers: beside the detective, in front of the nearest monument, or over the
+   * nearest featured-case ring (beside the detective if none is close).
+   */
+  at: 'detective' | 'landmark' | 'case'
+  /** The robot is speaking (talking animation) */
+  talking: boolean
+  /** The game ignores driving and turns the detective towards the robot's spot, so the camera shows it */
+  hold: boolean
 }
 
 // ---- Fast travel (M map) ----
