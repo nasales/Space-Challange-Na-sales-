@@ -1,1 +1,1 @@
-"""Runtime backend (FastAPI on Vercel). See docs/backend.md."""
+"""Runtime backend (FastAPI, local only). See docs/backend.md."""

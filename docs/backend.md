@@ -1,7 +1,11 @@
-# Backend (Vercel + Python + Supabase)
+# Backend (Python + Supabase)
+
+The hosted game is a static site on Cloudflare Workers and reads Supabase directly from the
+browser (`src/shared/supabase.ts`, publishable key, read only). The Python API below is a
+local development tool: it is not deployed.
 
 ```
-Browser (Vite + React)  --fetch /api/*-->  api/index.py (FastAPI, Vercel Python function)
+Browser (Vite + React)  --fetch /api/*-->  api/index.py (FastAPI, local only)
                                               |-- backend/cases.py --> Supabase table `cases`
                                               '-- fallback ---------> data/cache/*.json
 pipeline/ (offline Python stats) --writes--> data/cache/*.json --upload--> Supabase
@@ -10,8 +14,7 @@ pipeline/ (offline Python stats) --writes--> data/cache/*.json --upload--> Supab
 ## Folders
 | Path | What | Who |
 |---|---|---|
-| `vercel.json` | Vite build + rewrite of `/api/*` to `api/index.py` | Backend |
-| `api/index.py` | Vercel entrypoint, only imports `backend.app` | Backend |
+| `api/index.py` | Local entrypoint (`npm run dev:api`), only imports `backend.app` | Backend |
 | `backend/` | FastAPI routes (`app.py`), Supabase client (`db.py`), queries (`cases.py`), contract model (`models.py`) | Backend + database |
 | `supabase/schema.sql` | Table definitions, run in the Supabase SQL editor | Database |
 | `pipeline/` | Offline statistics, writes `data/cache/` (see `pipeline/README.md`) | Data / statistics |
@@ -47,11 +50,14 @@ Without `.env`, everything still works from `data/cache/`.
 4. New tables go in `supabase/schema.sql`. Changing the case fields changes the contract
    (needs Person 3 + Yeipi approval).
 
-## Deploy on Vercel
-1. Import the GitHub repo in Vercel (framework is detected from `vercel.json`).
-2. Project Settings → Environment Variables: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`.
-3. Every push creates a preview; only Person 4 merges to `main` (production).
+## Deploy
+- The site is a static Vite build on Cloudflare Workers, built from `main` on every push:
+  build command `npm run build`, output directory `dist`.
+- Build variables on Cloudflare: `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`
+  (the publishable key only; a `VITE_` variable always ends up public in the browser).
+- The Python API is not deployed: Cloudflare serves static files only, so `/api` does not exist
+  on the hosted site.
 
 ## Secrets
-The service role key bypasses Row Level Security. Keep it in `.env` (gitignored) and in
-Vercel settings only. Never commit it and never prefix it with `VITE_` (that ships it to the browser).
+The service role key bypasses Row Level Security. Keep it in `.env` (gitignored) only.
+Never commit it and never prefix it with `VITE_` (that ships it to the browser).
