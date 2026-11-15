@@ -3,8 +3,11 @@
    offset shadows. Fonts from src/ui/theme/fonts.css.
    Chart colours: blue #2b5fb4 / orange #c96a12 are the two series and the diverging pair
    (distinguishable with colour blindness); every use also has a text legend.
-   Timeline when it opens: file slides in -> series revealed left to right -> red trend line drawn
-   -> 95 % range fades in -> the verdict stamp lands. All motion is off with reduced motion. */
+   The file lies on a dark interrogation desk under a hanging lamp (like the Aneto case room):
+   the detective's notebook (EvidenceNotebook.css) on the left, the evidence sheet on the right.
+   Timeline when it opens: file slides in -> series revealed left to right while the clues are
+   written -> red trend line drawn -> 95 % range fades in -> the verdict stamp lands. Then the charts
+   stay alive (scanning magnifier, record markers, pulses). All motion is off with reduced motion. */
 .clue-result {
   --cr-ink: #1a1423;
   --cr-paper: #fff8e7;
@@ -16,7 +19,7 @@
   --cr-orange: #c96a12;
   --cr-text: #3b4a6b;
   --cr-dots: radial-gradient(circle, rgb(26 20 35 / 0.1) 1.1px, transparent 1.6px) 0 0 / 7px 7px;
-  --cr-stamp-at: 1250ms;
+  --cr-desk: #23283a;
 
   position: absolute;
   inset: max(12px, 1.6vmin);
@@ -29,7 +32,11 @@
   overflow: hidden;
   border: 4px solid var(--cr-ink);
   border-radius: 6px;
-  background: var(--cr-dots), var(--cr-paper);
+  /* Lamp light pooled in the middle of a dark metal desk, with print dots */
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 0%, rgb(255 236 170 / 0.32), transparent 70%),
+    radial-gradient(circle, rgb(255 255 255 / 0.06) 1.1px, transparent 1.6px) 0 0 / 7px 7px,
+    linear-gradient(180deg, #2c3247, var(--cr-desk) 60%, #191d2b);
   color: var(--cr-ink);
   box-shadow:
     10px 10px 0 var(--cr-ink),
@@ -63,7 +70,7 @@
   align-items: center;
   gap: 16px;
   padding-bottom: 10px;
-  border-bottom: 3px solid var(--cr-ink);
+  border-bottom: 2px dashed rgb(255 248 231 / 0.25);
 }
 
 .clue-result__folder-tab {
@@ -87,7 +94,7 @@
   font: 700 13px/1.2 var(--font-display, sans-serif);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #a2560f;
+  color: var(--cr-gold);
 }
 
 .clue-result__title {
@@ -96,12 +103,14 @@
   text-transform: uppercase;
   letter-spacing: 0.02em;
   overflow-wrap: normal;
+  color: var(--cr-paper);
+  text-shadow: 3px 3px 0 var(--cr-ink);
 }
 
 .clue-result__unit {
   font-size: 0.6em;
   text-transform: none;
-  color: var(--cr-text);
+  color: #c9cfe0;
 }
 
 .clue-result__btn {
@@ -149,264 +158,15 @@
 /* ---- Body: verdict column + evidence column ---- */
 .clue-result__body {
   display: grid;
-  grid-template-columns: minmax(270px, 32%) minmax(0, 1fr);
-  gap: 18px;
+  grid-template-columns: minmax(280px, 31%) minmax(0, 1fr);
+  gap: 26px;
   min-height: 0;
-}
-
-/* ---- Verdict ---- */
-.clue-result__verdict {
-  --kind: var(--cr-ink);
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-height: 0;
-  padding: 14px 16px;
-  overflow-y: auto;
-  border: 3px solid var(--cr-ink);
-  background:
-    radial-gradient(circle, rgb(26 20 35 / 0.12) 1.1px, transparent 1.6px) 0 0 / 6px 6px,
-    var(--cr-manila);
-  box-shadow: 6px 6px 0 var(--cr-ink);
-  transform: rotate(-0.6deg);
-}
-
-.clue-result__verdict--up {
-  --kind: #b8321c;
-}
-
-.clue-result__verdict--down {
-  --kind: var(--cr-blue);
-}
-
-.clue-result__verdict--flat {
-  --kind: #4a4f63;
-}
-
-.clue-result__verdict-label {
-  font: 800 13px/1 var(--font-display, sans-serif);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: #7a5a1c;
-}
-
-/* The stamp: lands after the charts have drawn */
-.clue-result__stamp-wrap {
-  display: grid;
-  place-items: center;
-  padding: 6px 0 2px;
-}
-
-.clue-result__stamp {
-  display: grid;
-  justify-items: center;
-  gap: 2px;
-  width: 100%;
-  max-width: 330px;
-  padding: 10px 14px 9px;
-  border: 5px solid var(--kind);
-  outline: 2px solid var(--kind);
-  outline-offset: 3px;
-  border-radius: 8px;
-  color: var(--kind);
-  text-align: center;
-  transform: rotate(-5deg);
-  mix-blend-mode: multiply;
-  background:
-    radial-gradient(circle at 20% 30%, transparent 0 3px, rgb(255 255 255 / 0.35) 3.5px 4px, transparent 4.5px) 0 0 / 23px 19px;
-  animation: clue-stamp 520ms cubic-bezier(0.2, 1.4, 0.4, 1) var(--cr-stamp-at) both;
-}
-
-.clue-result__stamp-arrow {
-  font: 900 28px/1 var(--font-display, sans-serif);
-}
-
-.clue-result__stamp-word {
-  font: 900 clamp(30px, 3.4vw, 46px)/0.95 var(--font-display, sans-serif);
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  overflow-wrap: normal;
-}
-
-.clue-result__stamp-sub {
-  margin-top: 3px;
-  padding-top: 4px;
-  border-top: 2px solid var(--kind);
-  font: 800 13px/1.1 var(--font-display, sans-serif);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-@keyframes clue-stamp {
-  0% {
-    opacity: 0;
-    transform: rotate(-14deg) scale(2.2);
-  }
-  55% {
-    opacity: 1;
-    transform: rotate(-4deg) scale(0.92);
-  }
-  100% {
-    opacity: 1;
-    transform: rotate(-5deg) scale(1);
-  }
-}
-
-/* A small shake of the folder when the stamp hits */
-.clue-result__verdict {
-  animation: clue-thud 260ms ease-out calc(var(--cr-stamp-at) + 260ms) both;
-}
-
-@keyframes clue-thud {
-  0%,
-  100% {
-    transform: rotate(-0.6deg);
-  }
-  35% {
-    transform: rotate(-0.6deg) translateY(3px) scale(0.995);
-  }
-}
-
-.clue-result__sentence {
-  font-size: 16px;
-  line-height: 1.4;
-}
-
-.clue-result__sentence b {
-  color: var(--kind);
-  background: linear-gradient(transparent 58%, rgb(242 193 78 / 0.85) 58%);
-}
-
-.clue-result__figures {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin: 0;
-}
-
-.clue-result__figure {
-  min-width: 0;
-  padding: 7px 9px;
-  border: 2px solid var(--cr-ink);
-  background: #fff;
-  box-shadow: 3px 3px 0 var(--cr-ink);
-}
-
-.clue-result__figure--main {
-  grid-column: 1 / -1;
-  background: var(--cr-paper);
-}
-
-.clue-result__figure dt {
-  font: 700 11px/1.2 var(--font-display, sans-serif);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--cr-text);
-}
-
-.clue-result__figure dd {
-  margin: 2px 0 0;
-  font: 900 20px/1.1 var(--font-display, sans-serif);
-  font-variant-numeric: tabular-nums;
-}
-
-.clue-result__figure--main dd {
-  font-size: 32px;
-  color: var(--kind);
-}
-
-.clue-result__figure dd small {
-  font-size: 0.55em;
-  color: var(--cr-text);
-}
-
-.clue-result__figure dd.clue-result__range {
-  font-size: 16px;
-}
-
-.clue-result__figure dd.clue-result__sub {
-  font: 12px/1.2 var(--font-type, monospace);
-  color: var(--cr-text);
-}
-
-/* Evidence meter: where the p-value sits between "could be noise" and "clear signal" */
-.clue-result__meter {
-  display: grid;
-  gap: 5px;
-  margin-top: auto;
-}
-
-.clue-result__meter-title {
-  font: 800 14px/1.2 var(--font-display, sans-serif);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.clue-result__meter-title b {
-  margin-left: 4px;
-  font-family: var(--font-type, monospace);
-  text-transform: none;
-}
-
-.clue-result__meter-track {
-  position: relative;
-  height: 18px;
-  border: 2px solid var(--cr-ink);
-  background: linear-gradient(90deg, #cfcabd, #f6efe0 32%, var(--cr-gold) 33%, #e9a23b);
-}
-
-.clue-result__meter-line {
-  position: absolute;
-  top: -5px;
-  bottom: -5px;
-  left: calc(var(--at) * 100%);
-  width: 2px;
-  background: var(--cr-ink);
-}
-
-.clue-result__meter-line span {
-  position: absolute;
-  top: -15px;
-  left: 50%;
-  translate: -50% 0;
-  font: 700 10px/1 var(--font-type, monospace);
-}
-
-.clue-result__meter-needle {
-  position: absolute;
-  top: -7px;
-  width: 0;
-  height: 0;
-  border: 8px solid transparent;
-  border-top: 12px solid var(--cr-red);
-  left: calc(var(--at) * 100%);
-  translate: -50% 0;
-  filter: drop-shadow(1px 1px 0 var(--cr-ink));
-  animation: clue-needle 1000ms cubic-bezier(0.3, 1.3, 0.5, 1) 500ms both;
-}
-
-@keyframes clue-needle {
-  from {
-    left: 0;
-  }
-}
-
-.clue-result__meter-ends {
-  display: flex;
-  justify-content: space-between;
-  font: 11px/1 var(--font-type, monospace);
-  color: var(--cr-text);
-}
-
-.clue-result__note {
-  font-size: 12px;
-  line-height: 1.35;
-  color: var(--cr-text);
+  padding: 4px 6px 6px;
 }
 
 /* ---- Evidence column: tabs + one big chart ---- */
 .clue-result__evidence {
+  position: relative;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   min-width: 0;
@@ -485,10 +245,29 @@
   gap: 8px;
   min-height: 0;
   padding: 12px 14px 10px;
+  position: relative;
   border: 3px solid var(--cr-ink);
   background: #fff;
-  box-shadow: 6px 6px 0 var(--cr-ink);
+  box-shadow:
+    7px 7px 0 var(--cr-ink),
+    0 18px 30px rgb(0 0 0 / 0.35);
   animation: clue-panel-in 260ms ease-out both;
+}
+
+/* Paper clip holding the evidence sheet */
+.clue-result__evidence::after {
+  content: '';
+  position: absolute;
+  top: 26px;
+  right: 34px;
+  z-index: 2;
+  width: 16px;
+  height: 46px;
+  border: 3px solid #8b93a8;
+  border-radius: 8px;
+  box-shadow: 1px 1px 0 var(--cr-ink);
+  transform: rotate(8deg);
+  pointer-events: none;
 }
 
 @keyframes clue-panel-in {
@@ -701,6 +480,212 @@
   }
 }
 
+/* ---- Living charts: loops that start once the draw-in is done ---- */
+
+/* 95 % range breathes */
+.clue-result__band {
+  animation: clue-breathe 3.4s ease-in-out 2s infinite;
+}
+
+@keyframes clue-breathe {
+  50% {
+    fill-opacity: 0.3;
+  }
+}
+
+/* Trend line: glow pulse and direction arrow */
+.clue-result__trend-glow {
+  stroke: var(--cr-red);
+  stroke-width: 14;
+  stroke-linecap: round;
+  opacity: 0;
+  animation: clue-glow 2.6s ease-in-out 1.7s infinite;
+}
+
+@keyframes clue-glow {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.22;
+  }
+}
+
+.clue-result__trend-arrow {
+  fill: var(--cr-red);
+  stroke: var(--cr-ink);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  transform-box: fill-box;
+  transform-origin: 25% 50%;
+  animation:
+    clue-pop 380ms cubic-bezier(0.2, 1.6, 0.4, 1) 1.55s both,
+    clue-nudge 1.8s ease-in-out 2.2s infinite;
+}
+
+@keyframes clue-pop {
+  from {
+    opacity: 0;
+    transform: scale(0);
+  }
+}
+
+@keyframes clue-nudge {
+  50% {
+    transform: translateX(4px);
+  }
+}
+
+/* Record months: burst ring, then a soft pulse */
+.clue-result__record-ring {
+  fill: none;
+  stroke: var(--cr-ink);
+  stroke-width: 2;
+  stroke-dasharray: 3 3;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation:
+    clue-pop 360ms cubic-bezier(0.2, 1.6, 0.4, 1) 1.45s both,
+    clue-ring 2.2s ease-in-out 2s infinite;
+}
+
+.clue-result__record--hi .clue-result__record-dot {
+  fill: var(--cr-orange);
+}
+
+.clue-result__record--lo .clue-result__record-dot {
+  fill: var(--cr-blue);
+}
+
+.clue-result__record-dot {
+  stroke: var(--cr-ink);
+  stroke-width: 2;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: clue-pop 300ms cubic-bezier(0.2, 1.6, 0.4, 1) 1.4s both;
+}
+
+@keyframes clue-ring {
+  50% {
+    transform: scale(1.35) rotate(45deg);
+  }
+}
+
+.clue-result__record-label {
+  font: 700 11px var(--font-type, monospace);
+  fill: var(--cr-ink);
+  stroke: #fff;
+  stroke-width: 4px;
+  stroke-linejoin: round;
+  paint-order: stroke fill;
+  animation: clue-fade 400ms ease-out 1.6s both;
+}
+
+/* The scanning magnifier */
+.clue-result__scan {
+  pointer-events: none;
+  animation: clue-fade 400ms ease-out 1.9s both;
+}
+
+.clue-result__scan-glass {
+  fill: rgb(255 255 255 / 0.35);
+}
+
+.clue-result__scan-rim {
+  fill: none;
+  stroke: var(--cr-ink);
+  stroke-width: 3.5;
+}
+
+.clue-result__scan-handle {
+  stroke: var(--cr-ink);
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+.clue-result__scan-glint {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+/* Average line marches slowly */
+.clue-result__mean--march {
+  animation:
+    clue-fade 400ms ease-out 100ms both,
+    clue-march 1.6s linear 1.5s infinite;
+}
+
+@keyframes clue-march {
+  to {
+    stroke-dashoffset: -22;
+  }
+}
+
+/* Seasons: hatched gap between the two cycles, recent dots pulse in turn */
+.clue-result__gap {
+  stroke: none;
+  animation: clue-fade 600ms ease-out 1.5s both;
+}
+
+.clue-result__hatch-bg {
+  fill: rgb(242 193 78 / 0.22);
+}
+
+.clue-result__hatch-line {
+  stroke: rgb(201 106 18 / 0.5);
+  stroke-width: 2;
+}
+
+.clue-result__series-b-dot {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: clue-dot 2.4s ease-in-out calc(1.9s + var(--i, 0) * 0.2s) infinite;
+}
+
+@keyframes clue-dot {
+  0%,
+  30%,
+  100% {
+    transform: scale(1);
+  }
+  15% {
+    transform: scale(1.8);
+  }
+}
+
+/* Years: star badges on the highest and the lowest year */
+.clue-result__badge-star {
+  stroke: var(--cr-ink);
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation:
+    clue-pop 380ms cubic-bezier(0.2, 1.6, 0.4, 1) 1.3s both,
+    clue-twinkle 2.6s ease-in-out 1.9s infinite;
+}
+
+.clue-result__badge--hi .clue-result__badge-star {
+  fill: var(--cr-gold);
+}
+
+.clue-result__badge--lo .clue-result__badge-star {
+  fill: #9cc3ea;
+}
+
+.clue-result__badge .clue-result__record-label {
+  animation-delay: 1.45s;
+}
+
+@keyframes clue-twinkle {
+  50% {
+    transform: scale(1.25) rotate(18deg);
+  }
+}
+
 .clue-result__readout {
   min-height: 1.4em;
   margin-top: 4px !important;
@@ -844,7 +829,7 @@
   flex-wrap: wrap;
   gap: 4px 18px;
   font-size: 12px;
-  color: var(--cr-text);
+  color: #c9cfe0;
 }
 
 .clue-result__foot-keys {
@@ -856,28 +841,11 @@
   font-size: 11px;
 }
 
-/* ---- Short screens: a tighter verdict ---- */
+/* ---- Short screens: a tighter file (the notebook has its own rules in EvidenceNotebook.css) ---- */
 @media (max-height: 760px) {
   .clue-result {
     gap: 8px;
     padding: 10px 14px 8px;
-  }
-
-  .clue-result__verdict {
-    gap: 8px;
-    padding: 10px 12px;
-  }
-
-  .clue-result__stamp-arrow {
-    display: none;
-  }
-
-  .clue-result__note {
-    display: none;
-  }
-
-  .clue-result__figure--main dd {
-    font-size: 26px;
   }
 }
 
@@ -914,60 +882,6 @@
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr);
     gap: 10px;
-  }
-
-  .clue-result__verdict {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: center;
-    gap: 6px 12px;
-    max-height: 42vh;
-    padding: 8px 10px;
-    transform: none;
-    box-shadow: 4px 4px 0 var(--cr-ink);
-    animation: none;
-  }
-
-  .clue-result__verdict-label,
-  .clue-result__meter-ends,
-  .clue-result__note,
-  .clue-result__stamp-arrow,
-  .clue-result__figures .clue-result__figure:not(.clue-result__figure--main) {
-    display: none;
-  }
-
-  .clue-result__stamp-wrap {
-    grid-row: span 2;
-    padding: 4px;
-  }
-
-  .clue-result__stamp {
-    padding: 6px 8px;
-    border-width: 4px;
-  }
-
-  .clue-result__stamp-word {
-    font-size: 22px;
-  }
-
-  .clue-result__stamp-sub {
-    font-size: 10px;
-  }
-
-  .clue-result__sentence {
-    font-size: 13px;
-  }
-
-  .clue-result__figures {
-    grid-template-columns: 1fr;
-  }
-
-  .clue-result__figure--main dd {
-    font-size: 22px;
-  }
-
-  .clue-result__meter {
-    grid-column: 1 / -1;
   }
 
   .clue-result__tab {

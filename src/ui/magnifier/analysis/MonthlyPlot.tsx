@@ -2,11 +2,14 @@
 // Axes with units and year ticks, gaps break the line, optional reference line (mean or zero),
 // and a readout of the month under the pointer (or chosen with the arrow keys).
 // Animation (CSS, ClueResult.css): the series is revealed from left to right like ink on paper;
-// `over` layers (e.g. the trend line) bring their own animation classes.
+// `over` layers (e.g. the trend line) bring their own animation classes. After the draw-in the
+// chart stays alive: an optional magnifier glides along the 12-month running mean (`scan`) and
+// the highest and lowest months get record markers (`markers`). The lens is not drawn with
+// reduced motion; the markers then simply show.
 import { useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react'
 import { fmt, fmtSigned, fmtTick, monthLabel, niceTicks, yearOf, yearTicks } from './analysis'
 import ChartBox from './ChartBox'
-import { linePath, scale, type Frame } from './chartKit'
+import { extremes, linePath, reducedMotion, rollingMean, scale, type Frame } from './chartKit'
 
 interface Props {
   dates: string[]
@@ -27,6 +30,10 @@ interface Props {
   /** Drawn under / over the series. sx takes a month index (may be fractional), sy a value. */
   under?: (sx: (i: number) => number, sy: (v: number) => number) => ReactNode
   over?: (sx: (i: number) => number, sy: (v: number) => number) => ReactNode
+  /** A small magnifier glides along the running mean, on a loop */
+  scan?: boolean
+  /** Burst markers on the highest and the lowest month */
+  markers?: boolean
 }
 
 export default function MonthlyPlot(props: Props) {
@@ -86,6 +93,9 @@ function Plot({
   include = [],
   under,
   over,
+  scan = false,
+  markers = false,
+  signed = false,
   frame,
   active,
   setActive,
@@ -162,6 +172,8 @@ function Plot({
         <path d={linePath(values, sx, sy)} className={`clue-result__line ${lineClass}`.trim()} />
       </g>
       {over?.(sx, sy)}
+      {markers && <Records values={values} dates={dates} units={units} signed={signed} sx={sx} sy={sy} frame={frame} />}
+      {scan && active == null && !reducedMotion() && <ScanLens d={linePath(rollingMean(values), sx, sy)} />}
       {active != null && (
         <g>
           <line x1={sx(active)} x2={sx(active)} y1={t} y2={H - b} className="clue-result__cursor" />
@@ -169,5 +181,67 @@ function Plot({
         </g>
       )}
     </svg>
+  )
+}
+
+/** Burst markers on the record months, with a short label kept inside the plot. */
+function Records({
+  values,
+  dates,
+  units,
+  signed,
+  sx,
+  sy,
+  frame,
+}: {
+  values: (number | null)[]
+  dates: string[]
+  units: string
+  signed: boolean
+  sx: (i: number) => number
+  sy: (v: number) => number
+  frame: Frame
+}) {
+  const ex = extremes(values)
+  if (!ex || ex.hi === ex.lo) return null
+  const show = signed ? fmtSigned : fmt
+  const marks = [
+    { i: ex.hi, word: 'Highest', up: true },
+    { i: ex.lo, word: 'Lowest', up: false },
+  ]
+  return (
+    <g className="clue-result__records">
+      {marks.map(({ i, word, up }) => {
+        const x = sx(i)
+        const y = sy(values[i] as number)
+        const anchor = x > frame.W - frame.r - 120 ? 'end' : x < frame.l + 120 ? 'start' : 'middle'
+        const ty = up ? Math.max(y - 16, frame.t + 10) : Math.min(y + 24, frame.H - frame.b - 6)
+        return (
+          <g key={word} className={`clue-result__record clue-result__record--${up ? 'hi' : 'lo'}`}>
+            <circle cx={x} cy={y} r={9} className="clue-result__record-ring" />
+            <circle cx={x} cy={y} r={4.5} className="clue-result__record-dot" />
+            <text x={x} y={ty} textAnchor={anchor} className="clue-result__record-label">
+              {word}: {monthLabel(dates[i])} ({show(values[i] as number)} {units})
+            </text>
+          </g>
+        )
+      })}
+    </g>
+  )
+}
+
+/** The detective's magnifier sliding back and forth along a path (SVG animateMotion). */
+function ScanLens({ d }: { d: string }) {
+  if (!d) return null
+  return (
+    <g className="clue-result__scan" aria-hidden="true">
+      <g>
+        <line x1={8} y1={8} x2={19} y2={19} className="clue-result__scan-handle" />
+        <circle r={12} className="clue-result__scan-glass" />
+        <circle r={12} className="clue-result__scan-rim" />
+        <path d="M-6,-5 A7,7 0 0 1 2,-8" className="clue-result__scan-glint" />
+      </g>
+      <animateMotion dur="10s" begin="1.9s" repeatCount="indefinite" path={d} keyPoints="0;1;0" keyTimes="0;0.5;1" calcMode="linear" />
+    </g>
   )
 }
