@@ -440,34 +440,6 @@ let cells = legs.flatMap((l, i) => (i === 0 ? l.path : l.path.slice(1)))
 let pts = cells.map((i) => [lonOf(i % w) * KX, latOf(Math.floor(i / w)) * KY]) // km plane
 pts.pop() // the loop's last cell repeats the first
 
-function simplifyClosed(line, tol) {
-  const dp = (a) => {
-    if (a.length <= 2) return a
-    const keep = new Uint8Array(a.length)
-    keep[0] = keep[a.length - 1] = 1
-    const stack = [[0, a.length - 1]]
-    while (stack.length) {
-      const [s, e] = stack.pop()
-      let md = -1, mi = -1
-      const [ax, ay] = a[s], [bx, by] = a[e]
-      const len = Math.hypot(bx - ax, by - ay) || 1e-9
-      for (let i = s + 1; i < e; i++) {
-        const d = Math.abs((bx - ax) * (ay - a[i][1]) - (ax - a[i][0]) * (by - ay)) / len
-        if (d > md) {
-          md = d
-          mi = i
-        }
-      }
-      if (md > tol) {
-        keep[mi] = 1
-        stack.push([s, mi], [mi, e])
-      }
-    }
-    return a.filter((_, i) => keep[i])
-  }
-  const half = Math.floor(line.length / 2)
-  return [...dp(line.slice(0, half + 1)).slice(0, -1), ...dp([...line.slice(half), line[0]]).slice(0, -1)]
-}
 /**
  * Removes every self-crossing of a line (km plane): where segment i crosses segment j, the small
  * loop between them is cut out and replaced by the crossing point. On a closed line (no repeated
@@ -504,56 +476,265 @@ function removeSelfCrossings(line, closed) {
   }
   return p
 }
-function chaikinClosed(line, iterations) {
-  let p = line
-  for (let k2 = 0; k2 < iterations; k2++) {
-    const next = []
-    for (let i = 0; i < p.length; i++) {
-      const a = p[i], b = p[(i + 1) % p.length]
-      next.push([a[0] * 0.75 + b[0] * 0.25, a[1] * 0.75 + b[1] * 0.25], [a[0] * 0.25 + b[0] * 0.75, a[1] * 0.25 + b[1] * 0.75])
-    }
-    p = next
-  }
-  return p
+// ---------- Road shape: straights and round curves (as a road engineer would draw it) ----------
+// The A* path is a staircase of grid cells (8 directions). It is turned into a road in steps that
+// all stay inside a narrow corridor around it (CORRIDOR_KM), so the ROUTE never changes (same
+// towns, same detours, same crossings); only the line is cleaned up:
+//   1. string pulling: from each kept point, jump straight to the farthest later path point whose
+//      straight line stays in the corridor, costs no more than the path it replaces (same cost
+//      terms, sampled along the line) and touches no closed cell; this removes the staircase and
+//      the small zig-zags;
+//   2. fillets: every corner becomes a circular arc tangent to both straights (radius up to
+//      CURVE_KM, less where the straights are short or the arc would leave the corridor), so the
+//      road is straights joined by round curves: no kinks, no wobble;
+//   3. a gentle sway on the long straights (swayStraights).
+const CORRIDOR_KM = 2 // the smoothed line stays this close to the A* path
+const SPUR_GAP_KM = 2.5 // an open road that comes back this close to itself ...
+const SPUR_ALONG_KM = 10 // ... after this many km has a spur, which is cut out
+const PULL_SLACK = 1.01 // a straight may cost this much more than the path it replaces (small: keeps right-angle crossings)
+const PULL_LOOK = 160 // farthest path point tried from each kept point (cells)
+const RELAX_SLACK = 1.06 // a kept point is dropped if the straight past it costs at most this much more
+const SELF_KM = 9 // a straight keeps this far from other parts of the same road ...
+const SELF_SPAN_KM = 30 // ... more than this far along it
+const CURVE_KM = 12 // widest curve radius
+const ARC_STEP_KM = 0.35 // spacing of the points on a curve
+const SWAY_MIN_KM = 18 // straights shorter than this stay straight
+const SWAY_HALF_KM = 22 // length of one half wave of the sway
+const SWAY_KM = 1.1 // widest sway to the side
+/** Terrain height (m) at a km-plane point, bilinear on the cost grid. */
+const heightAtKm = (x, y) => {
+  const c = Math.min(w - 1.001, Math.max(0, colOf(x / KX))), r = Math.min(h - 1.001, Math.max(0, rowOf(y / KY)))
+  const c0 = Math.floor(c), r0 = Math.floor(r), fc = c - c0, fr = r - r0
+  const i = r0 * w + c0
+  return (height[i] * (1 - fc) + height[i + 1] * fc) * (1 - fr) + (height[i + w] * (1 - fc) + height[i + w + 1] * fc) * fr
 }
-const costAtKm = ([x, y]) => {
+const cellAtKm = (x, y) => {
   const c = Math.round(colOf(x / KX)), r = Math.round(rowOf(y / KY))
-  if (r < 0 || c < 0 || r >= h || c >= w) return Infinity
-  const i = r * w + c
-  return riverRank[i] || riverKm[i] < RIVER_BAND_KM ? Infinity : cellCost[i] + roughness(i) * 0.02
+  return r < 0 || c < 0 || r >= h || c >= w ? -1 : r * w + c
 }
-pts = chaikinClosed(simplifyClosed(pts, 1.2), 3)
-
-// Gentle meander (two incommensurate low frequencies) where the ground is easy; never near rivers
-{
-  const n = pts.length
-  const along = [0]
-  for (let i = 1; i < n; i++) along.push(along[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]))
-  const offs = pts.map((p, i) => {
-    const s = along[i]
-    const wave = 0.62 * Math.sin((2 * Math.PI * s) / 41 + 1.3) + 0.38 * Math.sin((2 * Math.PI * s) / 14.7 + 4.1)
-    const a = pts[(i + n - 1) % n], b = pts[(i + 1) % n]
-    const tl = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1
-    const nx = -(b[1] - a[1]) / tl, ny = (b[0] - a[0]) / tl
-    for (const amp of [1.3, 0.7, 0]) {
-      const q = [p[0] + nx * wave * amp, p[1] + ny * wave * amp]
-      if (amp === 0 || (costAtKm(q) < 2.5 && costAtKm(p) < 2.5)) return wave * amp
+/**
+ * Cost of a straight km-plane segment, sampled every half cell, with the same terms as stepCost
+ * (cell cost, grade, rivers entered and crossed, and the band of the roads already laid if
+ * withUsed). `state.river` carries the river the previous segment ended in. Infinity if closed.
+ */
+function segmentCost(p, q, withUsed, state) {
+  const len = Math.hypot(q[0] - p[0], q[1] - p[1])
+  const n = Math.max(1, Math.ceil(len / (Math.min(cellKmX, cellKmY) * 0.5)))
+  const dl = len / n
+  let cost = 0
+  let hPrev = heightAtKm(p[0], p[1])
+  for (let s = 1; s <= n; s++) {
+    const x = p[0] + ((q[0] - p[0]) * s) / n, y = p[1] + ((q[1] - p[1]) * s) / n
+    const i = cellAtKm(x, y)
+    if (i < 0 || !Number.isFinite(cellCost[i])) return Infinity
+    const hh = heightAtKm(x, y)
+    const grade = Math.abs(hh - hPrev) / (dl * 1000)
+    hPrev = hh
+    cost += dl * (cellCost[i] + Math.min(GRADE_MAX, (grade / GRADE) ** 2) + (withUsed ? used[i] : 0))
+    const rr = riverRank[i]
+    if (rr && rr !== state.river) cost += RIVER_CELL[rr]
+    else if (rr) cost += RIVER_CELL[rr] * 0.5 * (dl / cellKmX)
+    state.river = rr
+  }
+  return cost
+}
+/**
+ * Cuts the spurs out of an open path of grid cells: where the path comes back within SPUR_GAP_KM
+ * of where it was more than SPUR_ALONG_KM earlier (out to a waypoint and back the same way), the
+ * part in between is dropped. The earlier smoothing did the same by removing the self-crossing
+ * where the two legs touched.
+ */
+function cutSpurs(path) {
+  const at = (c) => [(c % w) * cellKmX, Math.floor(c / w) * cellKmY]
+  const out = []
+  for (let i = 0; i < path.length; i++) {
+    out.push(path[i])
+    const [x, y] = at(path[i])
+    let along = 0, jump = -1
+    for (let j = i + 1; j < path.length; j++) {
+      const [px, py] = at(path[j - 1]), [qx, qy] = at(path[j])
+      along += Math.hypot(qx - px, qy - py)
+      if (along > SPUR_ALONG_KM && Math.hypot(qx - x, qy - y) <= SPUR_GAP_KM) jump = j
     }
-    return 0
-  })
-  // smooth the offsets so the meander never kinks where it is switched off
-  const sm = offs.map((_, i) => {
-    let s = 0
-    for (let d = -6; d <= 6; d++) s += offs[(i + d + n) % n]
-    return s / 13
-  })
-  pts = pts.map((p, i) => {
-    const a = pts[(i + n - 1) % n], b = pts[(i + 1) % n]
-    const tl = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1
-    return [p[0] - ((b[1] - a[1]) / tl) * sm[i], p[1] + ((b[0] - a[0]) / tl) * sm[i]]
-  })
+    if (jump > 0) i = jump - 1 // continue from the far side of the spur
+  }
+  return out
 }
-pts = removeSelfCrossings(simplifyClosed(pts, 0.12), true)
+/** Straightens a path of grid cells into a few km-plane points (step 1 above). */
+function pullString(cellPath, withUsed, closed = false) {
+  const path = closed ? cellPath : cutSpurs(cellPath)
+  const pts = path.map((i) => [lonOf(i % w) * KX, latOf(Math.floor(i / w)) * KY])
+  const n = pts.length
+  const P = new Float64Array(n) // cost of the path from its start
+  const st = { river: riverRank[path[0]] }
+  for (let k2 = 1; k2 < n; k2++) P[k2] = P[k2 - 1] + segmentCost(pts[k2 - 1], pts[k2], withUsed, st)
+  // Self clearance: for every cell within SELF_KM of the path, the lowest and highest path index
+  // nearby. A straight from path point i to j may not come within SELF_KM of a part of the same
+  // road more than SELF_SPAN cells away along it, unless the path i..j was already that close
+  // (a straight never pinches a spur or a hairpin tighter than the A* path).
+  const span = Math.round(SELF_SPAN_KM / cellKmX)
+  const rr = Math.ceil(SELF_KM / cellKmY), cr = Math.ceil(SELF_KM / cellKmX)
+  const lo = new Map(), hi = new Map()
+  path.forEach((cell, k2) => {
+    const r0 = Math.floor(cell / w), c0 = cell % w
+    for (let r = r0 - rr; r <= r0 + rr; r++) {
+      for (let c = c0 - cr; c <= c0 + cr; c++) {
+        if (r < 0 || c < 0 || r >= h || c >= w || Math.hypot((c - c0) * cellKmX, (r - r0) * cellKmY) > SELF_KM) continue
+        const j = r * w + c
+        if (!lo.has(j)) lo.set(j, k2)
+        hi.set(j, k2)
+      }
+    }
+  })
+  const nearFar = (cell, i, j) => cell >= 0 && lo.has(cell) && (lo.get(cell) < i - span || hi.get(cell) > j + span)
+  const pinched = new Uint8Array(n) // the path itself is near another part of the road here
+  for (let k2 = 0; k2 < n; k2++) pinched[k2] = nearFar(path[k2], k2, k2) ? 1 : 0
+  const pinchedPrefix = new Int32Array(n + 1)
+  for (let k2 = 0; k2 < n; k2++) pinchedPrefix[k2 + 1] = pinchedPrefix[k2] + pinched[k2]
+  /** Every path point between i and j is within CORRIDOR_KM of the straight i -> j. */
+  const inCorridor = (i, j) => {
+    const [ax, ay] = pts[i], [bx, by] = pts[j]
+    const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy || 1e-9
+    for (let k2 = i + 1; k2 < j; k2++) {
+      const t = Math.min(1, Math.max(0, ((pts[k2][0] - ax) * dx + (pts[k2][1] - ay) * dy) / l2))
+      if (Math.hypot(pts[k2][0] - ax - dx * t, pts[k2][1] - ay - dy * t) > CORRIDOR_KM) return false
+    }
+    return true
+  }
+  const selfOk = (i, j) => {
+    if (!inCorridor(i, j)) return false
+    if (closed && (i < span || j > n - 1 - span)) return true // around the seam both ends meet
+    if (pinchedPrefix[j + 1] - pinchedPrefix[i] > 0) return true
+    const p = pts[i], q = pts[j]
+    const steps = Math.ceil(Math.hypot(q[0] - p[0], q[1] - p[1]) / (cellKmX * 0.5))
+    for (let s = 1; s < steps; s++) {
+      if (nearFar(cellAtKm(p[0] + ((q[0] - p[0]) * s) / steps, p[1] + ((q[1] - p[1]) * s) / steps), i, j)) return false
+    }
+    return true
+  }
+  const out = [0]
+  let i = 0
+  while (i < n - 1) {
+    let best = i + 1
+    for (let j = i + 2; j < Math.min(n, i + PULL_LOOK); j++) {
+      const c = segmentCost(pts[i], pts[j], withUsed, { river: riverRank[path[i]] })
+      if (c <= (P[j] - P[i]) * PULL_SLACK + 0.3 && selfOk(i, j)) best = j
+    }
+    out.push(best)
+    i = best
+  }
+  // Relax: drop a kept point when the straight past it costs at most RELAX_SLACK more than the
+  // two straights through it (the little zig-zags left in rough ground)
+  for (let changed = true; changed; ) {
+    changed = false
+    for (let k2 = 1; k2 < out.length - 1; k2++) {
+      const a = out[k2 - 1], b = out[k2], c = out[k2 + 1]
+      const s2 = { river: riverRank[path[a]] }
+      const through = segmentCost(pts[a], pts[b], withUsed, s2) + segmentCost(pts[b], pts[c], withUsed, s2)
+      if (segmentCost(pts[a], pts[c], withUsed, { river: riverRank[path[a]] }) <= through * RELAX_SLACK + 0.5 && selfOk(a, c)) {
+        out.splice(k2, 1)
+        changed = true
+      }
+    }
+  }
+  return out.map((k2) => pts[k2])
+}
+/** Corners -> circular arcs (step 2 above). A closed line has no repeated last point. */
+function filletLine(line, closed) {
+  const n = line.length
+  const out = []
+  const open = (p) => {
+    const i = cellAtKm(p[0], p[1])
+    return i >= 0 && Number.isFinite(cellCost[i])
+  }
+  for (let i = 0; i < n; i++) {
+    const V = line[i]
+    if (!closed && (i === 0 || i === n - 1)) {
+      out.push(V)
+      continue
+    }
+    const A = line[(i - 1 + n) % n], B = line[(i + 1) % n]
+    const la = Math.hypot(V[0] - A[0], V[1] - A[1]), lb = Math.hypot(B[0] - V[0], B[1] - V[1])
+    if (la < 1e-6 || lb < 1e-6) continue
+    const u = [(V[0] - A[0]) / la, (V[1] - A[1]) / la], v = [(B[0] - V[0]) / lb, (B[1] - V[1]) / lb]
+    const turn = Math.acos(Math.min(1, Math.max(-1, u[0] * v[0] + u[1] * v[1])))
+    if (turn < 0.004) continue // straight on: the point is not needed
+    const t = Math.tan(turn / 2)
+    // half of each straight for this corner (the whole straight next to an open end)
+    const maxA = !closed && i === 1 ? la * 0.95 : la / 2
+    const maxB = !closed && i === n - 2 ? lb * 0.95 : lb / 2
+    // the arc's middle sits R * (1 / cos(turn / 2) - 1) inside the corner: keep it in the corridor
+    const rDev = (CORRIDOR_KM * 0.75) / Math.max(1e-6, 1 / Math.cos(turn / 2) - 1)
+    let L = Math.min(Math.min(CURVE_KM, rDev) * t, maxA, maxB)
+    let arc = null
+    for (let tries = 0; tries < 6 && L > 0.05; tries++, L *= 0.5) {
+      const R = L / t
+      const side = u[0] * v[1] - u[1] * v[0] > 0 ? 1 : -1 // turning left (+) or right (-)
+      const T1 = [V[0] - u[0] * L, V[1] - u[1] * L]
+      const C = [T1[0] - u[1] * R * side, T1[1] + u[0] * R * side]
+      const a0 = Math.atan2(T1[1] - C[1], T1[0] - C[0])
+      const steps = Math.max(2, Math.ceil((R * turn) / ARC_STEP_KM))
+      const pts = []
+      for (let s = 0; s <= steps; s++) {
+        const ang = a0 + side * turn * (s / steps)
+        pts.push([C[0] + Math.cos(ang) * R, C[1] + Math.sin(ang) * R])
+      }
+      if (pts.every(open)) {
+        arc = pts
+        break
+      }
+    }
+    out.push(...(arc ?? [V]))
+  }
+  return out
+}
+
+/**
+ * Step 3: a gentle sway on the long straights (half waves of about SWAY_HALF_KM, at most
+ * SWAY_KM to the side), so they read as country roads and not as ruler lines. The offset and its
+ * slope are zero at both ends of the straight, so it joins the curves without a kink. Where the
+ * sway would touch a closed cell or step into a river the straight does not cross, it is halved
+ * and then dropped.
+ */
+function swayStraights(line, closed) {
+  const n = line.length
+  const out = []
+  const open = (q, p) => {
+    const i = cellAtKm(q[0], q[1]), j = cellAtKm(p[0], p[1])
+    return i >= 0 && Number.isFinite(cellCost[i]) && (!riverRank[i] || riverRank[i] === riverRank[j])
+  }
+  const smooth = (a, b, v) => {
+    const t = Math.min(1, Math.max(0, (v - a) / (b - a)))
+    return t * t * (3 - 2 * t)
+  }
+  for (let i = 0; i < (closed ? n : n - 1); i++) {
+    const A = line[i], B = line[(i + 1) % n]
+    out.push(A)
+    const L = Math.hypot(B[0] - A[0], B[1] - A[1])
+    if (L < SWAY_MIN_KM) continue
+    const ux = (B[0] - A[0]) / L, uy = (B[1] - A[1]) / L
+    const halves = Math.max(1, Math.round(L / SWAY_HALF_KM))
+    const sign = i % 2 ? 1 : -1 // alternate the side from one straight to the next
+    const steps = Math.ceil(L / 1)
+    const base = [], off = []
+    for (let s = 1; s < steps; s++) {
+      const d = (L * s) / steps
+      base.push([A[0] + ux * d, A[1] + uy * d])
+      off.push(sign * Math.sin((Math.PI * halves * d) / L) * smooth(0, 5, d) * smooth(0, 5, L - d))
+    }
+    for (const amp of [Math.min(SWAY_KM, L * 0.025), Math.min(SWAY_KM, L * 0.025) / 2]) {
+      const pts = base.map((p, k) => [p[0] - uy * off[k] * amp, p[1] + ux * off[k] * amp])
+      if (pts.every((q, k) => open(q, base[k]))) {
+        out.push(...pts)
+        break
+      }
+    }
+  }
+  if (!closed) out.push(line[n - 1])
+  return out
+}
+
+pts = removeSelfCrossings(swayStraights(filletLine(pullString(cells, false, true).slice(0, -1), true), true), true)
 
 // Start the loop far from any river (so the seam never sits on a bridge)
 {
@@ -633,7 +814,6 @@ const NET_SNAP_KM = 25 // search radius of a waypoint (ends: up to END_SNAP_KM)
 const END_SNAP_KM = 70
 const NET_RIVER_KM = 5 // crossing a road this close to a river costs NET_RIVER times more (no junction by a bridge)
 const NET_RIVER = 4
-const JUNCTION_KM = 10 // inside this distance of a junction the roads run straight (no meander)
 // [lon, lat] waypoints in order; the first and last are the ends of the road
 const NET_ROADS = [
   {
@@ -716,6 +896,58 @@ function snap(lon, lat, isEnd) {
   return -1
 }
 
+// ---------- Planning lines (the earlier smoothing, kept only to plan the routes) ----------
+// The open roads are planned against bands of extra cost around the roads already laid. Those
+// bands are drawn from the line the earlier version of this script produced (simplify, Chaikin
+// and a meander), so the routes stay exactly the ones planned before; the line that is saved is
+// the cleaner "Road shape" line, which stays within CORRIDOR_KM of the same A* path.
+const JUNCTION_KM = 10 // planning lines: no meander this close to a road already laid
+function simplifyClosed(line, tol) {
+  const dp = (a) => {
+    if (a.length <= 2) return a
+    const keep = new Uint8Array(a.length)
+    keep[0] = keep[a.length - 1] = 1
+    const stack = [[0, a.length - 1]]
+    while (stack.length) {
+      const [s, e] = stack.pop()
+      let md = -1, mi = -1
+      const [ax, ay] = a[s], [bx, by] = a[e]
+      const len = Math.hypot(bx - ax, by - ay) || 1e-9
+      for (let i = s + 1; i < e; i++) {
+        const d = Math.abs((bx - ax) * (ay - a[i][1]) - (ax - a[i][0]) * (by - ay)) / len
+        if (d > md) {
+          md = d
+          mi = i
+        }
+      }
+      if (md > tol) {
+        keep[mi] = 1
+        stack.push([s, mi], [mi, e])
+      }
+    }
+    return a.filter((_, i) => keep[i])
+  }
+  const half = Math.floor(line.length / 2)
+  return [...dp(line.slice(0, half + 1)).slice(0, -1), ...dp([...line.slice(half), line[0]]).slice(0, -1)]
+}
+function chaikinClosed(line, iterations) {
+  let p = line
+  for (let k2 = 0; k2 < iterations; k2++) {
+    const next = []
+    for (let i = 0; i < p.length; i++) {
+      const a = p[i], b = p[(i + 1) % p.length]
+      next.push([a[0] * 0.75 + b[0] * 0.25, a[1] * 0.75 + b[1] * 0.25], [a[0] * 0.25 + b[0] * 0.75, a[1] * 0.25 + b[1] * 0.75])
+    }
+    p = next
+  }
+  return p
+}
+const costAtKm = ([x, y]) => {
+  const c = Math.round(colOf(x / KX)), r = Math.round(rowOf(y / KY))
+  if (r < 0 || c < 0 || r >= h || c >= w) return Infinity
+  const i = r * w + c
+  return riverRank[i] || riverKm[i] < RIVER_BAND_KM ? Infinity : cellCost[i] + roughness(i) * 0.02
+}
 function chaikinOpen(line, iterations) {
   let p = line
   for (let k2 = 0; k2 < iterations; k2++) {
@@ -754,43 +986,46 @@ function simplifyOpen(a, tol) {
   }
   return a.filter((_, i) => keep[i])
 }
+/** Planning line of the loop (km plane, closed, no repeated last point) as [lon, lat]. */
+function planningLoop(cellPath) {
+  let pts = cellPath.map((i) => [lonOf(i % w) * KX, latOf(Math.floor(i / w)) * KY])
+  pts.pop()
+  pts = chaikinClosed(simplifyClosed(pts, 1.2), 3)
 
-const network = []
-const netLog = []
-used.fill(0)
-markLine(loop, NET_USED_KM, NET_USED)
-const nearRoads = new Float32Array(N) // > 0 within JUNCTION_KM of a road already laid
-markLine(loop, JUNCTION_KM, 1, nearRoads)
-for (const road of NET_ROADS) {
-  const cellsVia = []
-  road.via.forEach(([lon, lat], k) => {
-    const c = snap(lon, lat, k === 0 || k === road.via.length - 1)
-    if (c >= 0) cellsVia.push(c)
-    else netLog.push(`${road.name}: waypoint ${k} dropped (no open cell)`)
-  })
-  // Legs; a too costly leg drops its far waypoint
-  const path = cellsVia.length ? [cellsVia[0]] : []
-  for (let k = 1; k < cellsVia.length; k++) {
-    const from = path[path.length - 1]
-    // the road's own previous legs count as laid (no going back the same way), except near `from`
-    const saved = used.slice()
-    const fr = Math.floor(from / w), fc = from % w
-    for (const i of path) {
-      if (Math.hypot(((i % w) - fc) * cellKmX, (Math.floor(i / w) - fr) * cellKmY) > NET_USED_KM + 4) markDisc(Math.floor(i / w), i % w, NET_USED_KM, NET_USED)
-    }
-    const leg = astar(from, cellsVia[k])
-    used.set(saved)
-    const ratio = leg ? leg.cost / Math.max(1, straightKm(from, cellsVia[k])) : Infinity
-    if (!leg || ratio > NET_LEG_RATIO_MAX) {
-      netLog.push(`${road.name}: waypoint ${k} dropped (leg ${ratio.toFixed(1)} per km)`)
-      continue
-    }
-    path.push(...leg.path.slice(1))
+  // Gentle meander (two incommensurate low frequencies) where the ground is easy; never near rivers
+  {
+    const n = pts.length
+    const along = [0]
+    for (let i = 1; i < n; i++) along.push(along[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]))
+    const offs = pts.map((p, i) => {
+      const s = along[i]
+      const wave = 0.62 * Math.sin((2 * Math.PI * s) / 41 + 1.3) + 0.38 * Math.sin((2 * Math.PI * s) / 14.7 + 4.1)
+      const a = pts[(i + n - 1) % n], b = pts[(i + 1) % n]
+      const tl = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1
+      const nx = -(b[1] - a[1]) / tl, ny = (b[0] - a[0]) / tl
+      for (const amp of [1.3, 0.7, 0]) {
+        const q = [p[0] + nx * wave * amp, p[1] + ny * wave * amp]
+        if (amp === 0 || (costAtKm(q) < 2.5 && costAtKm(p) < 2.5)) return wave * amp
+      }
+      return 0
+    })
+    // smooth the offsets so the meander never kinks where it is switched off
+    const sm = offs.map((_, i) => {
+      let s = 0
+      for (let d = -6; d <= 6; d++) s += offs[(i + d + n) % n]
+      return s / 13
+    })
+    pts = pts.map((p, i) => {
+      const a = pts[(i + n - 1) % n], b = pts[(i + 1) % n]
+      const tl = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1
+      return [p[0] - ((b[1] - a[1]) / tl) * sm[i], p[1] + ((b[0] - a[0]) / tl) * sm[i]]
+    })
   }
-  if (path.length < 10) {
-    netLog.push(`${road.name}: dropped (no route)`)
-    continue
-  }
+  pts = removeSelfCrossings(simplifyClosed(pts, 0.12), true)
+  return pts.map(([x, y]) => [+(x / KX).toFixed(4), +(y / KY).toFixed(4)])
+}
+/** Planning line of an open road as [lon, lat] (nearRoads: the band where it runs straight). */
+function planningOpen(path, nearRoads) {
   let p = path.map((i) => [lonOf(i % w) * KX, latOf(Math.floor(i / w)) * KY])
   p = chaikinOpen(simplifyOpen(p, 1.2), 3)
   // Gentle meander (as the loop), switched off near the roads already laid (straight junctions)
@@ -830,10 +1065,56 @@ for (const road of NET_ROADS) {
     })
   }
   p = removeSelfCrossings(simplifyOpen(p, 0.12), false)
+  return p.map(([x, y]) => [+(x / KX).toFixed(4), +(y / KY).toFixed(4)])
+}
+
+const network = []
+const netLog = []
+used.fill(0)
+const loopPlan = planningLoop(cells)
+markLine(loopPlan, NET_USED_KM, NET_USED)
+const nearRoads = new Float32Array(N) // > 0 within JUNCTION_KM of a planning line already laid
+markLine(loopPlan, JUNCTION_KM, 1, nearRoads)
+for (const road of NET_ROADS) {
+  const cellsVia = []
+  road.via.forEach(([lon, lat], k) => {
+    const c = snap(lon, lat, k === 0 || k === road.via.length - 1)
+    if (c >= 0) cellsVia.push(c)
+    else netLog.push(`${road.name}: waypoint ${k} dropped (no open cell)`)
+  })
+  // Legs; a too costly leg drops its far waypoint
+  const path = cellsVia.length ? [cellsVia[0]] : []
+  for (let k = 1; k < cellsVia.length; k++) {
+    const from = path[path.length - 1]
+    // the road's own previous legs count as laid (no going back the same way), except near `from`
+    const saved = used.slice()
+    const fr = Math.floor(from / w), fc = from % w
+    for (const i of path) {
+      if (Math.hypot(((i % w) - fc) * cellKmX, (Math.floor(i / w) - fr) * cellKmY) > NET_USED_KM + 4) markDisc(Math.floor(i / w), i % w, NET_USED_KM, NET_USED)
+    }
+    const leg = astar(from, cellsVia[k])
+    used.set(saved)
+    const ratio = leg ? leg.cost / Math.max(1, straightKm(from, cellsVia[k])) : Infinity
+    if (!leg || ratio > NET_LEG_RATIO_MAX) {
+      netLog.push(`${road.name}: waypoint ${k} dropped (leg ${ratio.toFixed(1)} per km)`)
+      continue
+    }
+    path.push(...leg.path.slice(1))
+  }
+  if (path.length < 10) {
+    netLog.push(`${road.name}: dropped (no route)`)
+    continue
+  }
+  // Straights and round curves (see "Road shape"), inside a narrow corridor around the A* path,
+  // so the route stays the same; the band of the roads already laid counts, so the straights
+  // keep the near right-angle crossings the A* found
+  const p = removeSelfCrossings(swayStraights(filletLine(pullString(path, true), false), false), false)
   const line = p.map(([x, y]) => [+(x / KX).toFixed(4), +(y / KY).toFixed(4)])
   network.push({ name: road.name, rank: road.rank, lines: [line] })
-  markLine(line, NET_USED_KM, NET_USED)
-  markLine(line, JUNCTION_KM, 1, nearRoads)
+  // the next roads are planned against this road's planning line (see "Planning lines")
+  const plan = planningOpen(path, nearRoads)
+  markLine(plan, NET_USED_KM, NET_USED)
+  markLine(plan, JUNCTION_KM, 1, nearRoads)
 }
 
 // ---------- Network validation: junctions (angle, rivers nearby, spacing) ----------
@@ -905,6 +1186,23 @@ console.log(`Closest approach of the loop to itself (parts > 30 km apart along i
 console.log(`Open roads: ${network.map((r) => `${r.name} (${r.lines[0].length} pts)`).join(', ')}; ${Math.round(netKm)} km`)
 for (const m of netLog) console.log(`  ${m}`)
 console.log(`Open roads: river crossings ${netCross[1] + netCross[2] + netCross[3]} (big ${netCross[1]}, medium ${netCross[2]}, small ${netCross[3]}); closest monument ${netMonumentKm.toFixed(1)} km; points off the mainland ${netOff}; self-crossings ${netSelfCross}`)
+// tightest curve: smallest radius of the circle through three points about 1 km apart
+const tightestKm = (line) => {
+  const p = line.map(([lon, lat]) => [lon * KX, lat * KY])
+  let best = Infinity
+  for (let i = 0; i < p.length; i++) {
+    let a = i, c = i
+    while (a > 0 && Math.hypot(p[i][0] - p[a][0], p[i][1] - p[a][1]) < 1) a--
+    while (c < p.length - 1 && Math.hypot(p[i][0] - p[c][0], p[i][1] - p[c][1]) < 1) c++
+    if (a === i || c === i) continue
+    const A = p[a], B = p[i], C = p[c]
+    const cr = Math.abs((B[0] - A[0]) * (C[1] - A[1]) - (B[1] - A[1]) * (C[0] - A[0]))
+    if (cr < 1e-9) continue
+    best = Math.min(best, (Math.hypot(B[0] - A[0], B[1] - A[1]) * Math.hypot(C[0] - B[0], C[1] - B[1]) * Math.hypot(C[0] - A[0], C[1] - A[1])) / (2 * cr))
+  }
+  return best
+}
+console.log(`Tightest curve radius (km): ${allLines.map((l) => `${l.name} ${tightestKm(l.line).toFixed(1)}`).join(', ')}`)
 console.log(`Junctions: ${junctions.length}`)
 for (const j of junctions) {
   const warn = j.angle < 35 || j.riverKm < 3 || j.nextKm < 12 ? '  <-- check' : ''
