@@ -925,7 +925,8 @@
 .evtask__prompt {
   margin: 0;
   padding: 6px 12px;
-  border-left: 6px solid var(--cf-red);
+  border: 2px solid var(--cf-red);
+  box-shadow: 3px 3px 0 var(--cf-red);
   background: #fde58a;
   font-family: var(--cf-hand);
   font-size: 1.25rem;
@@ -1500,15 +1501,18 @@
 }
 
 .evlink__choice--supports {
-  border-left: 10px solid var(--cf-green);
+  border-color: var(--cf-green);
+  box-shadow: 4px 4px 0 var(--cf-green);
 }
 
 .evlink__choice--contradicts {
-  border-left: 10px solid var(--cf-red);
+  border-color: var(--cf-red);
+  box-shadow: 4px 4px 0 var(--cf-red);
 }
 
 .evlink__choice--neutral {
-  border-left: 10px solid var(--ev-grey);
+  border-color: var(--ev-grey);
+  box-shadow: 4px 4px 0 var(--ev-grey);
 }
 
 .evlink__choice.is-wrong {
