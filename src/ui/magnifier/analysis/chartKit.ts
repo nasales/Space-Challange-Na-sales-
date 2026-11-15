@@ -42,3 +42,38 @@ export function linePath(values: (number | null)[], sx: (i: number) => number, s
   })
   return d
 }
+
+/** Centred running mean over `window` months (null where too few values): the smooth path the
+ *  scanning magnifier follows. Display only. */
+export function rollingMean(values: (number | null)[], window = 12): (number | null)[] {
+  const half = Math.floor(window / 2)
+  return values.map((_, i) => {
+    let sum = 0
+    let count = 0
+    for (let j = Math.max(0, i - half); j <= Math.min(values.length - 1, i + half); j++) {
+      const v = values[j]
+      if (v != null && Number.isFinite(v)) {
+        sum += v
+        count++
+      }
+    }
+    return count >= Math.ceil(window / 2) ? sum / count : null
+  })
+}
+
+/** Index of the highest and the lowest value (null when there are none). */
+export function extremes(values: (number | null)[]): { hi: number; lo: number } | null {
+  let hi = -1
+  let lo = -1
+  values.forEach((v, i) => {
+    if (v == null || !Number.isFinite(v)) return
+    if (hi < 0 || v > (values[hi] as number)) hi = i
+    if (lo < 0 || v < (values[lo] as number)) lo = i
+  })
+  return hi < 0 ? null : { hi, lo }
+}
+
+/** true when the player asked the system for less motion */
+export function reducedMotion(): boolean {
+  return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
