@@ -46,7 +46,7 @@ export function createSeaLane(zones: Bounds[]): { mesh: THREE.Mesh; dispose: () 
       const km = laneKm(lon, lat)
       const land = laneLandHeight(lon, lat)
       wet[k] = km < LANE_SEA_KM + EDGE_KM && land < MAX_LAND_M && !inZone(lon, lat) ? 1 : 0
-      const dip = Math.max(0, land) * DIP_PER_LAND_M + Math.max(0, km - LANE_SEA_KM) * DIP_PER_SEA_KM
+      const dip = Math.min(Math.max(0, land), MAX_LAND_M) * DIP_PER_LAND_M + Math.min(Math.max(0, km - LANE_SEA_KM), EDGE_KM) * DIP_PER_SEA_KM // km is Infinity past the lane's box
       positions[k * 3] = lon * UNITS_PER_DEG_LON
       positions[k * 3 + 1] = SEA_Y - 0.05 - dip // a hair under the zone seas where they overlap
       positions[k * 3 + 2] = -lat * UNITS_PER_DEG_LAT
