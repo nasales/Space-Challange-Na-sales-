@@ -86,8 +86,9 @@
   .case-hint {
     left: 16px;
     right: 16px;
-    bottom: auto;
-    top: 96px;
+    /* above the controls box (the location panel fills the top of a phone screen) */
+    bottom: 150px;
+    top: auto;
     width: auto;
     font-size: 14px;
     transform: rotate(-1deg);

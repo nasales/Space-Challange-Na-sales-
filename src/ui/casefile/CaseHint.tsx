@@ -42,7 +42,7 @@ export default function CaseHint({ caseId, stopped = true, hidden = false }: Pro
         </span>
         {witness && (
           <span className="case-hint__where">
-            Look for {witness.name}, the {lowerFirst(witness.role.split(',')[0])} by the case marker.
+            Look for {witness.name}, the {lowerFirst(witness.role.split(',')[0])} — follow the arrows on the ground.
           </span>
         )}
       </p>
