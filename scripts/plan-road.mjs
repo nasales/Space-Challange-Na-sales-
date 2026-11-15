@@ -827,9 +827,11 @@ const NET_ROADS = [
     via: [[-0.6, 39.45], [-2.13, 40.07], [-3.55, 39.9], [-4.83, 39.96], [-5.88, 39.46], [-6.34, 38.92], [-6.97, 38.88]],
   },
   {
-    name: 'Castile Road', // León, Palencia, Valladolid, the Duero, Soria, Zaragoza
+    // Santiago de Compostela (the end snaps to the edge of the cathedral's area), Lugo, Ponferrada,
+    // Astorga, León, Palencia, Valladolid, the Duero, Soria, Zaragoza
+    name: 'Castile Road',
     rank: 2,
-    via: [[-5.57, 42.6], [-4.52, 42.01], [-4.72, 41.66], [-3.5, 41.6], [-2.47, 41.76], [-0.88, 41.66]],
+    via: [[-8.03, 42.88], [-7.56, 43.0], [-6.6, 42.55], [-5.57, 42.6], [-4.52, 42.01], [-4.72, 41.66], [-3.5, 41.6], [-2.47, 41.76], [-0.88, 41.66]],
   },
   {
     name: 'Andalusian Road', // Córdoba, Bailén, Úbeda, Baza, Lorca, Murcia
