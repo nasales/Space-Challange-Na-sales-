@@ -10,8 +10,12 @@ type TravelWindow = {
   __travel?: { plane: { active: boolean } }
 }
 
-/** Same start as demo.spec.ts: Play, then skip the intro camera (headless renders without a GPU). */
+/**
+ * Same start as demo.spec.ts: Play, then skip the intro camera (headless renders without a GPU).
+ * The map tutorial offer (src/ui/guide) is marked as already seen, so it does not cover the game.
+ */
 async function startGame(page: Page) {
+  await page.addInitScript(() => localStorage.setItem('esd.guideSeen', '1'))
   await page.goto('/')
   await page.getByRole('button', { name: 'Play' }).click()
   await page.waitForFunction(() => (window as TravelWindow).__game?.chase?.introActive === true, null, { timeout: 90_000 })
