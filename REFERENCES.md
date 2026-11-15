@@ -1,5 +1,8 @@
 # References
 
+## License of this project
+The team's original work is licensed under the Apache License 2.0 (`LICENSE`, `NOTICE`). Everything listed below is third-party material and keeps its own license.
+
 ## NASA data
 | Dataset | Version | Link | Used for |
 |---|---|---|---|
