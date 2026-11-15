@@ -33,6 +33,8 @@ export interface LandmarkData {
    * Scenery scales with it in the same proportion (see spacing()).
    */
   clearance?: number
+  /** false: visual only, left off the M travel map (the small provincial-capital monuments). Default true. */
+  travel?: boolean
   description: string
 }
 
