@@ -41,6 +41,30 @@ For Diego, night of 2026-11-15. Plan: `docs/evidence_board.md`. Everything on `d
   1980s = 5, 2016-25 = 19 (supports).
 - Agent decisions: the claim is split in two parts (warming vs "every summer"), which explains the
   relations and the "partly" verdict; click range limited to 2014-2026 so 2018 is the unique answer.
+### Evidence board (interface agent) — `src/ui/casefile/EvidenceBoard.tsx`, `src/ui/casefile/board/`
+- Cork board with the witness polaroid and the claim card in the centre, 5 cards pinned around
+  (face down with a handwritten teaser), notebook docked on the right, "x / 5 linked" progress.
+- Opening a card zooms it: text + chart / newspaper clipping / typed data card + the task. All 6
+  task types work: click a point (snaps to the nearest point), drag a ruler (two handles, arrow
+  keys too; then the real trend line is drawn and both slopes compared), drag polaroids into order
+  (values revealed only when right), slider over start years, tally boxes with −/+, multiple choice.
+  Wrong tries give the hint; right ones a small celebration.
+- "Link it to the claim": supports / contradicts / says nothing; wrong -> the explanation as a hint;
+  right -> red string animated from the card's pin to the claim, card flips face up with a coloured
+  tag, clue stamped into the notebook. All linked -> summary card -> conclusion -> Ivan's level ->
+  CASE CLOSED. The DANA keeps its old step format.
+- My fixes after review: Córdoba's polaroid task used a ranking chart that printed every value
+  (answer given away) -> now the summers chart; both ruler cards said the real trend before the
+  task -> moved to the success message; side-accent borders replaced by full comic frames.
+### Witnesses on the map (game agent) — `src/game/witness/`
+- **Pilar** stands on the plaza by the Puerta de Alcalá with a small green **newspaper kiosk**;
+  **Rafael** in the Patio de los Naranjos of the Mezquita with **olive crates**. Talk icon and
+  ground arrows like Vicent; Vicent unchanged.
+- Fixed generic dialogue-camera bugs that only showed outside Valencia: talking through the
+  Retiro fence, the detective stuck on the arcade wall, trees covering the bubbles, camera drift.
+- New trimmed beard (the old one looked like a black hole) and a proper shop apron for Pilar.
+- Known leftovers: in Córdoba an orange tree can fill the left edge of the frame from some
+  approach angles; from the Mezquita roof Rafael is hidden (only his "…" bubble shows).
 ### Tests
 - Both agents wrote a board validator; I kept the Filomena one (generic) and checked the Córdoba
   script passes it (recount of the tally included). 340 pipeline/stats tests pass.
