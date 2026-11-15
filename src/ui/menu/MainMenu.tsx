@@ -1,5 +1,6 @@
 // Main menu: left panel is a comic-page detective wall (ink-drawn sheets pinned to the page and
-// joined by red string), right panel is a comic-style stage for the animated character.
+// joined by red string), right panel is a comic-style stage for the animated character. Only the
+// optional sign-in badge sits on the stage; the volume sliders are a taped note on the wall.
 // Each sheet has its own hover/focus "show" (CSS only, see MainMenu.css), with comic sound effects.
 // The character is passed in as a slot from App.tsx, so the UI never imports from src/game.
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
@@ -13,7 +14,8 @@ import { signOut, useSession } from '../../shared/auth'
 import SoundSliders from '../settings/SoundSliders'
 import CaseFileDialog from './CaseFileDialog'
 import { FEATURED } from './featuredCases'
-import { Credits, FeaturedCases, HowItWorks } from './menuFiles'
+import HowItWorks from './how/HowItWorks'
+import { Credits, FeaturedCases } from './menuFiles'
 import './MainMenu.css'
 
 interface MainMenuProps {
@@ -64,8 +66,8 @@ function pinStyle(id: PinId, rotate = 0): CSSProperties {
   return { '--x': pin.x, '--y': pin.y, '--px': `${pin.px}%`, '--r': `${rotate}deg` } as CSSProperties
 }
 
-const FILES: Record<FileId, { label: string; title: string; body: () => ReactNode }> = {
-  how: { label: 'Case file: method', title: 'How the detective checks the data', body: HowItWorks },
+// "How it works" is a full-screen walkthrough (./how/), not a case-file dialog.
+const FILES: Record<Exclude<FileId, 'how'>, { label: string; title: string; body: () => ReactNode }> = {
   cases: { label: 'Case file: open cases', title: 'Featured cases', body: FeaturedCases },
   credits: { label: 'Case file: credits', title: 'Credits', body: Credits },
 }
@@ -151,7 +153,7 @@ export default function MainMenu({ onPlay, onWardrobe, onAccount, character }: M
     if (id) requestAnimationFrame(() => triggers.current[id]?.focus())
   }
 
-  const file = openFile ? FILES[openFile] : null
+  const file = openFile && openFile !== 'how' ? FILES[openFile] : null
   const FileBody = file?.body
   const boardStyle = { '--panel-bg': `url("${panelBg}")` } as CSSProperties
 
@@ -161,8 +163,8 @@ export default function MainMenu({ onPlay, onWardrobe, onAccount, character }: M
         <div className="board" style={boardStyle} data-kbd={keyboard || undefined}>
           <header className="board__masthead" style={pinStyle('title', -1.5)}>
             <h1 className="board__title">
-              <span className="board__title-top">Earth Trend</span>
-              <span className="board__title-big">Detective</span>
+              <span className="board__title-top">John</span>
+              <span className="board__title-big">Datason</span>
             </h1>
             <p className="board__tagline">Follow the clues. Read the data. Crack the climate case.</p>
           </header>
@@ -314,6 +316,8 @@ export default function MainMenu({ onPlay, onWardrobe, onAccount, character }: M
 
           <p className="board__credit">Data: NASA MERRA-2</p>
         </div>
+        {/* Volume sliders: a taped note in the wall's top-left corner (below the wall on phones) */}
+        <SoundSliders className="board-sound" />
       </div>
 
       <div className="main-menu__stage">
@@ -321,8 +325,9 @@ export default function MainMenu({ onPlay, onWardrobe, onAccount, character }: M
         <div className="main-menu__dots" aria-hidden="true" />
         <div className="main-menu__character">{character}</div>
         <AccountBadge onAccount={onAccount} />
-        <SoundSliders className="menu-sound" />
       </div>
+
+      {openFile === 'how' && <HowItWorks onClose={closeFile} />}
 
       {file && FileBody && (
         <CaseFileDialog key={openFile} label={file.label} title={file.title} onClose={closeFile}>

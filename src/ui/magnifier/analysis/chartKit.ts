@@ -1,8 +1,9 @@
-// Small shared pieces of the evidence-sheet charts (plain SVG, no chart library).
-import { useSyncExternalStore } from 'react'
+// Small shared pieces of the evidence-file charts (plain SVG, no chart library).
+// Each chart fills its panel: ChartBox (./ChartBox.tsx) measures the panel and the chart draws in
+// a viewBox of exactly that size, so text stays at its real pixel size and nothing scrolls.
 
 export interface Frame {
-  /** viewBox size */
+  /** viewBox size (= the panel size in CSS pixels) */
   W: number
   H: number
   /** Padding around the plot area */
@@ -12,26 +13,10 @@ export interface Frame {
   b: number
 }
 
-/** Wide sheet: long time axis. */
-export const WIDE: Frame = { W: 560, H: 210, l: 54, r: 12, t: 22, b: 24 }
-/** Phone, and the two half-width charts: fewer viewBox units so the text stays readable. */
-export const COMPACT: Frame = { W: 340, H: 200, l: 46, r: 10, t: 22, b: 24 }
-
-const PHONE = '(max-width: 520px)'
-
-function subscribe(onChange: () => void) {
-  const query = window.matchMedia(PHONE)
-  query.addEventListener('change', onChange)
-  return () => query.removeEventListener('change', onChange)
-}
-
-/** true on a phone-sized viewport (same breakpoint as ClueResult.css) */
-export function useNarrow(): boolean {
-  return useSyncExternalStore(
-    subscribe,
-    () => window.matchMedia(PHONE).matches,
-    () => false,
-  )
+/** Plot frame for a measured panel; a little tighter on small panels. */
+export function frameFor(width: number, height: number): Frame {
+  const small = width < 420
+  return { W: width, H: height, l: small ? 46 : 58, r: small ? 10 : 18, t: 26, b: small ? 26 : 30 }
 }
 
 /** Linear scale from a data range to a pixel range. */
