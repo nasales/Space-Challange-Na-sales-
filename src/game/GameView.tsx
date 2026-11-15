@@ -34,6 +34,7 @@ import { nearestPlace } from './location/nearestPlace'
 import { createLandmarks, loadLandmarks } from './landmarks/createLandmarks'
 import { createBulls } from './bulls/createBulls'
 import { BULL_SPOTS } from './bulls/bullSpots'
+import { reportBoat, reportExploration } from '../shared/achievements'
 import { EXTRA_HOUSES, placeExtraHouses } from './towns/extraHouses'
 import { bendRiversAround, prepareRivers } from './map/rivers'
 import { createRivers } from './scene/createRivers'
@@ -451,6 +452,7 @@ export default function GameView({
           const near = nearestPlace(explored.places, lat, lon)
           const landmark = landmarks.nearest(carState.x, carState.z)
           const speed = Math.abs(carState.speed)
+          reportExploration(near?.place.region ?? '', carState.x, carState.z) // achievements: communities, bulls
           setHud({
             location: {
               lat, lon,
@@ -543,6 +545,7 @@ export default function GameView({
             detective.parts.head.rotation.z = 0
           }
           const afloat = boat.update(carState, !travelling && isFord(carState.x, carState.z), detective, dt)
+          if (afloat > 0.5) reportBoat() // achievements: sea legs
           // In the boat (or the plane) there are no footsteps: no dust puffs and no footprints
           const walker = afloat > 0.5 || travelling ? Object.assign(rowing, carState, { speed: 0, accel: 0, yawRate: 0 }) : carState
           dust.update(walker, surfaceAt, detective.stridePhase, dt)
