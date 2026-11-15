@@ -172,6 +172,9 @@ test('Esc pauses the game and Main menu goes back to the menu', async ({ page })
 // Map tutorial (src/ui/guide/): offered to a new player once the map is ready; Start calls the
 // guide robot, whose steps wait for the player (Enter on reading steps, the action on the others).
 test('a new player is offered the tutorial and the guide robot walks through the first steps', async ({ page }) => {
+  // Headless Chromium without a GPU draws about one frame per second: the map, the robot's flight
+  // and the "Run" distance take several minutes there, well over the default 90 s
+  test.setTimeout(300_000)
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(err.message))
 

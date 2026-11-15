@@ -49,3 +49,27 @@ export function toDisplayLonLat(lon: number, lat: number) {
 export function toRealLonLat(lon: number, lat: number) {
   return inside(TARGET, lon, lat) ? { lon: lon - CANARY_OFFSET.lon, lat: lat - CANARY_OFFSET.lat } : { lon, lat }
 }
+
+/**
+ * Corner of the Canary zone (real lon/lat) that shows only Africa (Cape Juby, Western Sahara): east
+ * of -13.5 and south of 28.6. Fuerteventura's east coast is at about -13.8 there, and Lanzarote,
+ * which reaches -13.42, starts north of 28.8.
+ */
+const AFRICA_CORNER = { east: -13.5, north: 28.6 }
+
+/**
+ * The Canary zone's height grid also catches a corner of the African coast. Moved into the box it
+ * would show Africa far from its real place (the real one is drawn by the grey world), so it is
+ * turned into sea. Changes `heights` in place; any other zone is left as it is.
+ */
+export function sinkAfricaInCanaryZone(bounds: Bounds, heights: Float32Array | Int16Array | number[], width: number, height: number) {
+  if (bounds.west !== CANARY_ZONE.west || bounds.north !== CANARY_ZONE.north) return
+  for (let r = 0; r < height; r++) {
+    for (let c = 0; c < width; c++) {
+      const lon = bounds.west + (c / (width - 1)) * (bounds.east - bounds.west)
+      const lat = bounds.north - (r / (height - 1)) * (bounds.north - bounds.south)
+      const i = r * width + c
+      if (lon > AFRICA_CORNER.east && lat < AFRICA_CORNER.north && heights[i] > 0) heights[i] = -50
+    }
+  }
+}
