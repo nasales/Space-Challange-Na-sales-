@@ -1493,6 +1493,16 @@
   100% { rotate: 0deg; }
 }
 
+/* ---- Volume sliders (src/ui/settings/SoundSliders.tsx): top-left of the stage ---- */
+.menu-sound {
+  position: absolute;
+  z-index: 3;
+  top: 14px;
+  left: 14px;
+  width: min(200px, calc(100% - 28px));
+  transform: rotate(-1.5deg);
+}
+
 /* ---- Narrow screens: character on top, wall below (the page scrolls) ---- */
 @media (max-width: 760px) {
   .main-menu {
@@ -1504,6 +1514,29 @@
 
   .main-menu__stage {
     order: -1;
+  }
+
+  /* Compact sliders in the top-left corner, beside the account badge, clear of the character */
+  .menu-sound {
+    top: 10px;
+    left: 10px;
+    width: min(132px, calc(50% - 20px));
+    gap: 0;
+    padding: 4px 8px 2px;
+    box-shadow: 3px 3px 0 var(--menu-ink-deep);
+  }
+
+  .menu-sound .sound-sliders__title {
+    display: none;
+  }
+
+  .menu-sound .sound-sliders__label,
+  .menu-sound .sound-sliders__value {
+    font-size: 11px;
+  }
+
+  .menu-sound .sound-sliders__range {
+    height: 22px;
   }
 
   .main-menu__panel {

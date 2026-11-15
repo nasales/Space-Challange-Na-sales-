@@ -1,7 +1,7 @@
 // App shell: first the main menu, then (after Play) the 3D game with the interface drawn on top.
 // src/game and src/ui never import each other; they only talk through src/shared.
 // The menu's animated character comes from src/game and is passed into the menu as a slot here.
-import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import GameView from './game/GameView'
 import DetectiveShowcase from './game/detective/DetectiveShowcase'
 import Hud from './ui/hud/Hud'
@@ -19,6 +19,7 @@ import type { GameStatus, HudState, LensFocusState, TravelRequest } from './shar
 import { loadOutfit, type Outfit } from './shared/outfit'
 import { loadCompleted, markCompleted } from './shared/progress'
 import { startBackgroundMusic } from './shared/music'
+import { installUiSounds, playSfx, setWind } from './shared/sound'
 import CaseLevel from './levels/CaseLevel'
 import { getLevel } from './levels/registry'
 import { getCaseEntry } from './levels/data'
@@ -99,6 +100,18 @@ function Game() {
   const travelBusy = travelMapOpen || flying
   const zoneCase = hud?.caseZone && getLevel(hud.caseZone) ? hud.caseZone : null
   const canOpenCase = screen === 'game' && status === 'ready' && !!hud?.stopped && !!zoneCase && !openCase && !paused && !travelBusy
+  // Subtle sound effects: a click on every button, plus the game moments below (src/shared/sound.ts)
+  useEffect(installUiSounds, [])
+  useGameSounds({
+    playing: screen === 'game' && status === 'ready' && !paused && !openCase && !focusLens,
+    rush: hud?.rush ?? 0,
+    kmh: hud?.kmh ?? 0,
+    turbo: !!hud?.turbo,
+    zone: zoneCase,
+    paused,
+    lens: focusLens,
+    openCase,
+  })
   const exitToMenu = () => {
     // GameView unmounts and disposes its scene; reset the game state so Play starts fresh
     setPaused(false)
@@ -219,6 +232,7 @@ function Game() {
             onResult={(r) => {
               // Green marker only for a correct answer (Ivan's rule)
               if (!r.correct) return
+              playSfx('success')
               markCompleted(r.caseId)
               setCompleted((prev) => new Set(prev).add(r.caseId))
             }}
@@ -227,4 +241,35 @@ function Game() {
       )}
     </main>
   )
+}
+
+/** Changes worth a sound while playing on the map: wind with speed, turbo, case zones, panels. */
+function useGameSounds(g: {
+  playing: boolean
+  rush: number
+  kmh: number
+  turbo: boolean
+  zone: string | null
+  paused: boolean
+  lens: boolean
+  openCase: string | null
+}) {
+  // Wind: a soft breeze at full walking speed, rising to a rush of air at full turbo
+  const wind = g.playing ? Math.max(Math.min(1, g.kmh / 60) * 0.12, g.rush) : 0
+  useEffect(() => setWind(wind), [wind])
+  // Silence the wind when leaving the game screen
+  useEffect(() => () => setWind(0), [])
+
+  const prev = useRef(g)
+  useEffect(() => {
+    const p = prev.current
+    prev.current = g
+    if (g.playing && g.turbo && !p.turbo) playSfx('boost')
+    if (g.zone && g.zone !== p.zone) playSfx('zone')
+    if (g.paused !== p.paused) playSfx(g.paused ? 'open' : 'close')
+    if (g.lens && !p.lens) playSfx('lens')
+    if (!g.lens && p.lens) playSfx('close')
+    if (g.openCase && !p.openCase) playSfx('open')
+    if (!g.openCase && p.openCase) playSfx('close')
+  })
 }
