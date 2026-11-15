@@ -7,7 +7,7 @@ import type { Bounds } from './mapData'
 import { UNITS_PER_DEG_LAT, UNITS_PER_DEG_LON, UNITS_PER_KM } from './projection'
 
 /** Width (km) of the band of shallow water along the whole coast (mainland and islands). */
-export const COAST_SHALLOWS_KM = 16
+export const COAST_SHALLOWS_KM = 32 // was 16
 
 /**
  * Enclosed seas. Inside `bounds`, the sea is filled wherever a circle of `radiusKm` cannot enter

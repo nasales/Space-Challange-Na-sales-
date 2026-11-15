@@ -27,3 +27,23 @@
     transition: none;
   }
 }
+
+/* Top-right corner: minimap with the place name right under it */
+.hud__corner {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  pointer-events: none;
+}
+
+@media (max-width: 600px), (max-height: 500px) {
+  .hud__corner {
+    top: 12px;
+    right: 12px;
+    gap: 8px;
+  }
+}

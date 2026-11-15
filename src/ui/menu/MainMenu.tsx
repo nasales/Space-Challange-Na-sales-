@@ -9,6 +9,8 @@ import howArt from '../assets/menu/how.svg'
 import panelBg from '../assets/menu/panel-bg.svg'
 import playArt from '../assets/menu/play.svg'
 import wardrobeArt from '../assets/menu/wardrobe.svg'
+import { signOut, useSession } from '../../shared/auth'
+import SoundSliders from '../settings/SoundSliders'
 import CaseFileDialog from './CaseFileDialog'
 import { FEATURED } from './featuredCases'
 import { Credits, FeaturedCases, HowItWorks } from './menuFiles'
@@ -17,6 +19,8 @@ import './MainMenu.css'
 interface MainMenuProps {
   onPlay: () => void
   onWardrobe: () => void
+  /** Opens the optional Account screen (an account is never needed to play). */
+  onAccount: () => void
   character: ReactNode
 }
 
@@ -89,11 +93,45 @@ function Lightbulb() {
   )
 }
 
+// Optional account: a small ID badge in the stage corner. Signed in, it shows the email and Sign out.
+function AccountBadge({ onAccount }: { onAccount: () => void }) {
+  const { user } = useSession()
+  const [busy, setBusy] = useState(false)
+  const email = user?.email ?? 'detective'
+  return (
+    <div className="menu-account">
+      <button
+        type="button"
+        className="menu-account__open"
+        onClick={onAccount}
+        aria-label={user ? `Account: signed in as ${email}` : 'Account: sign in or create an account (optional)'}
+      >
+        <span className="menu-account__word">Account</span>
+        <span className="menu-account__who">{user ? email : 'Sign in (optional)'}</span>
+      </button>
+      {user && (
+        <button
+          type="button"
+          className="menu-account__out"
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true)
+            await signOut()
+            setBusy(false)
+          }}
+        >
+          Sign out
+        </button>
+      )}
+    </div>
+  )
+}
+
 function Art({ src, className }: { src: string; className: string }) {
   return <img className={className} src={src} alt="" draggable={false} />
 }
 
-export default function MainMenu({ onPlay, onWardrobe, character }: MainMenuProps) {
+export default function MainMenu({ onPlay, onWardrobe, onAccount, character }: MainMenuProps) {
   const [openFile, setOpenFile] = useState<FileId | null>(null)
   const triggers = useRef<Partial<Record<FileId, HTMLButtonElement | null>>>({})
   // The autofocused Play sheet must not run its focus show on load: the shows (and the focus
@@ -134,6 +172,7 @@ export default function MainMenu({ onPlay, onWardrobe, character }: MainMenuProp
             className="board__sheet board-play"
             style={pinStyle('play', -3)}
             onClick={onPlay}
+            data-sfx="confirm"
             autoFocus
             aria-label="Play: open the case"
           >
@@ -161,6 +200,7 @@ export default function MainMenu({ onPlay, onWardrobe, character }: MainMenuProp
             className="board__sheet board-card"
             style={pinStyle('wardrobe', 3)}
             onClick={onWardrobe}
+            data-sfx="open"
             aria-label="Wardrobe: dress your detective"
           >
             <span className="sheet board-card__body">
@@ -182,6 +222,7 @@ export default function MainMenu({ onPlay, onWardrobe, character }: MainMenuProp
             className="board__sheet board-folder"
             style={pinStyle('cases', -2.5)}
             onClick={() => setOpenFile('cases')}
+            data-sfx="open"
             ref={(el) => {
               triggers.current.cases = el
             }}
@@ -211,6 +252,7 @@ export default function MainMenu({ onPlay, onWardrobe, character }: MainMenuProp
             className="board__sheet board-note"
             style={pinStyle('how', 2.5)}
             onClick={() => setOpenFile('how')}
+            data-sfx="open"
             ref={(el) => {
               triggers.current.how = el
             }}
@@ -237,6 +279,7 @@ export default function MainMenu({ onPlay, onWardrobe, character }: MainMenuProp
             className="board__sheet board-tag"
             style={pinStyle('credits', -4)}
             onClick={() => setOpenFile('credits')}
+            data-sfx="open"
             ref={(el) => {
               triggers.current.credits = el
             }}
@@ -277,6 +320,8 @@ export default function MainMenu({ onPlay, onWardrobe, character }: MainMenuProp
         <div className="main-menu__rays" aria-hidden="true" />
         <div className="main-menu__dots" aria-hidden="true" />
         <div className="main-menu__character">{character}</div>
+        <AccountBadge onAccount={onAccount} />
+        <SoundSliders className="menu-sound" />
       </div>
 
       {file && FileBody && (

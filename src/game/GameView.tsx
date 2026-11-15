@@ -27,6 +27,7 @@ import { placeScenery, loadScenery } from './scenery/placeScenery'
 import { createScenery } from './scenery/createScenery'
 import { createCarState, stepCar, TUNING, type Ground } from './car/carPhysics'
 import { createChaseCamera } from './camera/chaseCamera'
+import { createTopViewCamera, wantsTopView } from './camera/topViewCamera'
 import { createKeyboard } from './input/keyboard'
 import { nearestPlace } from './location/nearestPlace'
 import { createLandmarks, loadLandmarks } from './landmarks/createLandmarks'
@@ -37,6 +38,7 @@ import { createRoads } from './roads/createRoads'
 import { createCaseMarkers } from './cases/createCaseMarkers'
 import { createWitnesses } from './witness/createWitnesses'
 import { createDialogue, type DialogueScene } from './witness/dialogueCamera'
+import { createCanaryPortal } from './portal/createCanaryPortal'
 import { CASES as ALL_CASES } from '../levels/data'
 import { isActiveCase } from '../shared/tutorial'
 import { WITNESSES } from '../shared/witness'
@@ -286,18 +288,33 @@ export default function GameView({
         scene.add(scenery.group)
         await progress(0.96)
 
+        // Canary Islands portal (prototype): a glowing frame round the corner box and two gates
+        // (Cádiz <-> Tenerife) that take the detective from one to the other
+        const portal = createCanaryPortal()
+        portal.place({
+          heightAt: (x, z) => terrainAt(x, z)?.heightAt(x, z) ?? 0,
+          isFree: (x, z) =>
+            (terrainAt(x, z)?.isExploredLand(x, z) ?? false) && !towns.blocks(x, z, 15) && !scenery.blocks(x, z) && landmarks.distance(x, z) > 40 && !nearRoad(x, z, 4),
+        })
+        scene.add(portal.group)
+
         // El detective: empieza en Madrid, mirando hacia la Puerta de Alcalá
-        // Ground under the detective: the terrain or, over a house or a monument, its roof.
-        // So he climbs houses and monuments like mountain steps (no collisions)
-        const surfaceAt = (x: number, z: number) => Math.max(main.heightAt(x, z), towns.surfaceAt(x, z), landmarks.surfaceAt(x, z), roadSurfaceAt(x, z))
+        // Ground under the detective: the terrain of the zone he is in (mainland or Canary Islands)
+        // or, over a house or a monument, its roof. So he climbs houses and monuments like mountain steps (no collisions)
+        const zoneTerrain = (x: number, z: number) => terrainAt(x, z) ?? main
+        const surfaceAt = (x: number, z: number) => Math.max(zoneTerrain(x, z).heightAt(x, z), towns.surfaceAt(x, z), landmarks.surfaceAt(x, z), roadSurfaceAt(x, z))
         // For the camera: ground without monuments (it treats monuments as walls, see chaseCamera)
-        const groundNoLandmarks = (x: number, z: number) => Math.max(main.heightAt(x, z), towns.surfaceAt(x, z), roadSurfaceAt(x, z))
+        const groundNoLandmarks = (x: number, z: number) => Math.max(zoneTerrain(x, z).heightAt(x, z), towns.surfaceAt(x, z), roadSurfaceAt(x, z))
+        const isFord = (x: number, z: number) => terrainAt(x, z)?.isFord(x, z) ?? false
         // Witness trade props (kiosk, crates; set once the witnesses are placed, below) block the way too
         let witnessPropAt: (x: number, z: number, margin?: number) => boolean = () => false
         const ground: Ground = {
           heightAt: surfaceAt,
           // Land, or the shallow sea (by boat): along the coast and across to the islands
-          isDrivable: (x, z) => (main.isExploredLand(x, z) || main.isFord(x, z)) && !scenery.blocks(x, z) && !witnessPropAt(x, z),
+          isDrivable: (x, z) => {
+            const t = terrainAt(x, z)
+            return !!t && (t.isExploredLand(x, z) || t.isFord(x, z)) && !scenery.blocks(x, z) && !witnessPropAt(x, z)
+          },
         }
         const madrid = lonLatToWorld(-3.7038, 40.4168)
         const puerta = landmarks.positionOf('puerta-de-alcala') ?? madrid
@@ -375,12 +392,14 @@ export default function GameView({
           active: false, caseId: null, speaking: null, mood: null, anchors: null,
         }
         await progress(0.975)
-        chase.startIntro() // swoop from far above Spain down to the detective; control starts when it lands
-        // Solo en desarrollo: acceso desde la consola/Playwright para depurar
+        // Development only (?topview): a camera straight above the detective instead of the chase camera
+        const top = wantsTopView() ? createTopViewCamera(camera, renderer.domElement) : null
+        if (!top) chase.startIntro() // swoop from far above Spain down to the detective; control starts when it lands
+        // Development only: access from the console / Playwright for debugging
         if (import.meta.env.DEV) {
           Object.assign(window, {
             __game: {
-              carState, camera, chase, ground, detective, boat, renderer, scene, day, nightLights, towns, houses, scenery, sceneryItems, landmarks, caseMarkers, main, witnesses, witnessSite, dialogue, devDialogue,
+              carState, camera, chase, top, ground, detective, boat, renderer, scene, day, nightLights, towns, houses, scenery, sceneryItems, landmarks, caseMarkers, portal, main, witnesses, witnessSite, dialogue, devDialogue,
               setDialogue: (caseId: string | null, speaking: 'detective' | 'witness' | null = null, mood: LineMood | null = null) =>
                 Object.assign(devDialogue, { active: true, caseId, speaking, mood }),
             },
@@ -409,6 +428,9 @@ export default function GameView({
             turbo,
             rush: Math.min(1, Math.max(0, (speed - TUNING.maxSpeed) / (TUNING.turboSpeed - TUNING.maxSpeed))),
             stopped: detective.inspect > 0.5, // magnifier out: the player may open the variable picker
+            x: carState.x,
+            z: carState.z,
+            heading: carState.heading,
             caseZone: caseMarkers.zoneAt(carState.x, carState.z),
           })
         }
@@ -445,8 +467,9 @@ export default function GameView({
           const introBefore = chase.introActive
           const input = dialogue.busy && talkWith
             ? dialogue.drive(carState, talk, dt)
-            : lensFlying || introBefore || callbacks.current.paused ? { throttle: 0, steer: 0, turbo: false } : keyboard.read()
+            : top || lensFlying || introBefore || callbacks.current.paused ? { throttle: 0, steer: 0, turbo: false } : keyboard.read()
           stepCar(carState, input, ground, dt)
+          if (portal.update(carState, dt)) carState.y = surfaceAt(carState.x, carState.z) // through a gate: land on the ground there
           detective.setFocus(chase.stepFocus(wantLens, dt))
           detective.update(carState, dt)
           // In a dialogue the detective looks at the witness, nods while he talks, and reacts lightly
@@ -467,13 +490,14 @@ export default function GameView({
             detectiveMood.x = detectiveMood.z = 0
             detective.parts.head.rotation.z = 0
           }
-          const afloat = boat.update(carState, main.isFord(carState.x, carState.z), detective, dt)
+          const afloat = boat.update(carState, isFord(carState.x, carState.z), detective, dt)
           // In the boat there are no footsteps: no dust puffs and no footprints on the water
           const walker = afloat > 0.5 ? Object.assign(rowing, carState, { speed: 0, accel: 0, yawRate: 0 }) : carState
           dust.update(walker, surfaceAt, detective.stridePhase, dt)
           footprints.update(walker, surfaceAt, detective.stridePhase)
           const lens = chase.focus > 0 ? { center: detective.lensPosition(), normal: detective.lensNormal(), radius: detective.lensRadius() } : null
-          chase.update(carState, groundNoLandmarks, dt, detective.inspect, towns.topAt, landmarks.surfaceAt, lens)
+          if (top) top.update(carState.x, carState.z, surfaceAt, dt)
+          else chase.update(carState, groundNoLandmarks, dt, detective.inspect, towns.topAt, landmarks.surfaceAt, lens)
           witnesses.update(dt, carState.x, carState.z, {
             caseId: dialogue.wanted ? (talkWith?.caseId ?? null) : null,
             speaking: speaker,
@@ -508,18 +532,29 @@ export default function GameView({
             z.water.update(dt)
             z.roads.update(dt)
           }
+          // Top view: the trees around the point below the camera, and the camera height as distance.
           // In a dialogue, trees between the camera and the witness duck too
-          scenery.update(dt, carState.x, carState.z, camera.position, chase.distance, dialogue.busy && talkWith ? talkWith : null)
-          // La niebla y el plano cercano de la cámara se adaptan a la distancia:
+          if (top) scenery.update(dt, top.center.x, top.center.z, camera.position, top.distance)
+          else scenery.update(dt, carState.x, carState.z, camera.position, chase.distance, dialogue.busy && talkWith ? talkWith : null)
+          // Fog and the camera near plane follow the camera distance:
           // de cerca hay niebla para dar profundidad; de lejos se aparta para ver todo.
-          // Subir "near" de lejos da más precisión de profundidad y evita parpadeos.
-          const d = chase.distance
-          // Close-range terms in world units (not km): objects keep their size on the bigger map,
-          // so the near fog must not move away with it (tree pop-in, ink reaching too far)
-          fog.near = 240 + d * 1.5
-          fog.far = 1200 + d * 6
-          camera.near = Math.max(0.05, d / 300)
-          camera.far = d * 20 + 1000 * UNITS_PER_KM
+          // A larger "near" from far away gives more depth precision and avoids flicker.
+          const d = top ? top.distance : chase.distance
+          if (top) {
+            // Top view: the ground is about d away everywhere on screen, so the fog starts past it
+            // (only the horizon of a very high view fades) and the ink covers the whole view
+            fog.near = d * 1.6 + 200
+            fog.far = d * 5 + 1500
+            camera.near = Math.max(0.5, d / 200)
+            camera.far = d * 4 + 2000
+          } else {
+            // Close-range terms in world units (not km): objects keep their size on the bigger map,
+            // so the near fog must not move away with it (tree pop-in, ink reaching too far)
+            fog.near = 240 + d * 1.5
+            fog.far = 1200 + d * 6
+            camera.near = Math.max(0.05, d / 300)
+            camera.far = d * 20 + 1000 * UNITS_PER_KM
+          }
           camera.updateProjectionMatrix()
           // Speech bubble anchors: every frame once framed (only real changes are sent), then null
           const anchors = dialogue.anchors(dialogue.busy && talkWith ? talk : null, renderer.domElement)
@@ -529,9 +564,10 @@ export default function GameView({
           }
           fog.color.copy(palette.fog)
           sky.update(camera, palette)
-          lighting.update(detective.root.position, Math.max(40, Math.min(d * 1.6, 3000 * UNITS_PER_KM)), palette)
+          lighting.update(top ? top.center : detective.root.position, Math.max(40, Math.min(d * (top ? 0.9 : 1.6), 3000 * UNITS_PER_KM)), palette)
           nightLights.update(palette.night, fog.near, fog.far)
-          ink.render(scene, camera, fog.near, fog.near + (fog.far - fog.near) * 0.5, palette, nightLights.scene)
+          if (top) ink.render(scene, camera, d * 1.3 + 200, d * 2.6 + 400, palette, nightLights.scene)
+          else ink.render(scene, camera, fog.near, fog.near + (fog.far - fog.near) * 0.5, palette, nightLights.scene)
           hudClock += dt
           if (hudClock >= HUD_INTERVAL && !chase.introActive) {
             hudClock = 0
@@ -545,6 +581,7 @@ export default function GameView({
         cleanup = () => {
           keyboard.dispose()
           chase.dispose()
+          top?.dispose()
           detective.dispose()
           detectiveRef.current = null
           boat.dispose()
@@ -568,6 +605,7 @@ export default function GameView({
           clouds.dispose()
           caseMarkers.dispose()
           witnesses.dispose()
+          portal.dispose()
           ink.dispose()
           dispose()
           if (import.meta.env.DEV) delete (window as { __game?: unknown }).__game
