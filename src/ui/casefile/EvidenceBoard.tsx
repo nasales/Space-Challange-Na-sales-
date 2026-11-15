@@ -3,16 +3,16 @@
 // items pinned face down. Opening one zooms it (board dimmed) to its hands-on task; once solved,
 // the player links it to the claim (supports / contradicts / says nothing). A right link pulls a
 // red string from the item's pin to the claim, flips the card face up with a coloured tag and
-// stamps its clue into the notebook. When every item is linked: the board summary, then the
-// player's own conclusion (same screen as the case file), which hands over to the case-closed screen.
-// Escape: closes the open card, else the summary or conclusion, else asks to leave the case.
+// stamps its clue into the notebook. When every item is linked: the board summary, which closes
+// the case (case-closed screen).
+// Escape: closes the open card, else the summary, else asks to leave the case.
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { DEFAULT_OUTFIT } from '../../shared/outfit'
 import type { EvidenceItem, EvidenceRelation } from '../../shared/tutorial'
 import type { Witness } from '../../shared/witness'
 import EvidenceCard from './board/EvidenceCard'
 import { KIND_LABEL, RELATION_TAG } from './board/labels'
-import { Conclusion, Header } from './CaseFile'
+
 import { DetectiveFigure, WitnessFigure } from './Figure'
 import { fixText } from './format'
 import { useKeyShield } from './keys'
@@ -25,7 +25,8 @@ interface Props {
   tutorial: LoadedTutorial
   witness?: Witness
   onClose: () => void
-  onConcluded: (conclusion: string, clues: NotebookClue[]) => void
+  /** Every card linked and the player closes the case */
+  onFinished: (clues: NotebookClue[]) => void
 }
 
 /** Card centres on the board (percent of the cork area), clockwise from the top left */
@@ -41,7 +42,7 @@ const TILT = [-3, 2, -1.5, 2.5, -2, 1.5]
 
 type Pt = { x: number; y: number }
 
-export default function EvidenceBoard({ tutorial, witness, onClose, onConcluded }: Props) {
+export default function EvidenceBoard({ tutorial, witness, onClose, onFinished }: Props) {
   const { script, data } = tutorial
   const board = script.board
   const items = (board?.items ?? []).slice(0, 6)
@@ -51,8 +52,7 @@ export default function EvidenceBoard({ tutorial, witness, onClose, onConcluded 
   /** item ids in the order they were linked */
   const [linked, setLinked] = useState<string[]>([])
   const [fresh, setFresh] = useState<string | null>(null)
-  const [view, setView] = useState<'board' | 'summary' | 'conclusion'>('board')
-  const [text, setText] = useState('')
+  const [view, setView] = useState<'board' | 'summary'>('board')
   const [confirming, setConfirming] = useState(false)
   const allLinked = items.length > 0 && linked.length === items.length
 
@@ -161,7 +161,7 @@ export default function EvidenceBoard({ tutorial, witness, onClose, onConcluded 
               <div className="evboard__instructions evboard__instructions--done">
                 <span>Every card is linked. Time to decide.</span>
                 <button type="button" className="evbtn evbtn--primary" onClick={() => setView('summary')}>
-                  Write your conclusion
+                  See the whole picture
                 </button>
               </div>
             ) : (
@@ -280,23 +280,11 @@ export default function EvidenceBoard({ tutorial, witness, onClose, onConcluded 
               <button type="button" className="evbtn" onClick={() => setView('board')}>
                 Look at the board
               </button>
-              <button type="button" className="evbtn evbtn--primary evbtn--big" onClick={() => setView('conclusion')}>
-                Write your conclusion
+              <button type="button" className="evbtn evbtn--primary evbtn--big" onClick={() => onFinished(clues)}>
+                Close the case
               </button>
             </div>
           </section>
-        </div>
-      )}
-
-      {view === 'conclusion' && (
-        <div className="evboard__dim">
-          <ConclusionSheet
-            tutorial={tutorial}
-            text={text}
-            onText={setText}
-            onBack={() => setView('board')}
-            onSubmit={() => onConcluded(text.trim(), clues)}
-          />
         </div>
       )}
 
@@ -450,39 +438,3 @@ function Strings({
   )
 }
 
-function ConclusionSheet({
-  tutorial,
-  text,
-  onText,
-  onBack,
-  onSubmit,
-}: {
-  tutorial: LoadedTutorial
-  text: string
-  onText: (t: string) => void
-  onBack: () => void
-  onSubmit: () => void
-}) {
-  const headingRef = useRef<HTMLHeadingElement>(null)
-  useEffect(() => {
-    headingRef.current?.focus({ preventScroll: true })
-  }, [])
-  return (
-    <div className="casefile evboard__conclusion" role="dialog" aria-modal="true" aria-label="Your conclusion">
-      <div className="casefile__sheet">
-        <Header label={`Case file · ${tutorial.script.title}`} progress="Your conclusion" onClose={onBack} />
-        <div className="casefile__body">
-          <Conclusion
-            script={tutorial.script}
-            text={text}
-            onText={onText}
-            headingRef={headingRef}
-            onBack={onBack}
-            onSubmit={onSubmit}
-            submitLabel="Submit and close the case"
-          />
-        </div>
-      </div>
-    </div>
-  )
-}

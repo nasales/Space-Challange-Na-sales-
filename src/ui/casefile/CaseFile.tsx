@@ -1,8 +1,7 @@
 // Featured-case tutorial overlay (docs/case_tutorials.md):
-// intro (context + question) -> steps (chart + text + multiple-choice check) -> the player's own
-// conclusion -> reveal (what the statistics say). The statistical result is only shown on the reveal.
-// While it is open, key presses do not reach the game (window capture listener, like PointProbe),
-// but typing in the conclusion box still works (the default action is not prevented).
+// intro (context + question) -> steps (chart + text + multiple-choice check). The last step closes
+// the case: the statistical result is shown on the case-closed screen (CaseClosed.tsx).
+// While it is open, key presses do not reach the game (window capture listener, like PointProbe).
 import { useEffect, useRef, useState, type RefObject } from 'react'
 import type { TutorialData, TutorialScript, TutorialSeries, TutorialStep } from '../../shared/tutorial'
 import TimeSeriesChart from './TimeSeriesChart'
@@ -14,8 +13,8 @@ import './CaseFile.css'
 
 /**
  * Inside the full case flow (CaseFlow.tsx): the notebook is shown, the intro card is replaced by a
- * short question line when a witness scene already told the story, and submitting the conclusion
- * hands over to the case-closed screen instead of showing the reveal here.
+ * short question line when a witness scene already told the story, and the last step hands over
+ * to the case-closed screen.
  */
 export interface CaseFileFlow {
   /** The witness's claim, pinned at the top of the notebook */
@@ -23,7 +22,8 @@ export interface CaseFileFlow {
   witnessName?: string
   /** true when the witness scene played: no intro card */
   brief: boolean
-  onConcluded: (conclusion: string, clues: NotebookClue[]) => void
+  /** The last step was solved: close the case with these notebook clues */
+  onFinished: (clues: NotebookClue[]) => void
 }
 
 interface CaseFileProps {
@@ -35,10 +35,6 @@ interface CaseFileProps {
 }
 
 type Load = { state: 'loading' } | { state: 'error'; message: string } | { state: 'ready'; tutorial: LoadedTutorial }
-
-/** Shortest conclusion that enables Submit (characters, after trimming) */
-const MIN_CONCLUSION = 12
-const MAX_CONCLUSION = 1500
 
 export default function CaseFile({ caseId, onClose, tutorial: given, flow }: CaseFileProps) {
   const [load, setLoad] = useState<Load>(given ? { state: 'ready', tutorial: given } : { state: 'loading' })
@@ -147,11 +143,10 @@ interface Answer {
 function Tutorial({ tutorial, onClose, flow }: { tutorial: LoadedTutorial; onClose: () => void; flow?: CaseFileFlow }) {
   const { script, data } = tutorial
   const n = script.steps.length
-  // 0 = intro, 1..n = steps, n + 1 = conclusion, n + 2 = reveal (only without a flow)
+  // 0 = intro, 1..n = steps
   const first = flow?.brief ? 1 : 0
   const [at, setAt] = useState(first)
   const [answers, setAnswers] = useState<Record<string, Answer>>({})
-  const [text, setText] = useState('')
   const [confirming, setConfirming] = useState(false)
   // steps without a question count as solved once seen
   const [seen, setSeen] = useState<ReadonlySet<string>>(() => new Set())
@@ -162,7 +157,7 @@ function Tutorial({ tutorial, onClose, flow }: { tutorial: LoadedTutorial; onClo
     (s.question ? answers[s.id]?.solved : seen.has(s.id)) ? [{ id: s.id, n: i + 1, text: fixText(s.clue ?? s.takeaway) }] : [],
   )
 
-  const midway = at > 0 && at <= n + 1
+  const midway = at > 0
   const requestClose = () => (midway ? setConfirming(true) : onClose())
   useKeyCapture(() => (confirming ? setConfirming(false) : requestClose()))
 
@@ -176,18 +171,16 @@ function Tutorial({ tutorial, onClose, flow }: { tutorial: LoadedTutorial; onClo
 
   const go = (to: number) => {
     setConfirming(false)
-    setAt(Math.max(first, Math.min(n + 2, to)))
+    setAt(Math.max(first, Math.min(n, to)))
   }
 
   let progress: string | undefined
   if (at >= 1 && at <= n) progress = `Clue ${at} of ${n}`
-  else if (at === n + 1) progress = 'Your conclusion'
-  else if (at === n + 2) progress = 'Case solved'
 
   const sheet = (
     <div className="casefile__sheet">
       <Header label={flow?.brief ? `Case file · ${script.title}` : script.title} progress={progress} onClose={requestClose} />
-      {at >= 1 && at <= n + 1 && <ProgressDots total={n + 1} current={at} />}
+      {at >= 1 && at <= n && <ProgressDots total={n} current={at} />}
       {flow?.brief && at >= 1 && at <= n && (
         <p className="casefile__brief">
           <span className="casefile__brief-label">The question</span> {script.intro.question}
@@ -206,24 +199,11 @@ function Tutorial({ tutorial, onClose, flow }: { tutorial: LoadedTutorial; onClo
             onAnswer={(a) => setAnswers((all) => ({ ...all, [script.steps[at - 1].id]: a }))}
             headingRef={headingRef}
             onBack={at > first ? () => go(at - 1) : undefined}
-            onNext={() => go(at + 1)}
+            onNext={() => (at < n ? go(at + 1) : flow ? flow.onFinished(clues) : onClose())}
             last={at === n}
           />
         )}
 
-        {at === n + 1 && (
-          <Conclusion
-            script={script}
-            text={text}
-            onText={setText}
-            headingRef={headingRef}
-            onBack={() => go(n)}
-            onSubmit={() => (flow ? flow.onConcluded(text.trim(), clues) : go(n + 2))}
-            submitLabel={flow ? 'Submit and close the case' : undefined}
-          />
-        )}
-
-        {at === n + 2 && <Reveal script={script} data={data} text={text} headingRef={headingRef} onClose={onClose} />}
       </div>
 
       {confirming && (
@@ -378,80 +358,9 @@ function Step({
           </button>
         )}
         <button type="button" className="casefile__btn casefile__btn--primary" onClick={onNext} disabled={!solved}>
-          {last ? 'Write my conclusion' : 'Next clue'}
+          {last ? 'Close the case' : 'Next clue'}
         </button>
       </div>
-    </section>
-  )
-}
-
-export function Conclusion({
-  script,
-  text,
-  onText,
-  headingRef,
-  onBack,
-  onSubmit,
-  submitLabel = 'Submit conclusion',
-}: {
-  script: TutorialScript
-  text: string
-  onText: (t: string) => void
-  headingRef: HeadingRef
-  onBack: () => void
-  onSubmit: () => void
-  submitLabel?: string
-}) {
-  const ready = text.trim().length >= MIN_CONCLUSION
-  return (
-    <section className="casefile__screen">
-      <h2 className="casefile__title casefile__title--step" ref={headingRef} tabIndex={-1}>
-        Your conclusion
-      </h2>
-      {/* the question again, unless the prompt already repeats it */}
-      {!script.conclusion.prompt.includes(script.intro.question) && (
-        <div className="casefile__question-note">
-          <p className="casefile__note-label">The question</p>
-          <p className="casefile__note-text">{script.intro.question}</p>
-        </div>
-      )}
-      <form
-        className="casefile__form"
-        onSubmit={(e) => {
-          e.preventDefault()
-          if (ready) onSubmit()
-        }}
-      >
-        <label htmlFor="casefile-conclusion" className="casefile__text casefile__label-text">
-          {script.conclusion.prompt}
-        </label>
-        <textarea
-          id="casefile-conclusion"
-          className="casefile__textarea"
-          value={text}
-          onChange={(e) => onText(e.target.value)}
-          placeholder={script.conclusion.placeholder}
-          maxLength={MAX_CONCLUSION}
-          rows={5}
-          aria-describedby="casefile-conclusion-hint"
-        />
-        <p id="casefile-conclusion-hint" className="casefile__hint">
-          {ready
-            ? 'The statistics stay hidden until you submit.'
-            : 'Write a sentence or two in your own words.'}{' '}
-          <span className="casefile__count">
-            {text.length} / {MAX_CONCLUSION}
-          </span>
-        </p>
-        <div className="casefile__nav">
-          <button type="button" className="casefile__btn" onClick={onBack}>
-            Back
-          </button>
-          <button type="submit" className="casefile__btn casefile__btn--primary" disabled={!ready}>
-            {submitLabel}
-          </button>
-        </div>
-      </form>
     </section>
   )
 }
@@ -470,48 +379,6 @@ function StatsLine({ series }: { series: TutorialSeries }) {
         ({testName(t.test)}, 5% level). {credit(series)}
       </span>
     </p>
-  )
-}
-
-function Reveal({
-  script,
-  data,
-  text,
-  headingRef,
-  onClose,
-}: {
-  script: TutorialScript
-  data: TutorialData
-  text: string
-  headingRef: HeadingRef
-  onClose: () => void
-}) {
-  return (
-    <section className="casefile__screen">
-      <h2 className="casefile__title casefile__title--step" ref={headingRef} tabIndex={-1}>
-        What the statistics say
-      </h2>
-
-      <blockquote className="casefile__yours">
-        <p className="casefile__note-label">Your conclusion</p>
-        <p className="casefile__yours-text">{text.trim()}</p>
-      </blockquote>
-
-      {/*
-        TODO(ai-checker): the AI checker verdict goes here, above the statistics.
-        Call the checker with { case_id: script.case_id, variable: script.conclusion.variable,
-        conclusion: text } and show its verdict. If it fails or takes more than 8 s, show nothing
-        extra: the statistical result below is the fallback (docs/agents/interface.md, check 5).
-      */}
-
-      <StatsReveal script={script} data={data} />
-
-      <div className="casefile__nav casefile__nav--end">
-        <button type="button" className="casefile__btn casefile__btn--primary" onClick={onClose}>
-          Close case file
-        </button>
-      </div>
-    </section>
   )
 }
 

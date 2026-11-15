@@ -2,7 +2,7 @@
 //   scene (witness dialogue, if the script has one) -> tutorial (case file + notebook, or the
 //   evidence board when the script has `board`, EvidenceBoard.tsx)
 //   -> case closed (stamp, verdict on the witness's claim, statistics) -> back to the map.
-// Finishing the tutorial with a conclusion solves the case (its marker turns green).
+// Finishing the tutorial solves the case (its marker turns green).
 // Escape: scene = skip the scene; case file / board = their own "close?" question;
 // case closed = back to the map. One handler per phase, so the keys never reach the game.
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -29,7 +29,7 @@ interface Props {
   caseId: string
   /** Back to the map */
   onClose: () => void
-  /** The case was solved (conclusion written): its marker turns green */
+  /** The case was solved (tutorial finished): its marker turns green */
   onSolved?: (caseId: string) => void
   onDialogue?: (d: DialogueState) => void
   /** Head positions from the game; leave out when no game is behind (the preview draws stand-ins) */
@@ -42,7 +42,6 @@ type Phase = 'loading' | 'scene' | 'tutorial' | 'closed'
 export default function CaseFlow({ caseId, onClose, onSolved, onDialogue, anchors, outfit = DEFAULT_OUTFIT }: Props) {
   const [phase, setPhase] = useState<Phase>('loading')
   const [tutorial, setTutorial] = useState<LoadedTutorial | null>(null)
-  const [conclusion, setConclusion] = useState('')
   const [clues, setClues] = useState<NotebookClue[]>([])
   const witness = getWitness(caseId)
   const onCloseRef = useRef(onClose)
@@ -115,8 +114,7 @@ export default function CaseFlow({ caseId, onClose, onSolved, onDialogue, anchor
     )
   }
 
-  const concluded = (text: string, noted: NotebookClue[]) => {
-    setConclusion(text)
+  const finished = (noted: NotebookClue[]) => {
     setClues(noted)
     onSolved?.(caseId)
     setPhase('closed')
@@ -124,7 +122,7 @@ export default function CaseFlow({ caseId, onClose, onSolved, onDialogue, anchor
 
   // Cases with an evidence board play it instead of the case-file steps
   if ((phase === 'tutorial' || phase === 'scene') && tutorial?.script.board) {
-    return <EvidenceBoard tutorial={tutorial} witness={witness} onClose={onClose} onConcluded={concluded} />
+    return <EvidenceBoard tutorial={tutorial} witness={witness} onClose={onClose} onFinished={finished} />
   }
 
   if ((phase === 'tutorial' || phase === 'scene') && tutorial) {
@@ -137,7 +135,7 @@ export default function CaseFlow({ caseId, onClose, onSolved, onDialogue, anchor
           claim: tutorial.script.scene?.claim,
           witnessName: witness?.name,
           brief: !!tutorial.script.scene,
-          onConcluded: concluded,
+          onFinished: finished,
         }}
       />
     )
@@ -148,7 +146,6 @@ export default function CaseFlow({ caseId, onClose, onSolved, onDialogue, anchor
       <CaseClosed
         tutorial={tutorial}
         witness={witness}
-        conclusion={conclusion}
         clues={clues}
         onClose={onClose}
       />

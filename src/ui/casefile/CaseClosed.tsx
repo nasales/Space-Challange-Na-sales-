@@ -1,5 +1,5 @@
-// Last screen of a featured case, after the player's conclusion: a "CASE CLOSED" rubber stamp, the
-// verdict on the witness's claim (reveal.claim_verdict + claim_text), the player's conclusion, the
+// Last screen of a featured case, after the tutorial: a "CASE CLOSED" rubber stamp, the
+// verdict on the witness's claim (reveal.claim_verdict + claim_text), the
 // clues from the notebook and what the statistics say. This is the only place the full statistical
 // result of the case file is shown (the case file itself hands over to this screen).
 import { useEffect, useRef } from 'react'
@@ -13,7 +13,6 @@ import './CaseClosed.css'
 interface Props {
   tutorial: LoadedTutorial
   witness?: Witness
-  conclusion: string
   clues: NotebookClue[]
   onClose: () => void
 }
@@ -24,7 +23,7 @@ const VERDICT_TEXT = {
   partly: 'The witness was partly right',
 } as const
 
-export default function CaseClosed({ tutorial, witness, conclusion, clues, onClose }: Props) {
+export default function CaseClosed({ tutorial, witness, clues, onClose }: Props) {
   const { script, data } = tutorial
   const claim = script.scene?.claim
   const verdict = script.reveal.claim_verdict
@@ -76,22 +75,9 @@ export default function CaseClosed({ tutorial, witness, conclusion, clues, onClo
               Case solved: its marker turns green on the map.
             </p>
 
-            {conclusion && (
-              <blockquote className="casefile__yours">
-                <p className="casefile__note-label">Your conclusion</p>
-                <p className="casefile__yours-text">{conclusion}</p>
-              </blockquote>
-            )}
-
             {clues.length > 0 && <Notebook variant="closed" clues={clues} total={script.board?.items.length ?? script.steps.length} />}
 
             <h3 className="caseclosed__section">What the statistics say</h3>
-            {/*
-              TODO(ai-checker): the AI checker verdict on the player's conclusion goes here.
-              Call it with { case_id: script.case_id, variable: script.conclusion.variable,
-              conclusion } and show its verdict. If it fails or takes more than 8 s, show nothing
-              extra: the statistics below are the fallback (docs/agents/interface.md, check 5).
-            */}
             <StatsReveal script={script} data={data} />
 
             <div className="casefile__nav casefile__nav--end">

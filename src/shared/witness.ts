@@ -84,6 +84,40 @@ export const WITNESSES: Partial<Record<string, Witness>> = {
       height: 1.02,
     },
   },
+  aneto_glacier: {
+    caseId: 'aneto_glacier',
+    name: 'Jordi',
+    role: 'Mountain hut keeper, Pyrenees',
+    look: {
+      skin: '#d6a07a',
+      hair: '#6b4a32',
+      hairStyle: 'short',
+      shirt: '#c0392b',
+      trousers: '#3b4252',
+      hat: 'cap',
+      hatColor: '#2e5e8c',
+      beard: true,
+      apron: '#e0b04a',
+      height: 1.04,
+    },
+  },
+  donana: {
+    caseId: 'donana',
+    name: 'Carmen',
+    role: 'Birdwatching guide, Doñana',
+    look: {
+      skin: '#c99068',
+      hair: '#3a2a20',
+      hairStyle: 'bun',
+      shirt: '#7c8a4e',
+      trousers: '#c8b48a',
+      hat: 'straw',
+      hatColor: '#d9bf86',
+      glasses: false,
+      apron: '#5e6b3a',
+      height: 0.95,
+    },
+  },
 }
 
 export function getWitness(caseId: string): Witness | undefined {
