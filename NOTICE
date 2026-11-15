@@ -1,0 +1,24 @@
+John Datason
+Copyright 2026 Na-sales team (NASA Space Apps Challenge 2026)
+
+The original work of the team in this repository (source code, texts, game
+art and 3D models, documentation) is licensed under the Apache License,
+Version 2.0. See the LICENSE file.
+
+Third-party material is NOT covered by that license and keeps its own.
+The full list, with links and licenses, is in REFERENCES.md. In short:
+
+- NASA data (GLDAS, GPM IMERG, MERRA-2, POWER, GIBS Blue Marble): open data,
+  credited in text. No NASA logos or insignia are used.
+- Natural Earth (public domain), GeoNames (CC BY 4.0), AWS Terrain Tiles
+  (open data, attribution required): map data in public/maps/.
+- Fonts in src/ui/assets/fonts/ (Big Shoulders Display, Kalam, Courier
+  Prime): SIL Open Font License 1.1, license texts next to the files.
+- Music in public/music/: CC0 1.0 (public domain).
+- Libraries installed from npm and PyPI (three.js, React, supabase-js,
+  FastAPI, SciPy, pymannkendall and others): their own open-source licenses.
+- .claude/skills/: third-party skills for coding agents (development
+  tooling, not part of the game). They belong to their authors and keep
+  their own licenses; skills-lock.json lists the source of some of them.
+
+AI use is declared in AI_USAGE.md.
