@@ -1,4 +1,4 @@
-"""FastAPI app served by Vercel at /api/*. Run locally with `npm run dev:api`."""
+"""FastAPI app serving /api/*. Not deployed (the hosted site is static); run locally with `npm run dev:api`."""
 from typing import Any, Dict, List
 
 from fastapi import FastAPI, HTTPException, Query

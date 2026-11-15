@@ -1,7 +1,7 @@
 """Supabase client, created lazily from environment variables.
 
-Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in a local `.env` (see .env.example)
-or in the Vercel project settings. The key is server-side only: never expose it
+Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in a local `.env` (see .env.example).
+The key is server-side only: never expose it
 to the frontend and never prefix it with VITE_.
 """
 import os

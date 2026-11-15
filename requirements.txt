@@ -1,4 +1,4 @@
-# Runtime dependencies of the Vercel Python function (keep this list short).
+# Runtime dependencies of the local Python API (backend/) (keep this list short).
 # Statistics libraries go in pipeline/requirements.txt, not here.
 fastapi>=0.115,<1
 supabase>=2.10,<3

@@ -8,8 +8,8 @@ import { defineConfig } from 'vite'
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8')) as { version: string }
 
 function gitCommit(): string {
-  // Cloudflare Workers Builds and Vercel also expose the commit as an env variable.
-  const fromEnv = process.env.WORKERS_CI_COMMIT_SHA ?? process.env.VERCEL_GIT_COMMIT_SHA
+  // Cloudflare Workers Builds also exposes the commit as an env variable.
+  const fromEnv = process.env.WORKERS_CI_COMMIT_SHA
   if (fromEnv) return fromEnv.slice(0, 7)
   try {
     return execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim()
@@ -29,7 +29,7 @@ export default defineConfig({
     __APP_BUILD_TIME__: JSON.stringify(buildTime),
   },
   server: {
-    // Python backend (npm run dev:api). On Vercel, vercel.json routes /api instead.
+    // Local Python backend (npm run dev:api). The hosted site (Cloudflare, static) has no /api.
     proxy: { '/api': 'http://127.0.0.1:8000' },
   },
   build: {

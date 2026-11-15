@@ -18,7 +18,7 @@
 | Natural Earth — Admin 0 Countries 1:50m | Public domain | https://www.naturalearthdata.com | Country borders of the world map (`scripts/fetch-world-data.mjs`) |
 | Natural Earth — Rivers and lake centerlines 1:10m (incl. Europe supplement) | Public domain | https://www.naturalearthdata.com (via github.com/nvkelso/natural-earth-vector) | River lines of Spain (`scripts/fetch-rivers.mjs` → `public/maps/countries/ESP/rivers.json`) |
 | GeoNames | CC BY 4.0 | https://www.geonames.org | Town names, regions and positions (`public/maps/countries/ESP/places.json`) |
-| FastAPI | MIT | https://fastapi.tiangolo.com | Python API served as a Vercel Function (`backend/`) |
+| FastAPI | MIT | https://fastapi.tiangolo.com | Local Python API (`backend/`), not deployed |
 | supabase-js 2.118.0 (`@supabase/supabase-js`) | MIT | https://github.com/supabase/supabase-js | Optional email + password player login in the browser (`src/shared/auth.ts`) |
 | supabase-py | MIT | https://github.com/supabase/supabase-py | Database queries from the backend (`backend/db.py`) |
 | Uvicorn | BSD-3-Clause | https://www.uvicorn.org | Local development server for the API (dev only) |

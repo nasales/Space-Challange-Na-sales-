@@ -7,13 +7,13 @@
 - **Event:** NASA Space Apps Challenge 2026, Salamanca site, challenge *"Be An Earth System Trend Detective!"*.
 - **Deadlines:** pitch on Sunday 15/11 at 17:30; submission closes on Sunday 15/11 at 23:59 (Salamanca time). Feature freeze on Sunday at 13:00.
 - **Project:** a web detective game. The player drives a police car over a 3D map of Spain and stops at a place, picks a variable and sees charts of its evolution, without the conclusion. The player writes a conclusion and an AI checks it.
-- **Stack:** Supabase (database), Vite (frontend), Vercel (deployment).
+- **Stack:** Supabase (database), Vite (frontend), Cloudflare Workers (deployment, static site).
 - **Split:**
   - **Perry (database owner):** load the series into Supabase and run the scripts that write to it.
   - **Diego (statistics):** `pipeline/fill_trends.py`, which computes the trends that fill the `trends` table, and the featured cases in `data/cache/`.
   - **Ivan (statistics):** `pipeline/trend.py` (`analyze_trend`, the official method) and `pipeline/compare_db.py`.
   - **Yeipi:** the interface.
-  - **A teammate:** Vite and Vercel.
+  - **A teammate:** Vite and Cloudflare.
 
 ## 2. Scope
 
@@ -91,9 +91,9 @@
    python etl_espana.py --upload --export-dir export
    ```
    Get the string from the project's **Connect** button → *Connection String* → Type `URI`, Method **Session pooler** (the direct one is usually IPv6 only). Replace `[YOUR-PASSWORD]` **including the brackets**. Keep it in `.env.local` at the repo root (ignored by git); never commit it.
-6. **Hand over to the frontend** (Vercel → *Settings → Environment Variables*):
+6. **Hand over to the frontend** (Cloudflare → the Worker → *Settings → Build → Variables and secrets*):
    - `VITE_SUPABASE_URL` = the Project URL.
-   - `VITE_SUPABASE_ANON_KEY` = the public key (anon or publishable).
+   - `VITE_SUPABASE_PUBLISHABLE_KEY` = the publishable key (`sb_publishable_...`).
 
    **Never** the database password or the `service_role` key. Frontend usage:
    ```js
