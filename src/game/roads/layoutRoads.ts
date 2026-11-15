@@ -3,8 +3,8 @@
 // terrain and respect everything else on the map. A closed line (last point = first point) stays
 // one seamless loop.
 // The planner already keeps the route clear; the rules below are the safety net:
-// - monuments: roads bend around each footprint (the same idea as bendRiversAround), keeping to
-//   the side they already pass on;
+// - monuments: roads bend around each footprint in a wide, gentle curve, keeping to the side they
+//   already pass on; river and monument passes alternate until the road is out of the water;
 // - rivers: a road that crosses a river gets a bridge; a road that runs next to a river is pushed
 //   away from the water so it never runs inside a channel or along the water's edge;
 // - sea and border: roads only exist on explored land (both edges), clipped at the zone edges;
@@ -13,7 +13,7 @@
 // - junctions: where two runs cross, both decks are levelled to one flat height over the crossing
 //   (with a smooth ramp on each side) and a junction patch (junctions.ts) is laid on top.
 import type { River } from '../map/mapData'
-import { chaikin, riverHalfWidthKm, riverWidthScale } from '../map/rivers'
+import { chaikin, riverHalfWidthKm, riverOverlaps, riverWidthScale } from '../map/rivers'
 import { lonLatToWorld, UNITS_PER_KM } from '../map/projection'
 import type { Road } from './roadData'
 import { junctionShape, type JunctionShape } from './junctions'
@@ -38,6 +38,11 @@ const BRIDGE_BANK = 9
 const MAX_HALF_SPAN = 90
 /** Gap (world units) between a road edge and a monument clearing circle. */
 const MONUMENT_GAP = 4
+/** The detour around a monument ramps out over max(MIN, SPREAD x clearance) world units on each side. */
+const MONUMENT_RAMP_MIN = 120
+const MONUMENT_RAMP_SPREAD = 3
+/** Rounds of "away from rivers, then around monuments" until no point is left in the water. */
+const AVOID_ROUNDS = 3
 /** Cross sections averaged on each side when smoothing the deck height, and how many passes. */
 const SMOOTH_R = 4
 const ENVELOPE_PASSES = 4
@@ -286,18 +291,32 @@ type RiverIndex = ReturnType<typeof riverIndex>
 // ---------------------------------------------------------------------------------------------
 
 /**
+ * Sideways clearance a road needs at distance `a` (along the road) from a monument: the full
+ * `target` while it passes the circle (|a| <= target), then a long raised-cosine ramp down to 0 at
+ * `outer`. Inside the circle's span any point at `target` across is outside it; past it the road may
+ * come back freely. The ramp is smooth at both ends, so the detour reads as a wide bend.
+ */
+function monumentNeed(a: number, target: number, outer: number) {
+  const s = Math.abs(a)
+  if (s <= target) return target
+  if (s >= outer) return 0
+  return target * 0.5 * (1 + Math.cos((Math.PI * (s - target)) / (outer - target)))
+}
+
+/**
  * Bends a road around monument circles, sideways only. For each circle the road is described
  * around its closest point: `a` along the road, `b` across it, on the side the road already
- * passes. Points are moved only across the road, out to b_need(a) = target * sqrt(1 - (a/outer)^2)
- * (a smooth bump; a^2 + b_need^2 >= target^2, so the moved point is always outside the circle),
- * blended with a smooth maximum so the curve never kinks. Moving only sideways means two
- * neighbouring points can never be thrown to opposite sides, so no chord cuts a footprint.
+ * passes. Points are moved only across the road, out to monumentNeed(a) (a wide plateau-and-ramp
+ * bump that starts far before the monument), blended with a smooth maximum so the curve never
+ * kinks. Moving only sideways means two neighbouring points can never be thrown to opposite
+ * sides, so no chord cuts a footprint. Points far along the road from the closest one (the road
+ * coming back on the other side of the monument) are never touched.
  */
 function avoidMonuments(pts: XZ[], clearings: RoadGround['clearings'], hw: number): XZ[] {
   let out = pts
   for (const c of clearings) {
     const target = c.r + hw + MONUMENT_GAP
-    const outer = Math.max(target * 1.6, target + 30)
+    const outer = target + Math.max(MONUMENT_RAMP_MIN, MONUMENT_RAMP_SPREAD * target)
     let k = -1, kd = Infinity
     for (let i = 0; i < out.length; i++) {
       const d = Math.hypot(out[i][0] - c.x, out[i][1] - c.z)
@@ -311,12 +330,19 @@ function avoidMonuments(pts: XZ[], clearings: RoadGround['clearings'], hw: numbe
     const vx = out[k][0] - c.x, vz = out[k][1] - c.z
     const side = -tz * vx + tx * vz >= 0 ? 1 : -1
     const nx = -tz * side, nz = tx * side // unit normal pointing to the road's side
-    out = out.map(([x, z]): XZ => {
+    // Only the stretch of road around the closest point (along the road), so a loop that comes
+    // back past the other side of the monument is not dragged across it
+    const span = Math.ceil((outer * 1.5) / STEP)
+    const closed = isClosed(out)
+    const n = out.length
+    out = out.map(([x, z], i): XZ => {
+      const di = closed ? Math.min(Math.abs(i - k), n - 1 - Math.abs(i - k)) : Math.abs(i - k)
+      if (di > span) return [x, z]
       const dx = x - c.x, dz = z - c.z
       const a = dx * tx + dz * tz
       if (Math.abs(a) >= outer) return [x, z]
       const b = dx * nx + dz * nz
-      const need = target * Math.sqrt(1 - (a / outer) ** 2)
+      const need = monumentNeed(a, target, outer)
       const soft = 6 * (need / target)
       const nb = (b + need + Math.sqrt((b - need) ** 2 + soft * soft)) / 2 // smooth max(b, need)
       return [x + nx * (nb - b), z + nz * (nb - b)]
@@ -329,9 +355,10 @@ function avoidMonuments(pts: XZ[], clearings: RoadGround['clearings'], hw: numbe
  * Eases a road away from rivers it runs beside. Around each real crossing the road is left alone
  * (it gets a bridge there), with a smooth hand-over so the line never kinks.
  */
-function avoidRivers(pts: XZ[], rivers: RiverIndex, hw: number): XZ[] {
+/** 0 around each real river crossing (it gets a bridge), easing to 1 where the road may be pushed. */
+function crossingFreedom(pts: XZ[], rivers: RiverIndex, hw: number): Float32Array {
   const n = pts.length
-  const free = new Float32Array(n).fill(1) // 0 = protected (crossing), 1 = may be pushed
+  const free = new Float32Array(n).fill(1)
   const reachZone = hw + RIVER_GAP + RIVER_FALLOFF
   for (const c of rivers.crossings(pts)) {
     const L = Math.min(MAX_HALF_SPAN, (reachZone + 10) / Math.max(c.sin, 0.3)) / STEP
@@ -339,6 +366,21 @@ function avoidRivers(pts: XZ[], rivers: RiverIndex, hw: number): XZ[] {
     const i0 = Math.max(0, Math.floor(c.at - L - ramp)), i1 = Math.min(n - 1, Math.ceil(c.at + L + ramp))
     for (let i = i0; i <= i1; i++) free[i] = Math.min(free[i], smooth(L, L + ramp, Math.abs(i - c.at)))
   }
+  return free
+}
+
+/** true if some point away from the crossings runs in the water or on its edge (road vs river clash). */
+function runsInWater(pts: XZ[], rivers: RiverIndex, hw: number): boolean {
+  const free = crossingFreedom(pts, rivers, hw)
+  return pts.some(([x, z], i) => {
+    if (free[i] < 1) return false
+    const nr = rivers.nearest(x, z, hw + RIVER_GAP * 0.5)
+    return nr !== null && nr.edge < hw + RIVER_GAP * 0.5
+  })
+}
+
+function avoidRivers(pts: XZ[], rivers: RiverIndex, hw: number): XZ[] {
+  const free = crossingFreedom(pts, rivers, hw) // 0 = protected (crossing), 1 = may be pushed
   return pts.map(([x, z], i): XZ => {
     if (free[i] === 0) return [x, z]
     const nr = rivers.nearest(x, z, hw + RIVER_GAP + RIVER_FALLOFF)
@@ -595,8 +637,16 @@ export function layoutRoads(roads: Road[], ground: RoadGround): RoadLayout {
       // keeps a closed loop exactly closed after each step (both copies of the seam point agree)
       const close = (q: XZ[]) => (closedLine && q.length > 1 ? [...q.slice(0, -1), q[0]] : q)
       pts = close(resample(avoidMonuments(pts, ground.clearings, hw)))
-      if (!rivers.empty) for (let pass = 0; pass < 2; pass++) pts = close(resample(avoidRivers(pts, rivers, hw)))
-      pts = close(resample(avoidMonuments(pts, ground.clearings, hw))) // monuments always win
+      // Rivers and monuments in turns (monuments last: they always win) until the road is out of
+      // the water everywhere except at its bridges. Bending around a monument can push a road
+      // back towards a river, so each round checks again.
+      if (!rivers.empty) {
+        for (let round = 0; round < AVOID_ROUNDS; round++) {
+          for (let pass = 0; pass < 2; pass++) pts = close(resample(avoidRivers(pts, rivers, hw)))
+          pts = close(resample(avoidMonuments(pts, ground.clearings, hw)))
+          if (!runsInWater(pts, rivers, hw)) break
+        }
+      }
       for (let attempt = 0; attempt < 2; attempt++) {
         const n = pts.length
         if (n < MIN_SAMPLES) break
@@ -709,5 +759,6 @@ export function validateRoads({ runs, junctions }: RoadLayout, ground: RoadGroun
     overSea,
     closestMonument: Math.round(closestMonument * 10) / 10,
     maxEmbankment: Math.round(maxEmbankment * 10) / 10,
+    riverOverlaps: riverOverlaps(ground.rivers),
   }
 }
