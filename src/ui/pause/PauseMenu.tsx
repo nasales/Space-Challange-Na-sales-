@@ -3,6 +3,7 @@
 // while open). Esc priority: the magnifier picker handles Esc first and marks it handled
 // (preventDefault), so an Esc that closes the picker never opens this panel.
 import { useEffect, useLayoutEffect, useRef, type KeyboardEvent as ReactKeyboardEvent } from 'react'
+import SoundSliders from '../settings/SoundSliders'
 import './PauseMenu.css'
 
 interface Props {
@@ -46,11 +47,12 @@ export default function PauseMenu({ open, canOpen, onOpenChange, onMainMenu }: P
 
   if (!open) return null
 
-  // Focus trap + arrow keys between the buttons (Enter/Space press the focused button natively)
+  // Focus trap + arrow keys between the buttons and sliders (Enter/Space press the focused button natively)
   const onPanelKey = (e: ReactKeyboardEvent) => {
-    const buttons = Array.from(panel.current?.querySelectorAll<HTMLButtonElement>('button') ?? [])
+    // Buttons and the volume sliders (the sliders keep their own arrow keys)
+    const buttons = Array.from(panel.current?.querySelectorAll<HTMLElement>('button, input') ?? [])
     if (buttons.length === 0) return
-    const i = buttons.indexOf(document.activeElement as HTMLButtonElement)
+    const i = buttons.indexOf(document.activeElement as HTMLElement)
     let next: number
     if (e.key === 'Tab') next = e.shiftKey ? i - 1 : i + 1
     else if (e.key === 'ArrowDown' || e.key === 'ArrowRight') next = i + 1
@@ -88,6 +90,7 @@ export default function PauseMenu({ open, canOpen, onOpenChange, onMainMenu }: P
             type="button"
             className="pause-menu__button pause-menu__button--resume"
             onClick={() => onOpenChange(false)}
+            data-sfx="off" // the app shell plays the close sound for every way of resuming
           >
             Resume
           </button>
@@ -95,6 +98,7 @@ export default function PauseMenu({ open, canOpen, onOpenChange, onMainMenu }: P
             Main menu
           </button>
         </div>
+        <SoundSliders className="pause-menu__sound" />
         <p className="pause-menu__hint">
           <kbd>Esc</kbd> to resume
         </p>

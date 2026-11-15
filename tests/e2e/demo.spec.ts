@@ -165,3 +165,26 @@ test('Esc pauses the game and Main menu goes back to the menu', async ({ page })
   await expect(page.locator('.speedometer')).toBeVisible({ timeout: 30_000 })
   expect(errors, `Page errors:\n${errors.join('\n')}`).toEqual([])
 })
+
+// Sound settings (src/ui/settings/SoundSliders.tsx): two sliders in the menu, saved in this browser.
+test('the menu has music and sound effects sliders that are remembered', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (err) => errors.push(err.message))
+  await page.goto('/?music=off')
+  const music = page.getByRole('slider', { name: 'Music volume' })
+  const effects = page.getByRole('slider', { name: 'Sound effects volume' })
+  await expect(music).toBeVisible()
+  await expect(effects).toBeVisible()
+
+  await effects.focus()
+  await page.keyboard.press('ArrowLeft')
+  await expect(effects).toHaveValue('65')
+  await music.focus()
+  await page.keyboard.press('Home')
+  await expect(music).toHaveValue('0')
+
+  await page.reload()
+  await expect(page.getByRole('slider', { name: 'Music volume' })).toHaveValue('0')
+  await expect(page.getByRole('slider', { name: 'Sound effects volume' })).toHaveValue('65')
+  expect(errors, `Page errors:\n${errors.join('\n')}`).toEqual([])
+})
