@@ -1,17 +1,17 @@
-// Round minimap in the top-right corner: north up, centred on the detective, who is drawn as an
-// arrow turned to where he faces. The map itself (land, rivers, roads, cities, monuments) is drawn
-// once into an offscreen canvas in the game's comic look; each HUD tick only copies the part
-// around the detective, so it stays cheap.
+// Minimap in the top-right corner: the whole silhouette of Spain (north up) with the detective
+// drawn as an arrow at his position, turned to where he faces. The map itself (land, rivers,
+// roads, cities, monuments) is drawn once into an offscreen canvas in the game's comic look;
+// each HUD tick only redraws that image and moves the arrow, so it stays cheap.
 import { useEffect, useRef, useState } from 'react'
 import { KM_PER_DEG_LAT, KM_PER_DEG_LON, UNITS_PER_KM } from '../../shared/projection'
 import './Minimap.css'
 
-/** Offscreen map resolution: pixels per real kilometre (2 = sharp on high-DPI screens). */
-const PX_PER_KM = 2
-/** Kilometres shown per CSS pixel of the minimap (a 170 px map shows about 170 km). */
-const KM_PER_CSS_PX = 1
+/** Offscreen map resolution: pixels per real kilometre (sharp at minimap size on high-DPI screens). */
+const PX_PER_KM = 0.6
+/** Reference CSS width of the minimap; line widths below are in CSS pixels at this width. */
+const REF_CSS_WIDTH = 210
 /** Cities with at least this many people get a dot. */
-const CITY_MIN_POP = 100_000
+const CITY_MIN_POP = 300_000
 
 const INK = '#1A1423'
 const SEA = '#6fc3e4'
@@ -52,16 +52,17 @@ function tracePath(ctx: CanvasRenderingContext2D, b: Bounds, ring: Ring, close: 
 }
 
 /** Dotted sea, like a printed comic (halftone). */
-function seaPattern(ctx: CanvasRenderingContext2D) {
+function seaPattern(ctx: CanvasRenderingContext2D, px: number) {
+  const s = Math.max(4, Math.round(6 * px))
   const tile = document.createElement('canvas')
-  tile.width = tile.height = 10
+  tile.width = tile.height = s
   const t = tile.getContext('2d')!
   t.fillStyle = SEA
-  t.fillRect(0, 0, 10, 10)
+  t.fillRect(0, 0, s, s)
   t.fillStyle = SEA_DOT
-  for (const [x, y] of [[2.5, 2.5], [7.5, 7.5]]) {
+  for (const [x, y] of [[0.25, 0.25], [0.75, 0.75]]) {
     t.beginPath()
-    t.arc(x, y, 1.6, 0, Math.PI * 2)
+    t.arc(x * s, y * s, s * 0.14, 0, Math.PI * 2)
     t.fill()
   }
   return ctx.createPattern(tile, 'repeat') ?? SEA
@@ -78,8 +79,8 @@ async function buildMapImage(): Promise<MapImage | null> {
   ])
   const zone = meta?.zones[0]?.bounds // mainland Spain and the Balearic Islands
   if (!zone) return null
-  // A little margin so the coast never touches the edge of the image
-  const b: Bounds = { west: zone.west - 1, east: zone.east + 1, south: zone.south - 0.8, north: zone.north + 0.8 }
+  // A thin margin so the coast never touches the frame
+  const b: Bounds = { west: zone.west - 0.35, east: zone.east + 0.35, south: zone.south - 0.3, north: zone.north + 0.3 }
   const canvas = document.createElement('canvas')
   canvas.width = Math.ceil((b.east - b.west) * KM_PER_DEG_LON * PX_PER_KM)
   canvas.height = Math.ceil((b.north - b.south) * KM_PER_DEG_LAT * PX_PER_KM)
@@ -87,9 +88,9 @@ async function buildMapImage(): Promise<MapImage | null> {
   if (!ctx) return null
   ctx.lineJoin = 'round'
   ctx.lineCap = 'round'
-  const px = PX_PER_KM / KM_PER_CSS_PX // offscreen pixels per minimap CSS pixel
+  const px = canvas.width / REF_CSS_WIDTH // offscreen pixels per minimap CSS pixel
 
-  ctx.fillStyle = seaPattern(ctx)
+  ctx.fillStyle = seaPattern(ctx, px)
   ctx.fillRect(0, 0, canvas.width, canvas.height)
 
   // Countries: Spain in warm sand, neighbours in grey, all with ink outlines (Spain's thicker)
@@ -104,38 +105,35 @@ async function buildMapImage(): Promise<MapImage | null> {
     ctx.fillStyle = spain ? LAND : NEIGHBOUR
     ctx.fill('evenodd')
     ctx.strokeStyle = INK
-    ctx.lineWidth = (spain ? 2.5 : 1.5) * px
+    ctx.lineWidth = (spain ? 1.6 : 0.9) * px
     ctx.stroke()
   }
 
-  // Rivers: plain blue strokes
+  // Rivers: thin blue strokes
   ctx.strokeStyle = RIVER
-  ctx.lineWidth = 1.4 * px
+  ctx.lineWidth = 0.8 * px
   ctx.beginPath()
   for (const river of rivers?.rivers ?? []) for (const line of river.lines) tracePath(ctx, b, line, false)
   ctx.stroke()
 
   // Roads: ink casing, then a light fill on top
-  const roadPath = () => {
-    ctx.beginPath()
-    for (const road of roads?.roads ?? []) for (const line of road.lines) tracePath(ctx, b, line, false)
-  }
-  roadPath()
+  ctx.beginPath()
+  for (const road of roads?.roads ?? []) for (const line of road.lines) tracePath(ctx, b, line, false)
   ctx.strokeStyle = INK
-  ctx.lineWidth = 4 * px
+  ctx.lineWidth = 2.2 * px
   ctx.stroke()
   ctx.strokeStyle = ROAD
-  ctx.lineWidth = 2 * px
+  ctx.lineWidth = 1.1 * px
   ctx.stroke()
 
-  // Cities: white dots with an ink ring, bigger for bigger cities
+  // Big cities: white dots with an ink ring
   ctx.strokeStyle = INK
-  ctx.lineWidth = 1.2 * px
+  ctx.lineWidth = 0.8 * px
   for (const p of places?.places ?? []) {
     if (p.pop < CITY_MIN_POP) continue
     const [x, y] = toPx(b, p.lon, p.lat)
     ctx.beginPath()
-    ctx.arc(x, y, (p.pop >= 1_000_000 ? 3.6 : p.pop >= 300_000 ? 2.8 : 2.1) * px, 0, Math.PI * 2)
+    ctx.arc(x, y, (p.pop >= 1_000_000 ? 2.4 : 1.7) * px, 0, Math.PI * 2)
     ctx.fillStyle = CITY
     ctx.fill()
     ctx.stroke()
@@ -144,7 +142,7 @@ async function buildMapImage(): Promise<MapImage | null> {
   // Monuments: small gold diamonds
   for (const lm of landmarks?.landmarks ?? []) {
     const [x, y] = toPx(b, lm.lon, lm.lat)
-    const r = 3.2 * px
+    const r = 2.2 * px
     ctx.beginPath()
     ctx.moveTo(x, y - r)
     ctx.lineTo(x + r, y)
@@ -162,7 +160,7 @@ async function buildMapImage(): Promise<MapImage | null> {
 let mapImagePromise: Promise<MapImage | null> | null = null
 const loadMapImage = () => (mapImagePromise ??= buildMapImage())
 
-/** The detective: a red arrow with an ink outline, pointing up before rotation. */
+/** The detective: a red arrow with a white halo and ink outline, pointing up before rotation. */
 function drawArrow(ctx: CanvasRenderingContext2D, size: number) {
   ctx.beginPath()
   ctx.moveTo(0, -size)
@@ -170,12 +168,15 @@ function drawArrow(ctx: CanvasRenderingContext2D, size: number) {
   ctx.lineTo(0, size * 0.38)
   ctx.lineTo(-size * 0.72, size * 0.75)
   ctx.closePath()
-  ctx.fillStyle = ARROW
-  ctx.fill()
   ctx.lineJoin = 'round'
-  ctx.lineWidth = size * 0.28
+  ctx.lineWidth = size * 0.7
+  ctx.strokeStyle = '#ffffff'
+  ctx.stroke()
+  ctx.lineWidth = size * 0.3
   ctx.strokeStyle = INK
   ctx.stroke()
+  ctx.fillStyle = ARROW
+  ctx.fill()
 }
 
 export default function Minimap({ x, z, heading }: { x: number; z: number; heading: number }) {
@@ -195,31 +196,37 @@ export default function Minimap({ x, z, heading }: { x: number; z: number; headi
     const ctx = canvas?.getContext('2d')
     if (!canvas || !ctx) return
     const dpr = window.devicePixelRatio || 1
-    const cssSize = canvas.clientWidth
-    const size = Math.round(cssSize * dpr)
-    if (canvas.width !== size || canvas.height !== size) canvas.width = canvas.height = size
+    const w = Math.round(canvas.clientWidth * dpr)
+    const h = Math.round(canvas.clientHeight * dpr)
+    if (!w || !h) return
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w
+      canvas.height = h
+    }
 
     ctx.setTransform(1, 0, 0, 1, 0, 0)
     ctx.fillStyle = SEA
-    ctx.fillRect(0, 0, size, size)
-    if (image) {
-      // World units -> offscreen pixels, then offscreen pixels -> device pixels of this canvas
-      const ox = ((x / UNITS_PER_KM) - image.bounds.west * KM_PER_DEG_LON) * PX_PER_KM
-      const oz = ((z / UNITS_PER_KM) + image.bounds.north * KM_PER_DEG_LAT) * PX_PER_KM
-      const scale = dpr / (PX_PER_KM * KM_PER_CSS_PX)
-      ctx.imageSmoothingEnabled = true
-      ctx.setTransform(scale, 0, 0, scale, size / 2 - ox * scale, size / 2 - oz * scale)
-      ctx.drawImage(image.canvas, 0, 0)
-    }
+    ctx.fillRect(0, 0, w, h)
+    if (!image) return
+    // The whole map image is stretched to the canvas (same aspect ratio, set in CSS)
+    const scale = w / image.canvas.width
+    ctx.imageSmoothingEnabled = true
+    ctx.imageSmoothingQuality = 'high'
+    ctx.drawImage(image.canvas, 0, 0, w, image.canvas.height * scale)
+
+    // World units -> offscreen pixels -> device pixels of this canvas
+    const ax = ((x / UNITS_PER_KM) - image.bounds.west * KM_PER_DEG_LON) * PX_PER_KM * scale
+    const ay = ((z / UNITS_PER_KM) + image.bounds.north * KM_PER_DEG_LAT) * PX_PER_KM * scale
     // Heading 0 faces north (screen up); forward is (-sin h, -cos h), so the arrow turns by -h
-    ctx.setTransform(dpr, 0, 0, dpr, size / 2, size / 2)
+    ctx.setTransform(dpr, 0, 0, dpr, ax, ay)
     ctx.rotate(-heading)
-    drawArrow(ctx, Math.max(7, cssSize * 0.055))
+    drawArrow(ctx, Math.max(6, canvas.clientWidth * 0.04))
   }, [image, x, z, heading])
 
+  const aspect = image ? `${image.canvas.width} / ${image.canvas.height}` : undefined
   return (
     <div className="minimap" aria-hidden="true">
-      <canvas ref={canvasRef} className="minimap__canvas" />
+      <canvas ref={canvasRef} className="minimap__canvas" style={{ aspectRatio: aspect }} />
       <span className="minimap__north">N</span>
     </div>
   )
