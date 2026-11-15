@@ -139,6 +139,8 @@ export function buildToyMap(
           const lit = (-hx * SUN_DIRECTION.x + SUN_DIRECTION.y - hz * SUN_DIRECTION.z) / len / SUN_DIRECTION.y
           c = scale(c, Math.min(HILLSHADE_MAX, Math.max(HILLSHADE_MIN, 1 + (lit - 1) * HILLSHADE)))
         }
+        // Rivers run on a little way into the neighbouring land (map/rivers.ts EXTEND_KM)
+        if (rivers) c = paintRiver(c, rivers.edge[i], rivers.halfWidth[i], pxPerKm)
       } else if (!countryLand[i]) {
         // ---- MAR: tres bandas planas + dos líneas de espuma ----
         const dl = distToLand[i]

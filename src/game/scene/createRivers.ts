@@ -9,10 +9,11 @@
 // - mouth: the ribbon runs a little past the coast, drops to the sea and dissolves into it with a
 //   comic halftone fade in the coastal sea colour;
 // - join: a tributary ends inside the main river, just under its water level, so they merge;
-// - cut (zone edge, end of the explored land, or a spot without a channel): a round end.
+// - fade: it ran on a little into a neighbouring country; it narrows and dissolves (halftone);
+// - cut (zone edge, end of the land, or a spot without a channel): a round end.
 import * as THREE from 'three'
 import type { River, RiverEnd } from '../map/mapData'
-import { chaikin, channelDepth, riverHalfWidthKm, riverWidthScale } from '../map/rivers'
+import { chaikin, channelDepth, DOWNSTREAM, riverHalfWidthKm, riverWidthScale } from '../map/rivers'
 import { lonLatToWorld, SEA_Y, UNITS_PER_KM } from '../map/projection'
 import { SEA } from '../map/palette'
 
@@ -29,7 +30,7 @@ const ANIM_FPS = 12
 /** Segments of the half circle that rounds each end of a ribbon. */
 const CAP_SEGMENTS = 8
 /** Mouths: how far (cross sections) to look past the river end for the sea, and how many sea sections to add. */
-const MOUTH_SEARCH = 3
+const MOUTH_SEARCH = 5
 const MOUTH_SEA_SECTIONS = 4
 /** Mouths: the water fades into the sea over this distance (world units) before the ribbon end. */
 const MOUTH_FADE = 14
@@ -37,6 +38,10 @@ const MOUTH_FADE = 14
 const MOUTH_LEVEL = 0.08
 /** Mouths: cross sections before the coast over which the water glides down to the sea. */
 const MOUTH_RAMP = 5
+/** A gap of sea this short (cross sections) between two stretches of land is bridged by the water. */
+const INLET_SECTIONS = 8
+/** Fade ends (into a neighbouring country): the water dissolves over this distance (world units). */
+const FADE_END = 48
 /** Joins: the tributary ends this far below the main river's water, so the main ribbon covers the seam. */
 const JOIN_DROP = 0.3
 /** The ground this far (world units) outside the ribbon is the natural bank: water never rises above it. */
@@ -47,6 +52,8 @@ const MIN_WATER = 0.08
 interface RiverGround {
   heightAt: (x: number, z: number) => number
   isExploredLand: (x: number, z: number) => boolean
+  /** Land with real relief where rivers may run: the country and its neighbours (defaults to isExploredLand). */
+  isRiverLand?: (x: number, z: number) => boolean
 }
 
 type XZ = [number, number]
@@ -105,11 +112,10 @@ function tangent(pts: XZ[], i: number): XZ {
   return [tx / tl, tz / tl]
 }
 
-/** Which end flows into the other: higher score = further downstream. */
-const DOWNSTREAM: Record<RiverEnd, number> = { source: 0, cut: 1, join: 2, mouth: 3 }
-
 export function createRivers(rivers: River[] | undefined, ground: RiverGround) {
-  const isSea = (x: number, z: number) => !ground.isExploredLand(x, z) && Math.abs(ground.heightAt(x, z) - SEA_Y) < 0.05
+  const isLand = ground.isRiverLand ?? ground.isExploredLand
+  // (the height right at the coast blends the sea with the land beside it, kept >= SEA_Y + 0.3)
+  const isSea = (x: number, z: number) => !isLand(x, z) && Math.abs(ground.heightAt(x, z) - SEA_Y) < 0.25
   const runs: Run[] = []
 
   // ---- 1) Cut every river line into runs over explored land, labelled at both ends ----
@@ -131,10 +137,16 @@ export function createRivers(rivers: River[] | undefined, ground: RiverGround) {
       const totalKm = along[n - 1] / UNITS_PER_KM
       const hw = along.map((a) => hwFull * riverWidthScale(a / UNITS_PER_KM, totalKm, ends))
 
-      // Runs of consecutive points on explored land
+      // Runs of consecutive points on land (the country and the stretch into its neighbours). A
+      // river that crosses a narrow inlet of the sea (the Ebro delta) keeps flowing over it
+      const onLand = pts.map(([x, z]) => isLand(x, z))
+      for (let i = 1, gap = -1; i < n; i++) {
+        if (!onLand[i] && onLand[i - 1]) gap = i
+        if (onLand[i] && !onLand[i - 1] && gap > 0 && i - gap <= INLET_SECTIONS) onLand.fill(true, gap, i)
+      }
       let s = -1
       for (let i = 0; i <= n; i++) {
-        const land = i < n && ground.isExploredLand(pts[i][0], pts[i][1])
+        const land = i < n && onLand[i]
         if (land && s < 0) s = i
         if (!land && s >= 0) {
           if (i - s > 1) {
@@ -283,7 +295,8 @@ export function createRivers(rivers: River[] | undefined, ground: RiverGround) {
         float spring = vSpring.z;                     // 1 on a run that starts at a spring
         float sd = length(vWorld.xz - vSpring.xy);    // distance from that spring
         // (no white water right at the spring, so its rings stay readable on steep slopes)
-        float rapids = smoothstep(0.05, 0.14, vSlope) * (1.0 - vFade) * mix(1.0, smoothstep(10.0, 26.0, sd), spring);
+        // (only on real drops: the gentle slope of a river running downhill stays smooth water)
+        float rapids = smoothstep(0.1, 0.3, vSlope) * (1.0 - vFade) * mix(1.0, smoothstep(10.0, 26.0, sd), spring);
         float speed = mix(14.0, 6.0, vDeep) * (1.0 + rapids * 2.0);
         float v = vAcross * vHalfW;                   // signed distance across (world units)
 
@@ -331,8 +344,8 @@ export function createRivers(rivers: River[] | undefined, ground: RiverGround) {
         // 4) Rapids: blobs of white water where the river runs down a ramp
         float fn = vnoise(vec2((vAlong - uTime * speed * 0.6) * 0.22, v * 0.3));
         fn = 0.6 * fn + 0.4 * vnoise(vec2((vAlong - uTime * speed * 0.9) * 0.5, v * 0.7));
-        float wb = band(mix(0.75, 0.45, rapids), fn);
-        col = mix(col, uFoam, wb * rapids * 0.9);
+        float wb = band(mix(0.85, 0.6, rapids), fn);
+        col = mix(col, uFoam, wb * rapids * 0.8);
 
         // 5) Foam line along the banks (and around the round ends), wobbling with the current
         float wob = 0.05 * sin(vAlong * 0.35 - uTime * 3.0);
@@ -451,6 +464,12 @@ function computeLevels(run: Run, ground: RiverGround) {
     const bank = Math.max(ground.heightAt(x - tz * off, z + tx * off), ground.heightAt(x + tz * off, z - tx * off))
     run.level[i] = Math.min(run.level[i], bank)
   }
+  // Water runs downhill (the carve follows the same rule, see riverProfiles), but never sinks to
+  // the bed: one low spot (a bank lowered by a nearby channel) must not drain the river below it
+  for (let i = 1; i < n; i++) {
+    if (run.sea[i]) continue
+    run.level[i] = Math.max(Math.min(run.level[i], run.level[i - 1]), Math.min(run.level[i], run.bed[i] + depth[i] * 0.2))
+  }
   // Mouths: the last stretch glides down to the sea surface (no rapids) and, from the coast on,
   // fades into the sea
   run.fade = new Array(n).fill(0)
@@ -474,12 +493,26 @@ function computeLevels(run: Run, ground: RiverGround) {
       run.fade[i] = smooth(0, Math.max(seaLen, MOUTH_FADE), dist)
     }
   }
+  // Fade ends (a little way into a neighbouring country): the water dissolves before the end
+  for (const side of [0, 1] as const) {
+    if (run.kinds[side] !== 'fade') continue
+    let dist = 0
+    for (let k = 0; k < n; k++) {
+      const i = side === 0 ? k : n - 1 - k
+      const j = side === 0 ? i - 1 : i + 1
+      if (k > 0) dist += Math.hypot(run.pts[i][0] - run.pts[j][0], run.pts[i][1] - run.pts[j][1])
+      if (dist > FADE_END) break
+      run.fade[i] = Math.max(run.fade[i], 1 - smooth(0, FADE_END, dist))
+    }
+  }
 }
 
 /** Splits a run where its water would be thinner than MIN_WATER (no channel under it). */
 function splitDry(run: Run): Run[] {
   const n = run.pts.length
-  const wet = run.level.map((y, i) => run.sea[i] || y >= run.bed[i] + MIN_WATER)
+  // (the glide down to a mouth counts as wet: the bed by the coast is kept a bit above the sea,
+  // so the water there dips under it for a moment instead of ending before the beach)
+  const wet = run.level.map((y, i) => run.sea[i] || run.calm[i] || y >= run.bed[i] + MIN_WATER)
   if (wet.every(Boolean)) return [run]
   const out: Run[] = []
   let s = -1

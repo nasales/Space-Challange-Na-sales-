@@ -7,7 +7,7 @@ import { loadWorldData } from './map/worldData'
 import { buildToyMap } from './map/buildToyMap'
 import { buildWorldTexture } from './map/buildWorldTexture'
 import { addRelief, smoothHeights } from './map/terrace'
-import { lonLatToWorld, worldToLonLat, UNITS_PER_KM } from './map/projection'
+import { lonLatToWorld, worldToLonLat, UNITS_PER_DEG_LON, UNITS_PER_KM } from './map/projection'
 import { createScene } from './scene/createScene'
 import { createTerrain } from './scene/createTerrain'
 import { createWorldTerrain } from './scene/createWorldTerrain'
@@ -33,6 +33,7 @@ import { createKeyboard } from './input/keyboard'
 import { nearestPlace } from './location/nearestPlace'
 import { createLandmarks, loadLandmarks } from './landmarks/createLandmarks'
 import { bendRiversAround, prepareRivers } from './map/rivers'
+import { computeExploredRegion } from './map/exploredRegion'
 import { createRivers } from './scene/createRivers'
 import { loadRoads, roadsInBounds } from './roads/roadData'
 import { createRoads } from './roads/createRoads'
@@ -211,16 +212,20 @@ export default function GameView({
         const zoneStart = zoneShare.map((_, i) => zoneShare.slice(0, i).reduce((a, b) => a + b, 0))
         for (const [i, z] of explored.zones.entries()) {
           const zoneProgress = (part: number) => progress(ZONES_FROM + (ZONES_TO - ZONES_FROM) * (zoneStart[i] + zoneShare[i] * part))
-          // Rivers: gaps closed, ends labelled (spring / mouth / confluence), then bent around monuments
-          const zone = z.rivers ? { ...z, rivers: bendRiversAround(prepareRivers(z.rivers, z), clearings) } : z
           // Smoothed heights plus extra relief (slopes everywhere): same grid for texture and mesh
-          const heights = addRelief(smoothHeights(zone.heights, zone.heightWidth, zone.heightHeight), zone.heightWidth, zone.heightHeight)
-          landmarks.flattenTerrain(zone, heights) // explanadas bajo los monumentos
+          const heights = addRelief(smoothHeights(z.heights, z.heightWidth, z.heightHeight), z.heightWidth, z.heightHeight)
+          landmarks.flattenTerrain(z, heights) // explanadas bajo los monumentos
+          // Country, neighbouring land and coastal sea on the height grid (shared with the terrain mesh)
+          const cellsPerKm = z.heightWidth / (((z.bounds.east - z.bounds.west) * UNITS_PER_DEG_LON) / UNITS_PER_KM)
+          const region = computeExploredRegion(country, z.bounds, heights, z.heightWidth, z.heightHeight, cellsPerKm, neighbours)
+          // Rivers: gaps closed, cut a little way into the neighbouring countries, ends labelled
+          // (spring / mouth / confluence / fade), then bent around monuments
+          const zone = z.rivers ? { ...z, rivers: bendRiversAround(prepareRivers(z.rivers, z, { ...region, heights }), clearings) } : z
           await zoneProgress(0.07)
           const textureWidth = Math.min(4096, zone.heightWidth * 2)
           const texture = makeTexture(buildToyMap(zone, heights, country, textureWidth, neighbours), renderer)
           await zoneProgress(0.7)
-          const terrain = createTerrain(zone, heights, country, texture, clearings, neighbours)
+          const terrain = createTerrain(zone, heights, country, texture, clearings, neighbours, region)
           scene.add(terrain.group)
           await zoneProgress(0.92)
           const water = createRivers(zone.rivers, terrain) // animated water inside the carved channels

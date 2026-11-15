@@ -38,6 +38,8 @@ export interface ExploredRegion {
   shallowKm: Float32Array
   /** Neighbouring land shown grey (0 = none; 1 = full relief; in between it blends into the grey world) */
   neighbourLand: Float32Array
+  /** Distance (km) from each cell to the country's land (0 on it); rivers run on a little past the border */
+  countryKm: Float32Array
 }
 
 /**
@@ -73,6 +75,8 @@ export function computeExploredRegion(
   // Neighbouring land near the country: grey relief that fades into the grey world (NEIGHBOUR_KM)
   const neighbourLand = new Float32Array(n)
   const toCountry = distanceTo(countryLand, width, height)
+  const countryKm = new Float32Array(n)
+  for (let i = 0; i < n; i++) countryKm[i] = toCountry[i] / cellsPerKm
   const smoothstep = (a: number, b: number, v: number) => {
     const t = Math.min(1, Math.max(0, (v - a) / (b - a)))
     return t * t * (3 - 2 * t)
@@ -106,5 +110,5 @@ export function computeExploredRegion(
     shallowKm[i] = sea ? d / cellsPerKm - COAST_SHALLOWS_KM : Infinity
     if (sea && !countryLand[i] && shallowKm[i] <= 0) ford[i] = 1
   }
-  return { countryLand, region, ford, shallowKm, neighbourLand }
+  return { countryLand, region, ford, shallowKm, neighbourLand, countryKm }
 }

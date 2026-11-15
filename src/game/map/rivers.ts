@@ -21,6 +21,10 @@ const CARVE_BASE = 1.2
 const CARVE_PER_KM = 2.2
 /** The carve fades out this far (km) outside the water edge: gentle banks, no cliffs. */
 const CARVE_BANK_KM = 1.2
+/** Where a river cuts deeper to keep running downhill, the banks widen this much (km) per world unit... */
+const CARVE_BANK_PER_UNIT = 0.08
+/** ...up to this width (km); must stay below FIELD_REACH_KM. */
+const CARVE_BANK_MAX_KM = 3.2
 
 /** Reach (km) of the grid edge field returned by riverCarveDepth: placement margins must stay below it. */
 export const FIELD_REACH_KM = 4
@@ -57,12 +61,31 @@ const kmPerDegLon = (lat: number) => 111.32 * Math.cos((lat * Math.PI) / 180)
 const JOIN_KM = 1.5
 /** A free end with sea (height <= 0) within this distance (km) is a river mouth. */
 const MOUTH_SEARCH_KM = 1.5
+/** The lower free end of a line with the sea within this distance (km) is run on into it (a mouth). */
+const MOUTH_REACH_KM = 8
+/** Mouths end this far (km) past the coast, so the water mesh finds the sea right ahead. */
+const MOUTH_PAST_KM = 0.6
+/** Radius (km) of the circle that must be half sea for a mouth (tiny pockets below 0 m do not count). */
+const OPEN_SEA_KM = 0.5
 /** Springs: the water starts at this share of the full width and reaches it after SOURCE_TAPER_KM. */
 const SOURCE_MIN = 0.35
 const SOURCE_TAPER_KM = 3
 /** Mouths: the water widens up to MOUTH_WIDEN times over the last MOUTH_KM (a small estuary). */
 const MOUTH_WIDEN = 1.3
 const MOUTH_KM = 2
+/**
+ * Rivers run on this far (km) into a neighbouring country (Portugal, France, Andorra), then stop;
+ * over the last FADE_KM they narrow (and the water mesh fades out), so they do not end in a cliff.
+ */
+export const EXTEND_KM = 40
+const FADE_KM = 12
+const FADE_MIN = 0.3
+/** Points of a line are checked this often (km) when it is trimmed at EXTEND_KM. */
+const TRIM_STEP_KM = 1
+/** Line pieces with less than this much (km) on the country's own land are dropped. */
+const MIN_HOME_KM = 3
+/** The smoothed source lines keep their shape within this distance (km). */
+const SMOOTH_TOL_KM = 0.02
 
 type LonLat = [number, number]
 
@@ -90,13 +113,33 @@ function nearestOnLine(p: LonLat, line: LonLat[]): { point: LonLat; d: number } 
   return { point: best, d: bestD }
 }
 
+/** Where rivers may run, on the zone's height grid (see computeExploredRegion). */
+export interface RiverReach {
+  /** 1 = the country's own land */
+  countryLand: Uint8Array
+  /** Distance (km) from each cell to the country's land */
+  countryKm: Float32Array
+  /**
+   * The heights (m) the terrain is built from (smoothed): sea and land as the game draws them.
+   * The raw grid puts marshes and lagoons (Doñana, the Albufera) at or below 0 m, so a mouth
+   * found there would end in a blob on dry ground.
+   */
+  heights: Float32Array
+}
+
 /**
  * Cleans the source lines and labels their ends:
  * 1) pieces of the same river with a small gap between their ends become one line;
+ * 1b) with `reach`: lines are cut EXTEND_KM into the neighbouring countries (those ends `fade`),
+ *     and pieces that never touch the country itself are dropped;
  * 2) an end close to another river's line is extended onto it (`join`, a confluence);
  * 3) the other ends are a `mouth` if the sea is next to them, a `cut` at the zone edge, else a `source`.
  */
-export function prepareRivers(rivers: River[], zone: Pick<ZoneData, 'bounds' | 'heights' | 'heightWidth' | 'heightHeight'>): River[] {
+export function prepareRivers(
+  rivers: River[],
+  zone: Pick<ZoneData, 'bounds' | 'heights' | 'heightWidth' | 'heightHeight'>,
+  reach?: RiverReach,
+): River[] {
   const { bounds: b, heights, heightWidth: gw, heightHeight: gh } = zone
 
   // 1) Merge pieces of the same river
@@ -122,34 +165,86 @@ export function prepareRivers(rivers: River[], zone: Pick<ZoneData, 'bounds' | '
         }
       }
     }
-    return { ...river, lines }
+    // Round the corners of the coarse source lines (points ~8 km apart) now: the later steps
+    // densify some stretches (trim, monument bends, separation), and their own smoothing then only
+    // rounds the corners at that small scale, leaving sharp kinks
+    return { ...river, lines: lines.map((l) => simplifyKm(chaikin(l, 4), SMOOTH_TOL_KM)) }
   })
 
-  // 2) + 3) Label (and extend) the ends
-  const all = merged.flatMap((r, ri) => r.lines.map((line, li) => ({ ri, li, line })))
-  const heightAt = ([lon, lat]: LonLat) => {
+  const cellOf =([lon, lat]: LonLat) => {
     const c = Math.round(((lon - b.west) / (b.east - b.west)) * (gw - 1))
     const r = Math.round(((b.north - lat) / (b.north - b.south)) * (gh - 1))
-    return c < 0 || r < 0 || c >= gw || r >= gh ? NaN : heights[r * gw + c]
+    return c < 0 || r < 0 || c >= gw || r >= gh ? -1 : r * gw + c
   }
-  const seaNear = (p: LonLat, searchKm = MOUTH_SEARCH_KM) => {
+
+  // 1b) Trim to the country plus EXTEND_KM of its neighbours (trimmed ends fade out)
+  const fades = new Map<LonLat[], [boolean, boolean]>()
+  const kept = !reach
+    ? merged
+    : merged
+        .map((river) => {
+          const lines: LonLat[][] = []
+          for (const line of river.lines) {
+            for (const piece of trimLine(line, cellOf, reach)) {
+              lines.push(piece.line)
+              fades.set(piece.line, piece.fade)
+            }
+          }
+          return { ...river, lines }
+        })
+        .filter((r) => r.lines.length > 0)
+
+  // 2) + 3) Label (and extend) the ends
+  const all = kept.flatMap((r, ri) => r.lines.map((line, li) => ({ ri, li, line })))
+  const grid = reach?.heights ?? heights
+  const heightAt = (p: LonLat) => {
+    const i = cellOf(p)
+    return i < 0 ? NaN : grid[i]
+  }
+  /** Open water, not a puddle below 0 m: at least half of a small circle around `q` is sea too. */
+  const openSea = (q: LonLat) => {
+    if (!(heightAt(q) <= 0)) return false
+    const kx = kmPerDegLon(q[1])
+    let wet = 0
+    for (let k = 0; k < 12; k++) {
+      const a = (k / 12) * Math.PI * 2
+      if (heightAt([q[0] + (Math.cos(a) * OPEN_SEA_KM) / kx, q[1] + (Math.sin(a) * OPEN_SEA_KM) / KM_LAT]) <= 0) wet++
+    }
+    return wet >= 6
+  }
+  /** Nearest open sea point within `searchKm` (rings 0.25 km apart), or null. */
+  const nearestSea = (p: LonLat, searchKm = MOUTH_SEARCH_KM): LonLat | null => {
     const kx = kmPerDegLon(p[1])
-    for (let ring = 0; ring <= 3; ring++) {
-      const rKm = (ring / 3) * searchKm
-      for (let k = 0; k < (ring === 0 ? 1 : 12); k++) {
-        const a = (k / 12) * Math.PI * 2
-        if (heightAt([p[0] + (Math.cos(a) * rKm) / kx, p[1] + (Math.sin(a) * rKm) / KM_LAT]) <= 0) return true
+    const rings = Math.ceil(searchKm / 0.25)
+    for (let ring = 0; ring <= rings; ring++) {
+      const rKm = (ring / rings) * searchKm
+      const count = ring === 0 ? 1 : Math.max(12, Math.round(rKm * 8))
+      for (let k = 0; k < count; k++) {
+        const a = (k / count) * Math.PI * 2
+        const q: LonLat = [p[0] + (Math.cos(a) * rKm) / kx, p[1] + (Math.sin(a) * rKm) / KM_LAT]
+        if (openSea(q)) return q
       }
     }
-    return false
+    return null
+  }
+  /** Runs the end of `out` on `side` straight out into the sea at `sea` (a little past the coast). */
+  const reachSea = (out: LonLat[], side: 0 | 1, sea: LonLat) => {
+    const end = side === 0 ? out[0] : out[out.length - 1]
+    const d = distKm(end, sea)
+    if (d < 0.3) return
+    const past: LonLat = [sea[0] + ((sea[0] - end[0]) * MOUTH_PAST_KM) / d, sea[1] + ((sea[1] - end[1]) * MOUTH_PAST_KM) / d]
+    if (side === 0) out.unshift(past, sea)
+    else out.push(sea, past)
   }
   const inZone = ([lon, lat]: LonLat) => lon > b.west && lon < b.east && lat > b.south && lat < b.north
 
-  return merged.map((river, ri) => {
+  return kept.map((river, ri) => {
     const ends: [RiverEnd, RiverEnd][] = []
     const lines = river.lines.map((line, li) => {
       const out = line.slice()
+      const fade = fades.get(line)
       const kinds = ([0, 1] as const).map((side): RiverEnd => {
+        if (fade?.[side]) return 'fade'
         const p = side === 0 ? line[0] : line[line.length - 1]
         let best: { point: LonLat; d: number } | null = null
         for (const o of all) {
@@ -165,12 +260,23 @@ export function prepareRivers(rivers: River[], zone: Pick<ZoneData, 'bounds' | '
           return 'join'
         }
         if (!inZone(p)) return 'cut'
-        return seaNear(p) ? 'mouth' : 'source'
+        return nearestSea(p) ? 'mouth' : 'source'
       })
       // A river cannot rise at both ends: the lower one is its mouth (sea a bit further away) or a plain end
-      if (kinds[0] === 'source' && kinds[1] === 'source') {
-        const low = (heightAt(line[0]) || 0) < (heightAt(line[line.length - 1]) || 0) ? 0 : 1
-        kinds[low] = seaNear(low === 0 ? line[0] : line[line.length - 1], MOUTH_SEARCH_KM * 4) ? 'mouth' : 'cut'
+      const h0 = heightAt(line[0]) || 0, h1 = heightAt(line[line.length - 1]) || 0
+      if (kinds[0] === 'source' && kinds[1] === 'source') kinds[h0 < h1 ? 0 : 1] = 'cut'
+      // A low end a few km from the coast is a mouth: the source line just stops short of the sea,
+      // so it is run on into it (else the water would end in a round blob by the beach)
+      for (const side of [0, 1] as const) {
+        const k = kinds[side]
+        const lower = side === 0 ? h0 <= h1 : h1 <= h0
+        if (!(k === 'mouth' || ((k === 'cut' || k === 'source') && lower))) continue
+        const p = side === 0 ? line[0] : line[line.length - 1]
+        if (!inZone(p)) continue
+        const sea = nearestSea(p, k === 'mouth' ? MOUTH_SEARCH_KM : MOUTH_REACH_KM)
+        if (!sea) continue
+        reachSea(out, side, sea)
+        kinds[side] = 'mouth'
       }
       ends.push([kinds[0], kinds[1]])
       return out
@@ -179,9 +285,72 @@ export function prepareRivers(rivers: River[], zone: Pick<ZoneData, 'bounds' | '
   })
 }
 
+/**
+ * Cuts a line where it goes further than EXTEND_KM from the country (on land or sea). Returns the
+ * pieces that run on the country's own land for at least MIN_HOME_KM, and which of their ends
+ * were cut here (those ends fade out).
+ */
+function trimLine(line: LonLat[], cellOf: (p: LonLat) => number, reach: RiverReach) {
+  // Densify, so the cut lands within TRIM_STEP_KM of the limit
+  const dense: LonLat[] = [line[0]]
+  for (let i = 1; i < line.length; i++) {
+    const n = Math.max(1, Math.ceil(distKm(line[i - 1], line[i]) / TRIM_STEP_KM))
+    for (let k = 1; k <= n; k++) {
+      const t = k / n
+      dense.push(k === n ? line[i] : [line[i - 1][0] + (line[i][0] - line[i - 1][0]) * t, line[i - 1][1] + (line[i][1] - line[i - 1][1]) * t])
+    }
+  }
+  const allowed = dense.map((p) => {
+    const i = cellOf(p)
+    return i >= 0 && reach.countryKm[i] <= EXTEND_KM
+  })
+  const out: { line: LonLat[]; fade: [boolean, boolean] }[] = []
+  let s = -1
+  for (let i = 0; i <= dense.length; i++) {
+    const ok = i < dense.length && allowed[i]
+    if (ok && s < 0) s = i
+    if (!ok && s >= 0) {
+      const piece = dense.slice(s, i)
+      let home = 0
+      for (let k = 1; k < piece.length; k++) {
+        const c = cellOf(piece[k])
+        if (c >= 0 && reach.countryLand[c]) home += distKm(piece[k - 1], piece[k])
+      }
+      if (piece.length >= 2 && home >= MIN_HOME_KM) out.push({ line: simplifyKm(piece, SMOOTH_TOL_KM), fade: [s > 0, i < dense.length] })
+      s = -1
+    }
+  }
+  return out
+}
+
+/** Drops the points the densify step added back (Douglas-Peucker, tolerance in km; ends kept). */
+function simplifyKm(line: LonLat[], tolKm: number): LonLat[] {
+  if (line.length <= 2) return line
+  const keep = new Uint8Array(line.length)
+  keep[0] = keep[line.length - 1] = 1
+  const stack: [number, number][] = [[0, line.length - 1]]
+  while (stack.length) {
+    const [a, e] = stack.pop()!
+    let maxD = -1, idx = -1
+    for (let i = a + 1; i < e; i++) {
+      const d = nearestOnLine(line[i], [line[a], line[e]]).d
+      if (d > maxD) {
+        maxD = d
+        idx = i
+      }
+    }
+    if (maxD > tolKm) {
+      keep[idx] = 1
+      stack.push([a, idx], [idx, e])
+    }
+  }
+  return line.filter((_, i) => keep[i])
+}
+
 /** Width scale (1 = normal) at `dKm` from a line end of the given kind. */
 function endWidthScale(dKm: number, kind: RiverEnd): number {
   if (kind === 'source') return SOURCE_MIN + (1 - SOURCE_MIN) * smooth(0, SOURCE_TAPER_KM, dKm)
+  if (kind === 'fade') return FADE_MIN + (1 - FADE_MIN) * smooth(0, FADE_KM, dKm)
   if (kind === 'mouth') return 1 + (MOUTH_WIDEN - 1) * (1 - smooth(0, MOUTH_KM, dKm))
   return 1
 }
@@ -197,6 +366,8 @@ export interface RiverField {
   edge: Float32Array
   /** Half width (px) of the river that owns each pixel (0 = no river nearby). */
   halfWidth: Float32Array
+  /** Extra carve depth (world units) of the river that owns each pixel (only with `extraDepth`). */
+  extra: Float32Array
 }
 
 /**
@@ -213,16 +384,20 @@ export function rasterizeRivers(
   reachKm: number,
   /** Minimum half width (px) for ranks 1–2, so big rivers still read in the far overview. */
   minHalfPx = 0,
+  /** Per river, per line, per point of chaikin(line, 3): extra carve depth (see riverProfiles). */
+  extraDepth?: number[][][],
 ): RiverField {
   const edge = new Float32Array(w * h).fill(Infinity)
   const halfWidth = new Float32Array(w * h)
+  const extra = new Float32Array(extraDepth ? w * h : 0)
   const sx = (w - 1) / (bounds.east - bounds.west)
   const sy = (h - 1) / (bounds.north - bounds.south)
 
-  for (const river of rivers) {
+  rivers.forEach((river, ri) => {
     const hwFull = Math.max(riverHalfWidthKm(river.rank) * pxPerKm, river.rank <= 2 ? minHalfPx : 0)
     const reachPx = reachKm * pxPerKm
     river.lines.forEach((line, li) => {
+      const ex = extraDepth?.[ri]?.[li]
       const pts = chaikin(line, 3).map(([lon, lat]) => [(lon - bounds.west) * sx, (bounds.north - lat) * sy])
       // Half width at each point: narrow at springs, wider at mouths (same profile as the water mesh)
       const along = [0]
@@ -242,20 +417,56 @@ export function rasterizeRivers(
         for (let y = y0; y <= y1; y++) {
           for (let x = x0; x <= x1; x++) {
             const t = Math.min(1, Math.max(0, ((x - ax) * dx + (y - ay) * dy) / len2))
-            const ex = x - (ax + t * dx), ey = y - (ay + t * dy)
+            const ox = x - (ax + t * dx), oy = y - (ay + t * dy)
             const hw = ha + (hb - ha) * t
-            const e = Math.sqrt(ex * ex + ey * ey) - hw
+            const e = Math.sqrt(ox * ox + oy * oy) - hw
             const i = y * w + x
             if (e < edge[i] && e < reachPx) {
               edge[i] = e
               halfWidth[i] = hw
+              if (ex) extra[i] = ex[s] + (ex[s + 1] - ex[s]) * t
             }
           }
         }
       }
     })
-  }
-  return { edge, halfWidth }
+  })
+  return { edge, halfWidth, extra }
+}
+
+/** Which end of a line is downstream, by kind: higher = further downstream (same as createRivers). */
+export const DOWNSTREAM: Record<RiverEnd, number> = { source: 0, cut: 1, fade: 1, join: 2, mouth: 3 }
+
+/** Deepest extra carve (world units, about 380 m of real relief): a river never cuts deeper. */
+const MAX_EXTRA = 24
+
+/**
+ * How much deeper than the usual channel each river must cut so that it only ever runs downhill.
+ * The source lines (Natural Earth) do not follow the valleys of the height grid exactly, and the
+ * relief is exaggerated, so a river would often climb over a ridge; the water then broke into
+ * pieces or floated. Along each line (at the points of chaikin(line, 3)), from upstream to
+ * downstream, the bed follows the lowest ground met so far: extra = ground - that minimum.
+ * @param groundY uncarved ground height (world units) at a lon/lat
+ */
+export function riverProfiles(rivers: River[], groundY: (lon: number, lat: number) => number): number[][][] {
+  return rivers.map((river) =>
+    river.lines.map((line, li) => {
+      const pts = chaikin(line, 3)
+      const y = pts.map(([lon, lat]) => groundY(lon, lat))
+      const ends = river.ends?.[li] ?? (['cut', 'cut'] as [RiverEnd, RiverEnd])
+      const d = DOWNSTREAM[ends[1]] - DOWNSTREAM[ends[0]]
+      const forward = d > 0 || (d === 0 && y[0] >= y[y.length - 1])
+      const order = forward ? y.map((_, i) => i) : y.map((_, i) => y.length - 1 - i)
+      const extra = new Array<number>(y.length).fill(0)
+      let low = Infinity
+      for (const i of order) {
+        if (!Number.isFinite(y[i])) continue
+        low = Math.min(low, y[i])
+        extra[i] = Math.min(MAX_EXTRA, y[i] - low)
+      }
+      return extra
+    }),
+  )
 }
 
 /**
@@ -273,23 +484,12 @@ export interface RiverClearing {
 }
 
 /**
- * How far a monument bends a river: from the target distance out to target + max(DETOUR_MIN_KM,
- * DETOUR_SPREAD x target). The bend is spread over many km, so it reads as a natural meander and
+ * How long a monument's bend is: the river moves aside over max(DETOUR_MIN_KM, DETOUR_SPREAD x
+ * clearance) km of its course on each side of the monument, so it reads as a natural meander and
  * not as a river hugging the building.
  */
 const DETOUR_SPREAD = 3
 const DETOUR_MIN_KM = 6
-
-/**
- * Wide smooth push: a point at distance d (< outer) from a clearing moves out to
- * d + target * (1 - d / outer)^2. It starts at `target`, meets the identity at `outer` with the same
- * slope (no kink where the bend ends) and is monotonic while outer > 2 x target (always true with
- * the spread above), so the order of the points and of nearby rivers is kept.
- */
-function pushedDistance(d: number, target: number, outer: number) {
-  return d >= outer ? d : d + target * (1 - d / outer) ** 2
-}
-const detourOuter = (target: number) => target + Math.max(DETOUR_MIN_KM, DETOUR_SPREAD * target)
 
 /** Same equirectangular projection as map/projection.ts (km per degree, reference latitude 40). */
 const KM_PER_DEG_LON = 111.32 * Math.cos((40 * Math.PI) / 180)
@@ -304,12 +504,6 @@ function toRect(c: RiverClearing, lon: number, lat: number) {
   const dx = (lon - c.lon) * KM_PER_DEG_LON, dz = -(lat - c.lat) * KM_PER_DEG_LAT
   return { u: dx * Math.cos(a) - dz * Math.sin(a), v: dx * Math.sin(a) + dz * Math.cos(a) }
 }
-function fromRect(c: RiverClearing, u: number, v: number): [number, number] {
-  const a = c.rect!.angle
-  const dx = u * Math.cos(a) + v * Math.sin(a), dz = -u * Math.sin(a) + v * Math.cos(a)
-  return [c.lon + dx / KM_PER_DEG_LON, c.lat - dz / KM_PER_DEG_LAT]
-}
-
 /** Distance (km) from (lon, lat) to the edge of a rectangular clearing's footprint (0 inside). */
 export function rectClearingDistanceKm(c: RiverClearing, lon: number, lat: number) {
   const { u, v } = toRect(c, lon, lat)
@@ -317,103 +511,147 @@ export function rectClearingDistanceKm(c: RiverClearing, lon: number, lat: numbe
 }
 
 /**
- * Pushes a point out of a rectangular clearing: a point whose distance d to the footprint edge is
- * below `outer` slides along the ray from the centre until its distance is
- * pushedDistance(d, target, outer). Rays from the centre of a convex shape cross every
- * distance contour once, so the map is continuous (a river passing beside the centre wraps around
- * the near side, it never jumps across) and keeps the order of the points.
- */
-function pushOutOfRect(c: RiverClearing, lon: number, lat: number, target: number, outer: number): [number, number] {
-  const { halfWKm: a, halfDKm: b } = c.rect!
-  const dist = (u: number, v: number) => Math.hypot(Math.max(0, Math.abs(u) - a), Math.max(0, Math.abs(v) - b))
-  const { u, v } = toRect(c, lon, lat)
-  const d = dist(u, v)
-  if (d >= outer) return [lon, lat]
-  const nd = pushedDistance(d, target, outer)
-  const len = Math.hypot(u, v)
-  const du = len > 1e-9 ? u / len : 0, dv = len > 1e-9 ? v / len : 1
-  let lo = 0, hi = Math.hypot(a, b) + nd + 1
-  for (let i = 0; i < 32; i++) {
-    const t = (lo + hi) / 2
-    if (dist(du * t, dv * t) < nd) lo = t
-    else hi = t
-  }
-  return fromRect(c, du * hi, dv * hi)
-}
-
-/**
  * Bends the rivers around the clearings, then keeps them from overlapping each other.
- * 1) Points near a clearing are pushed out along the ray from its centre with a wide smooth
- *    falloff (pushedDistance): the river swings around the monument in a long gentle curve.
- *    The push is one warp of the plane shared by every river, so a tributary still meets its main
- *    river exactly (both move the same way) and two rivers never swap sides. Segments near a
- *    clearing are densified first so long segments cannot cut through it.
- * 2) separateRivers: where two rivers run so close that their water ribbons would overlap (the
- *    cartoon widths are much wider than real rivers, and the warp packs nearby rivers closer),
- *    the smaller one is eased away from the bigger one. Confluences and crossings are left alone.
+ * 1) bendAround: a river that passes too close to a monument moves aside to ONE side (the side it
+ *    already passes on) in a long, smooth bump along its course: a gentle meander, with no corners
+ *    and no risk of splitting the river around both sides of the building.
+ * 2) snapJoins: a tributary whose main river moved is eased onto it again over its last km.
+ * 3) separateRivers: where two rivers run so close that their water ribbons would overlap (the
+ *    cartoon widths are much wider than real rivers), the smaller one is eased away from the
+ *    bigger one. Confluences and crossings are left alone.
  */
 export function bendRiversAround(rivers: River[], clearings: RiverClearing[]): River[] {
-  return separateRivers(bendAroundClearings(rivers, clearings))
+  const bent = clearings.length === 0 ? rivers : rivers.map((river) => {
+    const hw = riverHalfWidthKm(river.rank)
+    return { ...river, lines: river.lines.map((line) => clearings.reduce((l, c) => bendAround(l, c, hw), line)) }
+  })
+  return separateRivers(snapJoins(bent))
 }
 
-function bendAroundClearings(rivers: River[], clearings: RiverClearing[]): River[] {
-  if (clearings.length === 0) return rivers
-  const KM_LAT = 110.57
-  const STEP_KM = 0.3
-  // One warp for all rivers (sized for the widest one), so confluences stay joined
-  const hw = riverHalfWidthKm(1)
-  const zones = clearings.map((c) => {
-    const kmLon = 111.32 * Math.cos((c.lat * Math.PI) / 180)
-    if (c.rect) {
-      // Distances measured from the footprint edge, so the river keeps its margin from the building
-      const target = c.rect.marginKm + hw + BANK_KM
-      const outer = detourOuter(target)
-      return { c, kmLon, target, outer, reach: Math.hypot(c.rect.halfWKm, c.rect.halfDKm) + outer }
-    }
-    const target = c.radiusKm + hw + BANK_KM
-    const outer = detourOuter(target)
-    return { c, kmLon, target, outer, reach: outer }
-  })
-  return rivers.map((river) => {
-    const lines = river.lines.map((line) => {
-      // 1) densify segments that pass near a clearing
-      const dense: [number, number][] = []
-      for (let s = 0; s < line.length; s++) {
-        const [lon, lat] = line[s]
-        dense.push([lon, lat])
-        if (s === line.length - 1) break
-        const [lon2, lat2] = line[s + 1]
-        for (const z of zones) {
-          const ex = (lon2 - lon) * z.kmLon, ey = (lat2 - lat) * KM_LAT
-          const len = Math.hypot(ex, ey)
-          const mx = ((lon + lon2) / 2 - z.c.lon) * z.kmLon, my = ((lat + lat2) / 2 - z.c.lat) * KM_LAT
-          if (Math.hypot(mx, my) > z.reach + len / 2) continue
-          const n = Math.ceil(len / STEP_KM)
-          for (let k = 1; k < n; k++) dense.push([lon + ((lon2 - lon) * k) / n, lat + ((lat2 - lat) * k) / n])
-          break
-        }
+/** Points of a polyline are this far apart (km) where it is bent around a monument. */
+const BEND_STEP_KM = 0.3
+
+/**
+ * Moves the stretch of `line` that passes too close to a clearing sideways, to one side: just far
+ * enough that its water and banks clear the monument's footprint (its real rectangle; monuments
+ * are tens of km long at the cartoon scale) plus margin. The shift is held along the footprint
+ * and fades out smoothly along the river over `spread` km each way (no kink where the bend ends).
+ */
+function bendAround(line: LonLat[], c: RiverClearing, hw: number): LonLat[] {
+  const kx = kmPerDegLon(c.lat)
+  // Clearance from the footprint edge (rectangle) or from the circle (radius includes the margin)
+  const clearance = (c.rect ? c.rect.marginKm : 0) + hw + BANK_KM
+  const toLonLat = ([x, y]: [number, number]): LonLat => [c.lon + x / kx, c.lat + y / KM_LAT]
+  const gap = (p: [number, number]) => {
+    if (!c.rect) return Math.hypot(p[0], p[1]) - c.radiusKm
+    const [lon, lat] = toLonLat(p)
+    return rectClearingDistanceKm(c, lon, lat)
+  }
+  /** How far the clearing reaches from its centre in the direction (dx east, dy north), km. */
+  const support = (dx: number, dy: number) => {
+    if (!c.rect) return c.radiusKm
+    const a = c.rect.angle
+    // Same rotation as toRect (x east, z south)
+    const u = dx * Math.cos(a) + dy * Math.sin(a), v = dx * Math.sin(a) - dy * Math.cos(a)
+    return c.rect.halfWKm * Math.abs(u) + c.rect.halfDKm * Math.abs(v)
+  }
+  const reach = support(1, 0) + support(0, 1) + clearance
+
+  let pts = line.map(([lon, lat]): [number, number] => [(lon - c.lon) * kx, (lat - c.lat) * KM_LAT])
+  let close = false
+  for (let i = 0; i < pts.length - 1 && !close; i++) close = closestOnSegment([0, 0], pts[i], pts[i + 1]).d < reach
+  if (!close) return line
+
+  // Densify the part that may move
+  const dense: [number, number][] = [pts[0]]
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1], b = pts[i]
+    const len = Math.hypot(b[0] - a[0], b[1] - a[1])
+    const n = closestOnSegment([0, 0], a, b).d < reach * 3 + DETOUR_MIN_KM ? Math.ceil(len / BEND_STEP_KM) : 1
+    for (let k = 1; k <= n; k++) dense.push(k === n ? b : [a[0] + ((b[0] - a[0]) * k) / n, a[1] + ((b[1] - a[1]) * k) / n])
+  }
+  pts = dense
+  if (pts.every((p) => gap(p) >= clearance * 0.98)) return line
+
+  // A few rounds: a river that curls around the monument may still pass close after one bump
+  for (let round = 0; round < 3; round++) {
+    let k = 0, kd = Infinity
+    pts.forEach((p, i) => {
+      const d = gap(p)
+      if (d < kd) {
+        kd = d
+        k = i
       }
-      // 2) push points out: distance d in [0, outer] maps to [target, outer] (monotonic, smooth)
-      return dense.map(([lon, lat]): [number, number] => {
-        for (const z of zones) {
-          if (z.c.rect) {
-            ;[lon, lat] = pushOutOfRect(z.c, lon, lat, z.target, z.outer)
-            continue
-          }
-          const dx = (lon - z.c.lon) * z.kmLon, dy = (lat - z.c.lat) * KM_LAT
-          const d = Math.hypot(dx, dy)
-          if (d >= z.outer) continue
-          const nd = pushedDistance(d, z.target, z.outer)
-          const k = d > 1e-6 ? nd / d : 0
-          const ux = d > 1e-6 ? dx * k : nd, uy = d > 1e-6 ? dy * k : 0
-          lon = z.c.lon + ux / z.kmLon
-          lat = z.c.lat + uy / KM_LAT
-        }
-        return [lon, lat]
-      })
     })
-    return { ...river, lines }
-  })
+    if (kd >= clearance * 0.98) break
+    // Side: perpendicular to the river there, pointing from the monument towards the river
+    const a = pts[Math.max(0, k - 1)], b = pts[Math.min(pts.length - 1, k + 1)]
+    const tl = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1
+    const tx = (b[0] - a[0]) / tl, ty = (b[1] - a[1]) / tl
+    let nx = -ty, ny = tx
+    let across = pts[k][0] * nx + pts[k][1] * ny
+    if (across < 0) {
+      nx = -nx
+      ny = -ny
+      across = -across
+    }
+    const shift = support(nx, ny) + clearance - across
+    if (shift <= 0) break
+    // Held over the footprint's length along the river, then a smooth bell
+    const plateau = support(tx, ty) + clearance
+    const spread = Math.max(DETOUR_MIN_KM, DETOUR_SPREAD * shift)
+    // Arc length from the closest point, both ways
+    const s = new Float64Array(pts.length)
+    for (let i = k + 1; i < pts.length; i++) s[i] = s[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1])
+    for (let i = k - 1; i >= 0; i--) s[i] = s[i + 1] + Math.hypot(pts[i][0] - pts[i + 1][0], pts[i][1] - pts[i + 1][1])
+    pts = pts.map(([x, y], i) => {
+      const u = Math.max(0, s[i] - plateau) / spread
+      if (u >= 1) return [x, y]
+      const w = (1 - u * u) ** 2
+      return [x + nx * shift * w, y + ny * shift * w]
+    })
+  }
+  return pts.map(toLonLat)
+}
+
+/** A confluence end that ended up this far (km) from its main river is eased back onto it. */
+const SNAP_MAX_KM = 15
+/** ...over this much of the tributary's course (km), at least. */
+const SNAP_MIN_SPAN_KM = 3
+
+/** Eases each `join` end back onto the nearest other line (the bend may have moved either one). */
+function snapJoins(rivers: River[]): River[] {
+  const all = rivers.flatMap((r, ri) => r.lines.map((line, li) => ({ ri, li, line })))
+  return rivers.map((river, ri) => ({
+    ...river,
+    lines: river.lines.map((line, li) => {
+      let out = line
+      for (const side of [0, 1] as const) {
+        if (river.ends?.[li]?.[side] !== 'join') continue
+        const end = side === 0 ? out[0] : out[out.length - 1]
+        let best: { point: LonLat; d: number } | null = null
+        for (const o of all) {
+          if (o.ri === ri && o.li === li) continue
+          const n = nearestOnLine(end, o.line)
+          if (!best || n.d < best.d) best = n
+        }
+        if (!best || best.d < 0.02 || best.d > SNAP_MAX_KM) continue
+        const dx = best.point[0] - end[0], dy = best.point[1] - end[1]
+        const span = Math.max(SNAP_MIN_SPAN_KM, best.d * 3)
+        const orig = side === 0 ? out.slice() : out.slice().reverse()
+        const pts = orig.slice()
+        let along = 0
+        for (let i = 0; i < pts.length; i++) {
+          if (i > 0) along += distKm(orig[i - 1], orig[i])
+          if (along >= span) break
+          const w = (1 - along / span) ** 2
+          pts[i] = [pts[i][0] + dx * w, pts[i][1] + dy * w]
+        }
+        out = side === 0 ? pts : pts.reverse()
+      }
+      return out
+    }),
+  }))
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -673,13 +911,20 @@ export function riverCarveDepth(
   cellsPerKm: number,
   isLand: Uint8Array,
   keepDry: RiverClearing[] = [],
+  /** Uncarved ground height (world units) of a cell, NaN on the sea: rivers then only run downhill (riverProfiles). */
+  groundY?: (i: number) => number,
 ): { carve: Float32Array; edge: Float32Array } | null {
   if (!rivers || rivers.length === 0) return null
-  const { edge, halfWidth } = rasterizeRivers(rivers, bounds, gw, gh, cellsPerKm, FIELD_REACH_KM)
-  const bank = CARVE_BANK_KM * cellsPerKm
-  const carve = new Float32Array(gw * gh)
   const sx = (gw - 1) / (bounds.east - bounds.west)
   const sy = (gh - 1) / (bounds.north - bounds.south)
+  const profiles = groundY
+    ? riverProfiles(rivers, (lon, lat) => {
+        const c = Math.round((lon - bounds.west) * sx), r = Math.round((bounds.north - lat) * sy)
+        return c < 0 || r < 0 || c >= gw || r >= gh ? NaN : groundY(r * gw + c)
+      })
+    : undefined
+  const { edge, halfWidth, extra } = rasterizeRivers(rivers, bounds, gw, gh, cellsPerKm, FIELD_REACH_KM, 0, profiles)
+  const carve = new Float32Array(gw * gh)
   const dry = keepDry.map((k) => ({
     k,
     c: (k.lon - bounds.west) * sx,
@@ -691,6 +936,9 @@ export function riverCarveDepth(
     for (let c = 1; c < gw - 1; c++) {
       const i = r * gw + c
       const e = edge[i]
+      const deeper = profiles ? extra[i] : 0
+      // A deeper cut gets wider, gentler banks (a valley, not a slot)
+      const bank = Math.min(CARVE_BANK_KM + deeper * CARVE_BANK_PER_UNIT, CARVE_BANK_MAX_KM) * cellsPerKm
       if (!(e < bank) || !isLand[i]) continue
       let keep = 1
       for (const d of dry) {
@@ -704,7 +952,7 @@ export function riverCarveDepth(
       }
       if (keep === 0) continue
       const hw = halfWidth[i]
-      const depth = channelDepth(hw / cellsPerKm)
+      const depth = channelDepth(hw / cellsPerKm) + deeper
       carve[i] = depth * smooth(bank, -hw * 0.5, e) * keep
     }
   }

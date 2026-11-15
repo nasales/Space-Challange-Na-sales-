@@ -7,7 +7,7 @@ import * as THREE from 'three'
 import type { ZoneData } from '../map/mapData'
 import type { Country } from '../map/worldData'
 import { terraceHeight } from '../map/terrace'
-import { computeExploredRegion } from '../map/exploredRegion'
+import { computeExploredRegion, type ExploredRegion } from '../map/exploredRegion'
 import { riverCarveDepth, FIELD_REACH_KM, type RiverClearing } from '../map/rivers'
 import {
   lonLatToWorld,
@@ -38,6 +38,8 @@ export interface Terrain {
   isExploredLand: (x: number, z: number) => boolean
   /** true if (x, z) is on the shallow sea (coastal band or an enclosed sea up to the islands): crossed by boat (map/shallowSea.ts). */
   isFord: (x: number, z: number) => boolean
+  /** true on land with real relief where rivers run: the country and the neighbouring land near it. */
+  isRiverLand: (x: number, z: number) => boolean
   /** true if (x, z) is in a river or within `margin` world units of its water. */
   nearRiver: (x: number, z: number, margin: number) => boolean
   dispose: () => void
@@ -55,19 +57,18 @@ export function createTerrain(
   keepDry: RiverClearing[] = [],
   /** The other countries of the world (see computeExploredRegion). */
   neighbours: Country[] = [],
+  /** The explored region on this grid, if it was already computed (same heights). */
+  explored?: ExploredRegion,
 ): Terrain {
   const { bounds, heightWidth: gw, heightHeight: gh } = data
   const width = (bounds.east - bounds.west) * UNITS_PER_DEG_LON
   const depth = (bounds.north - bounds.south) * UNITS_PER_DEG_LAT
   const cellsPerKm = gw / (width / UNITS_PER_KM)
-  const { countryLand, region, ford, neighbourLand } = computeExploredRegion(country, bounds, heights, gw, gh, cellsPerKm, neighbours)
+  const { countryLand, region, ford, neighbourLand } =
+    explored ?? computeExploredRegion(country, bounds, heights, gw, gh, cellsPerKm, neighbours)
 
-  // Shallow river beds: a small dip under the terraced surface, so water follows the terraces
-  const river = riverCarveDepth(data.rivers, bounds, gw, gh, cellsPerKm, countryLand, keepDry)
-  const carve = river?.carve
-  const unitsPerCell = UNITS_PER_KM / cellsPerKm
-
-  const cellY = (i: number) => {
+  // Ground without the river beds
+  const baseY = (i: number) => {
     if (!region[i]) return HIDDEN_Y
     const nb = neighbourLand[i]
     if (nb > 0) {
@@ -78,8 +79,19 @@ export function createTerrain(
       return grey + (toy - grey) * nb
     }
     if (!countryLand[i]) return SEA_Y
-    const y = metersToY(terraceHeight(Math.max(heights[i], 1)), HEIGHT_EXAGGERATION)
-    return carve ? Math.max(y - carve[i], SEA_Y + 0.3) : y
+    return metersToY(terraceHeight(Math.max(heights[i], 1)), HEIGHT_EXAGGERATION)
+  }
+  // River beds: a dip under the terraced surface, cut deeper where needed so the water only runs
+  // downhill. Rivers also run a little way into the neighbouring land (its full-relief part)
+  const riverLand = new Uint8Array(gw * gh)
+  for (let i = 0; i < riverLand.length; i++) riverLand[i] = countryLand[i] || neighbourLand[i] > 0.99 ? 1 : 0
+  const river = riverCarveDepth(data.rivers, bounds, gw, gh, cellsPerKm, riverLand, keepDry, (i) => (riverLand[i] ? baseY(i) : NaN))
+  const carve = river?.carve
+  const unitsPerCell = UNITS_PER_KM / cellsPerKm
+
+  const cellY = (i: number) => {
+    const y = baseY(i)
+    return carve && carve[i] > 0 ? Math.max(y - carve[i], SEA_Y + 0.3) : y
   }
 
   // Esquina noroeste de la zona en el mundo
@@ -157,6 +169,10 @@ export function createTerrain(
     isExploredLand: (x, z) => {
       const { i, tx, tz } = cell(x, z)
       return countryLand[i + (tx > 0.5 ? 1 : 0) + (tz > 0.5 ? gw : 0)] === 1
+    },
+    isRiverLand: (x, z) => {
+      const { i, tx, tz } = cell(x, z)
+      return riverLand[i + (tx > 0.5 ? 1 : 0) + (tz > 0.5 ? gw : 0)] === 1
     },
     isFord: (x, z) => {
       const { i, tx, tz } = cell(x, z)
