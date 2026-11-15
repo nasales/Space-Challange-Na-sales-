@@ -37,6 +37,7 @@ import { createDialogue, type DialogueScene } from './witness/dialogueCamera'
 import { CASES } from '../levels/data'
 import { WITNESSES } from '../shared/witness'
 import type { GameStatus, GameViewProps, HudState } from '../shared/events'
+import type { LineMood } from '../shared/tutorial'
 import './GameView.css'
 
 const EXPLORED_COUNTRY = 'ESP'
@@ -52,15 +53,47 @@ function makeTexture(canvas: HTMLCanvasElement, renderer: THREE.WebGLRenderer) {
   return texture
 }
 
+/** Head top of a character above his feet, plus the bubble margin (world units), for the witness placement. */
+const WITNESS_TOP = 11
+
+/**
+ * Head pitch (x, > 0 up) and roll (z) of the detective in a dialogue, from who speaks and the mood
+ * of the line: speaking, he nods (stronger when insistent); listening, small nods, head down on sad
+ * lines, a tilt when curious or doubtful.
+ */
+function detectiveReaction(speaker: 'detective' | 'witness' | null, mood: LineMood | null, t: number) {
+  if (speaker === 'detective') {
+    const base = Math.sin(t * 8) * 0.07 + Math.sin(t * 3.1) * 0.04
+    switch (mood) {
+      case 'sad': return { x: -0.25 + base * 0.4, z: 0.05 }
+      case 'insistent': case 'determined': return { x: base * 1.8, z: 0 }
+      case 'curious': case 'doubtful': return { x: base * 0.7, z: 0.2 }
+      case 'happy': case 'proud': case 'confident': return { x: 0.08 + base, z: Math.sin(t * 2) * 0.05 }
+      default: return { x: base, z: 0 }
+    }
+  }
+  if (speaker === 'witness') {
+    const nod = -Math.max(0, Math.sin(t * 2.2)) * 0.08
+    switch (mood) {
+      case 'sad': return { x: -0.2 + nod * 0.4, z: 0.04 }
+      case 'insistent': case 'determined': return { x: nod * 1.6, z: 0 }
+      case 'curious': return { x: nod * 0.5, z: 0.14 }
+      case 'doubtful': return { x: nod * 0.5, z: -0.1 }
+      default: return { x: nod, z: 0 }
+    }
+  }
+  return { x: 0, z: 0 }
+}
+
 /** Only the 3D canvas. The HUD and status messages live in src/ui, fed through the callbacks. */
 export default function GameView({
-  onStatus, onHud, onLensFocus, onDialogueAnchors, focusLens = false, paused = false, completedCases, dialogueCase = null, speaking = null,
+  onStatus, onHud, onLensFocus, onDialogueAnchors, focusLens = false, paused = false, completedCases, dialogueCase = null, speaking = null, speakingMood = null,
 }: GameViewProps) {
   const container = useRef<HTMLDivElement>(null)
   // Latest callbacks (and pause flag), read from inside the animation loop without restarting the scene
-  const callbacks = useRef({ onStatus, onHud, onLensFocus, onDialogueAnchors, focusLens, paused, completedCases, dialogueCase, speaking })
+  const callbacks = useRef({ onStatus, onHud, onLensFocus, onDialogueAnchors, focusLens, paused, completedCases, dialogueCase, speaking, speakingMood })
   useEffect(() => {
-    callbacks.current = { onStatus, onHud, onLensFocus, onDialogueAnchors, focusLens, paused, completedCases, dialogueCase, speaking }
+    callbacks.current = { onStatus, onHud, onLensFocus, onDialogueAnchors, focusLens, paused, completedCases, dialogueCase, speaking, speakingMood }
   })
   const setStatus = (status: GameStatus) => callbacks.current.onStatus?.(status)
   const setHud = (hud: HudState) => callbacks.current.onHud?.(hud)
@@ -189,22 +222,26 @@ export default function GameView({
         const keyboard = createKeyboard()
         const chase = createChaseCamera(camera, renderer.domElement)
 
-        // Witnesses of the featured cases, inside their case zones (src/shared/witness.ts)
-        const witnesses = createWitnesses(WITNESSES, caseMarkers, {
-          surfaceAt,
-          heightAt: main.heightAt,
-          isLand: main.isExploredLand,
-          blocked: (x, z, extra) => towns.blocks(x, z, extra) || scenery.blocks(x, z),
-          nearRiver: main.nearRiver,
-          nearRoad,
-        })
-        scene.add(witnesses.group)
+        // Witnesses of the featured cases, inside their case zones (src/shared/witness.ts). The
+        // dialogue camera comes first: the witness spot is chosen where it can frame a talk
         const dialogue = createDialogue(camera, {
           obstacleAt: (x, z) => Math.max(groundNoLandmarks(x, z), towns.topAt(x, z), landmarks.surfaceAt(x, z)),
           surfaceAt,
           canStand: (x, z) => ground.isDrivable(x, z) && !towns.blocks(x, z, 2) && !main.nearRiver(x, z, 2),
           occluders: [landmarks.group],
         })
+        landmarks.group.updateMatrixWorld(true) // the framing test ray-casts the monuments
+        const witnessSite = {
+          surfaceAt,
+          heightAt: main.heightAt,
+          isLand: main.isExploredLand,
+          blocked: (x: number, z: number, extra: number) => towns.blocks(x, z, extra) || scenery.blocks(x, z),
+          nearRiver: main.nearRiver,
+          nearRoad,
+          framing: (x: number, y: number, z: number) => dialogue.framingScore(x, y, z, WITNESS_TOP),
+        }
+        const witnesses = createWitnesses(WITNESSES, caseMarkers, witnessSite)
+        scene.add(witnesses.group)
         // What the dialogue camera frames (reused every frame)
         const talk: DialogueScene = {
           detective: new THREE.Vector3(),
@@ -225,16 +262,18 @@ export default function GameView({
         const hatTop = new THREE.Vector3()
         let talkWith: ReturnType<typeof witnesses.get> // witness of the current (or last) dialogue
         let talkClock = 0
-        // Dev only: drive the dialogue from the console / Playwright, e.g. __game.setDialogue('dana_valencia', 'witness')
-        const devDialogue: { active: boolean; caseId: string | null; speaking: 'detective' | 'witness' | null; anchors: unknown } = {
-          active: false, caseId: null, speaking: null, anchors: null,
+        const detectiveMood = { x: 0, z: 0 } // eased head pitch/roll from the line's mood
+        // Dev only: drive the dialogue from the console / Playwright, e.g. __game.setDialogue('dana_valencia', 'witness', 'sad')
+        const devDialogue: { active: boolean; caseId: string | null; speaking: 'detective' | 'witness' | null; mood: LineMood | null; anchors: unknown } = {
+          active: false, caseId: null, speaking: null, mood: null, anchors: null,
         }
         // Solo en desarrollo: acceso desde la consola/Playwright para depurar
         if (import.meta.env.DEV) {
           Object.assign(window, {
             __game: {
-              carState, camera, chase, ground, detective, renderer, scene, towns, houses, scenery, sceneryItems, landmarks, caseMarkers, main, witnesses, dialogue, devDialogue,
-              setDialogue: (caseId: string | null, speaking: 'detective' | 'witness' | null = null) => Object.assign(devDialogue, { active: true, caseId, speaking }),
+              carState, camera, chase, ground, detective, renderer, scene, towns, houses, scenery, sceneryItems, landmarks, caseMarkers, main, witnesses, witnessSite, dialogue, devDialogue,
+              setDialogue: (caseId: string | null, speaking: 'detective' | 'witness' | null = null, mood: LineMood | null = null) =>
+                Object.assign(devDialogue, { active: true, caseId, speaking, mood }),
             },
           })
         }
@@ -283,6 +322,7 @@ export default function GameView({
           const dev = import.meta.env.DEV && devDialogue.active
           const dialogueId = (dev ? devDialogue.caseId : callbacks.current.dialogueCase) ?? null
           const speaker = (dev ? devDialogue.speaking : callbacks.current.speaking) ?? null
+          const mood = (dev ? devDialogue.mood : callbacks.current.speakingMood) ?? null
           const dialogueWitness = dialogueId ? witnesses.get(dialogueId) : undefined
           if (dialogueWitness && (!dialogue.wanted || dialogueWitness !== talkWith)) {
             talkWith = dialogueWitness
@@ -297,16 +337,23 @@ export default function GameView({
           stepCar(carState, input, ground, dt)
           detective.setFocus(chase.stepFocus(wantLens, dt))
           detective.update(carState, dt)
-          // In a dialogue the detective looks at the witness and nods while he talks
+          // In a dialogue the detective looks at the witness, nods while he talks, and reacts lightly
+          // to the mood of the line (head lowered on sad lines, tilted when curious...)
           if (dialogue.wanted && talkWith) {
             talkClock += dt
             const k = Math.min(1, dialogue.progress * 2)
             const { head } = detective.parts
             const toWitness = Math.atan2(-(talkWith.x - carState.x), -(talkWith.z - carState.z)) - carState.heading
             const gaze = Math.max(-0.9, Math.min(0.9, Math.atan2(Math.sin(toWitness), Math.cos(toWitness))))
-            const nod = speaker === 'detective' ? Math.sin(talkClock * 8) * 0.07 + Math.sin(talkClock * 3.1) * 0.04 : 0
+            const react = detectiveReaction(speaker, mood, talkClock)
+            detectiveMood.x += (react.x - detectiveMood.x) * (1 - Math.exp(-5 * dt))
+            detectiveMood.z += (react.z - detectiveMood.z) * (1 - Math.exp(-5 * dt))
             head.rotation.y += (gaze - head.rotation.y) * k
-            head.rotation.x += (-0.06 + nod - head.rotation.x) * k
+            head.rotation.x += (-0.06 + detectiveMood.x - head.rotation.x) * k
+            head.rotation.z = detectiveMood.z * k // nothing else rolls the head
+          } else {
+            detectiveMood.x = detectiveMood.z = 0
+            detective.parts.head.rotation.z = 0
           }
           dust.update(carState, surfaceAt, detective.stridePhase, dt)
           footprints.update(carState, surfaceAt, detective.stridePhase)
@@ -316,7 +363,8 @@ export default function GameView({
             caseId: dialogue.wanted ? (talkWith?.caseId ?? null) : null,
             speaking: speaker,
             witnessHeading: dialogue.witnessHeading,
-          })
+            mood,
+          }, { camera, distance: chase.distance })
           if (dialogue.busy && talkWith) {
             poseTalk(talkWith)
             dialogue.applyCamera(talk)

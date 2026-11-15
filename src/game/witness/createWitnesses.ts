@@ -2,20 +2,34 @@
 // trigger zone of their case marker. The spot is searched once at load time: explored land,
 // flat (no wall or step around him), on the ground or a monument plaza but never on a roof, away
 // from houses, windmills and rivers, with free flat ground in front of him, towards the zone
-// centre, where the detective stands to talk. Spots near a road, on bare ground, about 3/4 out
-// to the rim win, and he needs open sky round him for the dialogue camera. (The zone centre itself
-// may be a monument roof, as in Valencia.)
+// centre or to one side, where the detective stands to talk. Spots inside the ring (near its rim),
+// near a road, on bare ground win, and he needs open sky round him for the dialogue camera. (The
+// zone centre itself may be a monument roof, as in Valencia.)
+//
+// So the player finds him: a "..." speech bubble floats over his head (seen from far, drawn over
+// buildings), a glowing trail of chevrons runs from near the "!" to his feet, he turns to watch the
+// detective from far away, waves when he comes close and again now and then, and glows warmly
+// while the detective is in the case zone. All of it hides during the dialogue.
 //
 //   const witnesses = createWitnesses(WITNESSES, caseMarkers, site)
 //   scene.add(witnesses.group)
-//   witnesses.update(dt, detectiveX, detectiveZ, dialogue)   // every frame
+//   witnesses.update(dt, detectiveX, detectiveZ, dialogue, { camera, distance })   // every frame
 //   witnesses.get(caseId)                                     // { witness, x, z, y } or undefined
 import * as THREE from 'three'
 import { createWitness } from './createWitness'
+import { createTalkIndicator } from './createTalkIndicator'
+import { createWitnessTrail } from './createWitnessTrail'
 import type { Witness } from '../../shared/witness'
+import type { LineMood } from '../../shared/tutorial'
 
 /** Distance from the zone centre, as fractions of the zone radius, tried in this order. */
-const RING_FRACTIONS = [0.3, 0.45, 0.6, 0.75, 0.9, 1.1, 1.4]
+const RING_FRACTIONS = [0.3, 0.45, 0.6, 0.75, 0.85, 0.93, 1.1, 1.4]
+/** Best distance from the zone centre (fraction of the radius): inside the ring, near its rim. */
+const BEST_FRACTION = 0.85
+/** Extra score (worse) for a spot outside the ring. */
+const OUTSIDE_PENALTY = 12
+/** Directions tried for the free ground in front of him: towards the zone centre, then to the sides (rad). */
+const FRONT_TURNS = [0, 0.5, -0.5, 1.0, -1.0, 1.5, -1.5]
 /** Angles tried on each ring. */
 const ANGLE_STEPS = 24
 /** Clearance around the witness (world units): houses, walls, rivers. */
@@ -36,11 +50,25 @@ const OPEN_DIRECTIONS = 16
 const MIN_OPEN = 6
 const OPEN_RADIUS = 45
 const OPEN_HEIGHT = 8
+/** Stand spots with a good dialogue view that count as fully good (see WitnessSite.framing). */
+const GOOD_FRAMING = 3
 /** The witness waves when the detective comes this close (world units), for WAVE_TIME seconds. */
-const WAVE_DISTANCE = 75
+const WAVE_DISTANCE = 140
 const WAVE_TIME = 2.6
+/** While the detective is near (and not talking to him), he waves again every this many seconds. */
+const WAVE_AGAIN = 6
 /** He turns to watch the detective within this distance (world units). */
-const WATCH_DISTANCE = 110
+const WATCH_DISTANCE = 240
+/** The trail to him shows while the detective is within this many zone radii of the zone centre. */
+const TRAIL_RANGE = 3.5
+/** Where the trail starts: this fraction of the way from the zone centre to him. */
+const TRAIL_START = 0.25
+/** The talk bubble hides when the camera is this far (world units): only the big "!" shows then. */
+const BUBBLE_MAX_CAMERA = 2500
+/** The pointer at the detective's feet hides when he is this close to the witness (world units). */
+const POINTER_HIDE = 20
+/** Same climb limit as the zone ring: the trail lies on plazas, never on roofs. */
+const TRAIL_MAX_CLIMB = 6
 
 /** What the placement needs to know about the map (all in world units). */
 export interface WitnessSite {
@@ -53,6 +81,11 @@ export interface WitnessSite {
   blocked: (x: number, z: number, extra: number) => boolean
   nearRiver: (x: number, z: number, margin: number) => boolean
   nearRoad: (x: number, z: number, margin: number) => boolean
+  /**
+   * Optional: how well the dialogue camera can frame a talk with him standing at (x, y, z), as the
+   * number of good stand spots round him (0 = none: the spot is skipped). See dialogue.framingScore.
+   */
+  framing?: (x: number, y: number, z: number) => number
 }
 
 interface CaseZones {
@@ -65,9 +98,25 @@ export interface WitnessDialogue {
   speaking: 'detective' | 'witness' | null
   /** Heading the case's witness keeps in the dialogue (facing the detective, open to the camera) */
   witnessHeading: number
+  /** Mood of the line being spoken (pose and face of the speaker; the listener reacts) */
+  mood?: LineMood | null
 }
 
-type PlacedWitness = { witness: ReturnType<typeof createWitness>; caseId: string; x: number; z: number; y: number; rest: number; waveClock: number; wasNear: boolean }
+/** Camera the talk bubble faces, and its distance to the player (bubble size grows with it). */
+export interface WitnessView {
+  camera: THREE.Camera
+  distance: number
+}
+
+type PlacedWitness = {
+  witness: ReturnType<typeof createWitness>
+  bubble: ReturnType<typeof createTalkIndicator>
+  trail: ReturnType<typeof createWitnessTrail>
+  caseId: string
+  zone: { x: number; z: number; radius: number }
+  x: number; z: number; y: number; rest: number
+  waveClock: number; againClock: number; wasNear: boolean; glow: number
+}
 
 /** Finds a free, flat spot for a witness in the zone (best score); null if there is none. */
 export function findWitnessSpot(zone: { x: number; z: number; radius: number }, site: WitnessSite) {
@@ -85,18 +134,21 @@ export function findWitnessSpot(zone: { x: number; z: number; radius: number }, 
   }
   const free = (x: number, z: number, margin: number) =>
     site.isLand(x, z) && !site.blocked(x, z, margin) && !site.nearRiver(x, z, margin)
-  // In front of him, towards the zone centre, the detective needs room to stand: no water, house or wall
+  // In front of him (towards the zone centre, or else to one side) the detective needs room to
+  // stand: no water, house or wall
   const clearFront = (x: number, z: number) => {
-    const d = Math.hypot(zone.x - x, zone.z - z) || 1
-    const ux = (zone.x - x) / d, uz = (zone.z - z) / d
-    let last = site.surfaceAt(x, z)
-    for (let s = 2; s <= FRONT; s += 2) {
-      const px = x + ux * s, pz = z + uz * s
-      const h = site.surfaceAt(px, pz)
-      if (!free(px, pz, 1) || Math.abs(h - last) > MAX_STEP) return false
-      last = h
-    }
-    return true
+    const toCentre = Math.atan2(zone.x - x, zone.z - z)
+    return FRONT_TURNS.some((turn) => {
+      const ux = Math.sin(toCentre + turn), uz = Math.cos(toCentre + turn)
+      let last = site.surfaceAt(x, z)
+      for (let s = 2; s <= FRONT; s += 2) {
+        const px = x + ux * s, pz = z + uz * s
+        const h = site.surfaceAt(px, pz)
+        if (!free(px, pz, 1) || Math.abs(h - last) > MAX_STEP) return false
+        last = h
+      }
+      return true
+    })
   }
   // Open sky around him: the dialogue camera stands OPEN_RADIUS away, so count the directions with
   // nothing tall (monument, roof, hill) up to there
@@ -120,8 +172,12 @@ export function findWitnessSpot(zone: { x: number; z: number; radius: number }, 
       if (!free(x, z, CLEARANCE) || !flat(x, z) || !clearFront(x, z)) continue
       const open = openness(x, z)
       if (open < MIN_OPEN) continue
-      // Prefer: open all round, near a road, on bare ground rather than a plaza, about 3/4 of the way to the rim
-      const score = (OPEN_DIRECTIONS - open) * 1.5 + (site.nearRoad(x, z, 25) ? 0 : 6) + (site.surfaceAt(x, z) - site.heightAt(x, z)) + Math.abs(f - 0.75) * 8
+      // The dialogue camera must see both characters from a low 3/4 view (monument shells, arches)
+      const framing = site.framing ? site.framing(x, site.surfaceAt(x, z), z) : GOOD_FRAMING
+      if (framing === 0) continue
+      // Prefer: inside the ring near its rim, open all round, near a road, on bare ground rather than a plaza
+      const score = (OPEN_DIRECTIONS - open) * 1.5 + (site.nearRoad(x, z, 25) ? 0 : 6) + (site.surfaceAt(x, z) - site.heightAt(x, z)) +
+        Math.abs(f - BEST_FRACTION) * 8 + (f > 1 ? OUTSIDE_PENALTY : 0) + (GOOD_FRAMING - Math.min(GOOD_FRAMING, framing)) * 4
       if (score < bestScore) {
         bestScore = score
         best = { x, z }
@@ -150,21 +206,39 @@ export function createWitnesses(list: Partial<Record<string, Witness>>, zones: C
     witness.root.userData.caseId = w.caseId
     // At rest he faces the zone centre (where the detective comes from)
     const rest = Math.atan2(-(zone.x - spot.x), -(zone.z - spot.z))
-    group.add(witness.root)
-    placed.push({ witness, caseId: w.caseId, x: spot.x, z: spot.z, y, rest, waveClock: 0, wasNear: false })
+    const bubble = createTalkIndicator()
+    // Trail from near the "!" to him (on the ground or a plaza, never over a roof)
+    const trailGround = (x: number, z: number) => {
+      const h = site.surfaceAt(x, z)
+      return h - site.heightAt(x, z) > TRAIL_MAX_CLIMB ? null : h
+    }
+    const from = { x: zone.x + (spot.x - zone.x) * TRAIL_START, z: zone.z + (spot.z - zone.z) * TRAIL_START }
+    const trail = createWitnessTrail(from, spot, trailGround, site.surfaceAt)
+    group.add(witness.root, bubble.group, trail.group)
+    placed.push({ witness, bubble, trail, caseId: w.caseId, zone, x: spot.x, z: spot.z, y, rest, waveClock: 0, againClock: 0, wasNear: false, glow: 0 })
   }
+  const headTop = new THREE.Vector3()
+  const pointerAt = { x: 0, z: 0 }
 
   return {
     group,
     get: (caseId: string) => placed.find((p) => p.caseId === caseId),
 
-    update(dt: number, dx: number, dz: number, dialogue: WitnessDialogue) {
+    update(dt: number, dx: number, dz: number, dialogue: WitnessDialogue, view?: WitnessView) {
       for (const p of placed) {
         const inDialogue = dialogue.caseId === p.caseId
         const dist = Math.hypot(dx - p.x, dz - p.z)
-        const near = dist < WAVE_DISTANCE
+        const fromZone = Math.hypot(dx - p.zone.x, dz - p.zone.z)
+        const inZone = fromZone <= p.zone.radius && !inDialogue
+        const near = dist < WAVE_DISTANCE || inZone
         if (near && !p.wasNear && !inDialogue) p.waveClock = WAVE_TIME // waves each time the detective arrives
         p.wasNear = near
+        // ...and again every few seconds while the detective is around but not talking to him
+        p.againClock = near && !inDialogue ? p.againClock + dt : 0
+        if (p.againClock > WAVE_AGAIN) {
+          p.againClock = 0
+          p.waveClock = WAVE_TIME
+        }
         p.waveClock = Math.max(0, p.waveClock - dt)
         p.witness.update(dt, {
           lookAt: !inDialogue && dist < WATCH_DISTANCE ? { x: dx, z: dz } : null,
@@ -173,12 +247,31 @@ export function createWitnesses(list: Partial<Record<string, Witness>>, zones: C
           wave: p.waveClock > 0 && !inDialogue,
           talking: inDialogue && dialogue.speaking === 'witness',
           listening: inDialogue && dialogue.speaking === 'detective',
+          mood: inDialogue ? dialogue.mood : null,
         })
+        // Warm glow while the detective is in his case zone
+        p.glow += ((inZone ? 1 : 0) - p.glow) * (1 - Math.exp(-4 * dt))
+        p.witness.setGlow(p.glow * (0.6 + 0.4 * Math.sin(performance.now() / 300)))
+        // Fixed trail near the case; pointer at the detective's feet while he is in the zone, until close
+        pointerAt.x = dx
+        pointerAt.z = dz
+        p.trail.update(dt, !inDialogue && fromZone < p.zone.radius * TRAIL_RANGE ? 1 : 0, inZone && dist > POINTER_HIDE ? pointerAt : null)
+        if (view) {
+          p.witness.headTop(headTop)
+          p.bubble.update(dt, headTop, view.camera, {
+            visible: !inDialogue && view.distance < BUBBLE_MAX_CAMERA,
+            inZone,
+          })
+        }
       }
     },
 
     dispose() {
-      for (const p of placed) p.witness.dispose()
+      for (const p of placed) {
+        p.witness.dispose()
+        p.bubble.dispose()
+        p.trail.dispose()
+      }
     },
   }
 }
