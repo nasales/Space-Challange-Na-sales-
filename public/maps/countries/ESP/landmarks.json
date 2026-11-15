@@ -160,6 +160,41 @@
       "heading": -29,
       "scale": 0.26,
       "description": "18th-century Baroque square of golden sandstone, closed on all four sides by arcades."
+    },
+    {
+      "id": "catedral-murcia",
+      "name": "Catedral de Murcia",
+      "city": "Murcia",
+      "lat": 37.98389,
+      "lon": -1.12833,
+      "heading": -90,
+      "scale": 0.4,
+      "description": "Gothic cathedral with a Baroque altarpiece façade by Jaime Bort and one of the tallest bell towers in Spain."
+    },
+    {
+      "id": "alcazaba-almeria",
+      "name": "Alcazaba",
+      "city": "Almería",
+      "lat": 36.93,
+      "lon": -2.471,
+      "heading": 15,
+      "scale": 0.3,
+      "plaza": 30,
+      "blend": 40,
+      "description": "10th-century Moorish fortress whose walls and towers climb a rocky ridge above Almería in three enclosures, crowned by a Christian castle."
+    },
+    {
+      "id": "alcazar-toledo",
+      "name": "Alcázar",
+      "city": "Toledo",
+      "lat": 39.8581,
+      "lon": -4.0208,
+      "heading": 180,
+      "scale": 0.15,
+      "plaza": 14,
+      "blend": 28,
+      "clearance": 24,
+      "description": "Square Renaissance fortress crowning the hill of Toledo, with four corner towers topped by slate spires around an arcaded courtyard."
     }
   ]
 }
