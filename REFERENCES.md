@@ -25,6 +25,15 @@
 | pandas | BSD-3-Clause | https://pandas.pydata.org | Time series handling (`pipeline/`) |
 | Yue, S. and Wang, C. (2002). Applicability of prewhitening to eliminate the influence of serial correlation on the Mann-Kendall test. Water Resources Research 38(6), 1068 | Scientific paper (method cited) | https://doi.org/10.1029/2001WR000861 | Pre-whitened Mann-Kendall test in `pipeline/trend.py` |
 | Gilbert, R. O. (1987). Statistical Methods for Environmental Pollution Monitoring. Van Nostrand Reinhold | Book (method cited) | ISBN 978-0-442-23050-0 | Confidence interval of the Sen slope in `pipeline/trend.py` |
+| Mann, H. B. (1945). Nonparametric tests against trend. Econometrica 13(3), 245-259 | Scientific paper (method cited) | https://doi.org/10.2307/1907187 | Mann-Kendall trend test (`docs/methods.md`) |
+| Kendall, M. G. (1975). Rank Correlation Methods, 4th ed. Charles Griffin, London | Book (method cited) | — | Mann-Kendall trend test (`docs/methods.md`) |
+| Theil, H. (1950). A rank-invariant method of linear and polynomial regression analysis, I-III. Proc. Koninklijke Nederlandse Akademie van Wetenschappen 53 | Scientific paper (method cited) | — | Sen (Theil-Sen) slope (`docs/methods.md`) |
+| Sen, P. K. (1968). Estimates of the regression coefficient based on Kendall's tau. JASA 63(324), 1379-1389 | Scientific paper (method cited) | https://doi.org/10.1080/01621459.1968.10480934 | Sen slope (`docs/methods.md`) |
+| Benjamini, Y. and Hochberg, Y. (1995). Controlling the false discovery rate. J. R. Stat. Soc. B 57(1), 289-300 | Scientific paper (cited in limitations) | https://doi.org/10.1111/j.2517-6161.1995.tb02031.x | Multiple testing limitation (`docs/methods.md`) |
+| Wilks, D. S. (2016). "The stippling shows statistically significant grid points". BAMS 97(12), 2263-2273 | Scientific paper (cited in limitations) | https://doi.org/10.1175/BAMS-D-15-00267.1 | Multiple testing limitation (`docs/methods.md`) |
+| Rodell, M. et al. (2004). The Global Land Data Assimilation System. BAMS 85(3), 381-394 | Scientific paper (dataset description) | https://doi.org/10.1175/BAMS-85-3-381 | GLDAS reference (`docs/methods.md`) |
+| Huffman, G. J. et al. (2023). GPM IMERG Final Precipitation L3 1 month 0.1° V07. GES DISC | Dataset citation | https://doi.org/10.5067/GPM/IMERG/3B-MONTH/07 | IMERG reference (`docs/methods.md`) |
+| Gelaro, R. et al. (2017). The Modern-Era Retrospective Analysis for Research and Applications, Version 2 (MERRA-2). J. Climate 30(14), 5419-5454 | Scientific paper (dataset description) | https://doi.org/10.1175/JCLI-D-16-0758.1 | MERRA-2 reference (`docs/methods.md`) |
 | pymannkendall 1.4.3 | MIT | https://github.com/mmhs013/pyMannKendall | Mann-Kendall test in `pipeline/trend.py` |
 | SciPy 1.18.1 | BSD-3-Clause | https://scipy.org | Sen slope (`theilslopes`) and normal quantile in `pipeline/trend.py` |
 | NumPy 2.5.4 | BSD-3-Clause | https://numpy.org | Array maths in `pipeline/` |

@@ -1,0 +1,269 @@
+{
+  "case_id": "galicia_fires",
+  "title": "Galicia fires",
+  "place": "Ourense (Galicia)",
+  "intro": {
+    "headline": "Fire in the green corner of Spain",
+    "paragraphs": [
+      "Galicia, in the north-west of Spain, is famous for being green and rainy: forests, hills and rivers, with Atlantic storms for much of the year. It does not look like a place that burns.",
+      "Yet the province of Ourense, in the south of Galicia, has suffered major wildfires. In 2017 and again in August 2025, fires burned tens of thousands of hectares, forced people out of villages and cut roads.",
+      "Fires need fuel, a spark and the right weather. In this case file you will look at two weather clues from NASA data, air temperature and soil moisture, and learn to read them at the time of year when fires happen. Then you decide."
+    ],
+    "question": "Galicia is green and wet, yet it burns more and more. What do temperature and soil say?"
+  },
+  "steps": [
+    {
+      "id": "recap_monthly",
+      "title": "Quick recap: one point per month",
+      "text": "This is a time series of air temperature in Ourense: one point per month, from January 1980 to September 2026, over a square of land about 50 km wide. Data: NASA MERRA-2. The waves are the seasons. The straight line is the trend: about +0.26 °C every 10 years, with p < 0.001, so very unlikely to be chance. The marked point is August 2025, the month of the big fires.",
+      "chart": {
+        "variable": "T2M",
+        "view": "monthly",
+        "show_trend": true,
+        "highlights": [
+          { "kind": "point", "date": "2025-08", "label": "August 2025 (fires)" }
+        ]
+      },
+      "question": {
+        "prompt": "Which way does the trend line go from 1980 to 2026?",
+        "options": [
+          {
+            "text": "Up: the months are getting warmer on average",
+            "correct": true,
+            "feedback": "Right: a small but clear rise, hidden under the big seasonal waves."
+          },
+          {
+            "text": "Down: the months are getting colder",
+            "correct": false,
+            "feedback": "Put your finger on the straight line at the left edge and follow it to the right edge. Does it end lower or higher?"
+          },
+          {
+            "text": "It goes up and down every year",
+            "correct": false,
+            "feedback": "That is the wavy line: the seasons. The trend is the straight line through the middle. Which way does that one go?"
+          }
+        ]
+      },
+      "takeaway": "Seasons make the waves; the trend line shows the slow change underneath."
+    },
+    {
+      "id": "fire_season",
+      "title": "When does the land dry out?",
+      "text": "A detective investigating fires does not need the whole year: what matters is the time when the land is dry enough to burn. This chart shows a normal year of soil moisture in the top 10 cm of soil, in kilograms of water per square metre. Data: NASA GLDAS. Galicia's soil is wet in winter, but it dries out strongly in summer. That is why we will study June to September, the fire season.",
+      "chart": {
+        "variable": "SOILM",
+        "view": "climatology"
+      },
+      "question": {
+        "prompt": "In which part of a normal year is the topsoil driest?",
+        "options": [
+          {
+            "text": "July and August",
+            "correct": true,
+            "feedback": "Yes: the line hits its lowest point in August, right in the middle of the fire season."
+          },
+          {
+            "text": "December and January",
+            "correct": false,
+            "feedback": "Find December and January on the chart. Is the line near the top or near the bottom there?"
+          },
+          {
+            "text": "March and April",
+            "correct": false,
+            "feedback": "In spring the line is still high. Follow it to the right: where does it dip the most?"
+          }
+        ]
+      },
+      "takeaway": "For a hazard, first find the season that matters, then study that season."
+    },
+    {
+      "id": "summer_heat",
+      "title": "One dot per fire season",
+      "text": "Now each point is one whole fire season: the average temperature from June to September of one year, from 1980 to 2026. The winter months are gone, so the summer story is clearer. The trend is about +0.29 °C every 10 years. Here p = 0.0047, about 5 in 1,000, so it is unlikely to be chance. The line climbs from about 18.0 to 19.3 °C. The 2026 value is recent and may still be revised.",
+      "chart": {
+        "variable": "T2M",
+        "view": "season",
+        "season": "JJAS",
+        "show_trend": true,
+        "highlights": [
+          { "kind": "point", "date": "2017", "label": "2017" },
+          { "kind": "point", "date": "2025", "label": "2025" }
+        ]
+      },
+      "question": {
+        "prompt": "Compared with the fire seasons of the 1980s, the most recent ones are mostly...",
+        "options": [
+          {
+            "text": "Warmer",
+            "correct": true,
+            "feedback": "Correct: several of the hottest fire seasons are in the last few years."
+          },
+          {
+            "text": "Colder",
+            "correct": false,
+            "feedback": "Look at the points on the far right, then at the far left. Which group sits higher on the chart?"
+          },
+          {
+            "text": "Exactly the same",
+            "correct": false,
+            "feedback": "Follow the trend line from left to right. If nothing had changed it would be flat. Is it?"
+          }
+        ]
+      },
+      "takeaway": "Fire seasons in Ourense are getting warmer, and the rise is significant."
+    },
+    {
+      "id": "summer_soil",
+      "title": "Is the summer soil drying?",
+      "text": "Same idea for soil moisture: one point per fire season, June to September, but only from 2000 to 2025, because this record is shorter. The trend line goes down a little, about -0.36 kg/m² every 10 years. But p = 0.22: 22 in 100, so a slope like this could easily appear by chance. The 95% confidence range, -1.4 to +0.4 kg/m² per decade, includes zero.",
+      "chart": {
+        "variable": "SOILM",
+        "view": "season",
+        "season": "JJAS",
+        "show_trend": true,
+        "highlights": [
+          { "kind": "point", "date": "2005", "label": "2005" },
+          { "kind": "point", "date": "2017", "label": "2017" },
+          { "kind": "point", "date": "2025", "label": "2025" }
+        ]
+      },
+      "question": {
+        "prompt": "What is the fairest way to describe this soil trend?",
+        "options": [
+          {
+            "text": "A small fall that could be chance: no clear evidence yet",
+            "correct": true,
+            "feedback": "Well done: the line tilts down, but p is far above 0.05."
+          },
+          {
+            "text": "The summer soil is clearly drying out",
+            "correct": false,
+            "feedback": "Look how far the points jump above and below the line. With p = 0.22, is the slope clearly bigger than that noise?"
+          },
+          {
+            "text": "The soil never changes from summer to summer",
+            "correct": false,
+            "feedback": "Look at the points: some summers, like 2005, are much drier than others. Each summer is different, even without a clear trend."
+          }
+        ]
+      },
+      "takeaway": "Not significant means no clear evidence of change, not proof that nothing changes."
+    },
+    {
+      "id": "hot_and_dry",
+      "title": "Two clues at once",
+      "text": "Fires love summers that are hot AND dry at the same time. Scientists call this compound conditions. In this chart each dot is one fire season from 2000 to 2025. Further right means a hotter summer. Further down means drier soil. So the bottom-right corner holds the hot and dry summers, and the top-left corner the cool and wet ones. The last five summers have a different colour.",
+      "chart": {
+        "variable": "T2M",
+        "view": "season_scatter",
+        "season": "JJAS",
+        "variables": ["T2M", "SOILM"],
+        "recent_years": 5
+      },
+      "question": {
+        "prompt": "Where on this chart would you look for summers with the highest fire risk?",
+        "options": [
+          {
+            "text": "Bottom right: hot air and dry soil",
+            "correct": true,
+            "feedback": "Exactly: that corner is where both clues point the same way."
+          },
+          {
+            "text": "Top left: cool air and wet soil",
+            "correct": false,
+            "feedback": "Read the axes again: left means cooler and up means wetter. Is that good or bad weather for a fire?"
+          },
+          {
+            "text": "Top right: hot air but wet soil",
+            "correct": false,
+            "feedback": "Heat helps a fire, but wet soil and plants burn badly. Which corner has both heat and dryness?"
+          }
+        ]
+      },
+      "takeaway": "One dot per summer shows whether heat and dryness arrive together."
+    },
+    {
+      "id": "fire_years",
+      "title": "Where do the fire years sit?",
+      "text": "Here 2017 and 2025, the big fire years in Ourense, are marked. 2017 had the second driest summer soil since 2000 (about 18.2 kg/m²). 2025 had the third driest (about 19.0) and the second hottest summer from 2000 to 2025 (about 20.3 °C). 2005 is marked too: the driest summer soil of all. Not every hot summer is dry: compare the dots in the top-right corner.",
+      "chart": {
+        "variable": "T2M",
+        "view": "season_scatter",
+        "season": "JJAS",
+        "variables": ["T2M", "SOILM"],
+        "highlights": [
+          { "kind": "point", "date": "2005", "label": "2005" },
+          { "kind": "point", "date": "2017", "label": "2017 (fires)" },
+          { "kind": "point", "date": "2025", "label": "2025 (fires)" }
+        ]
+      },
+      "question": {
+        "prompt": "In which part of the chart do 2017 and 2025 sit?",
+        "options": [
+          {
+            "text": "Towards the hot and dry corner (bottom right)",
+            "correct": true,
+            "feedback": "Yes: both fire years combine warm summers with very dry soil."
+          },
+          {
+            "text": "In the cool and wet corner (top left)",
+            "correct": false,
+            "feedback": "Find the two labelled dots. Are they high on the chart (wet soil) or low (dry soil)?"
+          },
+          {
+            "text": "Right in the middle, like an average summer",
+            "correct": false,
+            "feedback": "Compare the labelled dots with the crowd of other dots. Are they among the lowest dots or in the centre of the cloud?"
+          }
+        ]
+      },
+      "takeaway": "The big fire years sit where heat and dry soil come together."
+    },
+    {
+      "id": "limits",
+      "title": "What the data cannot see",
+      "text": "This is the soil moisture anomaly: each month compared with its normal value. The lowest point in the whole record is October 2017, after the fire season: that month big fires burned in Galicia, pushed by strong winds from storm Ophelia. Weather sets the stage, but fires also need a spark (often human), wind, and fuel such as abandoned fields and dense scrub. None of those are in these data.",
+      "chart": {
+        "variable": "SOILM",
+        "view": "anomaly",
+        "highlights": [
+          { "kind": "point", "date": "2017-10", "label": "October 2017" },
+          { "kind": "point", "date": "2025-08", "label": "August 2025" }
+        ]
+      },
+      "question": {
+        "prompt": "Which of these can this chart NOT tell you?",
+        "options": [
+          {
+            "text": "What started a fire and how strong the wind was",
+            "correct": true,
+            "feedback": "Right: ignitions, wind and fuel are not measured here."
+          },
+          {
+            "text": "Whether the soil was drier than normal in a given month",
+            "correct": false,
+            "feedback": "Points below zero are months drier than normal. So the chart does show this. What else drives a fire?"
+          },
+          {
+            "text": "Which month had the lowest anomaly",
+            "correct": false,
+            "feedback": "Look at the labelled point October 2017: it is the lowest on the chart. The chart shows that. Think about what is missing."
+          }
+        ]
+      },
+      "takeaway": "Weather data show fire risk, not fires: a good detective names what is missing."
+    }
+  ],
+  "conclusion": {
+    "prompt": "Galicia is green and wet, yet it burns more and more. What do temperature and soil say? Write your conclusion using what the charts showed you.",
+    "variable": "T2M",
+    "placeholder": "Looking at the fire seasons in Ourense, I think..."
+  },
+  "reveal": {
+    "by_variable": {
+      "T2M": "Fire seasons (June to September) in Ourense warm significantly: about +0.29 °C per decade from 1980 to 2026, p = 0.0047; the whole monthly record (January 1980 to September 2026) also rises, about +0.26 °C per decade, p < 0.001, about 1.2 °C in total.",
+      "SOILM": "Summer soil moisture (June to September, 2000 to 2025) falls slightly, about -0.36 kg/m² per decade, but this is not significant (p = 0.22; the 95% range, -1.4 to +0.4 kg/m² per decade, includes zero). The big fire years 2017 and 2025 both had some of the driest summer soils since 2000."
+    },
+    "lesson": "For a hazard, look at the season that matters, not the whole year. Fire risk grows when heat and dry soil come together: here the summers are clearly warming, while the soil drying is not yet clear, and the big fire years sit in the hot and dry corner. Weather is only part of the story: sparks, wind, abandoned land and fuel also decide whether a place burns, and these data cannot see them."
+  }
+}

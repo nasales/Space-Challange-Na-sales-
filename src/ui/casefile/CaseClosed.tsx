@@ -1,0 +1,93 @@
+// Last screen of a featured case, after the tutorial: a "CASE CLOSED" rubber stamp, the
+// verdict on the witness's claim (reveal.claim_verdict + claim_text), the
+// clues from the notebook and what the statistics say. This is the only place the full statistical
+// result of the case file is shown (the case file itself hands over to this screen).
+import { useEffect, useRef } from 'react'
+import type { Witness } from '../../shared/witness'
+import { Header, StatsReveal } from './CaseFile'
+import type { LoadedTutorial } from './loader'
+import Notebook, { type NotebookClue } from './Notebook'
+import './CaseFile.css'
+import './CaseClosed.css'
+
+interface Props {
+  tutorial: LoadedTutorial
+  witness?: Witness
+  clues: NotebookClue[]
+  onClose: () => void
+}
+
+const VERDICT_TEXT = {
+  right: 'The witness was right',
+  wrong: 'The witness was wrong',
+  partly: 'The witness was partly right',
+} as const
+
+export default function CaseClosed({ tutorial, witness, clues, onClose }: Props) {
+  const { script, data } = tutorial
+  const claim = script.scene?.claim
+  const verdict = script.reveal.claim_verdict
+  const witnessName = witness?.name ?? 'The witness'
+
+  const dialogRef = useRef<HTMLDialogElement>(null)
+  const headingRef = useRef<HTMLHeadingElement>(null)
+  useEffect(() => {
+    const dialog = dialogRef.current
+    if (dialog && !dialog.open) dialog.showModal()
+    headingRef.current?.focus({ preventScroll: true })
+    return () => {
+      if (dialog?.open) dialog.close()
+    }
+  }, [])
+
+  return (
+    <dialog ref={dialogRef} className="casefile caseclosed" aria-labelledby="caseclosed-title" onCancel={(e) => e.preventDefault()}>
+      <div className="casefile__sheet">
+        <Header label={`Case closed · ${script.title}`} onClose={onClose} />
+        <div className="casefile__body">
+          <section className="casefile__screen">
+            <div className="caseclosed__hero">
+              <h2 id="caseclosed-title" className="caseclosed__stamp" ref={headingRef} tabIndex={-1}>
+                <span>Case closed</span>
+              </h2>
+              {verdict && (
+                <p className={`caseclosed__verdict caseclosed__verdict--${verdict}`}>{VERDICT_TEXT[verdict]}</p>
+              )}
+            </div>
+
+            {claim && (
+              <div className="caseclosed__claim">
+                <figure className="caseclosed__quote">
+                  <span className="caseclosed__pin" aria-hidden="true" />
+                  <p className="caseclosed__label">{witnessName} said</p>
+                  <blockquote>&ldquo;{claim}&rdquo;</blockquote>
+                </figure>
+                {script.reveal.claim_text && (
+                  <div className="caseclosed__answer">
+                    <p className="caseclosed__label">The detective&rsquo;s answer</p>
+                    <p>{script.reveal.claim_text}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <p className="caseclosed__challenge is-solved" role="status">
+              Case solved: its marker turns green on the map.
+            </p>
+
+            {clues.length > 0 && <Notebook variant="closed" clues={clues} total={script.board?.items.length ?? script.interrogation?.evidence.length ?? script.steps.length} />}
+
+            <h3 className="caseclosed__section">What the statistics say</h3>
+            <StatsReveal script={script} data={data} />
+
+            <div className="casefile__nav casefile__nav--end">
+              <button type="button" className="casefile__btn casefile__btn--primary" onClick={onClose}>
+                Back to the map
+              </button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </dialog>
+  )
+}

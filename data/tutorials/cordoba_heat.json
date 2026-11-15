@@ -1,0 +1,184 @@
+{
+  "case_id": "cordoba_heat",
+  "title": "Córdoba heat",
+  "place": "Córdoba",
+  "intro": {
+    "headline": "August 2021: about 47 °C near Córdoba",
+    "paragraphs": [
+      "In August 2021 a weather station near Córdoba, in southern Spain, measured about 47 °C, the highest temperature ever officially recorded in Spain.",
+      "Córdoba sits in the low valley of the Guadalquivir river, far from the cooling sea breeze. Every few summers the news reports a new heat record. A detective does not trust headlines alone: in this case you will pin NASA data on an evidence board and decide for yourself."
+    ],
+    "question": "Córdoba keeps breaking heat records. Is every summer really hotter, or were those just bad years?"
+  },
+  "scene": {
+    "lines": [
+      { "speaker": "witness", "text": "Buenas tardes, detective! Come into the shade of this olive tree. Out there, the sun bites.", "mood": "happy" },
+      { "speaker": "detective", "text": "Thank you. I am here about the heat in Córdoba. They say this valley keeps breaking records.", "mood": "curious" },
+      { "speaker": "witness", "text": "The Guadalquivir valley is low and far from the sea. In summer the hot air sits here for days, like in an oven.", "mood": "explaining" },
+      { "speaker": "witness", "text": "In August 2021 a station near Córdoba measured about 47 °C. The hottest temperature ever officially recorded in Spain.", "mood": "sad" },
+      { "speaker": "detective", "text": "What is it like to work the olive grove in a summer like that?", "mood": "curious" },
+      { "speaker": "witness", "text": "We start at six in the morning and stop before noon. After that, the ground burns through your boots.", "mood": "explaining" },
+      { "speaker": "witness", "text": "The trees suffer too. In the worst summers the olives stay small and the harvest is short.", "mood": "sad" },
+      { "speaker": "witness", "text": "My grandfather planted some of these trees. Three generations of my family have sweated under them.", "mood": "proud" },
+      { "speaker": "witness", "text": "On the radio they talk about heatwaves every year now. Some people say it is just bad luck.", "mood": "doubtful" },
+      { "speaker": "detective", "text": "And what do you think, Rafael?", "mood": "curious" },
+      { "speaker": "witness", "text": "Bad luck? No, hombre. I feel it in my back. Every summer is hotter than the one before! I am sure of it.", "mood": "insistent" },
+      { "speaker": "detective", "text": "That is a clear claim, and we can test it. A good detective does not guess: we look at the evidence.", "mood": "determined" },
+      { "speaker": "detective", "text": "So, the question: is every summer really hotter, or were those just bad years? Let us pin the NASA data on the board.", "mood": "determined" },
+      { "speaker": "witness", "text": "Go on, then. The data will say what my back already knows!", "mood": "confident" }
+    ],
+    "claim": "Every summer is hotter than the one before."
+  },
+  "steps": [],
+  "board": {
+    "title": "Is every summer hotter than the last?",
+    "instructions": "Rafael's claim has two parts, summers are getting hotter and every summer beats the last one: open each card, solve its task, then pin it to the claim with red string.",
+    "items": [
+      {
+        "id": "record_clipping",
+        "kind": "clipping",
+        "title": "The 47 °C headline",
+        "teaser": "Newspaper, August 2021",
+        "text": "A headline and a chart can both be right and still disagree. Before you decide, read what each one measures: how long a time, and how much land. The newspaper reports a thermometer at a weather station; each point of this chart is a monthly mean over a square of land. Data: NASA MERRA-2.",
+        "clipping": {
+          "headline": "Spain's hottest day on record: about 47 °C near Córdoba",
+          "body": "A heatwave hit southern Spain in August 2021. A weather station near Córdoba measured about 47 °C, the highest temperature ever officially recorded in the country.",
+          "date": "August 2021"
+        },
+        "chart": {
+          "variable": "T2M",
+          "view": "monthly",
+          "range": ["2019-01", "2024-12"],
+          "highlight_max": true,
+          "highlights": [
+            { "kind": "point", "date": "2021-08", "label": "August 2021 (47 °C record)" }
+          ]
+        },
+        "task": {
+          "type": "compare",
+          "prompt": "The newspaper says 47 °C. The chart says about 29 °C for August 2021. Which explanation is right?",
+          "hint": "Read what one point of the chart averages: how many hours, and over how much land?",
+          "success": "Exactly: the 47 °C was one afternoon at one station; each point averages days and nights over a square about 50 km wide. August 2021 is about 29.0 °C here, about 1 °C above a normal August, and not even the hottest month (July 2022, about 31.2 °C).",
+          "options": [
+            { "text": "They measure different things: one afternoon at one station, against a monthly mean of days and nights over a big square.", "correct": true },
+            { "text": "The NASA data are wrong: they missed the heatwave.", "correct": false },
+            { "text": "The 47 °C was measured in a different year.", "correct": false }
+          ]
+        },
+        "relation": "neutral",
+        "relation_feedback": "Says nothing about the claim: one record afternoon is one event, not a trend, and it cannot tell us whether each summer beat the last. To judge that, compare many summers measured the same way.",
+        "clue": "47 °C was one afternoon at one station; the chart shows monthly means."
+      },
+      {
+        "id": "summer_polaroids",
+        "kind": "chart",
+        "title": "Six summers, one ranking",
+        "teaser": "Polaroids of six summers",
+        "text": "Each polaroid is one summer: the mean temperature of June, July and August (JJA), so the yearly cycle cannot confuse us. Sorting all 47 summers from hottest to coolest makes a ranking. If nothing were changing, the hottest summers could come from any part of the 47 years, and only about 2 of the top 10 would be recent. Here 6 of the 10 hottest are from the last 10 years (2017-2026).",
+        "chart": {
+          "variable": "T2M",
+          "view": "season",
+          "season": "JJA",
+          "recent_years": 10
+        },
+        "task": {
+          "type": "order_cards",
+          "prompt": "Drag the six summer polaroids into order, from the hottest summer to the coolest.",
+          "hint": "Find each year on the chart: the higher its dot, the hotter that summer was.",
+          "success": "Right: 2022, 2025, 2003, 1989, 2018, 1997. The two hottest are recent, but 1989 beats 2018.",
+          "cards": ["1989", "2022", "1997", "2018", "2003", "2025"],
+          "order": "desc"
+        },
+        "relation": "supports",
+        "relation_feedback": "Supports the first part of the claim: the hottest summers pile up at the end of the record, as they do when a series warms. It cannot prove the second part: an old summer (1989) beats a recent one (2018).",
+        "clue": "6 of the 10 hottest summers are from 2017-2026."
+      },
+      {
+        "id": "the_2018_drop",
+        "kind": "chart",
+        "title": "The summer that broke the rule",
+        "teaser": "Summers 2014 to 2026, in order",
+        "text": "Now the summers in time order. If every summer were hotter than the one before, the points would climb like stairs. They do not: in 24 of the 46 steps from 1980 to 2026, a summer was cooler than the one before it. Even from 2015 to 2026, 6 of the 12 summers came in below the previous one. Weather still varies a lot from year to year.",
+        "chart": {
+          "variable": "T2M",
+          "view": "season",
+          "season": "JJA",
+          "range": ["2014", "2026"]
+        },
+        "task": {
+          "type": "click_point",
+          "prompt": "Click the summer with the biggest drop: the one that fell furthest below the summer just before it.",
+          "hint": "Look for the steepest step down between two neighbouring points.",
+          "success": "Yes: summer 2018 (about 26.1 °C) was almost 2 °C cooler than summer 2017 (about 28.0 °C).",
+          "answer": "2018"
+        },
+        "relation": "contradicts",
+        "relation_feedback": "Contradicts the claim as Rafael said it: if every summer were hotter than the last, there would be no step down at all. There are many, and 2018 is the biggest in recent years.",
+        "clue": "Not every summer is hotter: 2018 was about 1.9 °C cooler than 2017."
+      },
+      {
+        "id": "summer_ruler",
+        "kind": "chart",
+        "title": "A ruler through the summers",
+        "teaser": "All summers, 1980 to 2026",
+        "text": "A trend is the slow change hidden under the ups and downs. Fit it by eye first, then compare with the real line, a Sen slope. Two numbers tell how sure we can be: the p-value is the chance of a slope this big if nothing were changing, and the 95% confidence range shows where the true slope probably lies. If that range is all above zero, the warming is significant.",
+        "chart": {
+          "variable": "T2M",
+          "view": "season",
+          "season": "JJA"
+        },
+        "task": {
+          "type": "fit_line",
+          "prompt": "Drag the two ends of the ruler so it runs through the middle of the cloud of summers.",
+          "hint": "Do not chase single points: leave about half of the summers above the ruler and half below, at both ends.",
+          "success": "Good fit! The real trend is about +0.47 °C per decade, roughly 2.2 °C from 1980 to 2026. p = 0.0002 and the 95% range, +0.26 to +0.70 °C per decade, is all above zero: significant warming. The summers still scatter above and below the line.",
+          "tolerance": 0.3
+        },
+        "relation": "supports",
+        "relation_feedback": "Supports the first part of the claim: the summers warm clearly, and the result is significant. But most points sit off the line, above or below it: a trend is an average rise, not a promise for every year.",
+        "clue": "Summers warm about 0.47 °C per decade, p = 0.0002: significant."
+      },
+      {
+        "id": "hot_month_tally",
+        "kind": "datacard",
+        "title": "Counting very hot months",
+        "teaser": "Months above 28 °C, year by year",
+        "text": "Another way to read a series is to count how often it crosses a line. Each bar is one year: how many of its months averaged more than 28 °C, days and nights together. A count over ten years is robust: one odd summer cannot change it much. Comparing two periods of the same length shows whether hot months have become common.",
+        "chart": {
+          "variable": "T2M",
+          "view": "threshold_count",
+          "threshold_id": "above_28"
+        },
+        "task": {
+          "type": "tally",
+          "prompt": "Count the months above 28 °C in each period and type the two totals.",
+          "rule": "Add up the bars (months above 28 °C) of every year in the period.",
+          "hint": "Add the height of every bar in the period: a bar of 2 counts as 2 months.",
+          "success": "Right: 5 hot months in 1980-1989 and 19 in 2016-2025, almost four times as many.",
+          "periods": [
+            { "label": "1980-1989", "from": "1980", "to": "1989" },
+            { "label": "2016-2025", "from": "2016", "to": "2025" }
+          ],
+          "answers": [5, 19]
+        },
+        "relation": "supports",
+        "relation_feedback": "Supports the first part of the claim: very hot months went from about one every two years to about two every year. It is a total over ten years, so it says nothing about each summer beating the one before.",
+        "clue": "Months above 28 °C: 5 in 1980-1989, 19 in 2016-2025."
+      }
+    ],
+    "summary": "Córdoba's summers are clearly warming: the hottest summers and the very hot months pile up in recent years. But the summers still go up and down, and about half of them were cooler than the year before."
+  },
+  "conclusion": {
+    "prompt": "Córdoba keeps breaking heat records. Is every summer really hotter, or were those just bad years? Write your conclusion using the evidence on the board.",
+    "variable": "T2M",
+    "placeholder": "Looking at the summer temperatures in Córdoba from 1980 to 2026, I think..."
+  },
+  "reveal": {
+    "by_variable": {
+      "T2M": "Summer (June to August) temperature in Córdoba rises clearly from 1980 to 2026: about +0.47 °C per decade (95% range +0.26 to +0.70 °C per decade), p = 0.0002, and 6 of the 10 hottest summers are from 2017 to 2026. The full monthly record (January 1980 to September 2026) also rises: about +0.33 °C per decade, p < 0.001. Data: NASA MERRA-2."
+    },
+    "lesson": "A warming trend does not make every summer hotter than the last: it makes hot summers much more frequent, so records pile up at the end of the series. And a daily record at one station is not the same thing as a monthly mean over a large square.",
+    "claim_verdict": "partly",
+    "claim_text": "Rafael, your back is right about the big picture: Córdoba's summers are about 2 °C warmer than in 1980, and very hot months are far more common. But not every summer beats the last one: 2018 was almost 2 °C cooler than 2017."
+  }
+}

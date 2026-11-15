@@ -272,6 +272,12 @@ export function createCaseMarkers(cases: CaseMarkerData[]) {
       return null
     },
 
+    /** Centre and radius of a case's trigger zone (world units), or null if the case has no marker. */
+    positionOf(caseId: string): { x: number; z: number; radius: number } | null {
+      const m = markers.find((q) => q.id === caseId)
+      return m ? { x: m.x, z: m.z, radius: m.radius } : null
+    },
+
     /** Shows a case as solved (green) or open (yellow). */
     setCompleted(caseId: string, isDone: boolean) {
       const m = markers.find((q) => q.id === caseId)

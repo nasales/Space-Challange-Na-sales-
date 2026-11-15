@@ -41,6 +41,7 @@ function duckingMaterial(
   shared = {
     uDuckA: { value: new THREE.Vector2() }, // detective
     uDuckB: { value: new THREE.Vector2() }, // cámara
+    uDuckC: { value: new THREE.Vector2() }, // witness in a dialogue (else = uDuckB: no second line)
     uTime: { value: 0 }, // stepped on twos
   },
   duckOn = true,
@@ -97,7 +98,7 @@ function duckingMaterial(
     shader.vertexShader = shader.vertexShader
       .replace(
         '#include <common>',
-        '#include <common>\nuniform vec2 uDuckA;\nuniform vec2 uDuckB;\nuniform float uTime;\nuniform float uDuckOn;\nattribute float aSway;',
+        '#include <common>\nuniform vec2 uDuckA;\nuniform vec2 uDuckB;uniform vec2 uDuckC;\nuniform float uTime;\nuniform float uDuckOn;\nattribute float aSway;',
       )
       .replace(
         '#include <begin_vertex>',
@@ -110,6 +111,10 @@ function duckingMaterial(
         vec2 duckAB = uDuckB - uDuckA;
         float duckT = clamp(dot(duckOrigin - uDuckA, duckAB) / max(dot(duckAB, duckAB), 1e-3), 0.0, 1.0);
         float duckD = distance(duckOrigin, uDuckA + duckAB * duckT);
+        // Second line (dialogue): camera -> witness, so no tree covers him either
+        vec2 duckCB = uDuckB - uDuckC;
+        float duckT2 = clamp(dot(duckOrigin - uDuckC, duckCB) / max(dot(duckCB, duckCB), 1e-3), 0.0, 1.0);
+        duckD = min(duckD, distance(duckOrigin, uDuckC + duckCB * duckT2));
         float duck = 1.0 - smoothstep(${DUCK_RADIUS.toFixed(1)}, ${(DUCK_RADIUS + DUCK_FADE).toFixed(1)}, duckD) * uDuckOn;
         transformed.y *= mix(1.0, 0.22, duck);
         transformed.xz *= mix(1.0, 0.7, duck);
@@ -153,6 +158,7 @@ export function createScenery(items: SceneryItem[]) {
   const pos = new THREE.Vector3()
   const scl = new THREE.Vector3()
   const chunks: THREE.InstancedMesh[] = []
+  const chunkItems = new Map<THREE.InstancedMesh, SceneryItem[]>()
   for (const list of buckets.values()) {
     const mesh = new THREE.InstancedMesh(geometryFor(list[0].kind), list[0].kind === 'wheat' ? flatMaterial : material, list.length)
     list.forEach((it, i) => {
@@ -166,6 +172,7 @@ export function createScenery(items: SceneryItem[]) {
     mesh.castShadow = mesh.receiveShadow = true
     group.add(mesh)
     chunks.push(mesh)
+    chunkItems.set(mesh, list)
   }
 
   // ---- Molinos: cuerpo + aspas que giran ----
@@ -192,9 +199,10 @@ export function createScenery(items: SceneryItem[]) {
    * Gira las aspas de los molinos cercanos y dice a los árboles dónde están el detective (x, z)
    * y la cámara, para que se agachen los que se meten en medio. Oculta los trozos lejanos.
    * @param cameraDistance distancia de la cámara al detective
+   * @param also in a dialogue, the witness: trees between the camera and him duck too
    */
   let clock = 0
-  const update = (dt: number, x: number, z: number, camera: THREE.Vector3, cameraDistance: number) => {
+  const update = (dt: number, x: number, z: number, camera: THREE.Vector3, cameraDistance: number, also?: { x: number; z: number } | null) => {
     clock += dt
     uniforms.uTime.value = Math.floor(clock * ANIM_FPS) / ANIM_FPS
     const aerial = cameraDistance > HIDE_ABOVE
@@ -204,6 +212,8 @@ export function createScenery(items: SceneryItem[]) {
     }
     uniforms.uDuckA.value.set(x, z)
     uniforms.uDuckB.value.set(camera.x, camera.z)
+    if (also) uniforms.uDuckC.value.set(also.x, also.z)
+    else uniforms.uDuckC.value.set(camera.x, camera.z)
     sails.forEach((s, i) => {
       const w = windmills[i]
       if ((w.x - x) ** 2 + (w.z - z) ** 2 < ANIMATE_DISTANCE ** 2) s.rotation.z += SAIL_SPEED * dt
@@ -217,10 +227,32 @@ export function createScenery(items: SceneryItem[]) {
       return (w.x - x) ** 2 + (w.z - z) ** 2 < r * r
     })
 
+  /**
+   * Removes the trees and vines (not wheat or windmills) within `radius` of (x, z): a clearing,
+   * e.g. round a witness, so no tree stands between him and the detective or over the bubbles.
+   */
+  const clear = (x: number, z: number, radius: number) => {
+    const zero = new THREE.Matrix4().makeScale(0, 0, 0)
+    for (const [mesh, list] of chunkItems) {
+      if (list[0].kind === 'wheat') continue
+      const c = mesh.boundingSphere!.center
+      if ((c.x - x) ** 2 + (c.z - z) ** 2 > (radius + mesh.boundingSphere!.radius) ** 2) continue
+      let changed = false
+      list.forEach((it, i) => {
+        if ((it.x - x) ** 2 + (it.z - z) ** 2 < radius * radius) {
+          mesh.setMatrixAt(i, zero)
+          changed = true
+        }
+      })
+      if (changed) mesh.instanceMatrix.needsUpdate = true
+    }
+  }
+
   return {
     group,
     update,
     blocks,
+    clear,
     count: items.length,
     dispose: () => {
       geometries.forEach((g) => g.dispose())
