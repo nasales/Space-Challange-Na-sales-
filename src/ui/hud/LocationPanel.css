@@ -1,28 +1,15 @@
+/* Place name under the minimap: quiet, half-transparent text with no box of its own. */
 .location-panel {
-  position: relative; /* placed by .hud__corner, right under the minimap */
   box-sizing: border-box;
-  min-width: 172px;
-  max-width: min(260px, calc(100vw - 32px));
-  padding: 10px 14px 10px 32px;
-  background: rgb(255 255 255 / 0.9);
-  border: 2px solid #1c1f26;
-  border-radius: 10px;
-  box-shadow: 3px 3px 0 #1c1f26; /* same hard toy shadow as the controls hint */
-  color: #1c1f26;
+  max-width: min(210px, calc(100vw - 32px));
+  color: #1a1423;
+  text-align: center;
+  opacity: 0.68;
+  /* soft light halo so the text stays readable over any terrain */
+  text-shadow:
+    0 0 3px rgb(255 255 255 / 0.9),
+    0 0 8px rgb(255 255 255 / 0.6);
   pointer-events: none;
-}
-
-/* Red pin, like on a detective's board */
-.location-panel__pin {
-  position: absolute;
-  left: 12px;
-  top: 17px;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: #e5322d;
-  border: 2px solid #1c1f26;
-  box-shadow: inset -2px -2px 0 rgb(0 0 0 / 0.25);
 }
 
 .location-panel p {
@@ -30,51 +17,34 @@
 }
 
 .location-panel__place {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  font-size: 19px;
-  font-weight: 800;
+  font-size: 15px;
+  font-weight: 700;
   line-height: 1.2;
 }
 
 .location-panel__km {
-  font-size: 13px;
+  margin-left: 6px;
+  font-size: 12px;
   font-weight: 600;
-  color: #5b6270;
   white-space: nowrap;
 }
 
 .location-panel__region {
-  margin-top: 2px;
-  font-size: 14px;
-  color: #3b4250;
-}
-
-/* Near a landmark the pin turns gold */
-.location-panel--landmark .location-panel__pin {
-  background: #f2b632;
+  margin-top: 1px;
+  font-size: 12px;
+  font-weight: 500;
 }
 
 @media (max-width: 600px), (max-height: 500px) {
   .location-panel {
-    min-width: 116px;
-    max-width: min(200px, calc(100vw - 32px));
-    padding: 7px 10px 7px 26px;
-  }
-
-  .location-panel__pin {
-    left: 9px;
-    top: 11px;
-    width: 10px;
-    height: 10px;
+    max-width: min(140px, calc(100vw - 32px));
   }
 
   .location-panel__place {
-    font-size: 15px;
+    font-size: 13px;
   }
 
   .location-panel__region {
-    font-size: 12px;
+    font-size: 11px;
   }
 }

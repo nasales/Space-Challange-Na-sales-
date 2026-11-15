@@ -15,7 +15,6 @@ export default function LocationPanel({ info }: { info: LocationInfo }) {
       aria-live="polite"
       aria-label="Current location"
     >
-      <span className="location-panel__pin" aria-hidden="true" />
       {lm ? (
         <>
           <p className="location-panel__place">{lm.name}</p>
