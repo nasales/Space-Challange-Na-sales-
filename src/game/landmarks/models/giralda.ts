@@ -52,6 +52,7 @@ function shaftFace(kit: Kit) {
     const w = ajimez(kit, 3.4, 3.4)
     w.position.set(0, y, 0.2)
     g.add(w)
+    if (y === 20 || y === 36 || y === 51) g.add(kit.lightPanel(2.2, 2.4, 0, y + 0.6, 0.8)) // lit at night
   }
 
   // Side bands: arcade of small blind arches and, above it, a tall sebka panel
@@ -111,6 +112,11 @@ export function buildGiralda(kit: Kit): THREE.Group {
   const bells = openStorey(kit, BELL_W, BELL_H, 5, 5.6, 1.4, BRICK, TRIM, HOLE)
   bells.position.y = y
   g.add(bells)
+  g.add(kit.lightHalo(6.5, 0, y + BELL_H / 2, 0, 0.9)) // night: the belfry glows from inside
+  for (let k = 0; k < 4; k++) {
+    const a = (k * Math.PI) / 2
+    g.add(kit.lightHalo(6, Math.sin(a) * (S / 2 + 3), 4, Math.cos(a) * (S / 2 + 3), 0.35)) // floodlights at the foot
+  }
   for (let k = 0; k < 4; k++) {
     const a = (k * Math.PI) / 2, r = BELL_W / 2 - 1.6
     const bx = Math.sin(a) * r, bz = Math.cos(a) * r
@@ -136,6 +142,7 @@ export function buildGiralda(kit: Kit): THREE.Group {
   const az = openStorey(kit, AZ_W, AZ_H, 3, 2.8, 1.6, TRIM, TRIM, HOLE)
   az.position.y = y
   g.add(az)
+  g.add(kit.lightHalo(4.5, 0, y + AZ_H / 2, 0, 0.7))
   y += AZ_H
   g.add(kit.box(AZ_W + 1.2, 0.6, AZ_W + 1.2, RELIEF, 0, y, 0))
   y += 0.6

@@ -33,5 +33,7 @@ export function buildAcueductoSegovia(kit: Kit): THREE.Group {
   g.add(upper)
   // Canal del agua en lo alto
   g.add(kit.box(L + 0.4, 1.2, D * 0.9 + 0.4, BAND, 0, LOW + BAND_H + HIGH, 0))
+  // Night lights: a warm glow under every other tall arch
+  for (let i = 0; i < ARCHES; i += 2) g.add(kit.lightHalo(3, -L / 2 + 1 + SPAN * (i + 0.5), 5, 0, 0.7))
   return g
 }

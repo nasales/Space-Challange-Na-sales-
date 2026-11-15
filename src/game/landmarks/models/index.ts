@@ -17,6 +17,7 @@ import { buildTeatroMerida, buildTeatroMeridaBase } from './teatroMerida'
 import { buildBasilicaPilar, buildBasilicaPilarBase } from './basilicaPilar'
 import { buildPlazaMayorSalamanca, buildPlazaMayorSalamancaBase } from './plazaMayorSalamanca'
 import { buildCasasColgadas, buildCasasColgadasBase } from './casasColgadas'
+import { buildCastilloPenafiel, buildCastilloPenafielBase } from './castilloPenafiel'
 
 export interface LandmarkModel {
   /** El monumento en sí (unidades del modelo, base en y = 0). */
@@ -46,4 +47,5 @@ export const LANDMARK_MODELS: Record<string, LandmarkModel> = {
   'basilica-pilar': { build: buildBasilicaPilar, base: buildBasilicaPilarBase, margin: 6 },
   'plaza-mayor-salamanca': { build: buildPlazaMayorSalamanca, base: buildPlazaMayorSalamancaBase, margin: 4 },
   'casas-colgadas': { build: buildCasasColgadas, base: buildCasasColgadasBase, margin: 6 },
+  'castillo-penafiel': { build: buildCastilloPenafiel, base: buildCastilloPenafielBase, margin: 4 },
 }

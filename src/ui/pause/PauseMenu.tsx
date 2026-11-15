@@ -2,7 +2,7 @@
 // The panel only listens; the app shell decides what pausing means (the game ignores driving input
 // while open). Esc priority: the magnifier picker handles Esc first and marks it handled
 // (preventDefault), so an Esc that closes the picker never opens this panel.
-import { useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent } from 'react'
+import { useEffect, useLayoutEffect, useRef, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import './PauseMenu.css'
 
 interface Props {
@@ -17,9 +17,10 @@ export default function PauseMenu({ open, canOpen, onOpenChange, onMainMenu }: P
   const panel = useRef<HTMLDivElement>(null)
   const resumeButton = useRef<HTMLButtonElement>(null)
 
-  // Latest values for the window key handler, which is attached only once
+  // Latest values for the window key handler, which is attached only once. Layout effect, so the
+  // ref is current before the browser paints: an Esc right after the game becomes ready must see it
   const state = useRef({ open, canOpen, onOpenChange })
-  useEffect(() => {
+  useLayoutEffect(() => {
     state.current = { open, canOpen, onOpenChange }
   })
 

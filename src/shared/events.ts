@@ -28,6 +28,8 @@ export interface HudState {
   z: number
   /** Facing in radians: forward = (-sin(heading), -cos(heading)), so 0 faces north */
   heading: number
+  /** Featured case whose trigger zone the detective stands in (case id), or null */
+  caseZone: string | null
 }
 
 /** 'intro': the map is drawn and the camera is swooping down to the detective (no control, no HUD yet). */
@@ -73,6 +75,8 @@ export interface GameViewProps extends GameCallbacks {
   focusLens?: boolean
   /** Detective clothes picked in the Wardrobe; changing it recolors him live (the map is not rebuilt). */
   outfit?: Outfit
-  /** true while the pause panel is open: the game ignores driving input (the detective coasts to a stop) */
+  /** true while the pause panel or a featured case level is open: the game ignores driving input */
   paused?: boolean
+  /** Featured case ids already solved (their markers are drawn green) */
+  completedCases?: readonly string[]
 }

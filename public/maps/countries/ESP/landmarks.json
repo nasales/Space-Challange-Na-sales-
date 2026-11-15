@@ -99,6 +99,19 @@
       "description": "8th-century Umayyad mosque with its forest of red and white arches."
     },
     {
+      "id": "castillo-penafiel",
+      "name": "Peñafiel Castle",
+      "city": "Peñafiel",
+      "lat": 41.5953,
+      "lon": -4.1170,
+      "heading": 0,
+      "scale": 0.077,
+      "plaza": 12,
+      "blend": 24,
+      "clearance": 20,
+      "description": "Long, narrow 'ship-shaped' castle on a hill crest, with a 34 m keep between two courtyards."
+    },
+    {
       "id": "catedral-burgos",
       "name": "Catedral de Burgos",
       "city": "Burgos",

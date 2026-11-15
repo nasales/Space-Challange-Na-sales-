@@ -17,6 +17,14 @@ export interface Opening {
   bottom?: number
 }
 
+/** A night light placed in a model (see lightPanel / lightHalo): for a halo, w = h = radius. */
+export interface LightMarker {
+  panel: boolean
+  w: number
+  h: number
+  intensity: number
+}
+
 /** Bevel of the chunky boxes, as a fraction of their smallest side (cartoon toy look). */
 const BEVEL = 0.14
 const MAX_BEVEL = 1.5
@@ -191,12 +199,46 @@ export function createKit() {
     return out
   }
 
+  /**
+   * Night light on a wall (lit window, arch, door): a w x h rectangle facing +Z of its parent,
+   * base at y like slab(). It is only a marker, placed like any other piece (so it follows the
+   * rotations of its group); createLandmarks turns the markers into the night-light mesh.
+   * Put it just in front of the wall or window it lights.
+   */
+  const lightPanel = (w: number, h: number, x = 0, y = 0, z = 0, rotY = 0, intensity = 1) => {
+    const o = new THREE.Object3D()
+    o.position.set(x, y + h / 2, z)
+    o.rotation.y = rotY
+    o.userData.nightLight = { panel: true, w, h, intensity } satisfies LightMarker
+    return o
+  }
+
+  /** Round night glow centred at (x, y, z): lantern, tower top or soft floodlight. Marker, like lightPanel. */
+  const lightHalo = (radius: number, x = 0, y = 0, z = 0, intensity = 1) => {
+    const o = new THREE.Object3D()
+    o.position.set(x, y, z)
+    o.userData.nightLight = { panel: false, w: radius, h: radius, intensity } satisfies LightMarker
+    return o
+  }
+
+  /** The night-light markers under `root`, each with its matrix relative to `root`. Call before merge(). */
+  const lights = (root: THREE.Object3D) => {
+    root.updateMatrixWorld(true)
+    const toRoot = new THREE.Matrix4().copy(root.matrixWorld).invert()
+    const out: (LightMarker & { matrix: THREE.Matrix4 })[] = []
+    root.traverse((o) => {
+      const marker = o.userData.nightLight as LightMarker | undefined
+      if (marker) out.push({ ...marker, matrix: new THREE.Matrix4().multiplyMatrices(toRoot, o.matrixWorld) })
+    })
+    return out
+  }
+
   const dispose = () => {
     geometries.forEach((g) => g.dispose())
     materials.forEach((m) => m.dispose())
   }
 
-  return { mat, mesh, box, slab, taper, facade, pediment, merge, dispose }
+  return { mat, mesh, box, slab, taper, facade, pediment, lightPanel, lightHalo, lights, merge, dispose }
 }
 
 export type Kit = ReturnType<typeof createKit>
