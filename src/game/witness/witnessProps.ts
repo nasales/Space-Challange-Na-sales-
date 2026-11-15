@@ -3,6 +3,10 @@
 //   - Pilar (Madrid, newspaper kiosk owner): a green newspaper kiosk at her side, and a shop apron.
 //     (Behind her it left only high dialogue views on the narrow plaza by the Puerta de Alcala fence.)
 //   - Rafael (Cordoba, olive farmer): crates of olives at his side.
+//   - Jordi (Aneto, mountain hut keeper): a wooden trail signpost and a rucksack with an ice axe
+//     leaning on a rock.
+//   - Carmen (Donana, birdwatching guide): a spotting telescope on a tripod and a little wooden
+//     board with a flamingo painted on it.
 // Props are simple toon boxes, like the rest of the map (no external assets). The detective cannot
 // walk through them (see blocks), and the dialogue camera ray-casts them (see createWitnesses.props).
 //
@@ -12,7 +16,7 @@ import * as THREE from 'three'
 import { toonMaterial } from '../scene/toonGradient'
 import type { WitnessStyle } from './createWitness'
 
-export type WitnessPropKind = 'kiosk' | 'olive-crates'
+export type WitnessPropKind = 'kiosk' | 'olive-crates' | 'trail-sign' | 'bird-scope'
 
 export interface WitnessExtras {
   style?: WitnessStyle
@@ -20,12 +24,19 @@ export interface WitnessExtras {
     kind: WitnessPropKind
     /** Where it stands, from the witness: 'behind' (his back) or 'side' (his right hand side) */
     place: 'behind' | 'side'
+    /**
+     * Show it in the dialogue: the detective stands across from it, so the camera frames it beside
+     * the witness (low props only, under ~1.5 m: it stands in the room kept for the bubbles)
+     */
+    frame?: boolean
   }
 }
 
 export const WITNESS_EXTRAS: Partial<Record<string, WitnessExtras>> = {
   filomena_madrid: { style: { apron: 'bib' }, prop: { kind: 'kiosk', place: 'side' } },
   cordoba_heat: { prop: { kind: 'olive-crates', place: 'side' } },
+  aneto_glacier: { prop: { kind: 'trail-sign', place: 'side', frame: true } },
+  donana: { prop: { kind: 'bird-scope', place: 'side', frame: true } },
 }
 
 /** Metres to world units for the props: a bit smaller than true scale, like the toy houses. */
@@ -39,6 +50,8 @@ const SHADOW = 0.55
 export const PROP_SIZE: Record<WitnessPropKind, { halfW: number; halfD: number; gap: number }> = {
   kiosk: { halfW: 1.25 * S, halfD: 0.95 * S, gap: 2.5 },
   'olive-crates': { halfW: 0.75 * S, halfD: 0.3 * S, gap: 2.5 },
+  'trail-sign': { halfW: 0.95 * S, halfD: 0.45 * S, gap: 2 },
+  'bird-scope': { halfW: 0.85 * S, halfD: 0.45 * S, gap: 2 },
 }
 
 export function createWitnessProp(kind: WitnessPropKind) {
@@ -59,6 +72,18 @@ export function createWitnessProp(kind: WitnessPropKind) {
     m.castShadow = true
     m.receiveShadow = true
     parent.add(m)
+    return m
+  }
+  /** Any geometry in metres (built at metre scale, scaled here), placed and turned (rad). */
+  const part = (g: THREE.BufferGeometry, color: number, x: number, y: number, z: number, rx = 0, ry = 0, rz = 0) => {
+    g.scale(S, S, S)
+    geometries.push(g)
+    const m = new THREE.Mesh(g, mat(color))
+    m.position.set(x * S, y * S, z * S)
+    m.rotation.set(rx, ry, rz)
+    m.castShadow = true
+    m.receiveShadow = true
+    group.add(m)
     return m
   }
 
@@ -101,6 +126,85 @@ export function createWitnessProp(kind: WitnessPropKind) {
       const m = box(0.28, 0.36, 0.02, covers[(i + 2) % covers.length], -0.85 + i * 0.34, 1.75 + (i % 2) * 0.12, 0.91) // back
       m.castShadow = false
     }
+  } else if (kind === 'trail-sign') {
+    // Pyrenees trail junction: a wooden post with two yellow arrow boards and a red-white trail
+    // blaze, and beside it a grey rock with a rucksack (rolled mat on top) and an ice axe leaning on it
+    const WOOD = 0x8a5a2e, BOARD = 0xf2c230, INK = 0x3a2a1a, ROCK = 0x8e8a94, ROCK_DARK = 0x6e6a78
+    const PACK = 0x2f7f86, PACK_DARK = 0x225e64, MAT = 0x7a9a3c, METAL = 0xb8c0c8
+    // Signpost (left), arrows pointing either way
+    box(0.12, 2.1, 0.12, WOOD, -0.55, 1.05, 0)
+    box(0.13, 0.08, 0.13, 0xf4f1ea, -0.55, 1.95, 0) // trail blaze: white over red
+    box(0.13, 0.08, 0.13, 0xc8402f, -0.55, 1.87, 0)
+    for (const [dir, y] of [[1, 1.62], [-1, 1.36]] as const) {
+      box(0.62, 0.17, 0.04, BOARD, -0.55 + dir * 0.34, y, -0.08)
+      part(new THREE.CylinderGeometry(0.12, 0.12, 0.04, 3), BOARD, -0.55 + dir * 0.7, y, -0.08, Math.PI / 2, 0, -dir * Math.PI / 2) // arrow tip
+      box(0.36, 0.03, 0.01, INK, -0.55 + dir * 0.32, y + 0.02, -0.105) // lettering line
+      box(0.24, 0.03, 0.01, INK, -0.55 + dir * 0.28, y - 0.04, -0.105)
+    }
+    // Rock (right) with the rucksack and the ice axe leaning on it
+    part(new THREE.DodecahedronGeometry(0.42, 0), ROCK, 0.45, 0.22, 0.05, 0, 0.4, 0).scale.set(1.3, 0.62, 1)
+    part(new THREE.DodecahedronGeometry(0.22, 0), ROCK_DARK, 0.9, 0.12, -0.1, 0.3, 0, 0)
+    const pack = new THREE.Group()
+    pack.position.set(0.35 * S, 0.02 * S, -0.3 * S)
+    pack.rotation.x = 0.28 // leaning back on the rock
+    group.add(pack)
+    box(0.42, 0.56, 0.26, PACK, 0, 0.3, 0, pack) // body
+    box(0.44, 0.12, 0.28, PACK_DARK, 0, 0.6, 0.01, pack) // top flap
+    box(0.3, 0.2, 0.06, PACK_DARK, 0, 0.22, -0.16, pack) // front pocket
+    const mat2 = part(new THREE.CylinderGeometry(0.08, 0.08, 0.5, 8), MAT, 0, 0, 0, 0, 0, Math.PI / 2) // rolled mat
+    group.remove(mat2)
+    mat2.position.set(0, 0.74 * S, 0.02 * S)
+    pack.add(mat2)
+    const axe = new THREE.Group()
+    axe.position.set(0.82 * S, 0, -0.22 * S)
+    axe.rotation.z = 0.32 // leaning on the rock
+    group.add(axe)
+    box(0.05, 0.75, 0.05, 0x4a4a52, 0, 0.38, 0, axe) // shaft
+    box(0.32, 0.05, 0.04, METAL, -0.04, 0.76, 0, axe) // head
+    box(0.06, 0.12, 0.04, METAL, 0.1, 0.72, 0, axe) // adze
+  } else if (kind === 'bird-scope') {
+    // Birdwatching: a spotting telescope on a tripod (looking out over the marsh) and a small
+    // wooden board on a post with a pink flamingo painted on it
+    const LEG = 0x3a3a42, SCOPE = 0x5e6b3a, EYE = 0x222228, GLASS = 0x9fd4ec
+    const WOOD = 0x9a6a3c, BOARD = 0xf2e8d0, PINK = 0xef8fa6, BLACK = 0x2a2228
+    // Tripod (right): three legs from the head down to a 0.35 m circle
+    const head = new THREE.Vector3(0.45, 1.22, 0)
+    for (let k = 0; k < 3; k++) {
+      const a = (k / 3) * Math.PI * 2 + 0.3
+      const foot = new THREE.Vector3(0.45 + Math.sin(a) * 0.36, 0, Math.cos(a) * 0.36)
+      const len = head.distanceTo(foot)
+      const leg = part(new THREE.CylinderGeometry(0.025, 0.03, len, 5), LEG, (head.x + foot.x) / 2, (head.y + foot.y) / 2, (head.z + foot.z) / 2)
+      leg.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), head.clone().sub(foot).normalize())
+    }
+    box(0.12, 0.08, 0.12, LEG, head.x, head.y + 0.02, head.z)
+    // Telescope: tube tilted up a little, pointing out to the side (+x), eyepiece on the near end
+    const scope = new THREE.Group()
+    scope.position.set(head.x * S, (head.y + 0.12) * S, head.z * S)
+    scope.rotation.z = 0.18
+    group.add(scope)
+    const tube = part(new THREE.CylinderGeometry(0.07, 0.06, 0.55, 10), SCOPE, 0, 0, 0, 0, 0, -Math.PI / 2)
+    const lens = part(new THREE.CylinderGeometry(0.075, 0.075, 0.03, 10), GLASS, 0, 0, 0, 0, 0, -Math.PI / 2)
+    const eye = part(new THREE.CylinderGeometry(0.035, 0.035, 0.14, 8), EYE, 0, 0, 0, 0, 0, -Math.PI / 2)
+    for (const [m, x] of [[tube, 0.08], [lens, 0.36], [eye, -0.25]] as const) {
+      group.remove(m)
+      m.position.set(x * S, 0, 0)
+      scope.add(m)
+    }
+    // Board (left) on a post: a flamingo standing on one leg, painted on both faces (the dialogue
+    // camera may see either)
+    box(0.09, 1.2, 0.09, WOOD, -0.5, 0.6, 0.05)
+    box(0.62, 0.48, 0.06, WOOD, -0.5, 1.2, 0.0) // frame
+    box(0.54, 0.4, 0.09, BOARD, -0.5, 1.2, 0.0)
+    const f = (w: number, h: number, x: number, y: number, c: number) => {
+      box(w, h, 0.01, c, -0.5 + x, 1.2 + y, -0.05)
+      box(w, h, 0.01, c, -0.5 - x, 1.2 + y, 0.05) // back face: mirrored, so it reads the same way round
+    }
+    f(0.16, 0.08, 0.04, 0.0, PINK) // body
+    f(0.03, 0.14, -0.04, 0.1, PINK) // neck
+    f(0.07, 0.04, -0.03, 0.17, PINK) // head
+    f(0.03, 0.025, -0.08, 0.155, BLACK) // beak tip
+    f(0.015, 0.14, 0.05, -0.1, PINK) // leg
+    f(0.4, 0.03, 0, -0.18, 0x6f8c34) // reeds line
   } else {
     // Olive harvest crates: two stacked wooden crates and one on the ground, full of green and
     // black olives (small balls on top)

@@ -82,6 +82,12 @@ export interface DialogueScene {
   /** Points just above their heads (world) */
   detectiveTop: THREE.Vector3
   witnessTop: THREE.Vector3
+  /**
+   * Optional: direction (atan2(dx, dz), from the witness) where the detective tries to stand first,
+   * instead of his own side. Used to stand across from a witness's prop, so the camera shows it
+   * beside the witness (Jordi's signpost, Carmen's telescope) instead of hidden behind him.
+   */
+  standFrom?: number | null
 }
 
 /** What the dialogue needs to know about the map. */
@@ -295,7 +301,7 @@ export function createDialogue(camera: THREE.PerspectiveCamera, world: DialogueW
         // the witness, until one is standable and the camera sees both from there. First pass: only
         // the low 3/4 views, on a spot he can walk to in a straight line (no prop or house in the
         // way); second pass: low views, any spot; third pass: any view (higher, looking down)
-        const base = Math.atan2(car.x - w.x, car.z - w.z)
+        const base = s.standFrom ?? Math.atan2(car.x - w.x, car.z - w.z)
         const tall = Math.max(4, s.detectiveTop.y - car.y)
         const reachable = (x: number, z: number) => {
           const len = Math.hypot(x - car.x, z - car.z) || 1

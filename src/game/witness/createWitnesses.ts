@@ -12,14 +12,18 @@
 // while the detective is in the case zone. All of it hides during the dialogue.
 //
 // Some witnesses have a small trade prop (witnessProps.ts: Pilar's newspaper kiosk, Rafael's olive
-// crates) at their side, on flat free ground; the detective walks round it and the dialogue camera
+// crates, Jordi's trail signpost and rucksack, Carmen's telescope) at their side, on flat free ground; the detective walks round it and the dialogue camera
 // ray-casts it like a monument.
 //
 // Where they stand (checked with Playwright screenshots, 2026-11-15): Vicent (Valencia) on the
 // lawn of the Ciudad de las Artes; Pilar (Madrid) on the plaza on the north side of the Puerta de
 // Alcala garden fence, her kiosk on her right; Rafael (Cordoba) in the Patio de los Naranjos of the
 // Mezquita (open courtyard ground, never its roofs: the zone centre is on the prayer hall roof),
-// his crates on his right. All three inside their ring (0.85-0.93 of the radius).
+// his crates on his right. Jordi (Aneto) on a snowy plateau in the pine forest, Carmen (Donana) on
+// dry grass in an olive grove by the coast: the game clears the trees round each witness
+// (scenery.clear) and their props are on the side away from the plateau edge / free ground, so the
+// detective stands across from them and the camera shows the prop. All inside their ring
+// (0.85-0.93 of the radius).
 //
 //   const witnesses = createWitnesses(WITNESSES, caseMarkers, site)
 //   scene.add(witnesses.group)
@@ -85,6 +89,8 @@ const TRAIL_MAX_CLIMB = 6
 const PROP_MAX_STEP = 1
 /** Turns tried round the witness for his prop, from its preferred place (rad). */
 const PROP_TURNS = [0, 0.6, -0.6, 1.2, -1.2, 1.8, -1.8]
+/** A prop shown in the dialogue needs flat free ground this far on the witness's other side (world units). */
+const FRAME_STAND = 14
 
 /** What the placement needs to know about the map (all in world units). */
 export interface WitnessSite {
@@ -133,7 +139,7 @@ type PlacedWitness = {
   x: number; z: number; y: number; rest: number
   waveClock: number; againClock: number; wasNear: boolean; glow: number
   /** His trade prop, if any: centre and radius of its footprint (world units) */
-  prop: { x: number; z: number; radius: number; kind: string; dispose: () => void } | null
+  prop: { x: number; z: number; radius: number; kind: string; frame: boolean; dispose: () => void } | null
 }
 
 /** Finds a free, flat spot for a witness in the zone (best score); null if there is none. */
@@ -237,13 +243,33 @@ export function createWitnesses(list: Partial<Record<string, Witness>>, zones: C
     if (extras?.prop) {
       const { kind, place } = extras.prop
       const size = PROP_SIZE[kind]
-      const at = placeProp(spot.x, y, spot.z, rest, place === 'behind' ? Math.PI : -Math.PI / 2, size, site)
+      // A prop shown in the dialogue (frame): the detective stands across from it, so that side
+      // must be flat free ground too (Aneto: on the plateau, not over its edge); his right, else his left
+      const across = (at: { x: number; z: number }) => {
+        const dx = spot.x - at.x, dz = spot.z - at.z
+        const len = Math.hypot(dx, dz) || 1
+        for (let t = 2; t <= FRAME_STAND; t += 1) {
+          const px = spot.x + (dx / len) * t, pz = spot.z + (dz / len) * t
+          if (!site.isLand(px, pz) || site.blocked(px, pz, 2) || site.nearRiver(px, pz, 2) || Math.abs(site.surfaceAt(px, pz) - y) > MAX_STEP) return false
+        }
+        return true
+      }
+      const sides = place === 'behind' ? [Math.PI] : extras.prop.frame ? [-Math.PI / 2, Math.PI / 2] : [-Math.PI / 2]
+      let at: ReturnType<typeof placeProp> = null
+      for (const side of sides) {
+        const p = placeProp(spot.x, y, spot.z, rest, side, size, site)
+        if (p && (!extras.prop.frame || across(p))) {
+          at = p
+          break
+        }
+        at ??= p
+      }
       if (at) {
         const p = createWitnessProp(kind)
         p.group.position.set(at.x, y, at.z)
         p.group.rotation.y = at.heading
         props.add(p.group)
-        prop = { x: at.x, z: at.z, radius: Math.hypot(size.halfW, size.halfD), kind, dispose: p.dispose }
+        prop = { x: at.x, z: at.z, radius: Math.hypot(size.halfW, size.halfD), kind, frame: !!extras.prop.frame, dispose: p.dispose }
       } else console.warn(`No room for the ${kind} of the witness of ${w.caseId}`)
     }
     const bubble = createTalkIndicator()

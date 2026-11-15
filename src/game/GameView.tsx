@@ -69,6 +69,12 @@ const ZONES_TO = 0.88
 
 /** Head top of a character above his feet, plus the bubble margin (world units), for the witness placement. */
 const WITNESS_TOP = 11
+/**
+ * Trees and vines are cleared within this distance of each witness (world units): the detective's
+ * stand spot (11 away, any side) and the room beside both for the bubbles. Aneto (pine forest) and
+ * Donana (olive grove) had trees between the pair and over the bubbles.
+ */
+const WITNESS_CLEARING = 22
 
 /**
  * Head pitch (x, > 0 up) and roll (z) of the detective in a dialogue, from who speaks and the mood
@@ -337,6 +343,10 @@ export default function GameView({
         witnesses.props.updateMatrixWorld(true)
         occluders.push(witnesses.props)
         witnessPropAt = witnesses.blocks
+        for (const id of Object.keys(WITNESSES)) {
+          const w = witnesses.get(id)
+          if (w) scenery.clear(w.x, w.z, WITNESS_CLEARING)
+        }
         // What the dialogue camera frames (reused every frame)
         const talk: DialogueScene = {
           detective: new THREE.Vector3(),
@@ -353,6 +363,8 @@ export default function GameView({
           talk.detectiveTop.copy(detective.parts.hat.localToWorld(hatTop.set(0, 0.6, 0)))
           talk.detectiveTop.y += 1.5
           w.witness.headTop(talk.witnessTop, 1.5)
+          // A prop to show in the dialogue: the detective stands across from it (see WitnessExtras)
+          talk.standFrom = w.prop?.frame ? Math.atan2(w.x - w.prop.x, w.z - w.prop.z) : null
         }
         const hatTop = new THREE.Vector3()
         let talkWith: ReturnType<typeof witnesses.get> // witness of the current (or last) dialogue
@@ -496,7 +508,8 @@ export default function GameView({
             z.water.update(dt)
             z.roads.update(dt)
           }
-          scenery.update(dt, carState.x, carState.z, camera.position, chase.distance)
+          // In a dialogue, trees between the camera and the witness duck too
+          scenery.update(dt, carState.x, carState.z, camera.position, chase.distance, dialogue.busy && talkWith ? talkWith : null)
           // La niebla y el plano cercano de la cámara se adaptan a la distancia:
           // de cerca hay niebla para dar profundidad; de lejos se aparta para ver todo.
           // Subir "near" de lejos da más precisión de profundidad y evita parpadeos.
