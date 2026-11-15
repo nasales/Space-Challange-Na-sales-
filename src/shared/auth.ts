@@ -1,5 +1,6 @@
-// Optional player accounts (email + password) with Supabase Auth. LOGIN ONLY: nothing is saved
-// per user yet. The game never depends on this: without the env vars auth is simply disabled.
+// Optional player accounts (email + password) with Supabase Auth. Signed-in players also get their
+// solved cases saved in the minigame_progress table (src/shared/progress.ts).
+// The game never depends on this: without the env vars auth is simply disabled.
 // Uses the same PUBLISHABLE key as src/shared/supabase.ts (public by design), never a secret key.
 // The supabase-js client is created lazily (and loaded as a separate chunk) on first use, so
 // players who never open the Account screen do not download it.
@@ -27,6 +28,11 @@ function getClient(): Promise<SupabaseClient> {
     )
   }
   return clientPromise
+}
+
+/** The shared supabase-js client (with the player's session), for per-user tables such as minigame_progress. */
+export function getAuthClient(): Promise<SupabaseClient> {
+  return getClient()
 }
 
 /** Result of an auth action: `error` is a short message ready to show to the player. */
