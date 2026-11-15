@@ -72,6 +72,8 @@ export interface GameCallbacks {
    * camera has framed both (or on change); null when the dialogue camera is not active.
    */
   onDialogueAnchors?: (anchors: DialogueAnchors | null) => void
+  /** Fast travel (M map): the plane trip has started ('flying') or he is back on his feet ('landed') */
+  onTravel?: (state: TravelState) => void
 }
 
 export interface DialogueAnchors {
@@ -103,4 +105,16 @@ export interface GameViewProps extends GameCallbacks {
   speaking?: 'detective' | 'witness' | null
   /** Mood of the line being spoken (talking pose / face of the speaker; listener reacts) */
   speakingMood?: LineMood | null
+  /** Fast travel (M map): fly the detective to this landmark; a new `seq` starts a new trip */
+  travelTo?: TravelRequest | null
 }
+
+// ---- Fast travel (M map) ----
+/** A trip asked for from the travel map: landmark id (as in landmarks.json) and a counter, so the same place can be asked twice. */
+export interface TravelRequest {
+  landmarkId: string
+  seq: number
+}
+
+/** 'flying': the trip has started (no control until 'landed'); 'landed': he stands on the plaza again. */
+export type TravelState = 'flying' | 'landed'

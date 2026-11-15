@@ -18,7 +18,8 @@ import CaseFilePreview from './ui/casefile/CaseFilePreview'
 import CaseFlow, { type DialogueState } from './ui/casefile/CaseFlow'
 import CaseHint from './ui/casefile/CaseHint'
 import { createAnchorStore } from './ui/casefile/anchors'
-import type { GameStatus, HudState, LensFocusState } from './shared/events'
+import TravelMap from './ui/travelmap/TravelMap'
+import type { GameStatus, HudState, LensFocusState, TravelRequest } from './shared/events'
 import { loadOutfit, type Outfit } from './shared/outfit'
 import { loadCompleted, markCompleted } from './shared/progress'
 import { startBackgroundMusic } from './shared/music'
@@ -81,12 +82,24 @@ function Game({ onCaseFocus }: { onCaseFocus: (on: boolean) => void }) {
   const completedList = useMemo(() => [...completed], [completed])
   // Background music from the menu on (it starts on the first click or key press)
   useEffect(startBackgroundMusic, [])
+  // ---- Fast travel (M map): pick a landmark, the detective flies there by plane ----
+  const [travelMapOpen, setTravelMapOpen] = useState(false)
+  const [travelTo, setTravelTo] = useState<TravelRequest | null>(null)
+  const [flying, setFlying] = useState(false)
+  const canOpenTravelMap = screen === 'game' && status === 'ready' && !paused && !openCase && !focusLens && lensState === 'out' && !flying
+  const startTravel = (landmarkId: string) => {
+    setTravelMapOpen(false)
+    setFlying(true) // until the game reports 'landed'
+    setTravelTo((prev) => ({ landmarkId, seq: (prev?.seq ?? 0) + 1 }))
+  }
+  // Map open or plane in the air: Space (magnifier, case level) and Esc (pause) wait
+  const travelBusy = travelMapOpen || flying
   // Subtle sound effects: a click on every button, plus the game moments below (src/shared/sound.ts)
   useEffect(installUiSounds, [])
   const zoneCase = hud?.caseZone && hasTutorial(hud.caseZone) ? hud.caseZone : null
   // only with the camera out of the hand lens (the picker cannot reset it once a case is open)
   const canOpenCase =
-    screen === 'game' && status === 'ready' && !!hud?.stopped && !!zoneCase && !openCase && !focusLens && lensState === 'out' && !paused
+    screen === 'game' && status === 'ready' && !!hud?.stopped && !!zoneCase && !openCase && !focusLens && lensState === 'out' && !paused && !travelBusy
   useGameSounds({
     playing: screen === 'game' && status === 'ready' && !paused && !openCase && !focusLens,
     rush: hud?.rush ?? 0,
@@ -100,6 +113,9 @@ function Game({ onCaseFocus }: { onCaseFocus: (on: boolean) => void }) {
   const exitToMenu = () => {
     // GameView unmounts and disposes its scene; reset the game state so Play starts fresh
     setPaused(false)
+    setTravelMapOpen(false)
+    setFlying(false)
+    setTravelTo(null)
     setOpenCase(null)
     setFocusLens(false)
     setLensState('out')
@@ -176,19 +192,21 @@ function Game({ onCaseFocus }: { onCaseFocus: (on: boolean) => void }) {
         onLensFocus={setLensState}
         onProgress={setLoadProgress}
         outfit={outfit}
-        paused={paused || !!openCase}
+        paused={paused || !!openCase || travelMapOpen}
         completedCases={completedList}
         dialogueCase={openCase && dialogue.active ? openCase : null}
         speaking={dialogue.speaking}
         speakingMood={dialogue.mood}
         onDialogueAnchors={anchors.set}
+        travelTo={travelTo}
+        onTravel={(state) => setFlying(state === 'flying')}
       />
       {/* Dialogue focus: the whole HUD fades out while a case is open */}
       <Hud status={status} hud={hud} hidden={!!openCase} />
       <MapLoader status={status} progress={loadProgress} outfit={outfit} />
       {/* Outside case zones Space opens the magnifier picker, as before */}
       <VariablePicker
-        canOpen={status === 'ready' && !!hud?.stopped && !paused && !zoneCase && !openCase}
+        canOpen={status === 'ready' && !!hud?.stopped && !paused && !zoneCase && !openCase && !travelBusy}
         lensState={lensState}
         onOpenChange={setFocusLens}
         location={hud?.location ?? null}
@@ -196,11 +214,19 @@ function Game({ onCaseFocus }: { onCaseFocus: (on: boolean) => void }) {
       {/* After the picker, so the picker's Esc handler runs first and wins; a case flow has its own Esc */}
       <PauseMenu
         open={paused}
-        canOpen={status === 'ready' && !focusLens && lensState === 'out' && !openCase}
+        canOpen={status === 'ready' && !focusLens && lensState === 'out' && !openCase && !travelBusy}
         onOpenChange={setPaused}
         onMainMenu={exitToMenu}
       />
-      {zoneCase && !paused && <CaseHint caseId={zoneCase} stopped={!!hud?.stopped} hidden={!!openCase} />}
+      {/* Fast travel map (M): opens only when nothing else is up; picking a landmark starts the flight */}
+      <TravelMap
+        open={travelMapOpen}
+        canOpen={canOpenTravelMap}
+        onOpenChange={setTravelMapOpen}
+        onTravel={startTravel}
+        position={hud?.location ?? null}
+      />
+      {zoneCase && !paused && !travelBusy && <CaseHint caseId={zoneCase} stopped={!!hud?.stopped} hidden={!!openCase} />}
       {openCase && (
         <CaseFlow
           key={openCase}

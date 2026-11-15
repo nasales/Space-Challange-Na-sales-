@@ -43,9 +43,13 @@ function balcony(kit: Kit, w: number, y: number) {
 function hangingHouse(kit: Kit, w: number, d: number, h: number, wall: number, seed: number) {
   const g = new THREE.Group()
   g.add(kit.box(w, h, d, wall, 0, 0, -d / 2))
-  for (const x of [-w / 4, w / 4]) g.add(kit.slab(1.1, 1.4, 0.2, DARK, x, h * 0.25, 0.05)) // windows
+  for (const x of [-w / 4, w / 4]) {
+    g.add(kit.slab(1.1, 1.4, 0.2, DARK, x, h * 0.25, 0.05)) // windows
+    g.add(kit.lightPanel(1.1, 1.4, x, h * 0.25, 0.25, 0, 0.9)) // lit at night
+  }
   for (const y of [h * 0.5, h * 0.78]) {
     g.add(kit.slab(w * 0.45, 2, 0.2, DARK, 0, y, 0.05)) // balcony doors
+    g.add(kit.lightPanel(w * 0.45, 2, 0, y, 0.25, 0, 0.8))
     g.add(balcony(kit, w - 0.6, y - 0.1))
   }
   const roof = kit.pediment(w + 1, w * 0.38, d + 1.4, ROOF, h)
@@ -122,6 +126,9 @@ export function buildCasasColgadas(kit: Kit): THREE.Group {
   tower.add(kit.mesh(new THREE.IcosahedronGeometry(0.4, 1), GOLD, 0, 21, 0))
   tower.position.set(-16.5, top, -6)
   g.add(wonk(tower, 8, 0.03))
+  // Night lights: the clock face, and floodlights on the cliff under the houses
+  g.add(kit.lightHalo(2, -16.5, top + 12.5, -6 + 3, 0.6))
+  for (const x of [-20, 3, 22]) g.add(kit.lightHalo(6, x, 4, FRONT + 4, 0.35))
   return g
 }
 
