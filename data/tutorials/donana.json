@@ -1,0 +1,324 @@
+{
+  "case_id": "donana",
+  "title": "Doñana wetlands",
+  "place": "Doñana",
+  "intro": {
+    "headline": "2023: the largest lagoon in Doñana runs dry",
+    "paragraphs": [
+      "Doñana National Park lies in southwest Spain, where the Guadalquivir river meets the Atlantic. Its marshes and lagoons are among the most important wetlands in Europe, a resting place for millions of migrating birds, and a UNESCO World Heritage Site.",
+      "In 2023 Santa Olalla, the largest permanent lagoon in Doñana, dried up completely. Spain was in a long drought. At the same time, a large aquifer (water stored underground) lies below the park, and around it many farms pump groundwater to irrigate their crops. Scientists have warned for years that it is overexploited.",
+      "So who took the water? In this case you sit as the judge. The prosecution and the defence will bring their exhibits, rain and soil moisture from NASA data, and you will rule on each one before you pass sentence."
+    ],
+    "question": "Doñana is running out of water. Is it the rain, or something the satellites cannot see?"
+  },
+  "scene": {
+    "lines": [
+      {
+        "speaker": "witness",
+        "text": "¡Hola, detective! Quietly, please: there are flamingos just behind those reeds. Welcome to Doñana.",
+        "mood": "happy"
+      },
+      {
+        "speaker": "detective",
+        "text": "Good morning. I am looking into the Doñana wetlands. I was told you know them better than anyone.",
+        "mood": "curious"
+      },
+      {
+        "speaker": "witness",
+        "text": "Twenty years guiding birdwatchers here. Marshes, dunes and lagoons, where the Guadalquivir meets the Atlantic. A UNESCO World Heritage Site, and one of the great wetlands of Europe.",
+        "mood": "proud"
+      },
+      {
+        "speaker": "witness",
+        "text": "Every spring and autumn, millions of migrating birds stop here to rest and feed on their way between Europe and Africa. Geese, ducks, spoonbills, flamingos.",
+        "mood": "explaining"
+      },
+      {
+        "speaker": "detective",
+        "text": "And Santa Olalla? I read something about it in 2023.",
+        "mood": "curious"
+      },
+      {
+        "speaker": "witness",
+        "text": "Santa Olalla is the largest permanent lagoon in the park. Permanent: it was always there. In 2023 it dried up completely. Cracked mud where the ducks used to swim.",
+        "mood": "sad"
+      },
+      {
+        "speaker": "witness",
+        "text": "Spain had a long drought, you know. Month after month with hardly a cloud over the marshes.",
+        "mood": "explaining"
+      },
+      {
+        "speaker": "detective",
+        "text": "I also read that many farms around the park pump groundwater from the aquifer below it, to water their crops.",
+        "mood": "curious"
+      },
+      {
+        "speaker": "witness",
+        "text": "Yes, yes, the wells. People argue about them in every bar around here.",
+        "mood": "doubtful"
+      },
+      {
+        "speaker": "witness",
+        "text": "But I have watched this sky for twenty years. No rain, no water. It is that simple.",
+        "mood": "insistent"
+      },
+      {
+        "speaker": "witness",
+        "text": "The lagoon dried up only because it stopped raining. Write that in your notebook, detective.",
+        "mood": "confident"
+      },
+      {
+        "speaker": "detective",
+        "text": "That is a clear claim. We will not settle it by guessing: we will put it on trial, with NASA data as the evidence.",
+        "mood": "determined"
+      },
+      {
+        "speaker": "detective",
+        "text": "The prosecution says the rain alone did it; the defence says not so fast. Each side brings its exhibits, and the judge rules on every one.",
+        "mood": "determined"
+      },
+      {
+        "speaker": "witness",
+        "text": "Then call the court to order. The sky will be my best witness!",
+        "mood": "confident"
+      }
+    ],
+    "claim": "The lagoon dried up only because it stopped raining."
+  },
+  "steps": [],
+  "trial": {
+    "title": "The case of the vanishing lagoon",
+    "charge": "The rain alone dried up Santa Olalla lagoon.",
+    "instructions": "Open each exhibit when its side calls it. Do the task, then rule: admit it, reject it, or call the evidence insufficient.",
+    "exhibits": [
+      {
+        "id": "rain_book",
+        "side": "prosecution",
+        "title": "The rain book",
+        "teaser": "Rain near Doñana, every year",
+        "argument": "Your Honour, Doñana gets less rain year after year. It stopped raining, and that is the whole story.",
+        "text": "Each point is the average rain of one year near Doñana, in mm/day, 1998 to 2024 (complete years only). Data: NASA GPM IMERG. Dry years like 2005, 2019 and 2023 stand out, and so does the very wet 2010. A drought is a spell of dry years: that is weather. A trend is a change that lasts over decades.",
+        "chart": {
+          "variable": "PRECIP",
+          "view": "annual"
+        },
+        "task": {
+          "type": "fit_line",
+          "tolerance": 0.2,
+          "prompt": "Lay the ruler along the yearly rain. Is the rain really falling away, year after year?",
+          "hint": "Do not chase the dry years at the end. Compare the middle of the cloud in the 2000s with the middle in the 2020s: is the drop big or tiny?",
+          "success": "Good: your ruler is almost flat. The real trend is about −0.05 mm/day per decade, with p = 0.44: a change this small could easily come from chance."
+        },
+        "ruling": "reject",
+        "objection": "Objection, Your Honour! Look at the slope, not at the dry years. Is a line that is almost flat proof that the rain is disappearing?",
+        "ruling_feedback": "Rejected. The exhibit does not show what the prosecution says. Rain shows no significant trend: about −0.05 mm/day per decade, p = 0.44, and the 95% range (−0.25 to +0.08) includes zero. The dry years were real, but a drought spell is weather, not a long-term decline.",
+        "clue": "Rain since 1998: no significant trend (−0.05 mm/day per decade, p = 0.44)."
+      },
+      {
+        "id": "translator",
+        "side": "defence",
+        "title": "The translator machine",
+        "teaser": "Two clues, two languages",
+        "argument": "Your Honour, rain speaks in mm/day and soil speaks in kg/m². Before anyone compares them, this machine translates both into one language: how unusual.",
+        "text": "An anomaly is a month minus its normal value. The typical swing (the standard deviation) is the usual size of those ups and downs for that clue. Divide the anomaly by the typical swing and the units cancel: what is left says how unusual the month was, in the same language for every clue. Scientists call it a z-score.",
+        "chart": {
+          "variable": "SOILM",
+          "view": "zscore_pair",
+          "variables": [
+            "SOILM",
+            "PRECIP"
+          ],
+          "range": [
+            "2016-01",
+            "2025-03"
+          ]
+        },
+        "task": {
+          "type": "translate",
+          "readings": [
+            {
+              "variable": "SOILM",
+              "date": "2023-04",
+              "answer": -3.7
+            },
+            {
+              "variable": "PRECIP",
+              "date": "2023-04",
+              "answer": -1.2
+            }
+          ],
+          "prompt": "Feed April 2023 into the machine: set each dial to anomaly ÷ typical swing.",
+          "hint": "Divide the anomaly by the typical swing of the same clue, and keep the minus sign: below normal stays below zero.",
+          "success": "Translated! In April 2023 the soil was about 3.7 typical swings below normal, the rain about 1.2. In raw units you could not compare them; now you can: the soil month was far more unusual."
+        },
+        "ruling": "admit",
+        "objection": "Objection? Not so fast. Did the machine change what the data say, or only the units they are written in?",
+        "ruling_feedback": "Admitted. The machine changes no data: it only puts both clues on the same scale, so either side may use it. The next exhibit does.",
+        "clue": "Z-score = anomaly ÷ typical swing. April 2023: soil −3.7, rain −1.2."
+      },
+      {
+        "id": "together",
+        "side": "prosecution",
+        "title": "Dry together",
+        "teaser": "Rain and soil on one scale",
+        "argument": "Put the two curves on one scale, Your Honour. When the rain fails, the soil dries. The drought played its part.",
+        "text": "Both clues translated to \"how unusual\" and smoothed: each point is the average of the 12 months around it. Zero means normal. Data: NASA GPM IMERG (rain) and NASA GLDAS (soil). Lines that move together tell you two things are related. That alone does not prove that one causes the other, but here the link makes sense: rain wets the soil.",
+        "chart": {
+          "variable": "SOILM",
+          "view": "zscore_pair",
+          "variables": [
+            "SOILM",
+            "PRECIP"
+          ]
+        },
+        "task": {
+          "type": "sort_moves",
+          "dates": [
+            "2005-04",
+            "2010-04",
+            "2018-10",
+            "2022-04"
+          ],
+          "answers": [
+            "both_dry",
+            "both_wet",
+            "apart",
+            "both_dry"
+          ],
+          "prompt": "Read both lines at each marked month: were they both drier than usual, both wetter, or apart?",
+          "hint": "Below the zero line means drier than usual, above means wetter. Read each line on its own at the mark, then compare.",
+          "success": "Right. About three months in four, the two lines sit on the same side of zero, as in 2005, 2010 and 2022. Now and then they part ways, as in late 2018."
+        },
+        "ruling": "admit",
+        "objection": "Objection! Read carefully what the prosecution claims here: only that the drought played a part. Do the two lines fall together in the dry years?",
+        "ruling_feedback": "Admitted. In the dry spells rain and soil fall below normal together, so the drought did play a part. Moving together is not proof of a cause, but rain wetting the soil is a sensible link. Note what it does not show: a long-term fall in rain.",
+        "clue": "Dry years: rain and soil fall below normal together. The drought played a part."
+      },
+      {
+        "id": "soil_slide",
+        "side": "defence",
+        "title": "The soil's slow slide",
+        "teaser": "Water in the soil, every year",
+        "argument": "Your Honour, the rain shows no trend, yet the soil is drying over the decades. Something besides the rain must be involved.",
+        "text": "Each point is one year's average water in the top 10 cm of soil near Doñana, in kg/m², 2000 to 2025. Data: NASA GLDAS, a model fed by satellite and ground data. A p-value under 0.05 is the usual line for \"significant\"; the 95% range is where the true slope probably lies. When p sits right on the line and the range almost touches zero, the evidence is borderline.",
+        "chart": {
+          "variable": "SOILM",
+          "view": "annual"
+        },
+        "task": {
+          "type": "fit_line",
+          "tolerance": 0.3,
+          "prompt": "Lay the ruler along the yearly soil moisture. Which way does it tilt?",
+          "hint": "Ignore single dips like 2005. Compare the middle of the cloud in the early 2000s with the middle in the 2020s.",
+          "success": "Yes, it tilts down: the real trend is about −0.29 kg/m² per decade, about −0.8 over the whole record. Now read the fine print: p = 0.0498, and the 95% range is −0.59 to +0.002."
+        },
+        "ruling": "admit",
+        "objection": "Objection! Check the p-value against 0.05 before you decide. Weak evidence can still go into the record, if it is weighed with care.",
+        "ruling_feedback": "Admitted, with care. The soil shows a small decline that the rain does not show, so something besides the amount of rain may be involved, for example more water lost to the air in hot years. This chart cannot say what.",
+        "follow_up": {
+          "prompt": "For the record: how much weight does this exhibit carry?",
+          "options": [
+            {
+              "text": "Strong proof that the soil is drying fast",
+              "correct": false
+            },
+            {
+              "text": "A weak, borderline sign of drying",
+              "correct": true
+            },
+            {
+              "text": "No evidence at all",
+              "correct": false
+            }
+          ],
+          "hint": "p = 0.0498 is only just under 0.05, and the range almost reaches zero. Is that strong proof, or nothing at all?",
+          "feedback": "Noted: weak evidence. p = 0.0498 is only just under 0.05 and the 95% range (−0.59 to +0.002 kg/m² per decade) almost reaches zero. Say \"a weak sign\", never \"proof\"."
+        },
+        "clue": "Soil: −0.29 kg/m² per decade, p = 0.0498. A weak, borderline sign."
+      },
+      {
+        "id": "aquifer",
+        "side": "defence",
+        "kind": "missing",
+        "title": "Groundwater records",
+        "teaser": "Folder: aquifer and wells",
+        "argument": "Your Honour, the farms around the park pump water from the aquifer. That is what drained the lagoon!",
+        "text": "The rain comes from satellites; the soil moisture from a computer model fed by rain, temperature and sunlight. Neither looks underground: the aquifer lies far below the top 10 cm of soil, and the model knows nothing about wells or pumping. An empty folder does not clear the farms and does not convict them. It means this question cannot be answered with these data.",
+        "task": {
+          "type": "missing_data",
+          "options": [
+            {
+              "text": "Groundwater levels in wells around the park, month by month",
+              "needed": true
+            },
+            {
+              "text": "How much water is pumped from the aquifer each year",
+              "needed": true
+            },
+            {
+              "text": "The water level of Santa Olalla lagoon over the years",
+              "needed": true
+            },
+            {
+              "text": "More years of rain data near Doñana",
+              "needed": false
+            },
+            {
+              "text": "Air temperature in Madrid",
+              "needed": false
+            },
+            {
+              "text": "Soil moisture in the top 10 cm (already in court)",
+              "needed": false
+            }
+          ],
+          "prompt": "The folder is empty. Which records would the court need to test the pumping idea? Pick every one that applies.",
+          "hint": "The idea is about water under the ground, water taken out of it, and the lagoon itself. Which records measure those?",
+          "success": "Exactly: well levels, pumping volumes and the lagoon's own water level. With those the court could test the pumping idea; without them it cannot."
+        },
+        "ruling": "insufficient",
+        "objection": "Objection! What exactly would the court admit, or reject? There is nothing in the folder to weigh.",
+        "ruling_feedback": "Insufficient evidence. Scientists have warned for years that the aquifer is overexploited, and that may well matter, but nothing in this courtroom measures it. A careful judge neither accepts nor dismisses an idea the data cannot test.",
+        "clue": "No aquifer or pumping data in court: the pumping idea cannot be tested here."
+      }
+    ],
+    "sentence": {
+      "prompt": "The court has heard every exhibit. On the charge that the rain alone dried up Santa Olalla lagoon, how do you find?",
+      "options": [
+        {
+          "verdict": "guilty",
+          "text": "The claim stands: it stopped raining, and that alone dried the lagoon.",
+          "correct": false,
+          "objection": "Objection! Remember the rain book: the long record shows no significant fall in rain. And the soil's slow slide hints that something else may be at work."
+        },
+        {
+          "verdict": "not_guilty",
+          "text": "The claim is false: the rain had nothing to do with it.",
+          "correct": false,
+          "objection": "Objection! Remember the two lines on one scale: in the dry years rain and soil fell below normal together. The drought did play a part."
+        },
+        {
+          "verdict": "not_proven",
+          "text": "Partly supported: the drought was real and played a part, but there is no long-term fall in rain, and the soil hints at something more that these data cannot name.",
+          "correct": true
+        }
+      ],
+      "summary": "The claim is only partly supported. Dry years hit Doñana and pulled the soil down with the rain, but the long record shows no significant fall in rain (p = 0.44). The soil shows a weak, borderline drying trend (p = 0.0498) that the rain does not explain, and to test the aquifer and the pumping the court would need groundwater data."
+    }
+  },
+  "conclusion": {
+    "prompt": "Doñana is running out of water. Is it the rain, or something the satellites cannot see? Write your conclusion using what the charts showed you, and say how sure you are.",
+    "variable": "SOILM",
+    "placeholder": "Looking at soil moisture and rain near Doñana, I think..."
+  },
+  "reveal": {
+    "by_variable": {
+      "SOILM": "Soil moisture in the top 10 cm near Doñana (January 2000 to July 2026) shows a small decline: about -0.29 kg/m² per decade, p = 0.0498. That is just significant at the 5% level, but the 95% confidence range (-0.59 to +0.002 kg/m² per decade) almost reaches zero, so the evidence is weak.",
+      "PRECIP": "Rain near Doñana (January 1998 to September 2025) shows no significant trend: about -0.05 mm/day per decade, p = 0.44, and the 95% confidence range (-0.25 to +0.08 mm/day per decade) includes zero."
+    },
+    "lesson": "Expressing each month as \"how unusual\" (in standard deviations) lets you compare clues with different units. Here the dry years pulled rain and soil down together, but the long rain record shows no trend, and the soil shows a weak sign of drying that the rain does not explain. These satellite and model records do not measure the aquifer or the pumping: to test that idea you would need groundwater data. Moving together is not proof of a cause, and borderline evidence must be said with care.",
+    "claim_verdict": "partly",
+    "claim_text": "Carmen, the drought was real and the rain did play a part: in the dry years rain and soil fell below normal together. But decades of data show no significant fall in rain near Doñana (about −0.05 mm/day per decade, p = 0.44), and the soil's weak, borderline drying sign (p = 0.0498) hints at something else that these data, blind to the aquifer and the pumping, cannot name."
+  }
+}

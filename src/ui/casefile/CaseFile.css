@@ -1,0 +1,1023 @@
+/* Featured-case tutorial overlay. Same comic print look as the menu's case-file panel
+   (Yeipi_dev src/ui/menu): ink lines, paper sheet, gold caption label, halftone dots.
+   Fonts come from src/ui/theme/fonts.css when it is in the branch; the fallbacks work without it. */
+.casefile {
+  --cf-ink: #161b2e;
+  --cf-ink-soft: #3b4a6b;
+  --cf-paper: #fff8e7;
+  --cf-gold: #f2c14e;
+  --cf-red: #e5322d;
+  --cf-sea: #5ea8c2;
+  --cf-blue: #2457a6;
+  --cf-green: #2f7d4f;
+  --cf-display: var(--font-display, 'Big Shoulders Display', 'Arial Narrow', 'Roboto Condensed', sans-serif);
+  --cf-type: var(--font-type, 'Courier Prime', 'Courier New', Courier, monospace);
+  --cf-hand: var(--font-hand, 'Kalam', 'Segoe Print', 'Bradley Hand', cursive);
+
+  width: min(780px, calc(100vw - 24px));
+  max-width: none;
+  max-height: none;
+  margin: auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--cf-ink);
+  overflow: visible;
+}
+
+.casefile::backdrop {
+  background:
+    radial-gradient(circle, rgba(255, 248, 231, 0.1) 1.3px, transparent 1.8px) 0 0 / 8px 8px,
+    rgba(16, 20, 34, 0.72);
+}
+
+.casefile[open] {
+  animation: casefile-pop 0.36s steps(3, end);
+}
+
+@keyframes casefile-pop {
+  from {
+    transform: scale(0.92) rotate(-1deg);
+    opacity: 0;
+  }
+}
+
+.casefile ::selection {
+  background: var(--cf-gold);
+  color: var(--cf-ink);
+}
+
+.casefile__sheet {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 44px);
+  margin-top: 20px;
+  border: 4px solid var(--cf-ink);
+  outline: 5px solid var(--cf-paper);
+  background: var(--cf-paper);
+  box-shadow: 0 0 0 9px var(--cf-ink);
+}
+
+/* Halftone corner, like a printed shading tone */
+.casefile__sheet::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 40%;
+  height: 140px;
+  background: radial-gradient(circle, rgba(94, 168, 194, 0.5) 1.4px, transparent 1.9px) 0 0 / 8px 8px;
+  mask-image: linear-gradient(225deg, black, transparent 70%);
+  pointer-events: none;
+}
+
+/* ---- Header: caption label (left) + close (right), hanging over the top edge ---- */
+.casefile__head {
+  position: absolute;
+  top: -22px;
+  left: -8px;
+  right: -8px;
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.casefile__head > * {
+  pointer-events: auto;
+}
+
+.casefile__label {
+  min-width: 0;
+  margin: 0;
+  padding: 7px 14px;
+  border: 3px solid var(--cf-ink);
+  background: var(--cf-gold);
+  font-family: var(--cf-type);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transform: rotate(-1.5deg);
+}
+
+.casefile__progress {
+  letter-spacing: 0.04em;
+}
+
+.casefile__fixture {
+  margin-left: 8px;
+  padding: 1px 6px;
+  background: var(--cf-red);
+  color: #fff;
+  font-size: 0.7rem;
+}
+
+.casefile__close {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 6px 10px;
+  border: 3px solid var(--cf-ink);
+  background: var(--cf-paper);
+  color: var(--cf-ink);
+  font-family: var(--cf-display);
+  font-size: 1.1rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transform: rotate(2deg);
+  transition:
+    background-color 0.12s ease-out,
+    color 0.12s ease-out,
+    transform 0.12s ease-out;
+}
+
+.casefile__close-icon {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.casefile__close:hover {
+  background: var(--cf-ink);
+  color: var(--cf-gold);
+  transform: rotate(-3deg) scale(1.05);
+}
+
+/* ---- Progress dots ---- */
+.casefile__dots {
+  position: relative;
+  display: flex;
+  gap: 6px;
+  margin: 30px clamp(18px, 5vw, 40px) 0;
+  padding: 0;
+  list-style: none;
+}
+
+.casefile__dots li {
+  flex: 1;
+  height: 8px;
+  border: 2px solid var(--cf-ink);
+  background: #fff;
+}
+
+.casefile__dots li.is-done {
+  background: var(--cf-ink);
+}
+
+.casefile__dots li.is-current {
+  background: var(--cf-gold);
+}
+
+/* ---- Body (scrolls) ---- */
+.casefile__body {
+  position: relative;
+  overflow-y: auto;
+  padding: 28px clamp(18px, 5vw, 40px) 24px;
+  font-family: var(--cf-type);
+  font-size: 1rem;
+  line-height: 1.5;
+  overscroll-behavior: contain;
+}
+
+.casefile__dots + .casefile__body {
+  padding-top: 16px;
+}
+
+.casefile__screen {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.casefile__kicker {
+  margin: 0 0 -8px;
+  font-family: var(--cf-type);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cf-ink-soft);
+}
+
+.casefile__title {
+  margin: 0;
+  font-family: var(--cf-display);
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  text-wrap: balance;
+  text-shadow:
+    -2px -1px 0 rgba(0, 164, 214, 0.7),
+    3px 2px 0 rgba(226, 0, 122, 0.55);
+}
+
+.casefile__title--step {
+  font-size: clamp(1.5rem, 4vw, 2.1rem);
+}
+
+.casefile__title:focus {
+  outline: none;
+}
+
+.casefile__text,
+.casefile__msg {
+  margin: 0;
+  max-width: 68ch;
+  overflow-wrap: anywhere;
+}
+
+/* ---- Notes: question, takeaway, lesson ---- */
+.casefile__question-note,
+.casefile__takeaway,
+.casefile__lesson {
+  padding: 10px 14px 12px;
+  border: 3px solid var(--cf-ink);
+  background: #fde58a;
+  box-shadow: 4px 4px 0 var(--cf-ink);
+  transform: rotate(-0.6deg);
+}
+
+.casefile__takeaway {
+  background: #d9efe2;
+  transform: rotate(0.5deg);
+}
+
+.casefile__lesson {
+  background: var(--cf-gold);
+}
+
+.casefile__note-label {
+  margin: 0 0 2px;
+  font-family: var(--cf-display);
+  font-size: 0.95rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.casefile__note-text {
+  margin: 0;
+  font-family: var(--cf-hand);
+  font-size: 1.2rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+/* ---- Chart ---- */
+.casefile-chart {
+  margin: 0;
+  padding: 8px 8px 6px;
+  border: 3px solid var(--cf-ink);
+  background: #fff;
+}
+
+.casefile-chart__box {
+  width: 100%;
+  overflow: hidden;
+}
+
+.casefile-chart__box svg {
+  display: block;
+  font-family: var(--cf-type);
+}
+
+.casefile-chart__tick {
+  font-size: 12px;
+  fill: var(--cf-ink-soft);
+}
+
+.casefile-chart__units {
+  font-size: 12px;
+  font-weight: 700;
+  fill: var(--cf-ink);
+}
+
+.casefile-chart__grid {
+  stroke: #e7e1d1;
+  stroke-width: 1;
+}
+
+.casefile-chart__axis {
+  stroke: var(--cf-ink);
+  stroke-width: 1.5;
+}
+
+.casefile-chart__zero {
+  stroke: var(--cf-ink);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+}
+
+.casefile-chart__line {
+  fill: none;
+  stroke: var(--cf-blue);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+
+.casefile-chart__dot {
+  fill: var(--cf-blue);
+}
+
+.casefile-chart__trend {
+  stroke: var(--cf-red);
+  stroke-width: 3.5;
+  stroke-linecap: round;
+}
+
+.casefile-chart__band rect {
+  fill: rgba(242, 193, 78, 0.38);
+}
+
+.casefile-chart__band text,
+.casefile-chart__mark text {
+  font-size: 12px;
+  font-weight: 700;
+  fill: var(--cf-ink);
+  paint-order: stroke;
+  stroke: #fff;
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+
+.casefile-chart__mark circle {
+  fill: none;
+  stroke: var(--cf-red);
+  stroke-width: 2.5;
+}
+
+.casefile-chart__caption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 16px;
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: var(--cf-ink-soft);
+}
+
+.casefile-chart__key::before {
+  content: '';
+  display: inline-block;
+  width: 18px;
+  height: 0;
+  margin-right: 6px;
+  vertical-align: middle;
+  border-top: 2px solid var(--cf-blue);
+}
+
+.casefile-chart__key--trend::before {
+  border-top: 4px solid var(--cf-red);
+}
+
+.casefile-chart__credit {
+  margin-left: auto;
+}
+
+/* ---- Technique views (same_month ... window_trends) ---- */
+.casefile-chart__break {
+  fill: none;
+  stroke: var(--cf-ink);
+  stroke-width: 2;
+}
+
+.casefile-chart__title {
+  font-size: 12px;
+  font-weight: 700;
+  fill: var(--cf-red);
+}
+
+.casefile-chart__axis-title {
+  font-size: 12px;
+  fill: var(--cf-ink);
+}
+
+.casefile-chart__line--second {
+  stroke: var(--cf-green);
+  stroke-width: 2.2;
+  stroke-dasharray: 7 3;
+}
+
+.casefile-chart__line--raw {
+  stroke: #9db5d8;
+  stroke-width: 1;
+}
+
+.casefile-chart__line--thick {
+  stroke: var(--cf-blue);
+  stroke-width: 3.5;
+}
+
+.casefile-chart__area {
+  stroke: none;
+}
+
+.casefile-chart__area--up {
+  fill: rgba(229, 50, 45, 0.22);
+}
+
+.casefile-chart__area--down {
+  fill: rgba(36, 87, 166, 0.22);
+}
+
+.casefile-chart__bar {
+  fill: var(--cf-blue);
+  stroke: var(--cf-ink);
+  stroke-width: 1;
+}
+
+.casefile-chart__bar--recent,
+.casefile-chart__bar--after {
+  fill: var(--cf-red);
+}
+
+.casefile-chart__bar--before {
+  fill: var(--cf-blue);
+}
+
+.casefile-chart__bar--hollow {
+  fill: #fff;
+  stroke: var(--cf-blue);
+  stroke-width: 2;
+}
+
+.casefile-chart__whisker line {
+  stroke: var(--cf-ink);
+  stroke-width: 1.5;
+}
+
+.casefile-chart__rowlabel {
+  font-size: 12px;
+  font-weight: 700;
+  fill: var(--cf-ink);
+}
+
+.casefile-chart__row.is-marked .casefile-chart__rowlabel {
+  fill: var(--cf-red);
+}
+
+.casefile-chart__dot--scatter {
+  fill: rgba(36, 87, 166, 0.55);
+  stroke: var(--cf-blue);
+  stroke-width: 1;
+}
+
+.casefile-chart__dot--recent {
+  fill: var(--cf-red);
+  stroke: var(--cf-ink);
+  stroke-width: 1;
+}
+
+.casefile-chart__dotlabel,
+.casefile-chart__mean text {
+  font-size: 12px;
+  font-weight: 700;
+  fill: var(--cf-ink);
+  paint-order: stroke;
+  stroke: #fff;
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+
+.casefile-chart__mean line {
+  stroke-width: 2.5;
+  stroke-dasharray: 6 3;
+}
+
+.casefile-chart__mean--before line {
+  stroke: var(--cf-ink);
+}
+
+.casefile-chart__mean--after line {
+  stroke: #8f1512;
+}
+
+.casefile-chart__mean--after text {
+  fill: #8f1512;
+}
+
+/* legend swatches */
+.casefile-chart__key--second::before {
+  border-top: 3px dashed var(--cf-green);
+}
+
+.casefile-chart__key--raw::before {
+  border-top: 1px solid #7f9cc8;
+}
+
+.casefile-chart__key--thick::before {
+  border-top: 4px solid var(--cf-blue);
+}
+
+.casefile-chart__key--bar::before,
+.casefile-chart__key--recent::before,
+.casefile-chart__key--before::before,
+.casefile-chart__key--after::before,
+.casefile-chart__key--hollow::before,
+.casefile-chart__key--up::before,
+.casefile-chart__key--down::before {
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--cf-ink);
+  background: var(--cf-blue);
+}
+
+.casefile-chart__key--recent::before,
+.casefile-chart__key--after::before {
+  background: var(--cf-red);
+}
+
+.casefile-chart__key--hollow::before {
+  border: 2px solid var(--cf-blue);
+  background: #fff;
+}
+
+.casefile-chart__key--up::before {
+  border: none;
+  background: rgba(229, 50, 45, 0.35);
+}
+
+.casefile-chart__key--down::before {
+  border: none;
+  background: rgba(36, 87, 166, 0.35);
+}
+
+.casefile-chart__key--dot::before,
+.casefile-chart__key--dot-recent::before {
+  width: 10px;
+  height: 10px;
+  border: 1px solid var(--cf-blue);
+  border-radius: 50%;
+  background: rgba(36, 87, 166, 0.55);
+}
+
+.casefile-chart__key--dot-recent::before {
+  border-color: var(--cf-ink);
+  background: var(--cf-red);
+}
+
+.casefile-chart__key--whisker::before {
+  width: 0;
+  height: 12px;
+  margin: 0 8px 0 4px;
+  border-top: none;
+  border-left: 2px solid var(--cf-ink);
+}
+
+.casefile-chart__key--plain::before {
+  display: none;
+}
+
+.casefile-chart__note {
+  flex-basis: 100%;
+  font-style: italic;
+}
+
+.casefile-chart__empty {
+  margin: 0;
+  padding: 24px;
+  border: 3px dashed var(--cf-ink);
+  text-align: center;
+}
+
+/* ---- Quiz ---- */
+.casefile__quiz {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.casefile__quiz-prompt {
+  margin-bottom: 8px;
+  padding: 0;
+  font-weight: 700;
+}
+
+.casefile__options {
+  display: grid;
+  gap: 8px;
+}
+
+.casefile__option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px 8px 8px;
+  border: 3px solid var(--cf-ink);
+  background: #fff;
+  color: var(--cf-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 0.1s ease-out,
+    box-shadow 0.1s ease-out;
+}
+
+.casefile__option:hover:not(:disabled) {
+  box-shadow: 3px 3px 0 var(--cf-ink);
+  transform: translate(-1px, -1px);
+}
+
+.casefile__option:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.casefile__option-letter {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--cf-ink);
+  background: var(--cf-paper);
+  font-weight: 700;
+}
+
+.casefile__option.is-wrong {
+  border-color: var(--cf-red);
+  background: #fde4e1;
+}
+
+.casefile__option.is-wrong .casefile__option-letter {
+  background: var(--cf-red);
+  color: #fff;
+  border-color: var(--cf-red);
+}
+
+.casefile__option.is-right {
+  border-color: var(--cf-green);
+  background: #d9efe2;
+  opacity: 1;
+}
+
+.casefile__option.is-right .casefile__option-letter {
+  background: var(--cf-green);
+  color: #fff;
+  border-color: var(--cf-green);
+}
+
+.casefile__feedback {
+  margin: 10px 0 0;
+  padding: 8px 12px;
+  border: 2px solid var(--cf-red);
+  box-shadow: 3px 3px 0 var(--cf-red);
+  background: #fff;
+}
+
+/* ---- Buttons + navigation ---- */
+.casefile__nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.casefile__nav--end {
+  justify-content: flex-end;
+}
+
+.casefile__btn {
+  min-height: 44px;
+  padding: 8px 18px;
+  border: 3px solid var(--cf-ink);
+  background: #fff;
+  color: var(--cf-ink);
+  font-family: var(--cf-display);
+  font-size: 1.15rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 3px 3px 0 var(--cf-ink);
+  transition:
+    transform 0.1s ease-out,
+    box-shadow 0.1s ease-out;
+}
+
+.casefile__btn:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--cf-ink);
+}
+
+.casefile__btn:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--cf-ink);
+}
+
+.casefile__btn--primary {
+  background: var(--cf-gold);
+}
+
+.casefile__btn--danger {
+  background: var(--cf-red);
+  color: #fff;
+}
+
+.casefile__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.casefile button:focus-visible,
+.casefile textarea:focus-visible {
+  outline: 3px solid var(--cf-ink);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 3px var(--cf-gold);
+}
+
+/* ---- Conclusion ---- */
+.casefile__form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.casefile__label-text {
+  font-weight: 700;
+}
+
+.casefile__textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 10px 12px;
+  border: 3px solid var(--cf-ink);
+  border-radius: 0;
+  background: #fff;
+  color: var(--cf-ink);
+  font-family: var(--cf-hand);
+  font-size: 1.15rem;
+  line-height: 1.4;
+  resize: vertical;
+}
+
+.casefile__hint {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--cf-ink-soft);
+}
+
+/* ---- Reveal ---- */
+.casefile__yours {
+  margin: 0;
+  padding: 10px 14px;
+  border: 3px dashed var(--cf-ink);
+  background: #fff;
+}
+
+.casefile__yours-text {
+  margin: 0;
+  max-height: 10em;
+  overflow-y: auto;
+  font-family: var(--cf-hand);
+  font-size: 1.15rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.casefile__verdict {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 3px solid var(--cf-ink);
+  background: #fff;
+}
+
+.casefile__verdict-name {
+  margin: 0;
+  font-family: var(--cf-display);
+  font-size: 1.3rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.casefile__stats {
+  margin: 0;
+  padding: 8px 10px;
+  background: #f1ece0;
+  font-size: 0.9rem;
+}
+
+.casefile__stats .is-sig {
+  color: var(--cf-red);
+}
+
+.casefile__stats-test {
+  color: var(--cf-ink-soft);
+}
+
+/* ---- Close confirmation ---- */
+.casefile__confirm {
+  position: absolute;
+  inset: auto 12px 12px;
+  z-index: 3;
+  padding: 14px 16px;
+  border: 3px solid var(--cf-ink);
+  background: var(--cf-paper);
+  box-shadow: 6px 6px 0 var(--cf-ink);
+  font-family: var(--cf-type);
+}
+
+.casefile__confirm p {
+  margin: 0 0 10px;
+  font-weight: 700;
+}
+
+/* ---- Dev preview helper ---- */
+.casefile-preview--list {
+  min-height: 100dvh;
+  padding: 64px 16px 24px;
+  background: #fff8e7;
+  color: #161b2e;
+  font-family: var(--font-type, 'Courier Prime', 'Courier New', monospace);
+}
+
+.casefile-list {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px 20px;
+  border: 3px solid #161b2e;
+  background: #fff;
+}
+
+.casefile-list__title {
+  margin: 0 0 12px;
+  font: 800 1.8rem var(--font-display, 'Big Shoulders Display', 'Arial Narrow', sans-serif);
+}
+
+.casefile-list__items {
+  margin: 0;
+  padding-left: 20px;
+  line-height: 1.9;
+}
+
+.casefile-list__items a {
+  color: #2457a6;
+  font-weight: 700;
+}
+
+.casefile-list__items code {
+  font-size: 0.8em;
+  color: #3b4a6b;
+}
+
+.casefile-preview__all {
+  position: fixed;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #fff8e7;
+  font: 700 14px var(--font-type, 'Courier New', monospace);
+}
+.casefile-preview__reopen {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 14px;
+  border: 3px solid #161b2e;
+  background: #f2c14e;
+  font: 700 15px var(--font-type, 'Courier New', monospace);
+  cursor: pointer;
+}
+
+/* ---- Phones ---- */
+@media (max-width: 600px) {
+  .casefile {
+    width: calc(100vw - 16px);
+  }
+
+  .casefile__sheet {
+    max-height: calc(100dvh - 36px);
+    box-shadow: 0 0 0 5px var(--cf-ink);
+    outline-width: 3px;
+  }
+
+  .casefile__body {
+    font-size: 0.95rem;
+  }
+
+  .casefile__label {
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+  }
+
+  .casefile-chart {
+    padding: 4px 2px;
+  }
+
+  .casefile-chart__credit {
+    margin-left: 0;
+  }
+
+  .casefile__nav .casefile__btn {
+    flex: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .casefile[open] {
+    animation: none;
+  }
+
+  .casefile__btn,
+  .casefile__option,
+  .casefile__close {
+    transition: none;
+  }
+}
+
+/* ---- Case flow: case file + detective's notebook side by side ---- */
+.casefile--notebook {
+  width: min(1120px, calc(100vw - 24px));
+}
+
+.casefile__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 30px;
+  align-items: start;
+}
+
+.casefile__layout > .notebook {
+  max-height: calc(100dvh - 44px);
+  margin-top: 26px;
+}
+
+/* the question, kept on every step when the witness scene replaced the intro card */
+.casefile__brief {
+  position: relative;
+  margin: 12px clamp(18px, 5vw, 40px) 0;
+  padding: 6px 10px;
+  border: 2px dashed currentColor;
+  background: rgba(242, 193, 78, 0.28);
+  font-family: var(--cf-type);
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.casefile__brief-label {
+  margin-right: 4px;
+  font-family: var(--cf-display);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cf-red);
+}
+
+@media (max-width: 860px) {
+  .casefile--notebook {
+    width: min(780px, calc(100vw - 24px));
+  }
+
+  .casefile__layout {
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: 0;
+    max-height: calc(100dvh - 24px);
+  }
+
+  .casefile__layout > .notebook {
+    position: relative;
+    z-index: 3;
+    flex: none;
+    margin: 12px 0 0;
+    max-height: none;
+  }
+
+  .casefile__layout > .casefile__sheet {
+    min-height: 0;
+    flex: 1 1 auto;
+    max-height: none;
+    margin-top: 34px;
+  }
+}
+
+@media (max-width: 600px) {
+  .casefile__brief {
+    font-size: 0.82rem;
+  }
+}
