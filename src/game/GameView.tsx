@@ -37,6 +37,7 @@ import { createRivers } from './scene/createRivers'
 import { loadRoads, roadsInBounds } from './roads/roadData'
 import { createRoads } from './roads/createRoads'
 import { createCaseMarkers } from './cases/createCaseMarkers'
+import { createCanaryPortal } from './portal/createCanaryPortal'
 import { CASES } from '../levels/data'
 import type { GameStatus, GameViewProps, HudState } from '../shared/events'
 import './GameView.css'
@@ -247,16 +248,31 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
         scene.add(scenery.group)
         await progress(0.96)
 
+        // Canary Islands portal (prototype): a glowing frame round the corner box and two gates
+        // (Cádiz <-> Tenerife) that take the detective from one to the other
+        const portal = createCanaryPortal()
+        portal.place({
+          heightAt: (x, z) => terrainAt(x, z)?.heightAt(x, z) ?? 0,
+          isFree: (x, z) =>
+            (terrainAt(x, z)?.isExploredLand(x, z) ?? false) && !towns.blocks(x, z, 15) && !scenery.blocks(x, z) && landmarks.distance(x, z) > 40 && !nearRoad(x, z, 4),
+        })
+        scene.add(portal.group)
+
         // El detective: empieza en Madrid, mirando hacia la Puerta de Alcalá
-        // Ground under the detective: the terrain or, over a house or a monument, its roof.
-        // So he climbs houses and monuments like mountain steps (no collisions)
-        const surfaceAt = (x: number, z: number) => Math.max(main.heightAt(x, z), towns.surfaceAt(x, z), landmarks.surfaceAt(x, z), roadSurfaceAt(x, z))
+        // Ground under the detective: the terrain of the zone he is in (mainland or Canary Islands)
+        // or, over a house or a monument, its roof. So he climbs houses and monuments like mountain steps (no collisions)
+        const zoneTerrain = (x: number, z: number) => terrainAt(x, z) ?? main
+        const surfaceAt = (x: number, z: number) => Math.max(zoneTerrain(x, z).heightAt(x, z), towns.surfaceAt(x, z), landmarks.surfaceAt(x, z), roadSurfaceAt(x, z))
         // For the camera: ground without monuments (it treats monuments as walls, see chaseCamera)
-        const groundNoLandmarks = (x: number, z: number) => Math.max(main.heightAt(x, z), towns.surfaceAt(x, z), roadSurfaceAt(x, z))
+        const groundNoLandmarks = (x: number, z: number) => Math.max(zoneTerrain(x, z).heightAt(x, z), towns.surfaceAt(x, z), roadSurfaceAt(x, z))
+        const isFord = (x: number, z: number) => terrainAt(x, z)?.isFord(x, z) ?? false
         const ground: Ground = {
           heightAt: surfaceAt,
           // Land, or the shallow sea (by boat): along the coast and across to the islands
-          isDrivable: (x, z) => (main.isExploredLand(x, z) || main.isFord(x, z)) && !scenery.blocks(x, z),
+          isDrivable: (x, z) => {
+            const t = terrainAt(x, z)
+            return !!t && (t.isExploredLand(x, z) || t.isFord(x, z)) && !scenery.blocks(x, z)
+          },
         }
         const madrid = lonLatToWorld(-3.7038, 40.4168)
         const puerta = landmarks.positionOf('puerta-de-alcala') ?? madrid
@@ -290,7 +306,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
         const top = wantsTopView() ? createTopViewCamera(camera, renderer.domElement) : null
         if (!top) chase.startIntro() // swoop from far above Spain down to the detective; control starts when it lands
         // Development only: access from the console / Playwright for debugging
-        if (import.meta.env.DEV) Object.assign(window, { __game: { carState, camera, chase, top, ground, detective, boat, renderer, scene, day, nightLights, towns, houses, scenery, sceneryItems, landmarks, caseMarkers, main } })
+        if (import.meta.env.DEV) Object.assign(window, { __game: { carState, camera, chase, top, ground, detective, boat, renderer, scene, day, nightLights, towns, houses, scenery, sceneryItems, landmarks, caseMarkers, portal, main } })
 
         const fog = scene.fog as THREE.Fog
         const ink = createInkOutline(renderer) // contornos negros de cómic
@@ -355,10 +371,13 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
             const k = plane.progress * plane.progress * (3 - 2 * plane.progress)
             chase.setZoom(travelZoomFrom * Math.exp(Math.log(FLIGHT_LANDING_ZOOM / travelZoomFrom) * k))
           }
-          else stepCar(carState, input, ground, dt)
+          else {
+            stepCar(carState, input, ground, dt)
+            if (portal.update(carState, dt)) carState.y = surfaceAt(carState.x, carState.z) // through a gate: land on the ground there
+          }
           detective.setFocus(chase.stepFocus(wantLens, dt))
           detective.update(carState, dt)
-          const afloat = boat.update(carState, !travelling && main.isFord(carState.x, carState.z), detective, dt)
+          const afloat = boat.update(carState, !travelling && isFord(carState.x, carState.z), detective, dt)
           // In the boat (or the plane) there are no footsteps: no dust puffs and no footprints
           const walker = afloat > 0.5 || travelling ? Object.assign(rowing, carState, { speed: 0, accel: 0, yawRate: 0 }) : carState
           dust.update(walker, surfaceAt, detective.stridePhase, dt)
@@ -460,6 +479,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
           lighting.dispose()
           clouds.dispose()
           caseMarkers.dispose()
+          portal.dispose()
           ink.dispose()
           dispose()
           if (import.meta.env.DEV) delete (window as { __game?: unknown }).__game
