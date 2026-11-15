@@ -51,6 +51,39 @@ export const WITNESSES: Partial<Record<string, Witness>> = {
       height: 0.96,
     },
   },
+  filomena_madrid: {
+    caseId: 'filomena_madrid',
+    name: 'Pilar',
+    role: 'Newspaper kiosk owner, Madrid',
+    look: {
+      skin: '#e8b892',
+      hair: '#b9b4ae',
+      hairStyle: 'curly',
+      shirt: '#b8433a',
+      trousers: '#3a3f55',
+      hat: 'beret',
+      hatColor: '#2b2f45',
+      glasses: true,
+      apron: '#d9c38c',
+      height: 0.92,
+    },
+  },
+  cordoba_heat: {
+    caseId: 'cordoba_heat',
+    name: 'Rafael',
+    role: 'Olive farmer, Guadalquivir valley',
+    look: {
+      skin: '#c48a5c',
+      hair: '#2b2420',
+      hairStyle: 'short',
+      shirt: '#f2efe6',
+      trousers: '#5c6a3c',
+      hat: 'straw',
+      hatColor: '#e2c27a',
+      beard: true,
+      height: 1.02,
+    },
+  },
 }
 
 export function getWitness(caseId: string): Witness | undefined {

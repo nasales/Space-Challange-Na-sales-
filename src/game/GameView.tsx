@@ -37,7 +37,8 @@ import { createRoads } from './roads/createRoads'
 import { createCaseMarkers } from './cases/createCaseMarkers'
 import { createWitnesses } from './witness/createWitnesses'
 import { createDialogue, type DialogueScene } from './witness/dialogueCamera'
-import { CASES } from '../levels/data'
+import { CASES as ALL_CASES } from '../levels/data'
+import { isActiveCase } from '../shared/tutorial'
 import { WITNESSES } from '../shared/witness'
 import type { GameStatus, GameViewProps, HudState } from '../shared/events'
 import type { LineMood } from '../shared/tutorial'
@@ -99,6 +100,9 @@ function detectiveReaction(speaker: 'detective' | 'witness' | null, mood: LineMo
 }
 
 /** Only the 3D canvas. The HUD and status messages live in src/ui, fed through the callbacks. */
+/** Featured cases shown on the map: only the active ones (src/shared/tutorial.ts); parked cases keep their files. */
+const CASES = ALL_CASES.filter((c) => isActiveCase(c.id))
+
 export default function GameView({
   onStatus, onHud, onLensFocus, onProgress, onDialogueAnchors, focusLens = false, outfit, paused = false, completedCases, dialogueCase = null, speaking = null, speakingMood = null,
 }: GameViewProps) {

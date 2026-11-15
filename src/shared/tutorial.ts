@@ -2,19 +2,23 @@
 // Full description and rules: docs/case_tutorials.md. Changing this file needs agreement
 // from Data (Diego), Interface (Yeipi) and Game (Person 2).
 
-/** Featured cases that have a tutorial. The game draws a marker only for these ids. */
+/**
+ * Featured cases active in the game (2026-11-15: the team keeps 5). The game draws a marker only
+ * for these ids. Parked cases keep their scripts, data and levels in the repo: to restore one,
+ * move its id from PARKED_CASE_IDS back to this list.
+ */
 export const TUTORIAL_CASE_IDS = [
   'dana_valencia',
   'filomena_madrid',
   'cordoba_heat',
   'aneto_glacier',
   'donana',
-  'daimiel',
-  'almeria_murcia',
-  'ebro_delta',
-  'galicia_fires',
-  'sierra_culebra',
 ] as const
+/** Parked featured cases (not shown in the game; nothing deleted). */
+export const PARKED_CASE_IDS = ['daimiel', 'almeria_murcia', 'ebro_delta', 'galicia_fires', 'sierra_culebra'] as const
+export function isActiveCase(caseId: string): boolean {
+  return (TUTORIAL_CASE_IDS as readonly string[]).includes(caseId)
+}
 export type TutorialCaseId = (typeof TUTORIAL_CASE_IDS)[number]
 
 /** Where a case marker goes on the map (taken from data/cases_index.json). */
@@ -52,7 +56,13 @@ export interface TutorialScript {
     /** The witness's claim, in quotes, pinned at the top of the detective's notebook */
     claim: string
   }
+  /** Quiz-style lesson steps (DANA format). Empty when the case uses `board`. */
   steps: TutorialStep[]
+  /**
+   * Evidence board (detective corkboard): when present, the UI shows it instead of `steps`.
+   * See docs/evidence_board.md.
+   */
+  board?: EvidenceBoard
   /** Last screen: the player writes their own conclusion (normal game loop) */
   conclusion: {
     prompt: string
@@ -88,6 +98,68 @@ export type LineMood =
   | 'insistent'
   | 'determined'
   | 'confident'
+
+/** Evidence board: the witness's claim in the centre, items around it. */
+export interface EvidenceBoard {
+  /** Short title on the board header, e.g. "Is Madrid really not warming?" */
+  title: string
+  /** One sentence shown before the first item is opened (how to play the board) */
+  instructions: string
+  /** 4-6 items, in the suggested order (the player may open them in any order) */
+  items: EvidenceItem[]
+  /** Shown when every item is linked: the overall picture in 1-3 sentences (no final verdict) */
+  summary: string
+}
+
+export type EvidenceKind = 'chart' | 'clipping' | 'datacard'
+export type EvidenceRelation = 'supports' | 'contradicts' | 'neutral'
+
+export interface EvidenceItem {
+  id: string
+  kind: EvidenceKind
+  /** Label on the pinned card (face down and face up) */
+  title: string
+  /** Hand-written note on the face-down card, e.g. "Every January since 1980" */
+  teaser: string
+  /** What this item teaches about reading a time series (<= 80 words, plain English) */
+  text: string
+  /** The chart shown with the task (existing views). Clippings may omit it. */
+  chart?: ChartSpec
+  /** For kind "clipping": the newspaper text (well-known facts only, no invented quotes) */
+  clipping?: { headline: string; body: string; date?: string }
+  /** The hands-on task the player solves to turn the card face up */
+  task: EvidenceTask
+  /** How this evidence relates to the witness's claim (the player links it with red string) */
+  relation: EvidenceRelation
+  /** Explanation shown after the player links it (also shown as the hint if they pick wrong) */
+  relation_feedback: string
+  /** Notebook entry (<= 15 words) */
+  clue: string
+}
+
+/**
+ * Hands-on tasks (each one is a small UI mini-game). Every task has a short `prompt`, a `hint`
+ * shown after a wrong try, and a `success` message.
+ * - click_point: click the right point on the chart (`answer` = "YYYY-MM" or "YYYY")
+ * - fit_line: drag the ends of a ruler over the chart; success when the slope sign matches the
+ *   real trend (and, if `tolerance` is given, its value per decade within that tolerance); then the
+ *   real trend line is drawn for comparison
+ * - order_cards: drag polaroid cards into order; `cards` are years of a yearly series (season or
+ *   annual, from the chart), `order` "desc" = highest first
+ * - slider_window: move a slider over start years (data extras.window_trends); `question` asked
+ *   at the end with `options` (exactly one correct)
+ * - tally: count points that match a rule on the chart per period (`periods` of years) and type
+ *   the counts; `answers` = the right counts
+ * - compare: a clipping (or data card) next to the chart; pick the right explanation among `options`
+ */
+export type EvidenceTask = { prompt: string; hint: string; success: string } & (
+  | { type: 'click_point'; answer: string }
+  | { type: 'fit_line'; tolerance?: number }
+  | { type: 'order_cards'; cards: string[]; order: 'asc' | 'desc' }
+  | { type: 'slider_window'; question: string; options: { text: string; correct: boolean }[] }
+  | { type: 'tally'; rule: string; periods: { label: string; from: string; to: string }[]; answers: number[] }
+  | { type: 'compare'; options: { text: string; correct: boolean }[] }
+)
 
 export interface TutorialStep {
   id: string
