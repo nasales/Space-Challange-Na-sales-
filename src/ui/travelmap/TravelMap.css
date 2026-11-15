@@ -1,0 +1,308 @@
+/* Fast travel map: the same comic print look as the pause panel and the main menu's case files
+   (thick ink frame on cream paper, caption-box label, offset-print title, halftone sea).
+   Timings and scales come from travelConfig.ts as CSS variables on .travel-map. */
+.travel-map {
+  --tm-ink: #161b2e;
+  --tm-paper: #fff8e7;
+  --tm-gold: #f2c14e;
+  --tm-red: #e5322d;
+  --tm-sea: #5ea8c2;
+  --tm-land: #f1dfa6;
+  --tm-land-shadow: #3b4a6b;
+  --tm-grey: #c9c4b8;
+  --tm-river: #2f7fb0;
+  --print-cyan: rgba(0, 164, 214, 0.7);
+  --print-magenta: rgba(226, 0, 122, 0.55);
+
+  position: absolute;
+  inset: 0;
+  z-index: 45; /* over the HUD, the magnifier and the pause panel, under the database badge */
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background:
+    radial-gradient(circle, rgba(255, 248, 231, 0.1) 1.3px, transparent 1.8px) 0 0 / 8px 8px,
+    rgba(16, 20, 34, 0.72);
+}
+
+.travel-map--in {
+  animation: travel-map-fade var(--travel-open) ease-out both;
+}
+.travel-map--in .travel-map__sheet {
+  animation: travel-map-zoom var(--travel-open) cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+}
+.travel-map--out {
+  animation: travel-map-fade-out var(--travel-close) ease-in both;
+  pointer-events: none;
+}
+.travel-map--out .travel-map__sheet {
+  animation: travel-map-zoom-out var(--travel-close) ease-in both;
+}
+
+@keyframes travel-map-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes travel-map-zoom {
+  from { transform: scale(var(--travel-zoom)); }
+  to { transform: scale(1); }
+}
+/* Own names for closing: re-using the opening keyframes would not restart the animation */
+@keyframes travel-map-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes travel-map-zoom-out {
+  from { transform: scale(1); }
+  to { transform: scale(var(--travel-zoom)); }
+}
+
+.travel-map__sheet {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  /* The map keeps its shape: as wide as the screen allows, or as tall */
+  width: min(100%, 1100px, calc((100vh - 190px) * 1.32));
+  padding: 30px clamp(12px, 3vw, 26px) 14px;
+  border: 4px solid var(--tm-ink);
+  outline: 6px solid var(--tm-paper);
+  background: var(--tm-paper);
+  box-shadow: 0 0 0 10px var(--tm-ink);
+  color: var(--tm-ink);
+}
+.travel-map__sheet:focus {
+  outline: 6px solid var(--tm-paper);
+}
+
+.travel-map__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+}
+
+/* Caption box that sits on the frame */
+.travel-map__tag {
+  position: absolute;
+  top: -22px;
+  left: -8px;
+  padding: 8px 14px;
+  border: 3px solid var(--tm-ink);
+  background: var(--tm-gold);
+  font-family: var(--font-type);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  transform: rotate(-1.5deg);
+}
+
+.travel-map__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 5vw, 2.8rem);
+  font-weight: 900;
+  line-height: 0.95;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  text-shadow:
+    -2px -1px 0 var(--print-cyan),
+    3px 2px 0 var(--print-magenta);
+  transform: rotate(-1.5deg);
+}
+
+.travel-map__frame {
+  position: relative;
+  width: 100%;
+  border: 4px solid var(--tm-ink);
+  box-shadow: 5px 5px 0 var(--tm-ink);
+}
+
+.travel-map__svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.travel-map__sea {
+  fill: var(--tm-sea);
+}
+.travel-map__neighbours {
+  fill: var(--tm-grey);
+  stroke: var(--tm-ink);
+  stroke-width: 1.5px;
+  vector-effect: non-scaling-stroke;
+  stroke-linejoin: round;
+}
+.travel-map__shadow {
+  fill: var(--tm-land-shadow);
+}
+.travel-map__spain {
+  fill: var(--tm-land);
+  stroke: var(--tm-ink);
+  stroke-width: 3px;
+  vector-effect: non-scaling-stroke;
+  stroke-linejoin: round;
+}
+.travel-map__rivers {
+  fill: none;
+  stroke: var(--tm-river);
+  stroke-width: 2px;
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Landmark badges: gold coin with an ink glyph; hover / focus grows it and makes it glow */
+.travel-map__pin {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: clamp(28px, 3.4vw, 40px);
+  height: clamp(28px, 3.4vw, 40px);
+  padding: 4px;
+  border: 3px solid var(--tm-ink);
+  border-radius: 50%;
+  background: var(--tm-gold);
+  box-shadow: 3px 3px 0 var(--tm-ink);
+  color: var(--tm-ink);
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  transition:
+    transform 0.14s ease-out,
+    box-shadow 0.14s ease-out,
+    background-color 0.14s ease-out;
+}
+.travel-map__pin svg {
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+}
+.travel-map__pin.is-hot,
+.travel-map__pin:focus-visible {
+  z-index: 3;
+  background: #ffd96b;
+  transform: translate(-50%, -50%) scale(var(--travel-hover));
+  box-shadow:
+    3px 3px 0 var(--tm-ink),
+    0 0 0 4px var(--tm-paper),
+    0 0 18px 8px rgba(255, 214, 90, 0.85);
+  outline: none;
+}
+
+/* Name label above the hovered landmark */
+.travel-map__label {
+  position: absolute;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 5px 10px 6px;
+  border: 3px solid var(--tm-ink);
+  background: var(--tm-paper);
+  box-shadow: 3px 3px 0 var(--tm-ink);
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 30px)) rotate(-1deg);
+}
+.travel-map__label strong {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+.travel-map__label span {
+  font-family: var(--font-hand);
+  font-size: 0.95rem;
+  line-height: 1.1;
+}
+
+/* The detective's position: red dot with a pulsing ring */
+.travel-map__you {
+  position: absolute;
+  z-index: 5; /* above the badges: he often stands right at a landmark (no clicks, see pointer-events) */
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.travel-map__you-dot {
+  position: absolute;
+  left: -9px;
+  top: -9px;
+  width: 18px;
+  height: 18px;
+  border: 3px solid var(--tm-paper);
+  border-radius: 50%;
+  background: var(--tm-red);
+  box-shadow: 0 0 0 2px var(--tm-ink);
+}
+.travel-map__you-dot::after {
+  content: '';
+  position: absolute;
+  inset: -9px;
+  border: 3px solid var(--tm-red);
+  border-radius: 50%;
+  animation: travel-map-pulse 1.4s ease-out infinite;
+}
+.travel-map__you-text {
+  position: absolute;
+  left: 14px;
+  top: -12px;
+  padding: 0 6px;
+  border: 2px solid var(--tm-ink);
+  background: var(--tm-red);
+  color: var(--tm-paper);
+  font-family: var(--font-type);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+@keyframes travel-map-pulse {
+  from { transform: scale(0.6); opacity: 1; }
+  to { transform: scale(1.6); opacity: 0; }
+}
+
+.travel-map__loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  font-family: var(--font-hand);
+  font-size: 1.3rem;
+  color: var(--tm-paper);
+}
+
+.travel-map__footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 16px;
+  font-family: var(--font-type);
+  font-size: 0.85rem;
+}
+.travel-map__footer kbd {
+  padding: 0 5px;
+  border: 2px solid var(--tm-ink);
+  background: #fff;
+  font-family: var(--font-type);
+  font-weight: 700;
+}
+.travel-map__credit {
+  opacity: 0.7;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .travel-map--in,
+  .travel-map--in .travel-map__sheet,
+  .travel-map--out,
+  .travel-map--out .travel-map__sheet {
+    animation-duration: 1ms;
+  }
+  .travel-map__you-dot::after {
+    animation: none;
+  }
+}

@@ -1,0 +1,143 @@
+/* "In a case zone" tag: a comic caption box at the bottom centre of the screen. */
+.case-hint {
+  position: fixed;
+  left: 50%;
+  bottom: 64px; /* clear of the database badge at the bottom centre */
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  padding: 8px 18px 8px 8px;
+  border: 3px solid #161b2e;
+  background: #fff8e7;
+  color: #161b2e;
+  box-shadow: 5px 5px 0 #161b2e;
+  font-family: var(--font-type, 'Courier Prime', 'Courier New', monospace);
+  font-size: 15px;
+  transform: translateX(-50%) rotate(-1deg);
+  pointer-events: none;
+  animation: case-hint-pop 0.3s steps(3, end);
+}
+
+.case-hint__mark {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 3px solid #161b2e;
+  border-radius: 50%;
+  background: #f2c14e;
+  font-family: var(--font-display, 'Arial Narrow', sans-serif);
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.case-hint.is-ready .case-hint__mark {
+  animation: case-hint-bounce 0.9s ease-in-out infinite alternate;
+}
+
+.case-hint__text {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.case-hint__label {
+  font-family: var(--font-display, 'Arial Narrow', sans-serif);
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.case-hint__action {
+  font-weight: 700;
+}
+
+.case-hint kbd {
+  padding: 0 6px;
+  border: 2px solid #161b2e;
+  border-radius: 4px;
+  background: #f2c14e;
+  box-shadow: 0 2px 0 #161b2e;
+  font: inherit;
+  font-weight: 700;
+}
+
+@keyframes case-hint-pop {
+  from {
+    transform: translateX(-50%) rotate(-1deg) scale(0.85);
+    opacity: 0;
+  }
+}
+
+@keyframes case-hint-bounce {
+  to {
+    transform: translateY(-3px) rotate(-8deg);
+  }
+}
+
+/* Phones: below the location panel, full width */
+@media (max-width: 600px) {
+  .case-hint {
+    left: 16px;
+    right: 16px;
+    /* above the controls box (the location panel fills the top of a phone screen) */
+    bottom: 150px;
+    top: auto;
+    width: auto;
+    font-size: 14px;
+    transform: rotate(-1deg);
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .case-hint,
+  .case-hint.is-ready .case-hint__mark {
+    animation: none;
+  }
+}
+
+/* Portrait chip of the witness (Figure.tsx head crop) */
+.case-hint__face {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border: 3px solid #161b2e;
+  border-radius: 50%;
+  overflow: hidden;
+  background:
+    radial-gradient(circle, rgba(240, 122, 43, 0.45) 1.3px, transparent 1.8px) 0 0 / 7px 7px,
+    #fbe6c8;
+}
+
+.case-hint__face .cf-figure {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.case-hint__where {
+  font-size: 0.85em;
+  color: #3b4a6b;
+}
+
+/* Fades out when the case opens (dialogue focus) */
+.case-hint.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.3s ease-out,
+    visibility 0s linear 0.3s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .case-hint.is-hidden {
+    transition: none;
+  }
+}

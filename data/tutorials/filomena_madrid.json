@@ -1,0 +1,277 @@
+{
+  "case_id": "filomena_madrid",
+  "title": "Storm Filomena",
+  "place": "Madrid",
+  "intro": {
+    "headline": "January 2021: Madrid under the snow",
+    "paragraphs": [
+      "In early January 2021 storm Filomena brought Madrid its heaviest snowfall in about 50 years. Streets, roads and the airport closed, cars were stuck in the snow, and the city was paralysed for days.",
+      "When the storm passed, the sky cleared and a cold wave followed. The snow froze into ice, and many trees in the city broke under its weight.",
+      "Pictures of a white Madrid travelled around the world, and some people asked: if it can snow like this, is the planet really warming? A good detective does not answer with one picture. In this case file you will compare January 2021 with every other January since 1980, and then decide for yourself."
+    ],
+    "question": "If Madrid had its biggest snowfall in half a century, does that mean it is not warming?"
+  },
+  "scene": {
+    "lines": [
+      {
+        "speaker": "witness",
+        "text": "¡Buenos días, detective! A newspaper? A crossword? No? Then you came for the snow story. Everyone does, sooner or later.",
+        "mood": "happy"
+      },
+      {
+        "speaker": "detective",
+        "text": "Good morning. I did. I am looking into January 2021, when storm Filomena hit Madrid. Were you here?",
+        "mood": "curious"
+      },
+      {
+        "speaker": "witness",
+        "text": "Here? Right here, at this kiosk, for forty years. In early January it snowed and snowed, a whole day and a night.",
+        "mood": "proud"
+      },
+      {
+        "speaker": "witness",
+        "text": "The whole city stopped. Roads closed, buses stopped, even the airport shut. Cars stuck in the middle of the streets, buried under white.",
+        "mood": "explaining"
+      },
+      {
+        "speaker": "detective",
+        "text": "I saw the pictures. Is it true that people went skiing down Gran Vía?",
+        "mood": "curious"
+      },
+      {
+        "speaker": "witness",
+        "text": "True! Skis on Gran Vía, snowball fights in Puerta del Sol. My grandson built a snowman taller than me.",
+        "mood": "happy"
+      },
+      {
+        "speaker": "witness",
+        "text": "Then the frost came. The snow turned to ice, and so many trees in the parks broke under the weight.",
+        "mood": "sad"
+      },
+      {
+        "speaker": "witness",
+        "text": "I sold every paper with a white Madrid on the front. The biggest snowfall in fifty years, they all said.",
+        "mood": "proud"
+      },
+      {
+        "speaker": "detective",
+        "text": "A storm like that is rare. Some people asked what it means for climate change. What do you think, Pilar?",
+        "mood": "curious"
+      },
+      {
+        "speaker": "witness",
+        "text": "Mira, hijo, every day the papers talk about global warming. Then why did I need snow boots to open my kiosk?",
+        "mood": "insistent"
+      },
+      {
+        "speaker": "witness",
+        "text": "We had the biggest snowfall in fifty years. So this global warming thing is a lie!",
+        "mood": "confident"
+      },
+      {
+        "speaker": "detective",
+        "text": "That is a clear claim. A good detective does not guess: we test a claim with evidence.",
+        "mood": "determined"
+      },
+      {
+        "speaker": "detective",
+        "text": "So, the question: if Madrid had its biggest snowfall in half a century, does that mean it is not warming? Let us pin up the NASA data.",
+        "mood": "determined"
+      },
+      {
+        "speaker": "witness",
+        "text": "Pin it on your board, then. Your charts will say what my boots said!",
+        "mood": "confident"
+      }
+    ],
+    "claim": "We had the biggest snowfall in fifty years, so global warming is a lie."
+  },
+  "steps": [],
+  "board": {
+    "title": "Is Madrid really not warming?",
+    "instructions": "Open each card and solve its task, then pull a red string to Pilar's claim: does it support it, contradict it, or say nothing?",
+    "items": [
+      {
+        "id": "snow_clipping",
+        "kind": "clipping",
+        "title": "The front page",
+        "teaser": "From Pilar's kiosk, January 2021",
+        "clipping": {
+          "headline": "Madrid buried under its biggest snowfall in 50 years",
+          "date": "January 2021",
+          "body": "Storm Filomena covered Madrid in snow on 8 and 9 January. Roads, trains and the airport closed, and cars were left stuck in the streets. Some residents skied down Gran Vía. A cold wave followed, and the snow froze into ice."
+        },
+        "text": "A newspaper tells the story of a few days; a chart tells the story of months. Each point here is the average precipitation of one January in Madrid, 1998 to 2025, with snow counted as the water it melts into. Data: NASA GPM IMERG. A normal January gets about 1.6 mm/day. Remember: snow needs moisture and cold air at the same time.",
+        "chart": {
+          "variable": "PRECIP",
+          "view": "same_month",
+          "month": 1,
+          "highlights": [
+            {
+              "kind": "point",
+              "date": "2021",
+              "label": "January 2021"
+            },
+            {
+              "kind": "point",
+              "date": "2001",
+              "label": "2001 (wettest)"
+            }
+          ]
+        },
+        "task": {
+          "type": "compare",
+          "prompt": "The clipping says \"biggest snowfall in 50 years\". Read the chart of January rain and snow. Which explanation fits both?",
+          "hint": "Find January 2021 on the chart. Is it the tallest point? Then think: what else, besides water, does snow need?",
+          "success": "Right: January 2021 had about 1.9 mm/day, wetter than a normal January, but nine Januaries were wetter. The snow was rare because moisture met very cold air.",
+          "options": [
+            {
+              "text": "January 2021 was wetter than normal but far from a record: the snow was rare because moisture arrived with very cold air",
+              "correct": true
+            },
+            {
+              "text": "January 2021 was the wettest January in the record, so the snow had to be a record too",
+              "correct": false
+            },
+            {
+              "text": "The chart shows Madrid is getting colder every January",
+              "correct": false
+            }
+          ]
+        },
+        "relation": "neutral",
+        "relation_feedback": "It says nothing either way. The snowfall was real and extreme, but it was one storm lasting a few days. A single event, however rare, describes the weather of one month, not the trend over decades.",
+        "clue": "Filomena: moisture met very cold air; January 2021 was not record wet."
+      },
+      {
+        "id": "cold_january",
+        "kind": "chart",
+        "title": "Every January",
+        "teaser": "47 Januaries, 1980 to 2026",
+        "text": "To judge a cold January, compare it only with other Januaries. This chart keeps one point per year: 47 Januaries from 1980 to 2026, in °C, so the summer-winter wave is gone. Data: NASA MERRA-2. A normal January here is about 3.5 °C. Each point is a whole month, so one point tells the story of one winter, not of the climate.",
+        "chart": {
+          "variable": "T2M",
+          "view": "same_month",
+          "month": 1
+        },
+        "task": {
+          "type": "click_point",
+          "prompt": "Pilar says that winter was special. Click the coldest January of this century (from 2001 on).",
+          "hint": "Look only at the right half of the chart, from 2001 on. Which point sits lowest?",
+          "success": "Found it: January 2021, the month of Filomena, at about 2.2 °C: the coldest January of this century and the 4th coldest of all 47. Pilar remembers well.",
+          "answer": "2021"
+        },
+        "relation": "neutral",
+        "relation_feedback": "On its own this says nothing about the trend. January 2021 really was very cold, as Pilar remembers. But it is one point among 47: whether it means \"no warming\" depends on all the others.",
+        "clue": "January 2021: about 2.2 °C, coldest January this century, 4th coldest of 47."
+      },
+      {
+        "id": "january_cards",
+        "kind": "chart",
+        "title": "Five Januaries",
+        "teaser": "Cold or warm? Put them in order",
+        "text": "One January can be very different from the next, in the same month and the same city. Before reading a trend, a detective must know how big these jumps are: if single Januaries swing by several degrees, one cold or warm January cannot prove much by itself. Sort the cards, then look at where the cold and the warm years fall in time.",
+        "chart": {
+          "variable": "T2M",
+          "view": "same_month",
+          "month": 1
+        },
+        "task": {
+          "type": "order_cards",
+          "prompt": "Put these five Januaries in order, from the coldest to the warmest.",
+          "hint": "Find each year on the chart and read the height of its point: lower means colder.",
+          "success": "Right: 1992 (about 1.2 °C, the coldest in the record), 2021, 2011, 2001, 2024 (about 5.7 °C). More than 4 °C apart in the same month: cold and warm Januaries are mixed across the decades.",
+          "cards": [
+            "2024",
+            "1992",
+            "2011",
+            "2021",
+            "2001"
+          ],
+          "order": "asc"
+        },
+        "relation": "neutral",
+        "relation_feedback": "On its own this says nothing about the claim. It shows how noisy single Januaries are: cold and warm ones are mixed across the decades, so neither Filomena nor one warm January proves anything by itself.",
+        "clue": "Januaries swing by more than 4 °C from year to year: that is weather."
+      },
+      {
+        "id": "ruler",
+        "kind": "chart",
+        "title": "All the months",
+        "teaser": "561 months: find the tilt",
+        "text": "Now every month counts: 561 months, January 1980 to September 2026. Each point is one month minus the normal value for that month (an anomaly), so a cold January and a cold July share one scale. Data: NASA MERRA-2. Do not follow single points: look for the general tilt of the whole cloud.",
+        "chart": {
+          "variable": "T2M",
+          "view": "anomaly",
+          "highlights": [
+            {
+              "kind": "point",
+              "date": "2021-01",
+              "label": "January 2021"
+            }
+          ]
+        },
+        "task": {
+          "type": "fit_line",
+          "tolerance": 0.3,
+          "prompt": "Drag the two ends of the ruler so it follows the general direction of the cloud of points.",
+          "hint": "Do not chase one point. Compare the middle of the cloud in the 1980s with the middle of the cloud in the 2020s.",
+          "success": "Good: the line climbs. The real trend is about +0.37 °C per decade, about 1.7 °C over the whole record. January 2021 sits below it, a cold month inside a warming series."
+        },
+        "relation": "contradicts",
+        "relation_feedback": "This goes against the claim. Across all months Madrid is warming clearly: about +0.37 °C per decade (95% range +0.26 to +0.49), p < 0.001. Filomena's month is one cold point below a rising line.",
+        "clue": "All months since 1980: about +0.37 °C per decade, p < 0.001."
+      },
+      {
+        "id": "more_years",
+        "kind": "datacard",
+        "title": "How sure are we?",
+        "teaser": "More years, less doubt",
+        "text": "This card measures the trend from different start years to 2026: each bar is the slope, each whisker the 95% range, where the true slope probably lies. A filled bar is significant. Move the slider and watch how long the whisker gets. Think of the Januaries alone: 47 points, slope about +0.2 °C per decade, p = 0.069, not proven; all 561 months give p < 0.001.",
+        "chart": {
+          "variable": "T2M",
+          "view": "window_trends"
+        },
+        "task": {
+          "type": "slider_window",
+          "prompt": "Move the slider from 1980 to 2010 and watch the whisker of each trend.",
+          "hint": "Compare the length of the whisker at 1980 with the one at 2010.",
+          "success": "Right: from 1980 the range is narrow, +0.26 to +0.49 °C per decade; from 2010 it widens to +0.60 to +1.58. More years, narrower range: the long record is the strongest witness.",
+          "question": "What happens to the 95% range when you keep fewer years?",
+          "options": [
+            {
+              "text": "It gets wider: fewer years leave more doubt about the true slope",
+              "correct": true
+            },
+            {
+              "text": "It gets narrower: recent years are more precise",
+              "correct": false
+            },
+            {
+              "text": "It stays the same: the number of years does not matter",
+              "correct": false
+            }
+          ]
+        },
+        "relation": "contradicts",
+        "relation_feedback": "This goes against the claim. Whatever start year you pick, from 1980 to 2010, the trend is warming and significant. The Januaries alone are not proven because they have fewer points, not because Madrid stopped warming.",
+        "clue": "More years, narrower range; every start year since 1980 shows significant warming."
+      }
+    ],
+    "summary": "Two cards show a truly cold, snowy January among big year-to-year swings. Two cards look at decades of months instead. One clipping tells the story of a few days. Weigh them all before you write your conclusion."
+  },
+  "conclusion": {
+    "prompt": "If Madrid had its biggest snowfall in half a century, does that mean it is not warming? Write your conclusion using what the charts showed you.",
+    "variable": "T2M",
+    "placeholder": "Looking at the temperature data for Madrid from 1980 to 2026, I think..."
+  },
+  "reveal": {
+    "by_variable": {
+      "T2M": "Air temperature in Madrid (January 1980 to September 2026) rises clearly: about +0.37 °C per decade (95% range +0.26 to +0.49 °C per decade), p < 0.001, about 1.7 °C over the whole period. The 47 Januaries alone tilt up too (about +0.2 °C per decade), but with p = 0.069 that slope is not significant on its own. January 2021 was the 4th coldest January since 1980.",
+      "PRECIP": "January precipitation in Madrid (1998 to 2025) shows no significant trend (p = 0.40), and the full monthly series shows none either (p = 0.79). January 2021 was a little wetter than a normal January, but far from the wettest."
+    },
+    "lesson": "A very cold month is weather; climate is the picture over decades. Madrid is warming clearly, and a rare snowstorm does not contradict that. Comparing a month only with the same month in other years is a fair test, but it leaves fewer points, so a real change can be harder to prove: a non-significant result means the evidence is not strong enough, not that nothing is changing.",
+    "claim_verdict": "wrong",
+    "claim_text": "Pilar, your memory is right: Filomena was a rare storm, and January 2021 was the coldest January this century. But one cold month is weather. Over all the months since 1980 Madrid has warmed by about 1.7 °C, so the snow does not make global warming a lie."
+  }
+}

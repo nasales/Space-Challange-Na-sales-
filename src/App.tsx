@@ -1,7 +1,7 @@
 // App shell: first the main menu, then (after Play) the 3D game with the interface drawn on top.
 // src/game and src/ui never import each other; they only talk through src/shared.
 // The menu's animated character comes from src/game and is passed into the menu as a slot here.
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import GameView from './game/GameView'
 import DetectiveShowcase from './game/detective/DetectiveShowcase'
 import Hud from './ui/hud/Hud'
@@ -14,14 +14,17 @@ import LoginScreen from './ui/auth/LoginScreen'
 import { isRecoveryLink } from './shared/auth'
 import DbTest from './ui/dbtest/DbTest'
 import DbStatus from './ui/status/DbStatus'
-import type { GameStatus, HudState, LensFocusState } from './shared/events'
+import CaseFilePreview from './ui/casefile/CaseFilePreview'
+import CaseFlow, { type DialogueState } from './ui/casefile/CaseFlow'
+import CaseHint from './ui/casefile/CaseHint'
+import { createAnchorStore } from './ui/casefile/anchors'
+import TravelMap from './ui/travelmap/TravelMap'
+import type { GameStatus, HudState, LensFocusState, TravelRequest } from './shared/events'
 import { loadOutfit, type Outfit } from './shared/outfit'
 import { loadCompleted, markCompleted } from './shared/progress'
 import { startBackgroundMusic } from './shared/music'
+import { hasTutorial } from './ui/casefile/loader'
 import { installUiSounds, playSfx, setWind } from './shared/sound'
-import CaseLevel from './levels/CaseLevel'
-import { getLevel } from './levels/registry'
-import { getCaseEntry } from './levels/data'
 
 type Screen = 'menu' | 'wardrobe' | 'account' | 'game'
 
@@ -30,44 +33,34 @@ const RECOVERY = isRecoveryLink()
 
 // Temporary team page: open the site with ?dbtest to test the database connection.
 const DB_TEST = new URLSearchParams(window.location.search).has('dbtest')
+// Temporary preview of a featured-case tutorial: ?casefile=dana_valencia
+const CASE_PREVIEW = new URLSearchParams(window.location.search).has('casefile')
 
-/** Featured case level drawn over the paused game. */
-const OVERLAY_STYLE: CSSProperties = { position: 'fixed', inset: 0, zIndex: 50, overflow: 'auto' }
-/** Small hint while the detective stands in a case zone (prototype look; Interface can restyle it). */
-const HINT_STYLE: CSSProperties = {
-  position: 'fixed',
-  left: '50%',
-  bottom: '96px',
-  transform: 'translateX(-50%)',
-  zIndex: 20,
-  padding: '8px 16px',
-  borderRadius: '12px',
-  border: '2px solid #1a1423',
-  background: '#ffc21a',
-  color: '#1a1423',
-  font: '600 15px/1.3 system-ui, sans-serif',
-  pointerEvents: 'none',
-  maxWidth: 'calc(100vw - 32px)',
-  textAlign: 'center',
-}
+const NO_DIALOGUE: DialogueState = { active: false, speaking: null, mood: null }
 
 export default function App() {
+  // true while a featured case is open: the HUD and the database badge fade out (dialogue focus)
+  const [caseFocus, setCaseFocus] = useState(false)
   return (
     <>
-      {DB_TEST ? (
+      {CASE_PREVIEW ? (
+        <main className="app">
+          <CaseFilePreview />
+        </main>
+      ) : DB_TEST ? (
         <main className="app">
           <DbTest />
         </main>
       ) : (
-        <Game />
+        <Game onCaseFocus={setCaseFocus} />
       )}
-      {/* Database badge + build version, on every screen */}
-      <DbStatus />
+      {/* Database badge + build version, on every screen (hidden while a case is open) */}
+      <DbStatus hidden={caseFocus} />
     </>
   )
 }
 
-function Game() {
+function Game({ onCaseFocus }: { onCaseFocus: (on: boolean) => void }) {
   const [screen, setScreen] = useState<Screen>(RECOVERY ? 'account' : 'menu')
   const [status, setStatus] = useState<GameStatus>('loading')
   const [hud, setHud] = useState<HudState | null>(null)
@@ -79,16 +72,34 @@ function Game() {
   const [lensState, setLensState] = useState<LensFocusState>('out')
   // Esc pause panel on the map (the game ignores driving input while it is open)
   const [paused, setPaused] = useState(false)
-  // Featured cases: Space inside a case zone (detective stopped) opens that case's level
+  // Featured cases: Space inside a case zone (detective stopped) opens the case flow
+  // (witness scene -> case file or evidence board -> case closed, src/ui/casefile/CaseFlow.tsx).
+  // Escape inside the flow is handled there, one phase at a time.
   const [openCase, setOpenCase] = useState<string | null>(null)
+  const [dialogue, setDialogue] = useState<DialogueState>(NO_DIALOGUE)
+  const [anchors] = useState(createAnchorStore)
   const [completed, setCompleted] = useState<Set<string>>(loadCompleted)
   const completedList = useMemo(() => [...completed], [completed])
   // Background music from the menu on (it starts on the first click or key press)
   useEffect(startBackgroundMusic, [])
+  // ---- Fast travel (M map): pick a landmark, the detective flies there by plane ----
+  const [travelMapOpen, setTravelMapOpen] = useState(false)
+  const [travelTo, setTravelTo] = useState<TravelRequest | null>(null)
+  const [flying, setFlying] = useState(false)
+  const canOpenTravelMap = screen === 'game' && status === 'ready' && !paused && !openCase && !focusLens && lensState === 'out' && !flying
+  const startTravel = (landmarkId: string) => {
+    setTravelMapOpen(false)
+    setFlying(true) // until the game reports 'landed'
+    setTravelTo((prev) => ({ landmarkId, seq: (prev?.seq ?? 0) + 1 }))
+  }
+  // Map open or plane in the air: Space (magnifier, case level) and Esc (pause) wait
+  const travelBusy = travelMapOpen || flying
   // Subtle sound effects: a click on every button, plus the game moments below (src/shared/sound.ts)
   useEffect(installUiSounds, [])
-  const zoneCase = hud?.caseZone && getLevel(hud.caseZone) ? hud.caseZone : null
-  const canOpenCase = screen === 'game' && status === 'ready' && !!hud?.stopped && !!zoneCase && !openCase && !paused
+  const zoneCase = hud?.caseZone && hasTutorial(hud.caseZone) ? hud.caseZone : null
+  // only with the camera out of the hand lens (the picker cannot reset it once a case is open)
+  const canOpenCase =
+    screen === 'game' && status === 'ready' && !!hud?.stopped && !!zoneCase && !openCase && !focusLens && lensState === 'out' && !paused && !travelBusy
   useGameSounds({
     playing: screen === 'game' && status === 'ready' && !paused && !openCase && !focusLens,
     rush: hud?.rush ?? 0,
@@ -102,6 +113,9 @@ function Game() {
   const exitToMenu = () => {
     // GameView unmounts and disposes its scene; reset the game state so Play starts fresh
     setPaused(false)
+    setTravelMapOpen(false)
+    setFlying(false)
+    setTravelTo(null)
     setOpenCase(null)
     setFocusLens(false)
     setLensState('out')
@@ -120,15 +134,19 @@ function Game() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [canOpenCase, zoneCase])
-  // Esc leaves an open level (the levels only show their exit button on the last screen)
   useEffect(() => {
-    if (!openCase) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.code === 'Escape') setOpenCase(null)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [openCase])
+    onCaseFocus(!!openCase)
+  }, [openCase, onCaseFocus])
+  const closeCase = useCallback(() => {
+    setOpenCase(null)
+    setDialogue(NO_DIALOGUE)
+  }, [])
+  const solveCase = useCallback((caseId: string) => {
+    // Green marker once the case is solved
+    playSfx('success')
+    markCompleted(caseId)
+    setCompleted((prev) => new Set(prev).add(caseId))
+  }, [])
 
   if (screen === 'menu') {
     return (
@@ -174,44 +192,51 @@ function Game() {
         onLensFocus={setLensState}
         onProgress={setLoadProgress}
         outfit={outfit}
-        paused={paused || !!openCase}
+        paused={paused || !!openCase || travelMapOpen}
         completedCases={completedList}
+        dialogueCase={openCase && dialogue.active ? openCase : null}
+        speaking={dialogue.speaking}
+        speakingMood={dialogue.mood}
+        onDialogueAnchors={anchors.set}
+        travelTo={travelTo}
+        onTravel={(state) => setFlying(state === 'flying')}
       />
-      <Hud status={status} hud={hud} />
+      {/* Dialogue focus: the whole HUD fades out while a case is open */}
+      <Hud status={status} hud={hud} hidden={!!openCase} />
       <MapLoader status={status} progress={loadProgress} outfit={outfit} />
       {/* Outside case zones Space opens the magnifier picker, as before */}
       <VariablePicker
-        canOpen={status === 'ready' && !!hud?.stopped && !paused && !zoneCase && !openCase}
+        canOpen={status === 'ready' && !!hud?.stopped && !paused && !zoneCase && !openCase && !travelBusy}
         lensState={lensState}
         onOpenChange={setFocusLens}
         location={hud?.location ?? null}
       />
-      {/* After the picker, so the picker's Esc handler runs first and wins; a case level has its own Esc */}
+      {/* After the picker, so the picker's Esc handler runs first and wins; a case flow has its own Esc */}
       <PauseMenu
         open={paused}
-        canOpen={status === 'ready' && !focusLens && lensState === 'out' && !openCase}
+        canOpen={status === 'ready' && !focusLens && lensState === 'out' && !openCase && !travelBusy}
         onOpenChange={setPaused}
         onMainMenu={exitToMenu}
       />
-      {zoneCase && !openCase && !paused && (
-        <div className="case-zone-hint" style={HINT_STYLE}>
-          {hud?.stopped ? 'Press Space' : 'Stop and press Space'} to investigate {getCaseEntry(zoneCase)?.title ?? zoneCase}
-        </div>
-      )}
+      {/* Fast travel map (M): opens only when nothing else is up; picking a landmark starts the flight */}
+      <TravelMap
+        open={travelMapOpen}
+        canOpen={canOpenTravelMap}
+        onOpenChange={setTravelMapOpen}
+        onTravel={startTravel}
+        position={hud?.location ?? null}
+      />
+      {zoneCase && !paused && !travelBusy && <CaseHint caseId={zoneCase} stopped={!!hud?.stopped} hidden={!!openCase} />}
       {openCase && (
-        <div className="case-level-overlay" style={OVERLAY_STYLE}>
-          <CaseLevel
-            caseId={openCase}
-            onExit={() => setOpenCase(null)}
-            onResult={(r) => {
-              // Green marker only for a correct answer (Ivan's rule)
-              if (!r.correct) return
-              playSfx('success')
-              markCompleted(r.caseId)
-              setCompleted((prev) => new Set(prev).add(r.caseId))
-            }}
-          />
-        </div>
+        <CaseFlow
+          key={openCase}
+          caseId={openCase}
+          onClose={closeCase}
+          onSolved={solveCase}
+          onDialogue={setDialogue}
+          anchors={anchors}
+          outfit={outfit}
+        />
       )}
     </main>
   )

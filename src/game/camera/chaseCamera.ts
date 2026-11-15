@@ -99,6 +99,7 @@ export function createChaseCamera(camera: THREE.PerspectiveCamera, dom: HTMLElem
   const focusPos = new THREE.Vector3()
   const focusLook = new THREE.Vector3()
 
+  let zoomLocked = false // e.g. during a witness dialogue (its own camera)
   // Intro: progress 0..1 while it plays, -1 when there is none (or it has landed)
   let introT = -1
   let introSkip = false
@@ -117,7 +118,7 @@ export function createChaseCamera(camera: THREE.PerspectiveCamera, dom: HTMLElem
       skipIntro() // the wheel skips the intro instead of zooming
       return
     }
-    if (focusWanted || focusProgress > 0) return // no zooming while flying into the lens
+    if (zoomLocked || focusWanted || focusProgress > 0) return // no zooming while flying into the lens
     targetZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, targetZoom * Math.exp(e.deltaY * 0.0012)))
   }
   dom.addEventListener('wheel', onWheel, { passive: false })
@@ -315,6 +316,10 @@ export function createChaseCamera(camera: THREE.PerspectiveCamera, dom: HTMLElem
   return {
     update,
     stepFocus,
+    /** Ignore the mouse wheel (true) or let it zoom again (false). */
+    lockZoom(on: boolean) {
+      zoomLocked = on
+    },
     /** Eased lens focus 0..1 (1 = the glass fills LENS_SCREEN_FRACTION of the smaller screen side). */
     get focus() {
       return focusEased
@@ -323,6 +328,14 @@ export function createChaseCamera(camera: THREE.PerspectiveCamera, dom: HTMLElem
       return distance
     },
     startIntro,
+    /** Zoom the player asked for (1 = default chase distance). */
+    get zoom() {
+      return targetZoom
+    },
+    /** Sets the zoom at once (e.g. the fast-travel flight eases it in); the wheel still works after. */
+    setZoom(z: number) {
+      zoom = targetZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z))
+    },
     /** True while the intro swoop plays (the player has no control yet). */
     get introActive() {
       return introT >= 0

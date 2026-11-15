@@ -19,6 +19,7 @@ import { createDayCycle, readDayParams } from './scene/dayCycle'
 import { createNightLights } from './scene/nightLights'
 import { createDetective } from './detective/createDetective'
 import { createRowBoat } from './boat/createRowBoat'
+import { createPlane } from './plane/createPlane'
 import { createDust } from './effects/createDust'
 import { createFootprints } from './effects/createFootprints'
 import { placeTowns } from './towns/placeTowns'
@@ -39,8 +40,13 @@ import { createCaseMarkers } from './cases/createCaseMarkers'
 import { createSeaLane } from './scene/createSeaLane'
 import { laneFordAtWorld } from './map/canarySeaLane'
 import { toDisplayLonLat } from './map/canaryInset'
-import { CASES } from '../levels/data'
+import { createWitnesses } from './witness/createWitnesses'
+import { createDialogue, type DialogueScene } from './witness/dialogueCamera'
+import { CASES as ALL_CASES } from '../levels/data'
+import { isActiveCase } from '../shared/tutorial'
+import { WITNESSES } from '../shared/witness'
 import type { GameStatus, GameViewProps, HudState } from '../shared/events'
+import type { LineMood } from '../shared/tutorial'
 import './GameView.css'
 
 const EXPLORED_COUNTRY = 'ESP'
@@ -64,14 +70,66 @@ function makeTexture(canvas: HTMLCanvasElement, renderer: THREE.WebGLRenderer) {
 /** Part of the loading bar used by the terrain zones (the slowest step by far). */
 const ZONES_FROM = 0.15
 const ZONES_TO = 0.88
+/** Fast travel: fog pushed back by this many world units per unit of plane altitude (near, far). */
+const FLIGHT_FOG_NEAR = 1.5
+const FLIGHT_FOG_FAR = 6
+/**
+ * Fast travel: over the trip the camera zoom eases (in log scale) from the player's zoom to this one,
+ * close behind the detective (chase camera MIN_ZOOM is 0.7), so he lands with the camera near him.
+ */
+const FLIGHT_LANDING_ZOOM = 0.8
+
+
+/** Head top of a character above his feet, plus the bubble margin (world units), for the witness placement. */
+const WITNESS_TOP = 11
+/**
+ * Trees and vines are cleared within this distance of each witness (world units): the detective's
+ * stand spot (11 away, any side) and the room beside both for the bubbles. Aneto (pine forest) and
+ * Donana (olive grove) had trees between the pair and over the bubbles.
+ */
+const WITNESS_CLEARING = 22
+
+/**
+ * Head pitch (x, > 0 up) and roll (z) of the detective in a dialogue, from who speaks and the mood
+ * of the line: speaking, he nods (stronger when insistent); listening, small nods, head down on sad
+ * lines, a tilt when curious or doubtful.
+ */
+function detectiveReaction(speaker: 'detective' | 'witness' | null, mood: LineMood | null, t: number) {
+  if (speaker === 'detective') {
+    const base = Math.sin(t * 8) * 0.07 + Math.sin(t * 3.1) * 0.04
+    switch (mood) {
+      case 'sad': return { x: -0.25 + base * 0.4, z: 0.05 }
+      case 'insistent': case 'determined': return { x: base * 1.8, z: 0 }
+      case 'curious': case 'doubtful': return { x: base * 0.7, z: 0.2 }
+      case 'happy': case 'proud': case 'confident': return { x: 0.08 + base, z: Math.sin(t * 2) * 0.05 }
+      default: return { x: base, z: 0 }
+    }
+  }
+  if (speaker === 'witness') {
+    const nod = -Math.max(0, Math.sin(t * 2.2)) * 0.08
+    switch (mood) {
+      case 'sad': return { x: -0.2 + nod * 0.4, z: 0.04 }
+      case 'insistent': case 'determined': return { x: nod * 1.6, z: 0 }
+      case 'curious': return { x: nod * 0.5, z: 0.14 }
+      case 'doubtful': return { x: nod * 0.5, z: -0.1 }
+      default: return { x: nod, z: 0 }
+    }
+  }
+  return { x: 0, z: 0 }
+}
 
 /** Only the 3D canvas. The HUD and status messages live in src/ui, fed through the callbacks. */
-export default function GameView({ onStatus, onHud, onLensFocus, onProgress, focusLens = false, outfit, paused = false, completedCases }: GameViewProps) {
+/** Featured cases shown on the map: only the active ones (src/shared/tutorial.ts); parked cases keep their files. */
+const CASES = ALL_CASES.filter((c) => isActiveCase(c.id))
+
+export default function GameView({
+  onStatus, onHud, onLensFocus, onProgress, onDialogueAnchors, focusLens = false, outfit, paused = false, completedCases, dialogueCase = null, speaking = null, speakingMood = null, travelTo, onTravel,
+}: GameViewProps) {
   const container = useRef<HTMLDivElement>(null)
   // Latest callbacks (and pause flag), read from inside the animation loop without restarting the scene
-  const callbacks = useRef({ onStatus, onHud, onLensFocus, onProgress, focusLens, paused, completedCases })
+  const callbacks = useRef({ onStatus, onHud, onLensFocus, onProgress, onDialogueAnchors, focusLens, paused, completedCases, dialogueCase, speaking, speakingMood, travelTo, onTravel })
   useEffect(() => {
-    callbacks.current = { onStatus, onHud, onLensFocus, onProgress, focusLens, paused, completedCases }
+    callbacks.current = { onStatus, onHud, onLensFocus, onProgress, onDialogueAnchors, focusLens, paused, completedCases, dialogueCase, speaking, speakingMood, travelTo, onTravel }
   })
   const setStatus = (status: GameStatus) => callbacks.current.onStatus?.(status)
   const setHud = (hud: HudState) => callbacks.current.onHud?.(hud)
@@ -263,13 +321,15 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
         const groundNoLandmarks = (x: number, z: number) => Math.max(zoneHeightAt(x, z), towns.surfaceAt(x, z), roadSurfaceAt(x, z))
         // Shallow sea of the zone, or of the sea lane to the Canary Islands in the gap between zones
         const isFord = (x: number, z: number) => terrainAt(x, z)?.isFord(x, z) ?? laneFordAtWorld(x, z)
+        // Witness trade props (kiosk, crates; set once the witnesses are placed, below) block the way too
+        let witnessPropAt: (x: number, z: number, margin?: number) => boolean = () => false
         const ground: Ground = {
           heightAt: surfaceAt,
           // Land, or the shallow sea (by boat): along the coast and across to the islands
           isDrivable: (x, z) => {
             const t = terrainAt(x, z)
             if (!t) return laneFordAtWorld(x, z) // open sea between the zones: only the lane
-            return (t.isExploredLand(x, z) || t.isFord(x, z)) && !scenery.blocks(x, z)
+            return (t.isExploredLand(x, z) || t.isFord(x, z)) && !scenery.blocks(x, z) && !witnessPropAt(x, z)
           },
         }
         const madrid = lonLatToWorld(-3.7038, 40.4168)
@@ -284,6 +344,14 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
         const boat = createRowBoat()
         scene.add(boat.root)
         const rowing = { ...carState } // his state as the running effects see it in the boat: no steps, no skids
+        // ---- Fast travel (M map): he turns into a small plane and flies to a landmark's plaza ----
+        const plane = createPlane()
+        scene.add(plane.root)
+        let travelSeq = -1 // last travel request handled (TravelRequest.seq)
+        let travelZoomFrom = 1 // camera zoom when the trip started
+        // Landing spot: walkable land on the plaza, nothing in the way
+        const canLand = (x: number, z: number) => main.isExploredLand(x, z) && !scenery.blocks(x, z) && towns.surfaceAt(x, z) === -Infinity
+        if (import.meta.env.DEV) Object.assign(window, { __travel: { plane, approachOf: (id: string) => landmarks.approachOf(id, canLand) } })
         // Efectos al correr: nubecitas de polvo en cada pisada y huellas en el suelo
         const dust = createDust()
         const footprints = createFootprints()
@@ -291,12 +359,76 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
         await progress(0.97)
         const keyboard = createKeyboard()
         const chase = createChaseCamera(camera, renderer.domElement)
+
+        // Witnesses of the featured cases, inside their case zones (src/shared/witness.ts). The
+        // dialogue camera comes first: the witness spot is chosen where it can frame a talk
+        const occluders: THREE.Object3D[] = [landmarks.group] // + the witness props, once placed
+        const dialogue = createDialogue(camera, {
+          obstacleAt: (x, z) => Math.max(groundNoLandmarks(x, z), towns.topAt(x, z), landmarks.surfaceAt(x, z)),
+          surfaceAt,
+          canStand: (x, z) => ground.isDrivable(x, z) && !witnessPropAt(x, z, 2) && !towns.blocks(x, z, 2) && !main.nearRiver(x, z, 2),
+          occluders,
+        })
+        landmarks.group.updateMatrixWorld(true) // the framing test ray-casts the monuments
+        const witnessSite = {
+          surfaceAt,
+          heightAt: main.heightAt,
+          isLand: main.isExploredLand,
+          blocked: (x: number, z: number, extra: number) => towns.blocks(x, z, extra) || scenery.blocks(x, z),
+          nearRiver: main.nearRiver,
+          nearRoad,
+          framing: (x: number, y: number, z: number) => dialogue.framingScore(x, y, z, WITNESS_TOP),
+        }
+        const witnesses = createWitnesses(WITNESSES, caseMarkers, witnessSite)
+        scene.add(witnesses.group)
+        witnesses.props.updateMatrixWorld(true)
+        occluders.push(witnesses.props)
+        witnessPropAt = witnesses.blocks
+        for (const id of Object.keys(WITNESSES)) {
+          const w = witnesses.get(id)
+          if (w) scenery.clear(w.x, w.z, WITNESS_CLEARING)
+        }
+        // What the dialogue camera frames (reused every frame)
+        const talk: DialogueScene = {
+          detective: new THREE.Vector3(),
+          witness: new THREE.Vector3(),
+          detectiveTop: new THREE.Vector3(),
+          witnessTop: new THREE.Vector3(),
+        }
+        /** Poses of the pair for the dialogue camera (feet and points just above the fedora / the witness's head). */
+        const poseTalk = (w: NonNullable<typeof talkWith>) => {
+          detective.root.updateMatrixWorld(true)
+          w.witness.root.updateMatrixWorld(true)
+          talk.detective.set(carState.x, carState.y, carState.z)
+          talk.witness.copy(w.witness.root.position)
+          talk.detectiveTop.copy(detective.parts.hat.localToWorld(hatTop.set(0, 0.6, 0)))
+          talk.detectiveTop.y += 1.5
+          w.witness.headTop(talk.witnessTop, 1.5)
+          // A prop to show in the dialogue: the detective stands across from it (see WitnessExtras)
+          talk.standFrom = w.prop?.frame ? Math.atan2(w.x - w.prop.x, w.z - w.prop.z) : null
+        }
+        const hatTop = new THREE.Vector3()
+        let talkWith: ReturnType<typeof witnesses.get> // witness of the current (or last) dialogue
+        let talkClock = 0
+        const detectiveMood = { x: 0, z: 0 } // eased head pitch/roll from the line's mood
+        // Dev only: drive the dialogue from the console / Playwright, e.g. __game.setDialogue('dana_valencia', 'witness', 'sad')
+        const devDialogue: { active: boolean; caseId: string | null; speaking: 'detective' | 'witness' | null; mood: LineMood | null; anchors: unknown } = {
+          active: false, caseId: null, speaking: null, mood: null, anchors: null,
+        }
         await progress(0.975)
         // Development only (?topview): a camera straight above the detective instead of the chase camera
         const top = wantsTopView() ? createTopViewCamera(camera, renderer.domElement) : null
         if (!top) chase.startIntro() // swoop from far above Spain down to the detective; control starts when it lands
         // Development only: access from the console / Playwright for debugging
-        if (import.meta.env.DEV) Object.assign(window, { __game: { carState, camera, chase, top, ground, detective, boat, renderer, scene, day, nightLights, towns, houses, scenery, sceneryItems, landmarks, caseMarkers, main } })
+        if (import.meta.env.DEV) {
+          Object.assign(window, {
+            __game: {
+              carState, camera, chase, top, ground, detective, boat, renderer, scene, day, nightLights, towns, houses, scenery, sceneryItems, landmarks, caseMarkers, main, witnesses, witnessSite, dialogue, devDialogue,
+              setDialogue: (caseId: string | null, speaking: 'detective' | 'witness' | null = null, mood: LineMood | null = null) =>
+                Object.assign(devDialogue, { active: true, caseId, speaking, mood }),
+            },
+          })
+        }
 
         const fog = scene.fog as THREE.Fog
         const ink = createInkOutline(renderer) // contornos negros de cómic
@@ -341,21 +473,82 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
           const wantLens = !!callbacks.current.focusLens
           if (wantLens) lensFlying = true
           else lensInReported = false
+          // Witness dialogue: the detective walks up to the witness and the camera frames both;
+          // the keyboard is ignored until the camera is back on the chase view
+          const dev = import.meta.env.DEV && devDialogue.active
+          const dialogueId = (dev ? devDialogue.caseId : callbacks.current.dialogueCase) ?? null
+          const speaker = (dev ? devDialogue.speaking : callbacks.current.speaking) ?? null
+          const mood = (dev ? devDialogue.mood : callbacks.current.speakingMood) ?? null
+          const dialogueWitness = dialogueId ? witnesses.get(dialogueId) : undefined
+          if (dialogueWitness && (!dialogue.wanted || dialogueWitness !== talkWith)) {
+            talkWith = dialogueWitness
+            poseTalk(talkWith) // the stand spot is chosen from these on the first frame
+          }
+          dialogue.step(!!dialogueWitness, dt)
+          chase.lockZoom(dialogue.busy)
           // Intro swoop: no control (and no HUD) until the camera lands on the chase view.
-          // The pause panel or an open case level also make the game ignore the keyboard
+          // The pause panel, an open case level or the dialogue walk-up also take over the keyboard
           const introBefore = chase.introActive
-          const input = top || lensFlying || introBefore || callbacks.current.paused ? { throttle: 0, steer: 0, turbo: false } : keyboard.read()
-          stepCar(carState, input, ground, dt)
+          // ---- Fast travel: a new request from the travel map starts the plane trip ----
+          const travel = callbacks.current.travelTo
+          if (travel && travel.seq !== travelSeq && !plane.active && !introBefore) {
+            travelSeq = travel.seq
+            travelZoomFrom = chase.zoom
+            const target = landmarks.approachOf(travel.landmarkId, canLand)
+            if (target && plane.start(carState, target, surfaceAt, () => callbacks.current.onTravel?.('landed'))) callbacks.current.onTravel?.('flying')
+            else callbacks.current.onTravel?.('landed') // unknown landmark: nothing to do
+          }
+          const travelling = plane.active
+          const input = dialogue.busy && talkWith
+            ? dialogue.drive(carState, talk, dt)
+            : top || lensFlying || introBefore || callbacks.current.paused || travelling ? { throttle: 0, steer: 0, turbo: false } : keyboard.read()
+          if (travelling) {
+            plane.update(carState, detective.root, dt) // the flight moves carState (no physics)
+            // Camera: from the player's zoom to close behind him, smoothly, done by the landing
+            const k = plane.progress * plane.progress * (3 - 2 * plane.progress)
+            chase.setZoom(travelZoomFrom * Math.exp(Math.log(FLIGHT_LANDING_ZOOM / travelZoomFrom) * k))
+          }
+          else {
+            stepCar(carState, input, ground, dt)
+          }
           detective.setFocus(chase.stepFocus(wantLens, dt))
           detective.update(carState, dt)
-          const afloat = boat.update(carState, isFord(carState.x, carState.z), detective, dt)
-          // In the boat there are no footsteps: no dust puffs and no footprints on the water
-          const walker = afloat > 0.5 ? Object.assign(rowing, carState, { speed: 0, accel: 0, yawRate: 0 }) : carState
+          // In a dialogue the detective looks at the witness, nods while he talks, and reacts lightly
+          // to the mood of the line (head lowered on sad lines, tilted when curious...)
+          if (dialogue.wanted && talkWith) {
+            talkClock += dt
+            const k = Math.min(1, dialogue.progress * 2)
+            const { head } = detective.parts
+            const toWitness = Math.atan2(-(talkWith.x - carState.x), -(talkWith.z - carState.z)) - carState.heading
+            const gaze = Math.max(-0.9, Math.min(0.9, Math.atan2(Math.sin(toWitness), Math.cos(toWitness))))
+            const react = detectiveReaction(speaker, mood, talkClock)
+            detectiveMood.x += (react.x - detectiveMood.x) * (1 - Math.exp(-5 * dt))
+            detectiveMood.z += (react.z - detectiveMood.z) * (1 - Math.exp(-5 * dt))
+            head.rotation.y += (gaze - head.rotation.y) * k
+            head.rotation.x += (-0.06 + detectiveMood.x - head.rotation.x) * k
+            head.rotation.z = detectiveMood.z * k // nothing else rolls the head
+          } else {
+            detectiveMood.x = detectiveMood.z = 0
+            detective.parts.head.rotation.z = 0
+          }
+          const afloat = boat.update(carState, !travelling && isFord(carState.x, carState.z), detective, dt)
+          // In the boat (or the plane) there are no footsteps: no dust puffs and no footprints
+          const walker = afloat > 0.5 || travelling ? Object.assign(rowing, carState, { speed: 0, accel: 0, yawRate: 0 }) : carState
           dust.update(walker, surfaceAt, detective.stridePhase, dt)
           footprints.update(walker, surfaceAt, detective.stridePhase)
           const lens = chase.focus > 0 ? { center: detective.lensPosition(), normal: detective.lensNormal(), radius: detective.lensRadius() } : null
           if (top) top.update(carState.x, carState.z, surfaceAt, dt)
           else chase.update(carState, groundNoLandmarks, dt, detective.inspect, towns.topAt, landmarks.surfaceAt, lens)
+          witnesses.update(dt, carState.x, carState.z, {
+            caseId: dialogue.wanted ? (talkWith?.caseId ?? null) : null,
+            speaking: speaker,
+            witnessHeading: dialogue.witnessHeading,
+            mood,
+          }, { camera, distance: chase.distance })
+          if (dialogue.busy && talkWith) {
+            poseTalk(talkWith)
+            dialogue.applyCamera(talk)
+          }
           if (introBefore && !chase.introActive) {
             setStatus('ready')
             hudClock = HUD_INTERVAL // show the HUD on the landing frame
@@ -375,14 +568,15 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
             shownCompleted = callbacks.current.completedCases
             for (const c of CASES) caseMarkers.setCompleted(c.id, !!shownCompleted?.includes(c.id))
           }
-          caseMarkers.update(dt)
+          caseMarkers.update(dt, camera.position)
           for (const z of zones) {
             z.water.update(dt)
             z.roads.update(dt)
           }
-          // Top view: the trees around the point below the camera, and the camera height as distance
+          // Top view: the trees around the point below the camera, and the camera height as distance.
+          // In a dialogue, trees between the camera and the witness duck too
           if (top) scenery.update(dt, top.center.x, top.center.z, camera.position, top.distance)
-          else scenery.update(dt, carState.x, carState.z, camera.position, chase.distance)
+          else scenery.update(dt, carState.x, carState.z, camera.position, chase.distance, dialogue.busy && talkWith ? talkWith : null)
           // Fog and the camera near plane follow the camera distance:
           // de cerca hay niebla para dar profundidad; de lejos se aparta para ver todo.
           // A larger "near" from far away gives more depth precision and avoids flicker.
@@ -399,10 +593,20 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
             // so the near fog must not move away with it (tree pop-in, ink reaching too far)
             fog.near = 240 + d * 1.5
             fog.far = 1200 + d * 6
+            // Fast travel: high up, the fog moves away so the map below stays visible
+            const altitude = plane.altitude(carState)
+            fog.near += altitude * FLIGHT_FOG_NEAR
+            fog.far += altitude * FLIGHT_FOG_FAR
             camera.near = Math.max(0.05, d / 300)
             camera.far = d * 20 + 1000 * UNITS_PER_KM
           }
           camera.updateProjectionMatrix()
+          // Speech bubble anchors: every frame once framed (only real changes are sent), then null
+          const anchors = dialogue.anchors(dialogue.busy && talkWith ? talk : null, renderer.domElement)
+          if (anchors !== undefined) {
+            callbacks.current.onDialogueAnchors?.(anchors)
+            if (import.meta.env.DEV) devDialogue.anchors = anchors
+          }
           fog.color.copy(palette.fog)
           sky.update(camera, palette)
           lighting.update(top ? top.center : detective.root.position, Math.max(40, Math.min(d * (top ? 0.9 : 1.6), 3000 * UNITS_PER_KM)), palette)
@@ -426,6 +630,7 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
           detective.dispose()
           detectiveRef.current = null
           boat.dispose()
+          plane.dispose()
           dust.dispose()
           footprints.dispose()
           landmarks.dispose()
@@ -446,9 +651,11 @@ export default function GameView({ onStatus, onHud, onLensFocus, onProgress, foc
           clouds.dispose()
           caseMarkers.dispose()
           seaLane.dispose()
+          witnesses.dispose()
           ink.dispose()
           dispose()
           if (import.meta.env.DEV) delete (window as { __game?: unknown }).__game
+          if (import.meta.env.DEV) delete (window as { __travel?: unknown }).__travel
         }
       })
       .catch((err) => {

@@ -14,7 +14,8 @@ const LABEL: Record<State, string> = {
   not_configured: 'Database: not configured',
 }
 
-export default function DbStatus() {
+/** hidden: fade the badge out (while a featured case is open) */
+export default function DbStatus({ hidden = false }: { hidden?: boolean }) {
   const [state, setState] = useState<State>(supabaseConfigured ? 'checking' : 'not_configured')
 
   useEffect(() => {
@@ -33,7 +34,12 @@ export default function DbStatus() {
   }, [])
 
   return (
-    <div className={`db-status db-status--${state}`} role="status" data-testid="db-status">
+    <div
+      className={`db-status db-status--${state}${hidden ? ' db-status--hidden' : ''}`}
+      role="status"
+      data-testid="db-status"
+      aria-hidden={hidden || undefined}
+    >
       <span className="db-status__dot" aria-hidden="true" />
       <span>{LABEL[state]}</span>
       <span className="db-status__version">{VERSION_LABEL}</span>

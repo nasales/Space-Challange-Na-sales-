@@ -1,0 +1,199 @@
+/* Case closed: rubber stamp + verdict on the witness's claim, on the case-file paper sheet. */
+.caseclosed__hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 0 6px;
+}
+
+.caseclosed__stamp {
+  margin: 0;
+  outline: none;
+  transform: rotate(-7deg);
+  animation: cc-stamp 0.5s cubic-bezier(0.2, 1.3, 0.4, 1) 0.15s both;
+}
+
+.caseclosed__stamp span {
+  display: inline-block;
+  padding: 6px 22px;
+  border: 6px double var(--cf-red);
+  border-radius: 8px;
+  color: var(--cf-red);
+  font-family: var(--cf-display);
+  font-size: clamp(2.6rem, 9vw, 4.4rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  /* worn ink: speckles knocked out of the stamp */
+  mask-image: radial-gradient(circle, transparent 0.9px, black 1.4px);
+  mask-size: 7px 7px;
+  mix-blend-mode: multiply;
+}
+
+.caseclosed__stamp:focus-visible span {
+  outline: 3px solid var(--cf-ink);
+  outline-offset: 4px;
+}
+
+@keyframes cc-stamp {
+  0% {
+    transform: rotate(-18deg) scale(2.6);
+    opacity: 0;
+  }
+  55% {
+    opacity: 1;
+  }
+  75% {
+    transform: rotate(-6deg) scale(0.94);
+  }
+  100% {
+    transform: rotate(-7deg) scale(1);
+  }
+}
+
+/* the sheet shakes a little when the stamp lands */
+.caseclosed[open] .casefile__sheet {
+  animation: cc-thump 0.22s ease-out 0.5s;
+}
+
+@keyframes cc-thump {
+  40% {
+    transform: translateY(3px);
+  }
+}
+
+.caseclosed__verdict {
+  margin: 0;
+  padding: 6px 16px;
+  border: 3px solid var(--cf-ink);
+  box-shadow: 4px 4px 0 var(--cf-ink);
+  font-family: var(--cf-display);
+  font-size: clamp(1.25rem, 4vw, 1.7rem);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-transform: uppercase;
+  transform: rotate(1deg);
+  animation: cc-verdict 0.3s steps(3, end) 0.75s both;
+}
+
+.caseclosed__verdict--right {
+  background: #9fd8a8;
+}
+
+.caseclosed__verdict--wrong {
+  background: #f4a09a;
+}
+
+.caseclosed__verdict--partly {
+  background: var(--cf-gold);
+}
+
+@keyframes cc-verdict {
+  from {
+    transform: rotate(1deg) translateY(10px);
+    opacity: 0;
+  }
+}
+
+/* ---- claim + the detective's answer ---- */
+.caseclosed__claim {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 18px;
+  align-items: start;
+  margin-top: 6px;
+}
+
+.caseclosed__quote {
+  position: relative;
+  margin: 0;
+  padding: 18px 14px 12px;
+  border: 2px solid var(--cf-ink);
+  background: #fff1a8;
+  box-shadow: 3px 3px 0 var(--cf-ink);
+  transform: rotate(-1.5deg);
+}
+
+.caseclosed__quote blockquote {
+  margin: 0;
+  font-family: var(--cf-hand);
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.caseclosed__pin {
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid var(--cf-ink);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ff8a80, var(--cf-red) 60%);
+  transform: translateX(-50%);
+}
+
+.caseclosed__label {
+  margin: 0 0 4px;
+  font-family: var(--cf-display);
+  font-size: 0.9rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cf-red);
+}
+
+.caseclosed__answer {
+  padding: 10px 14px;
+  border: 3px solid var(--cf-ink);
+  background: #fff;
+}
+
+.caseclosed__answer p:last-child {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.caseclosed__challenge {
+  margin: 0;
+  padding: 8px 12px;
+  border: 2px dashed var(--cf-ink);
+  font-weight: 700;
+}
+
+.caseclosed__challenge.is-solved {
+  border-style: solid;
+  background: rgba(47, 125, 79, 0.14);
+}
+
+.caseclosed__challenge.is-solved::before {
+  content: '✔ ';
+  color: var(--cf-green);
+}
+
+.caseclosed__section {
+  margin: 10px 0 0;
+  font-family: var(--cf-display);
+  font-size: 1.6rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 600px) {
+  .caseclosed__claim {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .caseclosed__stamp,
+  .caseclosed__verdict,
+  .caseclosed[open] .casefile__sheet {
+    animation: none;
+  }
+}
