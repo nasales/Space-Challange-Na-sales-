@@ -1,0 +1,188 @@
+/* Achievement toast: a comic caption box at the top centre (same paper, ink and gold as the case
+   hint), with an emoji badge and, for multi-step achievements, a progress ring around it.
+   Kept clear of the minimap in the top-right corner. */
+.ach-toast {
+  --ach-ink: #161b2e;
+  --ach-paper: #fff8e7;
+  --ach-gold: #f2c14e;
+  --ach-shift: -140%;
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(440px, calc(100vw - 476px)); /* 2 x (minimap 210 + margins) */
+  padding: 6px 18px 6px 6px;
+  border: 3px solid var(--ach-ink);
+  background: var(--ach-paper);
+  color: var(--ach-ink);
+  box-shadow: 5px 5px 0 var(--ach-ink);
+  font-family: var(--font-type, 'Courier Prime', 'Courier New', monospace);
+  transform: translateX(-50%);
+  pointer-events: none;
+  animation-name: ach-toast-slide;
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+}
+
+.ach-toast__badge {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+}
+
+.ach-toast__ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg); /* the ring fills clockwise from the top */
+}
+
+.ach-toast__track,
+.ach-toast__fill {
+  fill: none;
+  stroke-width: 5;
+}
+
+.ach-toast__track {
+  stroke: rgb(22 27 46 / 0.15);
+}
+
+.ach-toast__fill {
+  stroke: var(--ach-gold);
+  stroke-linecap: round;
+  stroke-dashoffset: var(--ring-to);
+  animation: ach-ring-fill 0.9s ease-out 0.45s both;
+}
+
+.ach-toast.is-complete .ach-toast__fill {
+  stroke: #3f9d5a;
+}
+
+.ach-toast__icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--ach-gold);
+  font-size: 20px;
+  line-height: 1;
+}
+
+/* Single achievements: the badge itself, a little larger, with an ink border instead of a ring */
+.ach-toast__icon.is-single {
+  width: 42px;
+  height: 42px;
+  border: 3px solid var(--ach-ink);
+  font-size: 22px;
+}
+
+.ach-toast__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin: 0;
+  line-height: 1.25;
+}
+
+.ach-toast__title {
+  font-family: var(--font-display, 'Arial Narrow', sans-serif);
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.ach-toast__message {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* In, stay, out over the whole toast time (set inline from TOAST_MS) */
+@keyframes ach-toast-slide {
+  0% {
+    transform: translateX(-50%) translateY(var(--ach-shift));
+  }
+  9%,
+  91% {
+    transform: translateX(-50%) translateY(0);
+  }
+  100% {
+    transform: translateX(-50%) translateY(var(--ach-shift));
+  }
+}
+
+@keyframes ach-ring-fill {
+  from {
+    stroke-dashoffset: var(--ring-from);
+  }
+  to {
+    stroke-dashoffset: var(--ring-to);
+  }
+}
+
+/* Phones and short screens: between the left edge and the smaller minimap */
+@media (max-width: 600px), (max-height: 500px) {
+  .ach-toast {
+    top: 12px;
+    left: 12px;
+    max-width: calc(100vw - 176px); /* minimap 140 + margins */
+    padding: 4px 12px 4px 4px;
+    gap: 8px;
+    transform: none;
+    animation-name: ach-toast-slide-phone;
+  }
+
+  .ach-toast__title {
+    font-size: 15px;
+  }
+
+  .ach-toast__message {
+    font-size: 12px;
+  }
+
+  @keyframes ach-toast-slide-phone {
+    0%,
+    100% {
+      transform: translateY(var(--ach-shift));
+    }
+    9%,
+    91% {
+      transform: translateY(0);
+    }
+  }
+}
+
+/* Reduced motion: no sliding and no ring sweep, only a short fade in and out */
+@media (prefers-reduced-motion: reduce) {
+  .ach-toast {
+    animation-name: ach-toast-fade;
+  }
+
+  .ach-toast__fill {
+    animation: none;
+  }
+
+  @keyframes ach-toast-fade {
+    0%,
+    100% {
+      opacity: 0;
+    }
+    4%,
+    96% {
+      opacity: 1;
+    }
+  }
+}

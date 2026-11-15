@@ -19,6 +19,8 @@ import CaseFlow, { type DialogueState } from './ui/casefile/CaseFlow'
 import CaseHint from './ui/casefile/CaseHint'
 import { createAnchorStore } from './ui/casefile/anchors'
 import TravelMap from './ui/travelmap/TravelMap'
+import AchievementToasts from './ui/achievements/AchievementToasts'
+import { reportCaseSolved } from './shared/achievements'
 import type { GameStatus, HudState, LensFocusState, TravelRequest } from './shared/events'
 import { loadOutfit, type Outfit } from './shared/outfit'
 import { loadCompleted, markCompleted } from './shared/progress'
@@ -145,6 +147,7 @@ function Game({ onCaseFocus }: { onCaseFocus: (on: boolean) => void }) {
     // Green marker once the case is solved
     playSfx('success')
     markCompleted(caseId)
+    reportCaseSolved(caseId) // achievements: case levels X/N
     setCompleted((prev) => new Set(prev).add(caseId))
   }, [])
 
@@ -238,6 +241,7 @@ function Game({ onCaseFocus }: { onCaseFocus: (on: boolean) => void }) {
           outfit={outfit}
         />
       )}
+      <AchievementToasts />
     </main>
   )
 }
