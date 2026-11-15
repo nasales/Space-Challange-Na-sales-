@@ -5,6 +5,8 @@ import type { Country } from './worldData'
 import { rasterizeCountry } from './rasterizeCountry'
 import { distanceTo } from './distanceField'
 import { enclosedSea, COAST_SHALLOWS_KM } from './shallowSea'
+import { laneKm, LANE_SEA_KM } from './canarySeaLane'
+import { toDisplayLonLat } from './canaryInset'
 
 /** Ancho de la franja de mar de color alrededor del país explorado. */
 export const COASTAL_SEA_KM = 44 // was 20, then 28: the shallow band for the boat (shallowSea.ts) takes the first 32 km
@@ -109,6 +111,20 @@ export function computeExploredRegion(
     region[i] = countryLand[i] || neighbourLand[i] > 0 || (sea && d < radius) ? 1 : 0
     shallowKm[i] = sea ? d / cellsPerKm - COAST_SHALLOWS_KM : Infinity
     if (sea && !countryLand[i] && shallowKm[i] <= 0) ford[i] = 1
+  }
+  // Sea lane to the Canary Islands (canarySeaLane.ts): shallow water with coloured sea around it
+  for (let r = 0; r < height; r++) {
+    const lat = bounds.north - (r / (height - 1)) * (bounds.north - bounds.south)
+    for (let c = 0; c < width; c++) {
+      const i = r * width + c
+      if (elevation[i] > 0) continue
+      const p = toDisplayLonLat(bounds.west + (c / (width - 1)) * (bounds.east - bounds.west), lat)
+      const km = laneKm(p.lon, p.lat)
+      if (km >= LANE_SEA_KM) continue
+      region[i] = 1
+      if (km < shallowKm[i]) shallowKm[i] = km
+      if (km <= 0) ford[i] = 1
+    }
   }
   return { countryLand, region, ford, shallowKm, neighbourLand, countryKm }
 }

@@ -35,7 +35,7 @@ const shift = (b: Bounds, lon: number, lat: number): Bounds => ({
 /** The SOURCE box as drawn on the map. */
 const TARGET = shift(SOURCE, CANARY_OFFSET.lon, CANARY_OFFSET.lat)
 
-/** Zone bounds as drawn on the map: the portal frame goes around them. */
+/** Zone bounds as drawn on the map. */
 export const CANARY_DISPLAY: Bounds = shift(CANARY_ZONE, CANARY_OFFSET.lon, CANARY_OFFSET.lat)
 
 const inside = (b: Bounds, lon: number, lat: number) => lon >= b.west && lon <= b.east && lat >= b.south && lat <= b.north
