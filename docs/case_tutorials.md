@@ -54,10 +54,22 @@ that case), then teaches its own way of analysing a time series (5-7 steps in to
 | `dana_valencia` | PRECIP, T2M | anomalies, extreme vs trend (`anomaly`, `annual`) | One extreme event is not a trend; monthly means hide a storm of a few hours |
 | `filomena_madrid` | T2M, PRECIP | same month across the years (`same_month`, month 1) | A cold January exists, yet Januaries are warming: weather is not climate |
 | `cordoba_heat` | T2M | records and ranking (`ranking`, `season` JJA) | With a trend, records pile up at the end |
-| `aneto_glacier` | T2M, PRECIP | seasons separately + physical threshold (`season` DJF/JJA, `threshold_count` below 0 °C) | A yearly mean hides what each season does |
+| `aneto_glacier` | T2M, PRECIP | seasons separately + physical threshold (`season` DJF/JJA, `threshold_count` below 0 °C), standard of proof (p < 0.05) | A yearly mean hides what each season does; "not proven" is reasonable doubt, not innocence |
 | `donana` | SOILM, PRECIP | two clues on one scale (`zscore_pair`) | Compare different units; what satellites cannot see (the aquifer); p right at 0.05 |
 | `daimiel` | SOILM, PRECIP | cumulative anomaly (`cumulative`) | A wetland responds to accumulated totals, not to single months |
 | `almeria_murcia` | PRECIP, SOILM | running means (`running_mean` 12 and 60) | Smoothing shows multi-year swings but can fool you; no significant trend |
 | `ebro_delta` | PRECIP, T2M | before vs after (`periods`) | Temperature shifts the whole distribution, rain does not; storm Gloria was a sea storm these variables cannot measure |
 | `galicia_fires` | T2M, SOILM | season of risk + compound conditions (`season` JJAS, `season_scatter`) | Look at the season that matters; hot and dry together |
 | `sierra_culebra` | T2M, SOILM | does the answer depend on the window? (`window_trends`) | Uncertainty, record length, reading a confidence interval; weak evidence |
+
+## Interrogation room (Aneto, 2026-11-15, approved by Diego)
+`TutorialScript.interrogation` (types in `src/shared/tutorial.ts`, UI in `src/ui/casefile/Interrogation.tsx`
+and `src/ui/casefile/interrogation/`): a third format next to the quiz steps and the evidence board.
+Two suspects (causes drawn as noir cartoon characters, e.g. "Summer Heat" and "Missing Snow") stand
+behind a one-way mirror, each with an alibi. Evidence folders on the table are hands-on tasks (every
+board task, plus `season_switch` and `proof_line`, whose answers the UI computes from the data). After
+solving a folder the player confronts its suspect: the evidence **breaks** the alibi, **backs** it, or
+leaves **reasonable doubt** (p >= 0.05). Finale: charge the guilty suspect, release the other, read the
+summary, CASE CLOSED. `steps` stays empty. The validator (`pipeline/tests/test_tutorial_script.py`,
+`check_interrogation`) recomputes every task answer from `data/tutorial_data/<case>.json` and checks that
+the verdicts agree with who is guilty.

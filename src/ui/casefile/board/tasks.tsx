@@ -23,10 +23,10 @@ export interface TaskProps<T extends EvidenceTask['type'] = EvidenceTask['type']
   onSolved: () => void
 }
 
-type Verdict = { state: 'idle' } | { state: 'wrong'; extra?: string; n: number } | { state: 'right' }
+export type Verdict = { state: 'idle' } | { state: 'wrong'; extra?: string; n: number } | { state: 'right' }
 
 /** Hint after a wrong try (shakes again on every try), success with a burst when right */
-export function Feedback({ verdict, task }: { verdict: Verdict; task: EvidenceTask }) {
+export function Feedback({ verdict, task }: { verdict: Verdict; task: Pick<EvidenceTask, 'hint' | 'success'> }) {
   const ref = useRef<HTMLDivElement>(null)
   const tick = verdict.state === 'wrong' ? verdict.n : verdict.state
   useEffect(() => {

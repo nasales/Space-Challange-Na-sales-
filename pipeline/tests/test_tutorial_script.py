@@ -171,38 +171,8 @@ def check_options(where, options):
     assert all(o["text"].strip() for o in options), f"{where}: empty option"
 
 
-def check_board(board, data):
-    """Check an EvidenceBoard against TutorialData; returns the variables its charts use."""
-    for key in ("title", "instructions", "summary"):
-        assert str(board.get(key, "")).strip(), f"board: missing {key}"
-    items = board["items"]
-    assert MIN_ITEMS <= len(items) <= MAX_ITEMS, f"board: {len(items)} items"
-    ids = [it["id"] for it in items]
-    assert all(ids) and len(ids) == len(set(ids)), "board: item ids must be unique"
-    used = set()
-    for it in items:
-        where = f"board item {it['id']}"
-        assert it["kind"] in BOARD_KINDS, f"{where}: kind {it['kind']}"
-        for key in ("title", "teaser", "text", "relation_feedback", "clue"):
-            assert str(it.get(key, "")).strip(), f"{where}: missing {key}"
-        assert len(it["text"].split()) <= MAX_WORDS, f"{where}: text too long"
-        assert len(it["clue"].split()) <= MAX_CLUE_WORDS, f"{where}: clue too long"
-        assert it["relation"] in RELATIONS, f"{where}: relation {it['relation']}"
-        chart = it.get("chart")
-        if it["kind"] == "clipping":
-            c = it.get("clipping")
-            assert c and c["headline"].strip() and c["body"].strip(), f"{where}: clipping text"
-        else:
-            assert chart, f"{where}: kind {it['kind']} needs a chart"
-        if chart:
-            used |= check_chart(it["id"], chart, data)
-
-        check_task(where, it["task"], chart, data)
-    return used
-
-
 def check_task(where, task, chart, data):
-    """Check one EvidenceTask (evidence board or trial) against its chart and the data."""
+    """Check one evidence-board task (EvidenceTask) against its chart and the data."""
     t = task["type"]
     assert t in TASK_TYPES, f"{where}: task type {t}"
     for key in ("prompt", "hint", "success"):
@@ -246,6 +216,36 @@ def check_task(where, task, chart, data):
                 assert n == a, f"{where}: {per['label']} answer {a}, data says {n}"
     elif t == "compare":
         check_options(where, task["options"])
+
+
+def check_board(board, data):
+    """Check an EvidenceBoard against TutorialData; returns the variables its charts use."""
+    for key in ("title", "instructions", "summary"):
+        assert str(board.get(key, "")).strip(), f"board: missing {key}"
+    items = board["items"]
+    assert MIN_ITEMS <= len(items) <= MAX_ITEMS, f"board: {len(items)} items"
+    ids = [it["id"] for it in items]
+    assert all(ids) and len(ids) == len(set(ids)), "board: item ids must be unique"
+    used = set()
+    for it in items:
+        where = f"board item {it['id']}"
+        assert it["kind"] in BOARD_KINDS, f"{where}: kind {it['kind']}"
+        for key in ("title", "teaser", "text", "relation_feedback", "clue"):
+            assert str(it.get(key, "")).strip(), f"{where}: missing {key}"
+        assert len(it["text"].split()) <= MAX_WORDS, f"{where}: text too long"
+        assert len(it["clue"].split()) <= MAX_CLUE_WORDS, f"{where}: clue too long"
+        assert it["relation"] in RELATIONS, f"{where}: relation {it['relation']}"
+        chart = it.get("chart")
+        if it["kind"] == "clipping":
+            c = it.get("clipping")
+            assert c and c["headline"].strip() and c["body"].strip(), f"{where}: clipping text"
+        else:
+            assert chart, f"{where}: kind {it['kind']} needs a chart"
+        if chart:
+            used |= check_chart(it["id"], chart, data)
+
+        check_task(where, it["task"], chart, data)
+    return used
 
 
 # --- courtroom trial (Trial in src/shared/tutorial.ts) ---------------------------------------
@@ -365,6 +365,114 @@ def check_trial(trial, data, reveal):
     return used
 
 
+# --- interrogation room (Interrogation in src/shared/tutorial.ts, Aneto) ---------------------
+
+ALIBI_VERDICTS = {"breaks", "backs", "doubt"}
+SUSPECT_LOOKS = {"heat", "snow"}
+INTERROGATION_TASKS = TASK_TYPES | {"season_switch", "proof_line"}
+ALPHA = 0.05  # the "standard of proof" line, same as the pipeline
+
+
+def season_switch_answer(task, data):
+    """Seasons the player must tick, recomputed from the data (same rule as the UI)."""
+    s = data["variables"][task["variable"]]
+    seasons = s["extras"]["seasons"]
+    if task["rule"] == "faster_than_year":
+        year = s["trend"]["slope_per_year"]
+        return {k for k in task["seasons"] if seasons[k]["trend"]["slope_per_year"] > year}
+    return {k for k in task["seasons"] if seasons[k]["trend"]["p_value"] < ALPHA}
+
+
+def exhibit_p(ex, data):
+    """p-value of one proof_line exhibit: whole record, a season or a threshold count."""
+    s = data["variables"][ex["variable"]]
+    if "threshold_id" in ex:
+        return next(t for t in s["extras"]["threshold_counts"]
+                    if t["id"] == ex["threshold_id"])["trend"]["p_value"]
+    if "season" in ex:
+        return s["extras"]["seasons"][ex["season"]]["trend"]["p_value"]
+    return s["trend"]["p_value"]
+
+
+def check_interrogation(inter, data):
+    """Check an Interrogation against TutorialData; returns the variables it uses."""
+    for key in ("title", "instructions", "summary"):
+        assert str(inter.get(key, "")).strip(), f"interrogation: missing {key}"
+    assert str(inter["finale"]["prompt"]).strip(), "interrogation: finale prompt"
+
+    suspects = inter["suspects"]
+    assert len(suspects) == 2, "interrogation: exactly two suspects"
+    sids = [x["id"] for x in suspects]
+    assert all(sids) and len(set(sids)) == 2, "interrogation: suspect ids must be unique"
+    assert sum(x["guilty"] is True for x in suspects) == 1, "interrogation: exactly one guilty"
+    for x in suspects:
+        for key in ("name", "record", "alibi", "decision_text", "wrong_hint"):
+            assert str(x.get(key, "")).strip(), f"suspect {x['id']}: missing {key}"
+        assert x["look"] in SUSPECT_LOOKS, f"suspect {x['id']}: look {x['look']}"
+
+    evidence = inter["evidence"]
+    assert MIN_ITEMS <= len(evidence) <= MAX_ITEMS, f"interrogation: {len(evidence)} folders"
+    ids = [e["id"] for e in evidence]
+    assert all(ids) and len(ids) == len(set(ids)), "interrogation: evidence ids must be unique"
+    used = set()
+    for ev in evidence:
+        where = f"evidence {ev['id']}"
+        for key in ("title", "teaser", "text", "verdict_feedback", "clue"):
+            assert str(ev.get(key, "")).strip(), f"{where}: missing {key}"
+        assert len(ev["text"].split()) <= MAX_WORDS, f"{where}: text too long"
+        assert len(ev["clue"].split()) <= MAX_CLUE_WORDS, f"{where}: clue too long"
+        assert ev["suspect"] in sids, f"{where}: suspect {ev['suspect']}"
+        assert ev["verdict"] in ALIBI_VERDICTS, f"{where}: verdict {ev['verdict']}"
+        chart = ev.get("chart")
+        if chart:
+            used |= check_chart(ev["id"], chart, data)
+        task = ev["task"]
+        t = task["type"]
+        assert t in INTERROGATION_TASKS, f"{where}: task type {t}"
+        if t == "season_switch":
+            for key in ("prompt", "hint", "success", "question"):
+                assert str(task.get(key, "")).strip(), f"{where}: task needs {key}"
+            var = task["variable"]
+            assert var in data["variables"], f"{where}: variable {var} not in data"
+            assert task["rule"] in ("faster_than_year", "significant"), f"{where}: rule"
+            seasons = task["seasons"]
+            assert len(seasons) >= 2 and len(set(seasons)) == len(seasons), f"{where}: seasons"
+            assert set(seasons) <= SEASONS, f"{where}: seasons {seasons}"
+            for k in seasons:
+                assert k in data["variables"][var]["extras"]["seasons"], f"{where}: no {k} data"
+            if not season_switch_answer(task, data):  # "None of them" is the right answer
+                assert "none" in task["success"].lower(), f"{where}: answer is none, say so"
+            used.add(var)
+        elif t == "proof_line":
+            for key in ("prompt", "hint", "success"):
+                assert str(task.get(key, "")).strip(), f"{where}: task needs {key}"
+            exhibits = task["exhibits"]
+            assert 3 <= len(exhibits) <= 6, f"{where}: 3-6 exhibits"
+            assert len({x["label"] for x in exhibits}) == len(exhibits), f"{where}: labels"
+            sides = set()
+            for x in exhibits:
+                assert x["variable"] in data["variables"], f"{where}: {x['variable']} not in data"
+                assert not ("season" in x and "threshold_id" in x), f"{where}: season or threshold"
+                if "season" in x:
+                    assert x["season"] in SEASONS, f"{where}: season {x['season']}"
+                sides.add(exhibit_p(x, data) < ALPHA)
+                used.add(x["variable"])
+            assert sides == {True, False}, f"{where}: exhibits on both sides of the line"
+        else:
+            check_task(where, task, chart, data)
+
+    # the verdicts must agree with who is guilty
+    for x in suspects:
+        verdicts = [e["verdict"] for e in evidence if e["suspect"] == x["id"]]
+        assert verdicts, f"suspect {x['id']}: no evidence put to them"
+        if x["guilty"]:
+            assert "breaks" in verdicts and "backs" not in verdicts, \
+                f"suspect {x['id']}: guilty needs a broken alibi and no backing"
+        else:
+            assert "breaks" not in verdicts, f"suspect {x['id']}: innocent with a broken alibi"
+    return used
+
+
 def test_there_is_at_least_one_tutorial():
     assert TUTORIALS
 
@@ -383,9 +491,10 @@ def test_tutorial_script(path):
 
     ids = [step["id"] for step in s["steps"]]
     assert len(ids) == len(set(ids)), "step ids must be unique"
-    assert not ("board" in s and "trial" in s), "a case has a board or a trial, not both"
-    if "board" in s or "trial" in s:
-        assert s["steps"] == [], "a case with a board or a trial has no quiz steps"
+    formats = [k for k in ("board", "trial", "interrogation") if k in s]
+    assert len(formats) <= 1, f"a case uses one learning format, not {formats}"
+    if formats:
+        assert s["steps"] == [], f"a case with a {formats[0]} has no quiz steps"
     else:
         assert s["steps"], "no steps"
 
@@ -393,6 +502,8 @@ def test_tutorial_script(path):
     if "trial" in s:
         assert s.get("scene"), "a trial needs the witness scene (its claim is the charge)"
         used |= check_trial(s["trial"], data, s["reveal"])
+    if "interrogation" in s:
+        used |= check_interrogation(s["interrogation"], data)
     for step in s["steps"]:
         for key in ("id", "title", "text", "chart", "takeaway"):
             assert step.get(key), f"step {step.get('id')}: missing {key}"
@@ -573,3 +684,45 @@ def test_trial_validator_rejects(breaker, donana):
     breaker(t, r)
     with pytest.raises((AssertionError, KeyError)):
         check_trial(t, data, r)
+
+
+# --- the interrogation validator itself, on the real Aneto script ----------------------------
+
+def _interrogation():
+    return load(ROOT / "data" / "tutorials" / "aneto_glacier.json")["interrogation"]
+
+
+def test_interrogation_answers_from_data(aneto):
+    inter = _interrogation()
+    assert check_interrogation(inter, aneto) == {"T2M", "PRECIP"}
+    tasks = {e["id"]: e["task"] for e in inter["evidence"]}
+    # spring and summer warm faster than the whole record; no precipitation season is significant
+    assert season_switch_answer(tasks["split_year"], aneto) == {"MAM", "JJA"}
+    assert season_switch_answer(tasks["precip_gauge"], aneto) == set()
+    proven = {x["label"] for x in tasks["standard_of_proof"]["exhibits"] if exhibit_p(x, aneto) < ALPHA}
+    assert proven == {"Summer temperature", "Temperature, all months"}
+
+
+def _one_sided(i):
+    i["evidence"][3]["task"]["exhibits"] = [
+        {"label": f"x{k}", "variable": "PRECIP", "season": s} for k, s in enumerate(["DJF", "JJA", "SON"])]
+
+
+@pytest.mark.parametrize("break_it", [
+    lambda i: i["suspects"][1].update(guilty=True),                     # two guilty
+    lambda i: i["suspects"].pop(),                                      # one suspect
+    lambda i: i["evidence"][0].update(suspect="nobody"),
+    lambda i: i["evidence"][0].update(verdict="supports"),
+    lambda i: i["evidence"][2].update(verdict="breaks"),                # innocent, alibi broken
+    lambda i: i["evidence"][0]["task"].update(rule="slower"),
+    lambda i: i["evidence"][2]["task"].update(success="Right: winter only."),  # answer is none
+    lambda i: i["evidence"][3]["task"].update(exhibits=i["evidence"][3]["task"]["exhibits"][:1]),
+    _one_sided,                                                         # all exhibits not proven
+    lambda i: i["evidence"][4]["task"].update(answers=[20, 9]),         # tally: data says 8
+    lambda i: i["evidence"][0]["task"].update(type="quiz"),
+])
+def test_interrogation_validator_rejects(break_it, aneto):
+    inter = _interrogation()
+    break_it(inter)
+    with pytest.raises((AssertionError, KeyError)):
+        check_interrogation(inter, aneto)
