@@ -88,7 +88,8 @@ function loadShapes(): Promise<MapShapes> {
         return `${i ? 'L' : 'M'}${x.toFixed(3)} ${y.toFixed(3)}`
       }).join(''))
       .join('')
-    const byId = new Map((lm.landmarks as Omit<MapLandmark, 'glyph'>[]).map((l) => [l.id, l]))
+    // `travel: false` (small provincial-capital monuments): visual only, never on this map
+    const byId = new Map((lm.landmarks as (Omit<MapLandmark, 'glyph'> & { travel?: boolean })[]).filter((l) => l.travel !== false).map((l) => [l.id, l]))
     const landmarks = TRAVEL_LANDMARKS.flatMap(({ id, glyph }) => {
       const l = byId.get(id)
       return l ? [{ id, name: l.name, city: l.city, lat: l.lat, lon: l.lon, glyph }] : []
