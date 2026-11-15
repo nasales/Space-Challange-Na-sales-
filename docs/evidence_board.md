@@ -13,7 +13,9 @@ Agreed with Diego on 2026-11-15. Status: plan, to be built overnight on `diego_d
 - After the dialogue, these cases use an **evidence board** (detective corkboard) instead of the
   DANA's 8 multiple-choice steps. The DANA keeps its format for now.
 - Desktop only: no phone layout work (the game needs a keyboard).
-- The final challenge is still Ivan's level (`CaseLevel`), then the "CASE CLOSED" stamp.
+- 2026-11-15 (Diego): Ivan's level is no longer part of the case flow (it was a stand-in). After the
+  conclusion comes the "CASE CLOSED" stamp directly, and the marker turns green. Ivan owns the map
+  markers and their green state; everything after opening a case is Diego's.
 
 ## Player flow
 1. Walk into the case zone, Space: the detective walks to the witness, dialogue in speech bubbles,
@@ -33,7 +35,7 @@ Agreed with Diego on 2026-11-15. Status: plan, to be built overnight on `diego_d
    it **supports**, **contradicts** or **says nothing** about the claim (with a hint if wrong).
    The item gets pinned face up; its clue goes to the notebook.
 4. When every item is linked, the board shows the overall picture; the player writes the
-   conclusion; then Ivan's level; then "CASE CLOSED" with the verdict on the witness's claim.
+   conclusion; then "CASE CLOSED" with the verdict on the witness's claim.
 
 ## Witnesses (fictional adults, AGENTS.md rule 11)
 | Case | Witness | Claim (idea) | Expected verdict |

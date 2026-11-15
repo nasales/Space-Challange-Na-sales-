@@ -13,15 +13,14 @@ import Wardrobe from './ui/wardrobe/Wardrobe'
 import DbTest from './ui/dbtest/DbTest'
 import DbStatus from './ui/status/DbStatus'
 import CaseFilePreview from './ui/casefile/CaseFilePreview'
-import CaseFlow, { type DialogueState, type LevelSlotProps } from './ui/casefile/CaseFlow'
+import CaseFlow, { type DialogueState } from './ui/casefile/CaseFlow'
 import CaseHint from './ui/casefile/CaseHint'
 import { createAnchorStore } from './ui/casefile/anchors'
 import type { GameStatus, HudState, LensFocusState } from './shared/events'
 import { loadOutfit, type Outfit } from './shared/outfit'
 import { loadCompleted, markCompleted } from './shared/progress'
 import { startBackgroundMusic } from './shared/music'
-import CaseLevel from './levels/CaseLevel'
-import { getLevel } from './levels/registry'
+import { hasTutorial } from './ui/casefile/loader'
 
 type Screen = 'menu' | 'wardrobe' | 'game'
 
@@ -29,9 +28,6 @@ type Screen = 'menu' | 'wardrobe' | 'game'
 const DB_TEST = new URLSearchParams(window.location.search).has('dbtest')
 // Temporary preview of a featured-case tutorial: ?casefile=dana_valencia
 const CASE_PREVIEW = new URLSearchParams(window.location.search).has('casefile')
-
-/** Final test of a featured case (Ivan's level), drawn by the case flow over the paused game */
-const renderLevel = (p: LevelSlotProps) => <CaseLevel {...p} />
 
 const NO_DIALOGUE: DialogueState = { active: false, speaking: null, mood: null }
 
@@ -42,7 +38,7 @@ export default function App() {
     <>
       {CASE_PREVIEW ? (
         <main className="app">
-          <CaseFilePreview renderLevel={renderLevel} />
+          <CaseFilePreview />
         </main>
       ) : DB_TEST ? (
         <main className="app">
@@ -70,7 +66,7 @@ function Game({ onCaseFocus }: { onCaseFocus: (on: boolean) => void }) {
   // Esc pause panel on the map (the game ignores driving input while it is open)
   const [paused, setPaused] = useState(false)
   // Featured cases: Space inside a case zone (detective stopped) opens the case flow
-  // (witness scene -> case file -> final test -> case closed, src/ui/casefile/CaseFlow.tsx).
+  // (witness scene -> case file or evidence board -> case closed, src/ui/casefile/CaseFlow.tsx).
   // Escape inside the flow is handled there, one phase at a time.
   const [openCase, setOpenCase] = useState<string | null>(null)
   const [dialogue, setDialogue] = useState<DialogueState>(NO_DIALOGUE)
@@ -79,7 +75,7 @@ function Game({ onCaseFocus }: { onCaseFocus: (on: boolean) => void }) {
   const completedList = useMemo(() => [...completed], [completed])
   // Background music from the menu on (it starts on the first click or key press)
   useEffect(startBackgroundMusic, [])
-  const zoneCase = hud?.caseZone && getLevel(hud.caseZone) ? hud.caseZone : null
+  const zoneCase = hud?.caseZone && hasTutorial(hud.caseZone) ? hud.caseZone : null
   // only with the camera out of the hand lens (the picker cannot reset it once a case is open)
   const canOpenCase =
     screen === 'game' && status === 'ready' && !!hud?.stopped && !!zoneCase && !openCase && !focusLens && lensState === 'out' && !paused
@@ -112,7 +108,7 @@ function Game({ onCaseFocus }: { onCaseFocus: (on: boolean) => void }) {
     setDialogue(NO_DIALOGUE)
   }, [])
   const solveCase = useCallback((caseId: string) => {
-    // Green marker only for a correct answer in the final test (Ivan's rule)
+    // Green marker once the case is solved (conclusion written)
     markCompleted(caseId)
     setCompleted((prev) => new Set(prev).add(caseId))
   }, [])
@@ -180,7 +176,6 @@ function Game({ onCaseFocus }: { onCaseFocus: (on: boolean) => void }) {
         <CaseFlow
           key={openCase}
           caseId={openCase}
-          renderLevel={renderLevel}
           onClose={closeCase}
           onSolved={solveCase}
           onDialogue={setDialogue}

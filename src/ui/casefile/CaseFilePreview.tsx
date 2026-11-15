@@ -1,10 +1,10 @@
 // TEMPORARY dev preview: open the site with ?casefile=<case_id> (e.g. ?casefile=dana_valencia)
 // to play a featured case alone, without the 3D game: witness scene (with stand-in figures),
-// case file + notebook, final test, case closed. ?casefile alone (or an unknown id) lists every
+// case file or evidence board + notebook, case closed. ?casefile alone (or an unknown id) lists every
 // case that has a story script. ?casefile=<id>&hint shows the "in a case zone" tag first.
-// Renders nothing without the parameter. The final test comes from the app shell (renderLevel).
-import { useState, type ReactNode } from 'react'
-import CaseFlow, { type LevelSlotProps } from './CaseFlow'
+// Renders nothing without the parameter.
+import { useState } from 'react'
+import CaseFlow from './CaseFlow'
 import CaseHint from './CaseHint'
 import { hasTutorial, listTutorials } from './loader'
 import './CaseFile.css'
@@ -12,7 +12,7 @@ import './CaseFile.css'
 const PARAMS = new URLSearchParams(window.location.search)
 const PARAM = PARAMS.get('casefile')
 
-export default function CaseFilePreview({ renderLevel }: { renderLevel: (p: LevelSlotProps) => ReactNode }) {
+export default function CaseFilePreview() {
   const [open, setOpen] = useState(!PARAMS.has('hint'))
   const [round, setRound] = useState(0)
   if (PARAM == null) return null
@@ -20,7 +20,7 @@ export default function CaseFilePreview({ renderLevel }: { renderLevel: (p: Leve
   return (
     <div className="casefile-preview">
       {open ? (
-        <CaseFlow key={round} caseId={PARAM} renderLevel={renderLevel} onClose={() => setOpen(false)} />
+        <CaseFlow key={round} caseId={PARAM} onClose={() => setOpen(false)} />
       ) : (
         <>
           <CaseHint caseId={PARAM} />

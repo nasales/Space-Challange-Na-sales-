@@ -242,12 +242,12 @@
   min-height: 0;
   border: 14px solid var(--ev-wood);
   border-image: linear-gradient(135deg, #7a4e2a, #4f3018 40%, #6e4524 70%, #3f2612) 1;
+  /* real cork grain (cork.svg tiles), lit from the centre and darker towards the frame */
   background:
-    radial-gradient(circle, rgba(70, 38, 12, 0.38) 1px, transparent 1.7px) 0 0 / 7px 9px,
-    radial-gradient(circle, rgba(255, 228, 184, 0.22) 1px, transparent 1.6px) 3px 4px / 11px 8px,
-    radial-gradient(circle, rgba(60, 32, 10, 0.32) 1.3px, transparent 2.1px) 5px 2px / 13px 17px,
-    radial-gradient(circle, rgba(255, 236, 200, 0.16) 2px, transparent 3px) 9px 6px / 23px 19px,
-    radial-gradient(ellipse at 50% 45%, #cc9b63, var(--ev-cork) 55%, #91602f);
+    radial-gradient(ellipse at 50% 42%, rgba(255, 226, 180, 0.16), transparent 60%),
+    radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(60, 30, 8, 0.35)),
+    url('./cork.svg') 0 0 / 360px 360px,
+    var(--ev-cork);
   box-shadow:
     inset 0 0 50px rgba(40, 20, 5, 0.55),
     0 0 0 3px var(--cf-ink),

@@ -4,7 +4,7 @@
 // the player links it to the claim (supports / contradicts / says nothing). A right link pulls a
 // red string from the item's pin to the claim, flips the card face up with a coloured tag and
 // stamps its clue into the notebook. When every item is linked: the board summary, then the
-// player's own conclusion (same screen as the case file), which hands over to the final test.
+// player's own conclusion (same screen as the case file), which hands over to the case-closed screen.
 // Escape: closes the open card, else the summary or conclusion, else asks to leave the case.
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { DEFAULT_OUTFIT } from '../../shared/outfit'
@@ -479,7 +479,7 @@ function ConclusionSheet({
             headingRef={headingRef}
             onBack={onBack}
             onSubmit={onSubmit}
-            submitLabel="Submit and take the final test"
+            submitLabel="Submit and close the case"
           />
         </div>
       </div>

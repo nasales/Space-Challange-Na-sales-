@@ -1,7 +1,7 @@
-// Last screen of a featured case, after the final challenge: a "CASE CLOSED" rubber stamp, the
+// Last screen of a featured case, after the player's conclusion: a "CASE CLOSED" rubber stamp, the
 // verdict on the witness's claim (reveal.claim_verdict + claim_text), the player's conclusion, the
 // clues from the notebook and what the statistics say. This is the only place the full statistical
-// result of the case file is shown (the case file itself hands over to the final challenge).
+// result of the case file is shown (the case file itself hands over to this screen).
 import { useEffect, useRef } from 'react'
 import type { Witness } from '../../shared/witness'
 import { Header, StatsReveal } from './CaseFile'
@@ -10,18 +10,11 @@ import Notebook, { type NotebookClue } from './Notebook'
 import './CaseFile.css'
 import './CaseClosed.css'
 
-export interface LevelResult {
-  correct: boolean
-  score?: number
-}
-
 interface Props {
   tutorial: LoadedTutorial
   witness?: Witness
   conclusion: string
   clues: NotebookClue[]
-  /** null: the final challenge was left without a result */
-  result: LevelResult | null
   onClose: () => void
 }
 
@@ -31,7 +24,7 @@ const VERDICT_TEXT = {
   partly: 'The witness was partly right',
 } as const
 
-export default function CaseClosed({ tutorial, witness, conclusion, clues, result, onClose }: Props) {
+export default function CaseClosed({ tutorial, witness, conclusion, clues, onClose }: Props) {
   const { script, data } = tutorial
   const claim = script.scene?.claim
   const verdict = script.reveal.claim_verdict
@@ -79,12 +72,8 @@ export default function CaseClosed({ tutorial, witness, conclusion, clues, resul
               </div>
             )}
 
-            <p className={`caseclosed__challenge${result?.correct ? ' is-solved' : ''}`} role="status">
-              {result?.correct
-                ? 'Final test passed: the case marker turns green on the map.'
-                : result
-                  ? 'Final test not passed yet: come back to this marker and try again to turn it green.'
-                  : 'You left the final test before the end: come back to this marker to finish it.'}
+            <p className="caseclosed__challenge is-solved" role="status">
+              Case solved: its marker turns green on the map.
             </p>
 
             {conclusion && (

@@ -15,7 +15,7 @@ import './CaseFile.css'
 /**
  * Inside the full case flow (CaseFlow.tsx): the notebook is shown, the intro card is replaced by a
  * short question line when a witness scene already told the story, and submitting the conclusion
- * hands over to the final challenge instead of showing the reveal here.
+ * hands over to the case-closed screen instead of showing the reveal here.
  */
 export interface CaseFileFlow {
   /** The witness's claim, pinned at the top of the notebook */
@@ -219,7 +219,7 @@ function Tutorial({ tutorial, onClose, flow }: { tutorial: LoadedTutorial; onClo
             headingRef={headingRef}
             onBack={() => go(n)}
             onSubmit={() => (flow ? flow.onConcluded(text.trim(), clues) : go(n + 2))}
-            submitLabel={flow ? 'Submit and take the final test' : undefined}
+            submitLabel={flow ? 'Submit and close the case' : undefined}
           />
         )}
 
