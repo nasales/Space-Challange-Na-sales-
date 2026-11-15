@@ -674,7 +674,8 @@
 .casefile__feedback {
   margin: 10px 0 0;
   padding: 8px 12px;
-  border-left: 5px solid var(--cf-red);
+  border: 2px solid var(--cf-red);
+  box-shadow: 3px 3px 0 var(--cf-red);
   background: #fff;
 }
 
@@ -970,7 +971,7 @@
   position: relative;
   margin: 12px clamp(18px, 5vw, 40px) 0;
   padding: 6px 10px;
-  border-left: 5px solid var(--cf-red);
+  border: 2px dashed currentColor;
   background: rgba(242, 193, 78, 0.28);
   font-family: var(--cf-type);
   font-size: 0.9rem;
