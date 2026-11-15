@@ -4,6 +4,7 @@
 // Proyección equirectangular: el mundo es un plano. Para que España no salga estirada,
 // los grados de longitud se miden como en la latitud 40º (la de España).
 // Norte = -Z, Este = +X, arriba = +Y.
+import { toDisplayLonLat, toRealLonLat } from './canaryInset'
 
 /** Escala del mundo: unidades 3D por kilómetro real. Más grande = más que explorar. */
 export const UNITS_PER_KM = 8 // was 4: the map is twice as big to explore
@@ -15,12 +16,15 @@ const KM_PER_DEG_LAT = 110.57
 export const UNITS_PER_DEG_LON = KM_PER_DEG_LON * UNITS_PER_KM
 export const UNITS_PER_DEG_LAT = KM_PER_DEG_LAT * UNITS_PER_KM
 
+/** Real lon/lat -> world. The Canary Islands are drawn in a corner box (see canaryInset.ts). */
 export function lonLatToWorld(lon: number, lat: number) {
-  return { x: lon * UNITS_PER_DEG_LON, z: -lat * UNITS_PER_DEG_LAT }
+  const p = toDisplayLonLat(lon, lat)
+  return { x: p.lon * UNITS_PER_DEG_LON, z: -p.lat * UNITS_PER_DEG_LAT }
 }
 
+/** World -> real lon/lat (undoes the Canary Islands inset). */
 export function worldToLonLat(x: number, z: number) {
-  return { lon: x / UNITS_PER_DEG_LON, lat: -z / UNITS_PER_DEG_LAT }
+  return toRealLonLat(x / UNITS_PER_DEG_LON, -z / UNITS_PER_DEG_LAT)
 }
 
 /** Metros reales → altura en el mundo, con una exageración del relieve. */
