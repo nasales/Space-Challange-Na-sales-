@@ -12,9 +12,11 @@ interface Props {
   canOpen: boolean
   onOpenChange: (open: boolean) => void
   onMainMenu: () => void
+  /** Start the map tutorial (the app shell closes this panel) */
+  onTutorial?: () => void
 }
 
-export default function PauseMenu({ open, canOpen, onOpenChange, onMainMenu }: Props) {
+export default function PauseMenu({ open, canOpen, onOpenChange, onMainMenu, onTutorial }: Props) {
   const panel = useRef<HTMLDivElement>(null)
   const resumeButton = useRef<HTMLButtonElement>(null)
 
@@ -97,6 +99,11 @@ export default function PauseMenu({ open, canOpen, onOpenChange, onMainMenu }: P
           <button type="button" className="pause-menu__button pause-menu__button--menu" onClick={onMainMenu}>
             Main menu
           </button>
+          {onTutorial && (
+            <button type="button" className="pause-menu__button pause-menu__button--menu" onClick={onTutorial}>
+              Tutorial
+            </button>
+          )}
         </div>
         <SoundSliders className="pause-menu__sound" />
         <p className="pause-menu__hint">

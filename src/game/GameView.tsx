@@ -32,10 +32,14 @@ import { createTopViewCamera, wantsTopView } from './camera/topViewCamera'
 import { createKeyboard } from './input/keyboard'
 import { nearestPlace } from './location/nearestPlace'
 import { createLandmarks, loadLandmarks } from './landmarks/createLandmarks'
+import { createBulls } from './bulls/createBulls'
+import { BULL_SPOTS } from './bulls/bullSpots'
+import { EXTRA_HOUSES, placeExtraHouses } from './towns/extraHouses'
 import { bendRiversAround, prepareRivers } from './map/rivers'
 import { createRivers } from './scene/createRivers'
 import { loadRoads, roadsInBounds } from './roads/roadData'
 import { createRoads } from './roads/createRoads'
+import { createGuideBot } from './guide/createGuideBot'
 import { createCaseMarkers } from './cases/createCaseMarkers'
 import { createSeaLane } from './scene/createSeaLane'
 import { laneFordAtWorld, setLaneCoast } from './map/canarySeaLane'
@@ -118,18 +122,31 @@ function detectiveReaction(speaker: 'detective' | 'witness' | null, mood: LineMo
   return { x: 0, z: 0 }
 }
 
+// ---- Tutorial robot (src/game/guide) ----
+/** Beside the detective: ahead and to his right (world units), at about head height. */
+const GUIDE_AHEAD = 9
+const GUIDE_ASIDE = 8
+const GUIDE_HOVER = 7
+/** Height above the ground at a monument and over a case ring (world units). */
+const GUIDE_LANDMARK_LIFT = 16
+const GUIDE_CASE_LIFT = 13
+/** A monument or case ring farther than this is not shown: the robot explains it from beside the detective. */
+const GUIDE_SHOW_RANGE = 420
+/** How fast the detective turns towards what the robot shows (1/s). */
+const GUIDE_TURN_RATE = 3
+
 /** Only the 3D canvas. The HUD and status messages live in src/ui, fed through the callbacks. */
 /** Featured cases shown on the map: only the active ones (src/shared/tutorial.ts); parked cases keep their files. */
 const CASES = ALL_CASES.filter((c) => isActiveCase(c.id))
 
 export default function GameView({
-  onStatus, onHud, onLensFocus, onProgress, onDialogueAnchors, focusLens = false, outfit, paused = false, completedCases, dialogueCase = null, speaking = null, speakingMood = null, travelTo, onTravel,
+  onStatus, onHud, onLensFocus, onProgress, onDialogueAnchors, focusLens = false, outfit, paused = false, completedCases, dialogueCase = null, speaking = null, speakingMood = null, travelTo, onTravel, guide = null, onGuideAnchor,
 }: GameViewProps) {
   const container = useRef<HTMLDivElement>(null)
   // Latest callbacks (and pause flag), read from inside the animation loop without restarting the scene
-  const callbacks = useRef({ onStatus, onHud, onLensFocus, onProgress, onDialogueAnchors, focusLens, paused, completedCases, dialogueCase, speaking, speakingMood, travelTo, onTravel })
+  const callbacks = useRef({ onStatus, onHud, onLensFocus, onProgress, onDialogueAnchors, focusLens, paused, completedCases, dialogueCase, speaking, speakingMood, travelTo, onTravel, guide, onGuideAnchor })
   useEffect(() => {
-    callbacks.current = { onStatus, onHud, onLensFocus, onProgress, onDialogueAnchors, focusLens, paused, completedCases, dialogueCase, speaking, speakingMood, travelTo, onTravel }
+    callbacks.current = { onStatus, onHud, onLensFocus, onProgress, onDialogueAnchors, focusLens, paused, completedCases, dialogueCase, speaking, speakingMood, travelTo, onTravel, guide, onGuideAnchor }
   })
   const setStatus = (status: GameStatus) => callbacks.current.onStatus?.(status)
   const setHud = (hud: HudState) => callbacks.current.onHud?.(hud)
@@ -272,13 +289,21 @@ export default function GameView({
           const i = explored.zones.findIndex((zn) => lon >= zn.bounds.west && lon <= zn.bounds.east && lat >= zn.bounds.south && lat <= zn.bounds.north)
           return i >= 0 ? zones[i].terrain : null
         }
-        const houses = placeTowns(explored.places, {
-          heightAt: (x, z) => terrainAt(x, z)?.heightAt(x, z) ?? 0,
-          isLand: (x, z) => terrainAt(x, z)?.isExploredLand(x, z) ?? false,
-          landmarkDistance: landmarks.spacing,
-          nearRiver: (x, z, m) => terrainAt(x, z)?.nearRiver(x, z, m) ?? false,
+        // ---- Roadside bulls (bulls/): big black bull silhouettes on hills next to the main roads ----
+        // Built before the towns so houses and scenery keep off their footprints (like monuments)
+        const bulls = createBulls(BULL_SPOTS, main.heightAt)
+        scene.add(bulls.group)
+        const keepClear = (x: number, z: number) => Math.min(landmarks.spacing(x, z), bulls.spacing(x, z))
+        // ---- end of roadside bulls ----
+        const townGround = {
+          heightAt: (x: number, z: number) => terrainAt(x, z)?.heightAt(x, z) ?? 0,
+          isLand: (x: number, z: number) => terrainAt(x, z)?.isExploredLand(x, z) ?? false,
+          landmarkDistance: keepClear,
+          nearRiver: (x: number, z: number, m: number) => terrainAt(x, z)?.nearRiver(x, z, m) ?? false,
           nearRoad,
-        })
+        }
+        const houses = placeTowns(explored.places, townGround)
+        houses.push(...placeExtraHouses(EXTRA_HOUSES, townGround, houses)) // a few fixed houses (e.g. by Peñafiel Castle)
         const towns = createTowns(houses)
         scene.add(towns.group)
         // Night lights of houses and landmarks: their own scene, drawn after the ink pass
@@ -292,7 +317,7 @@ export default function GameView({
           metersAt: (x, z) => terrainAt(x, z)?.metersAt(x, z) ?? 0,
           isLand: (x, z) => terrainAt(x, z)?.isExploredLand(x, z) ?? false,
           nearHouse: towns.blocks,
-          landmarkDistance: landmarks.spacing,
+          landmarkDistance: keepClear,
           nearRiver: (x, z, m) => terrainAt(x, z)?.nearRiver(x, z, m) ?? false,
           nearRoad,
         })
@@ -331,7 +356,7 @@ export default function GameView({
           isDrivable: (x, z) => {
             const t = terrainAt(x, z)
             if (!t) return laneFordAtWorld(x, z) // open sea between the zones: only the lane
-            return (t.isExploredLand(x, z) || t.isFord(x, z)) && !scenery.blocks(x, z) && !witnessPropAt(x, z)
+            return (t.isExploredLand(x, z) || t.isFord(x, z)) && !scenery.blocks(x, z) && !witnessPropAt(x, z) && !bulls.blocks(x, z)
           },
         }
         const madrid = lonLatToWorld(-3.7038, 40.4168)
@@ -354,6 +379,48 @@ export default function GameView({
         // Landing spot: walkable land on the plaza, nothing in the way
         const canLand = (x: number, z: number) => main.isExploredLand(x, z) && !scenery.blocks(x, z) && towns.surfaceAt(x, z) === -Infinity
         if (import.meta.env.DEV) Object.assign(window, { __travel: { plane, approachOf: (id: string) => landmarks.approachOf(id, canLand) } })
+        // ---- Tutorial robot (GameViewProps.guide): hovers where the current step needs it ----
+        const guideBot = createGuideBot()
+        scene.add(guideBot.root)
+        const guideSpot = new THREE.Vector3() // where it hovers
+        const guideTop = new THREE.Vector3()
+        let guideAt: string | null = null // cue place the spot below was chosen for
+        let guideFocus: { x: number; z: number } | null = null // what the detective turns to on a 'hold' step
+        let guideFixed: { x: number; z: number; lift: number } | null = null // spot at a monument or a case ring
+        let guideAnchorSent: { x: number; y: number } | null = null
+        /** Chooses the robot's spot for a step, once: a monument or a case ring close enough to show, else by the detective. */
+        const chooseGuideSpot = (at: 'detective' | 'landmark' | 'case') => {
+          guideFocus = guideFixed = null
+          const far = (x: number, z: number) => Math.hypot(x - carState.x, z - carState.z)
+          if (at === 'landmark') {
+            let best: { id: string; x: number; z: number } | null = null
+            for (const l of landmarkList) {
+              const p = landmarks.positionOf(l.id)
+              if (p && (!best || far(p.x, p.z) < far(best.x, best.z))) best = { id: l.id, ...p }
+            }
+            if (best && far(best.x, best.z) < GUIDE_SHOW_RANGE) {
+              // In front of its facade when that side is free, else between him and the monument
+              const front = landmarks.approachOf(best.id, () => true)
+              const d = far(best.x, best.z) || 1
+              const side = front ?? { x: best.x + ((carState.x - best.x) / d) * 30, z: best.z + ((carState.z - best.z) / d) * 30 }
+              guideFocus = { x: best.x, z: best.z }
+              guideFixed = { x: side.x, z: side.z, lift: GUIDE_LANDMARK_LIFT }
+            }
+          } else if (at === 'case') {
+            let best: { x: number; z: number; radius: number } | null = null
+            for (const c of CASES) {
+              const p = caseMarkers.positionOf(c.id)
+              if (p && (!best || far(p.x, p.z) < far(best.x, best.z))) best = p
+            }
+            if (best && far(best.x, best.z) < GUIDE_SHOW_RANGE) {
+              // Over the edge of the ring nearest to him, so the "!" and the witness stay in view
+              const d = far(best.x, best.z) || 1
+              const k = Math.min(1, (best.radius * 0.8) / d)
+              guideFocus = { x: best.x, z: best.z }
+              guideFixed = { x: best.x + (carState.x - best.x) * k, z: best.z + (carState.z - best.z) * k, lift: GUIDE_CASE_LIFT }
+            }
+          }
+        }
         // Efectos al correr: nubecitas de polvo en cada pisada y huellas en el suelo
         const dust = createDust()
         const footprints = createFootprints()
@@ -425,7 +492,7 @@ export default function GameView({
         if (import.meta.env.DEV) {
           Object.assign(window, {
             __game: {
-              carState, camera, chase, top, ground, detective, boat, renderer, scene, day, nightLights, towns, houses, scenery, sceneryItems, landmarks, caseMarkers, main, witnesses, witnessSite, dialogue, devDialogue,
+              carState, camera, chase, top, ground, detective, boat, renderer, scene, day, nightLights, towns, houses, scenery, sceneryItems, landmarks, caseMarkers, main, witnesses, witnessSite, dialogue, devDialogue, bulls, nearRoad, guideBot,
               setDialogue: (caseId: string | null, speaking: 'detective' | 'witness' | null = null, mood: LineMood | null = null) =>
                 Object.assign(devDialogue, { active: true, caseId, speaking, mood }),
             },
@@ -501,9 +568,22 @@ export default function GameView({
             else callbacks.current.onTravel?.('landed') // unknown landmark: nothing to do
           }
           const travelling = plane.active
+          // Tutorial robot: its spot is chosen when the step's place changes. On a 'hold' step the
+          // detective stands still and turns towards what the robot shows (the camera follows him)
+          const cue = introBefore ? null : (callbacks.current.guide ?? null)
+          if ((cue?.at ?? null) !== guideAt) {
+            guideAt = cue?.at ?? null
+            if (cue) chooseGuideSpot(cue.at)
+          }
+          const guideHold = !!cue?.hold && !!guideFocus && !travelling && !dialogue.busy
+          if (guideHold && guideFocus) {
+            const want = Math.atan2(-(guideFocus.x - carState.x), -(guideFocus.z - carState.z))
+            const turn = Math.atan2(Math.sin(want - carState.heading), Math.cos(want - carState.heading))
+            carState.heading += turn * (1 - Math.exp(-GUIDE_TURN_RATE * dt))
+          }
           const input = dialogue.busy && talkWith
             ? dialogue.drive(carState, talk, dt)
-            : top || lensFlying || introBefore || callbacks.current.paused || travelling ? { throttle: 0, steer: 0, turbo: false } : keyboard.read()
+            : top || lensFlying || introBefore || callbacks.current.paused || travelling || guideHold ? { throttle: 0, steer: 0, turbo: false } : keyboard.read()
           if (travelling) {
             plane.update(carState, detective.root, dt) // the flight moves carState (no physics)
             // Camera: from the player's zoom to close behind him, smoothly, done by the landing
@@ -550,6 +630,20 @@ export default function GameView({
           if (dialogue.busy && talkWith) {
             poseTalk(talkWith)
             dialogue.applyCamera(talk)
+          }
+          // Tutorial robot: beside and a little ahead of the detective, or at its fixed spot
+          if (cue || guideBot.visible) {
+            if (cue) {
+              if (guideFixed) guideSpot.set(guideFixed.x, surfaceAt(guideFixed.x, guideFixed.z) + guideFixed.lift, guideFixed.z)
+              else {
+                const fx = -Math.sin(carState.heading), fz = -Math.cos(carState.heading)
+                const x = carState.x + fx * GUIDE_AHEAD - fz * GUIDE_ASIDE
+                const z = carState.z + fz * GUIDE_AHEAD + fx * GUIDE_ASIDE
+                guideSpot.set(x, Math.max(carState.y, surfaceAt(x, z)) + GUIDE_HOVER, z)
+              }
+            }
+            // It steps aside while the camera is inside the hand lens (it would float across the glass)
+            guideBot.update(dt, { target: cue && !lensFlying ? guideSpot : null, lookAt: carState, talking: !!cue?.talking })
           }
           if (introBefore && !chase.introActive) {
             setStatus('ready')
@@ -609,6 +703,19 @@ export default function GameView({
             callbacks.current.onDialogueAnchors?.(anchors)
             if (import.meta.env.DEV) devDialogue.anchors = anchors
           }
+          // Tutorial robot: where its speech bubble goes on screen (null while hidden or out of view)
+          let guideAnchor: { x: number; y: number } | null = null
+          if (cue && !lensFlying && guideBot.visible) {
+            guideBot.headTop(guideTop, 1.2).project(camera)
+            if (guideTop.z < 1 && Math.abs(guideTop.x) < 1 && Math.abs(guideTop.y) < 1) {
+              const rect = renderer.domElement.getBoundingClientRect()
+              guideAnchor = { x: Math.round(rect.left + (guideTop.x * 0.5 + 0.5) * rect.width), y: Math.round(rect.top + (0.5 - guideTop.y * 0.5) * rect.height) }
+            }
+          }
+          if (guideAnchor?.x !== guideAnchorSent?.x || guideAnchor?.y !== guideAnchorSent?.y) {
+            guideAnchorSent = guideAnchor
+            callbacks.current.onGuideAnchor?.(guideAnchor)
+          }
           fog.color.copy(palette.fog)
           sky.update(camera, palette)
           lighting.update(top ? top.center : detective.root.position, Math.max(40, Math.min(d * (top ? 0.9 : 1.6), 3000 * UNITS_PER_KM)), palette)
@@ -636,6 +743,7 @@ export default function GameView({
           dust.dispose()
           footprints.dispose()
           landmarks.dispose()
+          bulls.dispose()
           towns.dispose()
           nightLights.dispose()
           scenery.dispose()
@@ -654,6 +762,7 @@ export default function GameView({
           caseMarkers.dispose()
           seaLane.dispose()
           witnesses.dispose()
+          guideBot.dispose()
           ink.dispose()
           dispose()
           if (import.meta.env.DEV) delete (window as { __game?: unknown }).__game

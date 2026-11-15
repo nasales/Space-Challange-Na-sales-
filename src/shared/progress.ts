@@ -25,3 +25,23 @@ export function markCompleted(caseId: string): Set<string> {
   }
   return set
 }
+
+const GUIDE_KEY = 'esd.guideSeen'
+
+/** True once the player has been offered the map tutorial in this browser (taken or skipped). */
+export function loadGuideSeen(): boolean {
+  try {
+    return localStorage.getItem(GUIDE_KEY) === '1'
+  } catch {
+    return false // storage unavailable: the offer shows again next time
+  }
+}
+
+/** Remembers that the tutorial was offered, so it is not offered again (it stays in the pause menu). */
+export function markGuideSeen(): void {
+  try {
+    localStorage.setItem(GUIDE_KEY, '1')
+  } catch {
+    // storage unavailable: nothing to remember
+  }
+}
