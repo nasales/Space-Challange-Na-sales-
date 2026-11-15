@@ -165,6 +165,12 @@
   transform: translate(3px, 3px) scale(1.02, 0.94);
 }
 
+.pause-menu__sound {
+  position: relative;
+  z-index: 1;
+  margin-top: 22px;
+}
+
 .pause-menu__hint {
   position: relative;
   z-index: 1;

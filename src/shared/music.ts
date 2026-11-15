@@ -7,6 +7,8 @@
 //   - to try it without changing code, open the site with ?music=jazz-saxophone;
 //   - ?music=off starts the game without music.
 // Both tracks are credited in REFERENCES.md. Files live in public/music/.
+// The player sets the level with the Music slider (menu and pause panel, src/shared/sound.ts).
+import { getSoundSettings, subscribeSoundSettings } from './sound'
 
 export const MUSIC_TRACKS = {
   investigation: { title: 'Investigation', author: 'Umplix', src: '/music/investigation.mp3' },
@@ -18,8 +20,14 @@ export type MusicTrackId = keyof typeof MUSIC_TRACKS
 /** The track that plays by default. */
 export const DEFAULT_TRACK: MusicTrackId = 'investigation'
 
-/** Background level: low enough to keep the game sounds and the reading comfortable. */
-const VOLUME = 0.46 // was 0.35, raised 30 % at the team's request (too quiet)
+/** Audio volume at 100 % on the Music slider. The default slider (70 %) gives 0.46, the old fixed level. */
+const MAX_VOLUME = 0.94
+
+/** Slider value (0 to 1) -> audio volume. Squared, so the low end of the slider is really quiet. */
+function musicVolume() {
+  const v = getSoundSettings().music
+  return Math.min(1, MAX_VOLUME * v * v)
+}
 
 let audio: HTMLAudioElement | null = null
 
@@ -44,8 +52,11 @@ export function startBackgroundMusic() {
   if (!id) return
   audio = new Audio(MUSIC_TRACKS[id].src)
   audio.loop = true
-  audio.volume = VOLUME
+  audio.volume = musicVolume()
   const player = audio
+  subscribeSoundSettings(() => {
+    player.volume = musicVolume()
+  })
   const events = ['pointerdown', 'keydown'] as const
   const tryPlay = () => {
     player
