@@ -27,10 +27,10 @@ export function FeaturedCases() {
 // Names, datasets and licenses match REFERENCES.md: update both together.
 const TEAM: [name: string, role: string][] = [
   ['Manuel Gallego Prieto', 'Backend, database and integration'],
-  ['Pablo Jonas Romo Gonzalez', 'Interface and menus'],
+  ['Pablo Jonas Romo González', 'Interface and menus'],
   ['Iván Calvo Benito', 'Featured cases, statistics and map details'],
   ['Diego Baños García', 'Trend analysis and case tutorials'],
-  ['Ezequiel David Jimenez García', 'Product, stories and pitch'],
+  ['Ezequiel David Jiménez García', 'Product, stories and pitch'],
 ]
 
 const NASA_DATA: [name: string, product: string, use: string][] = [
