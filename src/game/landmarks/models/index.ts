@@ -12,6 +12,12 @@ import { buildGuggenheim, buildGuggenheimBase } from './guggenheim'
 import { buildCiudadArtes, buildCiudadArtesBase } from './ciudadArtes'
 import { buildTorreHercules, buildTorreHerculesBase } from './torreHercules'
 import { buildMezquitaCordoba, buildMezquitaCordobaBase } from './mezquitaCordoba'
+import { buildCatedralBurgos, buildCatedralBurgosBase } from './catedralBurgos'
+import { buildTeatroMerida, buildTeatroMeridaBase } from './teatroMerida'
+import { buildBasilicaPilar, buildBasilicaPilarBase } from './basilicaPilar'
+import { buildPlazaMayorSalamanca, buildPlazaMayorSalamancaBase } from './plazaMayorSalamanca'
+import { buildCasasColgadas, buildCasasColgadasBase } from './casasColgadas'
+import { buildCastilloPenafiel, buildCastilloPenafielBase } from './castilloPenafiel'
 
 export interface LandmarkModel {
   /** El monumento en sí (unidades del modelo, base en y = 0). */
@@ -36,4 +42,10 @@ export const LANDMARK_MODELS: Record<string, LandmarkModel> = {
   'ciudad-artes': { build: buildCiudadArtes, base: buildCiudadArtesBase, margin: 6 },
   'torre-hercules': { build: buildTorreHercules, base: buildTorreHerculesBase, margin: 9 },
   'mezquita-cordoba': { build: buildMezquitaCordoba, base: buildMezquitaCordobaBase, margin: 6 },
+  'catedral-burgos': { build: buildCatedralBurgos, base: buildCatedralBurgosBase, margin: 5 },
+  'teatro-merida': { build: buildTeatroMerida, base: buildTeatroMeridaBase, margin: 6 },
+  'basilica-pilar': { build: buildBasilicaPilar, base: buildBasilicaPilarBase, margin: 6 },
+  'plaza-mayor-salamanca': { build: buildPlazaMayorSalamanca, base: buildPlazaMayorSalamancaBase, margin: 4 },
+  'casas-colgadas': { build: buildCasasColgadas, base: buildCasasColgadasBase, margin: 6 },
+  'castillo-penafiel': { build: buildCastilloPenafiel, base: buildCastilloPenafielBase, margin: 4 },
 }

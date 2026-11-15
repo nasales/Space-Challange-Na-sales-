@@ -121,6 +121,10 @@ export function buildPuertaDeAlcala(kit: Kit): THREE.Group {
     t.position.set(x, top, 0.5)
     g.add(t)
   }
+
+  // ---- Night lights: a warm glow inside every opening and soft floodlights on both faces ----
+  for (const o of OPENINGS) g.add(kit.lightHalo(o.width * 0.6, o.x, o.height * 0.5, 0, 0.8))
+  for (const x of [-11.9, 0, 11.9]) for (const z of [front + 3, -front - 3]) g.add(kit.lightHalo(4.5, x, 3, z, 0.35))
   return g
 }
 

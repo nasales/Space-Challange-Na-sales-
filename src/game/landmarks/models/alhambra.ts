@@ -100,6 +100,7 @@ function tower(kit: Kit, w: number, h: number, color = RED_D, rows = 1, door = f
         const win = horseshoeArch(kit, w * 0.16, w * 0.14, 0.4, DARK)
         win.position.set(x, y, halfAt(y) + 0.05)
         face.add(win)
+        if ((k + i + r) % 2 === 0) face.add(kit.lightPanel(w * 0.12, w * 0.19, x, y + w * 0.02, halfAt(y) + 0.5)) // lit at night
       }
     }
     if (door && k % 2 === 0) {
@@ -107,6 +108,7 @@ function tower(kit: Kit, w: number, h: number, color = RED_D, rows = 1, door = f
       d.position.set(0, foot, halfAt(foot) - 0.1)
       d.rotation.x = -Math.atan((wb - wt) / 2 / h) // lean with the sloped face
       face.add(d)
+      face.add(kit.lightHalo(w * 0.4, 0, foot + w * 0.25, halfAt(foot) + 0.6, 0.7)) // night: glow in the gateway
     }
     face.rotation.y = (k * Math.PI) / 2
     g.add(face)
@@ -121,7 +123,10 @@ function wing(kit: Kit, w: number, h: number, d: number, windows = true) {
   g.add(hipRoof(kit, w + 1, d + 1, Math.min(w, d) * 0.45, h))
   if (windows) {
     for (const sx of [-1, 1]) {
-      for (let z = -d / 2 + 2; z <= d / 2 - 1.9; z += 2.6) g.add(kit.slab(0.15, 1.3, 0.7, DARK, sx * (w / 2 + 0.05), h * 0.55, z))
+      for (let z = -d / 2 + 2, i = 0; z <= d / 2 - 1.9; z += 2.6, i++) {
+        g.add(kit.slab(0.15, 1.3, 0.7, DARK, sx * (w / 2 + 0.05), h * 0.55, z))
+        if ((i + (sx > 0 ? 1 : 0)) % 2 === 0) g.add(kit.lightPanel(0.6, 1.1, sx * (w / 2 + 0.25), h * 0.55 + 0.1, z, (sx * Math.PI) / 2)) // lit at night
+      }
     }
   }
   return g
@@ -314,6 +319,7 @@ function torreVela(kit: Kit) {
   gable.add(kit.pediment(4.8, 1.4, 1.3, ROOF, 4.6))
   gable.add(kit.mesh(new THREE.CylinderGeometry(0.35, 0.75, 1.3, 10), GOLD, 0, 2.3, 0)) // the bell
   gable.add(kit.box(2.4, 0.25, 0.3, DARK, 0, 3.1, 0))
+  gable.add(kit.lightHalo(2.4, 0, 2.3, 0.5, 0.8)) // night: the bell of the Vela
   gable.position.set(0, h + 0.45, 1.8)
   g.add(gable)
   return g
@@ -451,6 +457,7 @@ export function buildAlhambra(kit: Kit): THREE.Group {
   const palace = palaceCharlesV(kit)
   palace.position.set(-26, 0, 6.5)
   g.add(palace)
+  g.add(kit.lightHalo(6, -26, 4.5, 15, 0.4)) // night: soft floodlight on its south face
 
   // ---- Nasrid palaces: Myrtles with the Comares tower, Lions ----
   const myrtles = courtOfMyrtles(kit)

@@ -6,9 +6,15 @@
 import type { Place } from '../map/mapData'
 import { lonLatToWorld } from '../map/projection'
 
-export type TownStyle = 'south' | 'north'
-/** 0 casa baja, 1 casa de dos alturas, 2 casa alargada, 3 iglesia, 4 bloque de pisos, 5 torre */
-export type HouseVariant = 0 | 1 | 2 | 3 | 4 | 5
+/**
+ * Regional house look: south = whitewashed walls and terracotta roofs (Andalucía, Extremadura,
+ * Canarias); north = stone and dark slate (Cantabrian coast); castile = ochre adobe and brick
+ * (the Meseta, Aragón, La Rioja); levante = warm cream walls, orange tile, green shutters
+ * (Mediterranean coast and Baleares).
+ */
+export type TownStyle = 'south' | 'north' | 'castile' | 'levante'
+/** 0 casa baja, 1 casa de dos alturas, 2 casa alargada, 3 iglesia, 4 bloque de pisos, 5 torre, 6 hórreo (granary on stilts) */
+export type HouseVariant = 0 | 1 | 2 | 3 | 4 | 5 | 6
 
 export interface HouseSpot {
   x: number
@@ -42,6 +48,20 @@ const ROAD_CLEARANCE = 2.5
 
 /** Regiones con casas de piedra y tejado de pizarra. */
 const NORTH = new Set(['Galicia', 'Asturias', 'Cantabria', 'País Vasco', 'Navarra'])
+/** Inland regions with ochre adobe and brick villages. */
+const CASTILE = new Set(['Castilla y León', 'Castilla-La Mancha', 'Comunidad de Madrid', 'Aragón', 'La Rioja'])
+/** Mediterranean regions with cream walls, orange tile and green shutters. */
+const LEVANTE = new Set(['Cataluña', 'Comunidad Valenciana', 'Región de Murcia', 'Islas Baleares'])
+/** Regions whose villages have hórreos (raised granaries) among the houses. */
+const HORREO_REGIONS = new Set(['Galicia', 'Asturias'])
+/** Share of the small houses that become a hórreo in those regions (villages only). */
+const HORREO_SHARE = 0.18
+/** Towns above this population get no hórreos (they are a village thing). */
+const HORREO_MAX_POP = 40000
+
+/** House style of a region (south is the default: whitewash and terracotta). */
+export const styleOf = (region: string): TownStyle =>
+  NORTH.has(region) ? 'north' : CASTILE.has(region) ? 'castile' : LEVANTE.has(region) ? 'levante' : 'south'
 /** Separación entre casas en la rejilla del pueblo (unidades del mundo). */
 const SPACING = 28
 /** Radio de una casa normal (para pendientes y choques). */
@@ -110,7 +130,8 @@ export function placeTowns(places: Place[], ground: TownGround): HouseSpot[] {
   for (const [index, place] of places.entries()) {
     const rand = seeded(index * 7919 + 17)
     const center = lonLatToWorld(place.lon, place.lat)
-    const style: TownStyle = NORTH.has(place.region) ? 'north' : 'south'
+    const style = styleOf(place.region)
+    const horreos = HORREO_REGIONS.has(place.region) && place.pop < HORREO_MAX_POP
     const wanted = housesFor(place.pop)
     const gridRot = rand() * Math.PI // cada pueblo con su propia orientación de calles
     const cos = Math.cos(gridRot), sin = Math.sin(gridRot)
@@ -151,6 +172,8 @@ export function placeTowns(places: Place[], ground: TownGround): HouseSpot[] {
         const tall = place.pop > 30000 && centerDist < 0.6 ? 0.7 : 0.25
         const r = rand()
         variant = r < tall ? 1 : r < tall + 0.25 ? 2 : 0
+        // Galician / Asturian villages: some low houses are hórreos (fixed seed, as always)
+        if (horreos && variant !== 1 && placed > 0 && rand() < HORREO_SHARE) variant = 6
       }
       const house: HouseSpot = {
         x, z,

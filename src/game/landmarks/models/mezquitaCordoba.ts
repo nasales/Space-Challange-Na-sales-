@@ -33,6 +33,7 @@ function door(kit: Kit, w: number, h: number) {
   ring.position.y = h + w * 0.29 // centre of the horseshoe arc
   g.add(ring)
   g.add(kit.box(w * 2.4, 0.6, 0.7, WALL_D, 0, h + w * 1.35, 0)) // little cornice above
+  g.add(kit.lightHalo(w * 0.9, 0, h * 0.6, 0.7, 0.6)) // night: warm glow in the doorway
   return g
 }
 
@@ -82,6 +83,7 @@ export function buildMezquitaCordoba(kit: Kit): THREE.Group {
     const ring = voussoirArch(kit, archW / 2, 1.2, T + 0.4, [RED, CREAM], 9)
     ring.position.set(o.x, 5.5, HALL_FRONT - T / 2)
     g.add(ring)
+    g.add(kit.lightHalo(3.2, o.x, 3.6, HALL_FRONT - T / 2, 0.6)) // night: the arch forest glows through the arcade
   }
   // Inside: rows of the arch forest, seen through the arcade
   for (const dz of [5, 11, 17, 23]) {
@@ -130,7 +132,10 @@ export function buildMezquitaCordoba(kit: Kit): THREE.Group {
   trRoof.position.z = C_Z - 6
   g.add(trRoof)
   for (const side of [-1, 1]) {
-    for (const z of [8, 14, 20]) g.add(kit.slab(0.3, 6, 2.4, DARK, side * 7.1, 15, C_Z + z)) // tall windows
+    for (const z of [8, 14, 20]) {
+      g.add(kit.slab(0.3, 6, 2.4, DARK, side * 7.1, 15, C_Z + z)) // tall windows
+      g.add(kit.lightPanel(2, 5.2, side * 7.4, 15.4, C_Z + z, (side * Math.PI) / 2, 0.85)) // lit at night
+    }
   }
   g.add(kit.box(10, 6, 10, CATHEDRAL, 0, 27, C_Z - 6)) // lantern over the crossing
   const cupola = onionDome(kit, 5.4, CATHEDRAL_ROOF, GOLD)
@@ -184,6 +189,7 @@ export function buildMezquitaCordoba(kit: Kit): THREE.Group {
       const w = horseshoeArch(kit, 2, 2.6, 0.3, DARK)
       w.position.set(x, y, TW / 2 + 0.2)
       tower.add(w)
+      if (y === 22) tower.add(kit.lightPanel(1.3, 2.4, x, y + 0.4, TW / 2 + 0.65))
     }
   }
   let y = TH
@@ -192,12 +198,14 @@ export function buildMezquitaCordoba(kit: Kit): THREE.Group {
   const s1 = openStorey(kit, 8.6, 8.5, 3.8, 4.2, 1.4, WALL, CREAM, DARK)
   s1.position.y = y
   tower.add(s1)
+  tower.add(kit.lightHalo(5, 0, y + 4.2, 0, 0.8)) // night: the belfry glows from inside
   y += 8.5
   tower.add(kit.box(10, 1, 10, WALL_D, 0, y, 0))
   y += 1
   const s2 = openStorey(kit, 6.4, 6.5, 2.8, 3.2, 1.2, WALL, CREAM, DARK)
   s2.position.y = y
   tower.add(s2)
+  tower.add(kit.lightHalo(3.8, 0, y + 3.2, 0, 0.7))
   y += 6.5
   tower.add(kit.box(7.6, 0.9, 7.6, WALL_D, 0, y, 0))
   y += 0.9

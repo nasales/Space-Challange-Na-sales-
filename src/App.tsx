@@ -5,8 +5,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import GameView from './game/GameView'
 import DetectiveShowcase from './game/detective/DetectiveShowcase'
 import Hud from './ui/hud/Hud'
+import MapLoader from './ui/loading/MapLoader'
 import MainMenu from './ui/menu/MainMenu'
 import VariablePicker from './ui/magnifier/VariablePicker'
+import PauseMenu from './ui/pause/PauseMenu'
 import Wardrobe from './ui/wardrobe/Wardrobe'
 import DbTest from './ui/dbtest/DbTest'
 import DbStatus from './ui/status/DbStatus'
@@ -17,6 +19,7 @@ import { createAnchorStore } from './ui/casefile/anchors'
 import type { GameStatus, HudState, LensFocusState } from './shared/events'
 import { loadOutfit, type Outfit } from './shared/outfit'
 import { loadCompleted, markCompleted } from './shared/progress'
+import { startBackgroundMusic } from './shared/music'
 import CaseLevel from './levels/CaseLevel'
 import { getLevel } from './levels/registry'
 
@@ -58,11 +61,14 @@ function Game({ onCaseFocus }: { onCaseFocus: (on: boolean) => void }) {
   const [screen, setScreen] = useState<Screen>('menu')
   const [status, setStatus] = useState<GameStatus>('loading')
   const [hud, setHud] = useState<HudState | null>(null)
+  const [loadProgress, setLoadProgress] = useState(0)
   const [outfit, setOutfit] = useState<Outfit>(loadOutfit)
   // The picker asks the game to fly the camera into the hand lens (the game ignores the keyboard
   // meanwhile); the game reports when the flight has arrived (in) or is back (out)
   const [focusLens, setFocusLens] = useState(false)
   const [lensState, setLensState] = useState<LensFocusState>('out')
+  // Esc pause panel on the map (the game ignores driving input while it is open)
+  const [paused, setPaused] = useState(false)
   // Featured cases: Space inside a case zone (detective stopped) opens the case flow
   // (witness scene -> case file -> final test -> case closed, src/ui/casefile/CaseFlow.tsx).
   // Escape inside the flow is handled there, one phase at a time.
@@ -71,10 +77,23 @@ function Game({ onCaseFocus }: { onCaseFocus: (on: boolean) => void }) {
   const [anchors] = useState(createAnchorStore)
   const [completed, setCompleted] = useState<Set<string>>(loadCompleted)
   const completedList = useMemo(() => [...completed], [completed])
+  // Background music from the menu on (it starts on the first click or key press)
+  useEffect(startBackgroundMusic, [])
   const zoneCase = hud?.caseZone && getLevel(hud.caseZone) ? hud.caseZone : null
   // only with the camera out of the hand lens (the picker cannot reset it once a case is open)
   const canOpenCase =
-    screen === 'game' && status === 'ready' && !!hud?.stopped && !!zoneCase && !openCase && !focusLens && lensState === 'out'
+    screen === 'game' && status === 'ready' && !!hud?.stopped && !!zoneCase && !openCase && !focusLens && lensState === 'out' && !paused
+  const exitToMenu = () => {
+    // GameView unmounts and disposes its scene; reset the game state so Play starts fresh
+    setPaused(false)
+    setOpenCase(null)
+    setFocusLens(false)
+    setLensState('out')
+    setHud(null)
+    setStatus('loading')
+    setLoadProgress(0)
+    setScreen('menu')
+  }
   useEffect(() => {
     if (!canOpenCase) return
     const onKey = (e: KeyboardEvent) => {
@@ -130,7 +149,9 @@ function Game({ onCaseFocus }: { onCaseFocus: (on: boolean) => void }) {
         onHud={setHud}
         focusLens={focusLens}
         onLensFocus={setLensState}
-        paused={!!openCase}
+        onProgress={setLoadProgress}
+        outfit={outfit}
+        paused={paused || !!openCase}
         completedCases={completedList}
         dialogueCase={openCase && dialogue.active ? openCase : null}
         speaking={dialogue.speaking}
@@ -139,14 +160,22 @@ function Game({ onCaseFocus }: { onCaseFocus: (on: boolean) => void }) {
       />
       {/* Dialogue focus: the whole HUD fades out while a case is open */}
       <Hud status={status} hud={hud} hidden={!!openCase} />
+      <MapLoader status={status} progress={loadProgress} outfit={outfit} />
       {/* Outside case zones Space opens the magnifier picker, as before */}
       <VariablePicker
-        canOpen={status === 'ready' && !!hud?.stopped && !zoneCase && !openCase}
+        canOpen={status === 'ready' && !!hud?.stopped && !paused && !zoneCase && !openCase}
         lensState={lensState}
         onOpenChange={setFocusLens}
         location={hud?.location ?? null}
       />
-      {zoneCase && <CaseHint caseId={zoneCase} stopped={!!hud?.stopped} hidden={!!openCase} />}
+      {/* After the picker, so the picker's Esc handler runs first and wins; a case flow has its own Esc */}
+      <PauseMenu
+        open={paused}
+        canOpen={status === 'ready' && !focusLens && lensState === 'out' && !openCase}
+        onOpenChange={setPaused}
+        onMainMenu={exitToMenu}
+      />
+      {zoneCase && !paused && <CaseHint caseId={zoneCase} stopped={!!hud?.stopped} hidden={!!openCase} />}
       {openCase && (
         <CaseFlow
           key={openCase}

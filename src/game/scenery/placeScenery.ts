@@ -7,7 +7,9 @@
 import { fractalNoise } from '../map/valueNoise'
 import { lonLatToWorld } from '../map/projection'
 
-export type SceneryKind = 'olive' | 'vine' | 'pine' | 'broadleaf' | 'holmoak' | 'palm' | 'windmill'
+export type SceneryKind =
+  | 'olive' | 'vine' | 'pine' | 'broadleaf' | 'holmoak' | 'palm' | 'windmill'
+  | 'orange' | 'eucalyptus' | 'fir' | 'stonepine' | 'wheat'
 
 export interface SceneryBox {
   south: number
@@ -63,6 +65,7 @@ export interface SceneryGround {
 /** Radio de cada elemento (para pendientes y distancias a las casas). */
 export const KIND_RADIUS: Record<SceneryKind, number> = {
   olive: 3, vine: 6, pine: 3, broadleaf: 4, holmoak: 5, palm: 2.5, windmill: 5,
+  orange: 2.5, eucalyptus: 3, fir: 3, stonepine: 5, wheat: 13,
 }
 /** Tamaño de las manchas de plantación (unidades del mundo). */
 const PATCH = 220 // was 110: patches keep their real size on the twice-as-big map
@@ -134,7 +137,8 @@ export function placeScenery(regions: SceneryRegion[], ground: SceneryGround): S
             kind, x, z, meters,
             y: Math.min(...hs),
             // En filas, todos mirando igual; sueltos, cada uno a su aire
-            rot: rows ? -angle : rand() * Math.PI * 2,
+            // (wheat fields turn 0 or 90 degrees each, so their furrows make a patchwork)
+            rot: rows ? -angle + (kind === 'wheat' && rand() < 0.5 ? Math.PI / 2 : 0) : rand() * Math.PI * 2,
             scale: 0.85 + rand() * 0.35,
           })
         }

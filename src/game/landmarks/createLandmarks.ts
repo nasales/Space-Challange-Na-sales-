@@ -11,6 +11,7 @@ import type { ZoneData } from '../map/mapData'
 import { lonLatToWorld, UNITS_PER_KM } from '../map/projection'
 import type { RiverClearing } from '../map/rivers'
 import { createKit } from './kit'
+import { makeLightBatch, makeLightMesh } from '../scene/nightLights'
 import { LANDMARK_MODELS } from './models'
 
 export interface LandmarkData {
@@ -23,6 +24,15 @@ export interface LandmarkData {
   heading: number
   /** tamaño relativo (1 = normal); para que quepa en su sitio */
   scale?: number
+  /** Flat ground around the footprint (world units); default PLAZA. Small monuments want less. */
+  plaza?: number
+  /** Width of the band where the plaza blends into the terrain (world units); default BLEND. */
+  blend?: number
+  /**
+   * How close houses may stand to the footprint (world units); default DEFAULT_CLEARANCE.
+   * Scenery scales with it in the same proportion (see spacing()).
+   */
+  clearance?: number
   description: string
 }
 
@@ -39,15 +49,21 @@ const PLINTH_COLOR = 0x8e949c
 const PLINTH_MARGIN = 6 // cuánto sobresale la losa del monumento
 const PLINTH_HEIGHT = 1.2
 /** Explanada totalmente llana alrededor de la losa (unidades): sitio para aparcar y mirarlo. */
-const PLAZA = 90
+const DEFAULT_PLAZA = 90
 /** Ancho de la franja donde la explanada se funde con el terreno de alrededor (unidades). */
-const BLEND = 50
+const DEFAULT_BLEND = 50
 /** A menos de esta distancia (unidades) el panel muestra el monumento. */
 const NEAR_DISTANCE = 250
+/** Free ring that towns keep around a monument (same value as LANDMARK_CLEARANCE in placeTowns). */
+const DEFAULT_CLEARANCE = 80
+/** Night lights of a monument switch on within this first part of the dusk (0..1), one after another. */
+const LIGHT_PHASE_SPREAD = 0.5
 
 interface Placed {
   data: LandmarkData
   holder: THREE.Group
+  /** Night lights of the monument (own group: they are drawn in the night-lights scene). */
+  lightHolder: THREE.Group
   x: number
   z: number
   cos: number
@@ -170,6 +186,9 @@ function closeGaps(src: Float32Array, cols: number, rows: number) {
 export function createLandmarks(list: LandmarkData[]) {
   const kit = createKit()
   const group = new THREE.Group()
+  /** Night lights of all the monuments (goes in the night-lights scene, not in the main one). */
+  const lights = new THREE.Group()
+  const lightGeometries: THREE.BufferGeometry[] = []
   const placed: Placed[] = []
 
   // 1) Construir los modelos y medir su planta
@@ -177,7 +196,9 @@ export function createLandmarks(list: LandmarkData[]) {
     const def = LANDMARK_MODELS[data.id]
     if (!def) continue // todavía sin modelo
     const s = LANDMARK_SCALE * (data.scale ?? 1)
-    const model = kit.merge(def.build(kit)) // cientos de piezas → una malla por color
+    const built = def.build(kit)
+    const markers = kit.lights(built) // night lights placed in the model (before merging drops them)
+    const model = kit.merge(built) // cientos de piezas → una malla por color
     model.scale.setScalar(s)
     const box = new THREE.Box3().setFromObject(model)
     const margin = def.margin !== undefined ? def.margin * s : PLINTH_MARGIN
@@ -202,9 +223,31 @@ export function createLandmarks(list: LandmarkData[]) {
     holder.rotation.y = angle
     holder.add(model)
     group.add(holder)
+    // Night lights: one mesh per monument, in the holder's frame (model scale and offset baked in)
+    const lightHolder = new THREE.Group()
+    lightHolder.rotation.y = angle
+    lights.add(lightHolder)
+    if (markers.length > 0) {
+      const toHolder = new THREE.Matrix4().makeScale(s, s, s).setPosition(model.position)
+      const matrix = new THREE.Matrix4()
+      const centre = new THREE.Vector3()
+      const batch = makeLightBatch()
+      markers.forEach((marker, i) => {
+        matrix.multiplyMatrices(toHolder, marker.matrix)
+        const phase = ((i * 0.618) % 1) * LIGHT_PHASE_SPREAD // they come on one after another, early in the dusk
+        if (marker.panel) batch.addPanel(matrix, marker.w, marker.h, phase, marker.intensity)
+        else {
+          centre.setFromMatrixPosition(matrix)
+          batch.addHalo(centre.x, centre.y, centre.z, marker.w * s, phase, marker.intensity)
+        }
+      })
+      const mesh = makeLightMesh(batch)!
+      lightGeometries.push(mesh.geometry)
+      lightHolder.add(mesh)
+    }
     const { x, z } = lonLatToWorld(data.lon, data.lat)
     const heights = bakeHeightMap(holder, halfW, halfD)
-    placed.push({ data, holder, x, z, cos: Math.cos(angle), sin: Math.sin(angle), halfW, halfD, heights })
+    placed.push({ data, holder, lightHolder, x, z, cos: Math.cos(angle), sin: Math.sin(angle), halfW, halfD, heights })
   }
 
   /** Coordenadas de (x, z) en el sistema del monumento (sin giro, centrado). */
@@ -220,6 +263,7 @@ export function createLandmarks(list: LandmarkData[]) {
 
   return {
     group,
+    lights,
 
     /** 2) Allana las alturas (m) de una zona debajo de cada monumento que caiga en ella. */
     flattenTerrain(zone: ZoneData, heights: Float32Array) {
@@ -227,6 +271,7 @@ export function createLandmarks(list: LandmarkData[]) {
       const nw = lonLatToWorld(b.west, b.north), se = lonLatToWorld(b.east, b.south)
       const cellX = (se.x - nw.x) / (gw - 1), cellZ = (se.z - nw.z) / (gh - 1)
       for (const p of placed) {
+        const PLAZA = p.data.plaza ?? DEFAULT_PLAZA, BLEND = p.data.blend ?? DEFAULT_BLEND
         const reach = Math.hypot(p.halfW, p.halfD) + PLAZA + BLEND
         const c0 = Math.max(0, Math.floor((p.x - reach - nw.x) / cellX))
         const c1 = Math.min(gw - 1, Math.ceil((p.x + reach - nw.x) / cellX))
@@ -239,14 +284,24 @@ export function createLandmarks(list: LandmarkData[]) {
         for (let r = r0; r <= r1; r++)
           for (let c = c0; c <= c1; c++)
             if (outside(p, nw.x + c * cellX, nw.z + r * cellZ) === 0) inside.push(heights[r * gw + c])
-        if (inside.length === 0) continue
+        if (inside.length === 0) {
+          // Footprint smaller than a terrain cell: use the cell nearest to its centre
+          const c = Math.round((p.x - nw.x) / cellX), r = Math.round((p.z - nw.z) / cellZ)
+          if (c < 0 || c >= gw || r < 0 || r >= gh) continue
+          inside.push(heights[r * gw + c])
+        }
         inside.sort((a, b) => a - b)
         const target = Math.max(inside[Math.floor(inside.length / 2)], 60)
 
+        // Neighbours whose plazas may reach this one: a cell belongs to the closest monument,
+        // so two plazas close together never tilt each other's floor
+        const neighbours = placed.filter((q) => q !== p && Math.hypot(q.x - p.x, q.z - p.z) < reach + Math.hypot(q.halfW, q.halfD) + PLAZA + BLEND)
         for (let r = r0; r <= r1; r++) {
           for (let c = c0; c <= c1; c++) {
-            const d = outside(p, nw.x + c * cellX, nw.z + r * cellZ)
+            const x = nw.x + c * cellX, z = nw.z + r * cellZ
+            const d = outside(p, x, z)
             if (d >= PLAZA + BLEND) continue
+            if (neighbours.some((q) => outside(q, x, z) < d)) continue
             const t = Math.max(0, d - PLAZA) / BLEND // 0 en la explanada, 1 en el borde de la franja
             const k = t * t * (3 - 2 * t)
             const i = r * gw + c
@@ -259,7 +314,10 @@ export function createLandmarks(list: LandmarkData[]) {
 
     /** 3) Coloca cada monumento sobre su explanada. */
     place(heightAt: (x: number, z: number) => number) {
-      for (const p of placed) p.holder.position.set(p.x, heightAt(p.x, p.z), p.z)
+      for (const p of placed) {
+        p.holder.position.set(p.x, heightAt(p.x, p.z), p.z)
+        p.lightHolder.position.copy(p.holder.position)
+      }
     },
 
     /**
@@ -287,6 +345,17 @@ export function createLandmarks(list: LandmarkData[]) {
       return best
     },
 
+    /**
+     * Like distance(), for keeping houses and scenery away: a monument with its own `clearance`
+     * counts as proportionally farther, so the callers' fixed clearances (80 for houses, 70 for
+     * scenery) shrink to `clearance` (and 7/8 of it). Without `clearance` it equals distance().
+     */
+    spacing(x: number, z: number) {
+      let best = Infinity
+      for (const p of placed) best = Math.min(best, (outside(p, x, z) * DEFAULT_CLEARANCE) / (p.data.clearance ?? DEFAULT_CLEARANCE))
+      return best
+    },
+
     /** El monumento más cercano si está a menos de NEAR_DISTANCE. */
     nearest(x: number, z: number): LandmarkData | null {
       let best: Placed | null = null, bestD = NEAR_DISTANCE
@@ -300,13 +369,22 @@ export function createLandmarks(list: LandmarkData[]) {
       return best?.data ?? null
     },
 
-    /** Circles around each monument footprint that rivers bend around (keeps plazas dry). */
+    /**
+     * Each monument footprint as an area rivers flow around (keeps plazas dry): the bounding
+     * circle (roads use it) plus the real rotated rectangle, which rivers hug at `marginUnits`.
+     */
     riverClearings(marginUnits: number): RiverClearing[] {
       return placed.map((p) => ({
         lon: p.data.lon,
         lat: p.data.lat,
         radiusKm: (Math.hypot(p.halfW, p.halfD) + marginUnits) / UNITS_PER_KM,
         innerKm: Math.hypot(p.halfW, p.halfD) / UNITS_PER_KM,
+        rect: {
+          halfWKm: p.halfW / UNITS_PER_KM,
+          halfDKm: p.halfD / UNITS_PER_KM,
+          angle: (p.data.heading * Math.PI) / 180,
+          marginKm: marginUnits / UNITS_PER_KM,
+        },
       }))
     },
 
@@ -316,6 +394,9 @@ export function createLandmarks(list: LandmarkData[]) {
       return p ? { x: p.x, z: p.z } : null
     },
 
-    dispose: kit.dispose,
+    dispose: () => {
+      kit.dispose()
+      lightGeometries.forEach((g) => g.dispose())
+    },
   }
 }

@@ -2,10 +2,18 @@
 // Extend this file as the next steps exist (stop -> variable -> chart -> conclusion -> AI check).
 import { expect, test, type Page } from '@playwright/test'
 
-/** Opens the app and presses Play on the main menu. */
+/**
+ * Opens the app, presses Play on the main menu and skips the intro camera (any key does it).
+ * Headless Chromium renders without a GPU at ~1 frame per second, and the intro advances per frame
+ * (dt capped at 0.1 s), so playing it in full takes over a minute there; with a GPU it takes ~5 s.
+ */
 async function startGame(page: Page) {
   await page.goto('/')
   await page.getByRole('button', { name: 'Play' }).click()
+  type IntroWindow = { __game?: { chase?: { introActive?: boolean } } }
+  await page.waitForFunction(() => (window as IntroWindow).__game?.chase?.introActive === true, null, { timeout: 60_000 })
+  await page.keyboard.press('KeyX') // unused key: only skips the intro
+  await page.waitForFunction(() => (window as IntroWindow).__game?.chase?.introActive === false, null, { timeout: 60_000 })
 }
 
 test('main menu shows the Play button and the animated detective', async ({ page }) => {
@@ -99,11 +107,10 @@ test('Space while stopped opens the magnifier with the six variables', async ({ 
   if ((await live.count()) > 0) {
     await live.first().click()
     const sheet = page.locator('.clue-result')
-    await expect(sheet.locator('svg.clue-result__chart path.clue-result__line')).toBeVisible()
-    // The chart comes first; the statistical result only when the player asks for it
-    await expect(sheet.locator('.clue-result__verdict')).toHaveCount(0)
-    await sheet.getByRole('button', { name: /show the result/ }).click()
+    // The full analysis is on the sheet from the start: verdict first, then the charts
+    await expect(sheet.locator('.clue-result__verdict')).toBeVisible()
     await expect(sheet.locator('.clue-result__verdict')).toContainText(/p [=<]/)
+    await expect(sheet.locator('svg.clue-result__chart path.clue-result__line').first()).toBeVisible()
     await page.screenshot({ path: 'test-results/magnifier-result.png' })
     // Esc goes back to the clues, the lens stays up
     await page.keyboard.press('Escape')
@@ -113,5 +120,48 @@ test('Space while stopped opens the magnifier with the six variables', async ({ 
 
   await page.keyboard.press('Escape')
   await expect(lens).toBeHidden({ timeout: 5_000 })
+  // Esc closed the lens only: it must not also open the pause panel
+  await expect(page.locator('.pause-menu')).toHaveCount(0)
+  expect(errors, `Page errors:\n${errors.join('\n')}`).toEqual([])
+})
+
+// Pause panel (src/ui/pause/): Esc -> pause (driving ignored) -> Esc resumes -> Esc -> Main menu -> Play again.
+test('Esc pauses the game and Main menu goes back to the menu', async ({ page }) => {
+  test.setTimeout(180_000)
+  const errors: string[] = []
+  page.on('pageerror', (err) => errors.push(err.message))
+
+  await startGame(page)
+  await expect(page.locator('.speedometer')).toBeVisible({ timeout: 30_000 })
+
+  const pause = page.getByRole('dialog', { name: 'Paused' })
+  await page.keyboard.press('Escape')
+  await expect(pause).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Resume' })).toBeFocused()
+  await page.screenshot({ path: 'test-results/pause-open.png' })
+
+  // While paused the detective does not move
+  await page.keyboard.down('w')
+  await page.waitForTimeout(500)
+  await page.keyboard.up('w')
+  await expect(page.locator('.speedometer__value')).toHaveText('0')
+
+  // Esc again resumes
+  await page.keyboard.press('Escape')
+  await expect(pause).toBeHidden()
+
+  // Arrow keys move between the buttons; Enter on "Main menu" leaves the game
+  await page.keyboard.press('Escape')
+  await expect(pause).toBeVisible()
+  await page.keyboard.press('ArrowDown')
+  await expect(page.getByRole('button', { name: 'Main menu' })).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect(page.getByRole('button', { name: 'Play' })).toBeVisible()
+  await expect(page.locator('.game-view__canvas')).toHaveCount(0)
+
+  // Play again builds a fresh map (and plays the intro again, skipped as in startGame)
+  await startGame(page)
+  await expect(page.locator('.game-view__canvas canvas')).toHaveCount(1, { timeout: 30_000 })
+  await expect(page.locator('.speedometer')).toBeVisible({ timeout: 30_000 })
   expect(errors, `Page errors:\n${errors.join('\n')}`).toEqual([])
 })

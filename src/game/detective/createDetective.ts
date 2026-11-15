@@ -398,7 +398,7 @@ export function createDetective(outfit: Partial<Outfit> = {}) {
     update,
     setOutfit,
     setWink,
-    /** Pivots the menu showcase poses after update() (head scratch, crouch). Read-only for the game. */
+    /** Pivots posed after update(): by the menu showcase (head scratch, crouch) and by the rowing boat (sitting, rowing). */
     parts: { body, head, arms, legs, hat } as const,
     /** Fase de la zancada (rad). Cada vez que pasa por un múltiplo de π, un pie pisa el suelo. */
     get stridePhase() {

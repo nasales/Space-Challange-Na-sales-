@@ -1,11 +1,17 @@
 /* Evidence sheet over the hand lens (ClueResult.tsx). Comic look of the lens:
-   paper #fff8e7, ink #1a1423 outlines, gold #f2c14e. Fonts from src/ui/theme/fonts.css. */
+   paper #fff8e7, ink #1a1423 outlines, gold #f2c14e. Fonts from src/ui/theme/fonts.css.
+   Chart colours: blue #2b5fb4 / orange #c96a12 are the two series and the diverging pair
+   (distinguishable with colour blindness); every use also has a text legend. */
 .clue-result {
   position: absolute;
   z-index: 5;
+  box-sizing: border-box;
   width: min(600px, calc(100vw - 32px));
   max-height: calc(100vh - 32px);
-  overflow: auto;
+  max-height: calc(100dvh - 32px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 16px 18px 14px;
   border: 4px solid #1a1423;
   border-radius: 6px;
@@ -13,6 +19,7 @@
   color: #1a1423;
   box-shadow: 8px 8px 0 #1a1423;
   font: 15px/1.4 var(--font-type, 'Courier New', monospace);
+  overflow-wrap: anywhere;
   animation: clue-result-in 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
@@ -55,6 +62,111 @@
   color: #3b4a6b;
 }
 
+/* Section headings are short questions */
+.clue-result__h {
+  margin: 0 0 4px;
+  font: 800 14px/1.2 var(--font-display, sans-serif);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #a2560f;
+}
+
+.clue-result__section {
+  margin-top: 16px;
+}
+
+.clue-result p {
+  margin: 0;
+}
+
+/* --- Verdict ------------------------------------------------------------------------------ */
+
+.clue-result__verdict {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 2px solid #1a1423;
+  background: #f6ead0;
+}
+
+.clue-result__verdict .clue-result__h:not(:first-child) {
+  margin-top: 12px;
+}
+
+.clue-result__sentence {
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.clue-result__figures {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.clue-result__figure {
+  min-width: 0;
+  padding: 6px 8px;
+  border: 2px solid #1a1423;
+  background: #fff;
+}
+
+.clue-result__figure dt {
+  font-size: 11px;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #5d6782;
+}
+
+.clue-result__figure dd {
+  margin: 2px 0 0;
+  font: 800 19px/1.15 var(--font-display, sans-serif);
+}
+
+.clue-result__figure dd small {
+  font: 400 12px/1.2 var(--font-type, monospace);
+  color: #3b4a6b;
+}
+
+.clue-result__figure dd.clue-result__sub {
+  font: 400 11px/1.25 var(--font-type, monospace);
+  color: #5d6782;
+}
+
+.clue-result__stamp {
+  display: inline-block;
+  margin-top: 3px;
+  padding: 1px 6px;
+  border: 3px solid #e5322d;
+  color: #e5322d;
+  font: 900 14px/1.1 var(--font-display, sans-serif);
+  text-transform: uppercase;
+  transform: rotate(-2deg);
+}
+
+.clue-result__stamp--quiet {
+  border-color: #5d6782;
+  color: #5d6782;
+}
+
+.clue-result__note {
+  margin-top: 8px !important;
+  font-size: 13px;
+  color: #3b4a6b;
+}
+
+/* --- Charts ------------------------------------------------------------------------------- */
+
+.clue-result__plot {
+  border-radius: 2px;
+}
+
+.clue-result__plot:focus-visible {
+  outline: 3px solid #5ea8c2;
+  outline-offset: 2px;
+}
+
 .clue-result__chart {
   display: block;
   width: 100%;
@@ -63,50 +175,192 @@
   background: #fff;
   font: 11px var(--font-type, monospace);
   fill: #3b4a6b;
+  touch-action: pan-y;
 }
 
 .clue-result__axis {
   stroke: #b9b3a3;
 }
 
+.clue-result__grid {
+  stroke: #ece7da;
+}
+
 .clue-result__line {
   fill: none;
   stroke: #2b5fb4;
   stroke-width: 1.3;
+  stroke-linejoin: round;
 }
 
+.clue-result__line--thin {
+  stroke: #7d93bd;
+  stroke-width: 1;
+}
+
+.clue-result__mean {
+  stroke: #1a1423;
+  stroke-width: 1;
+  stroke-dasharray: 5 4;
+}
+
+.clue-result__zero {
+  stroke: #5d6782;
+  stroke-width: 1;
+}
+
+.clue-result__band {
+  fill: #f2c14e;
+  fill-opacity: 0.55;
+  stroke: none;
+}
+
+.clue-result__trend {
+  fill: none;
+  stroke: #e5322d;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+.clue-result__cursor {
+  stroke: #1a1423;
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+}
+
+.clue-result__dot {
+  fill: #f2c14e;
+  stroke: #1a1423;
+  stroke-width: 1.5;
+}
+
+.clue-result__series-a {
+  fill: none;
+  stroke: #2b5fb4;
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+}
+
+.clue-result__series-b {
+  fill: none;
+  stroke: #c96a12;
+  stroke-width: 2.5;
+}
+
+.clue-result__bar--up {
+  fill: #c96a12;
+}
+
+.clue-result__bar--down {
+  fill: #2b5fb4;
+}
+
+.clue-result__readout {
+  min-height: 1.4em;
+  margin-top: 3px !important;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.clue-result__readout--hint {
+  font-weight: 400;
+  color: #5d6782;
+}
+
+.clue-result__caption,
 .clue-result__meta {
-  margin: 4px 0 0;
+  margin-top: 4px !important;
   font-size: 12px;
   color: #5d6782;
 }
 
-.clue-result__ask p,
-.clue-result__verdict p {
-  margin: 8px 0 0;
-}
-
-.clue-result__verdict {
-  margin-top: 10px;
-  padding: 8px 12px 10px;
-  border: 2px solid #1a1423;
-  background: #f6ead0;
-}
-
-.clue-result__stamp {
-  display: inline-block;
-  padding: 2px 8px;
-  border: 3px solid #e5322d;
-  color: #e5322d;
-  font: 900 18px/1.1 var(--font-display, sans-serif);
-  text-transform: uppercase;
-  transform: rotate(-2deg);
-}
-
-.clue-result__note {
+.clue-result__empty {
+  padding: 14px 10px;
+  border: 2px dashed #b9b3a3;
+  background: #fff;
   font-size: 13px;
   color: #5d6782;
 }
+
+.clue-result__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+}
+
+.clue-result__legend svg {
+  width: 26px;
+  height: 10px;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+/* Seasonal cycle and annual means: side by side on wide screens */
+.clue-result__pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0 14px;
+}
+
+@media (min-width: 640px) {
+  .clue-result__pair {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* --- How we know ----------------------------------------------------------------------------- */
+
+.clue-result__how {
+  margin-top: 16px;
+  padding: 10px 12px;
+  border: 2px solid #1a1423;
+  background: #fff;
+  font-size: 13px;
+}
+
+.clue-result__steps {
+  margin: 4px 0 0;
+  padding-left: 22px;
+}
+
+.clue-result__steps li {
+  margin-top: 4px;
+}
+
+.clue-result__facts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+  margin: 10px 0 0;
+  padding-top: 8px;
+  border-top: 2px dashed #b9b3a3;
+}
+
+.clue-result__facts dt {
+  display: inline;
+  font-weight: 700;
+}
+
+.clue-result__facts dt::after {
+  content: ': ';
+}
+
+.clue-result__facts dd {
+  display: inline;
+  margin: 0;
+}
+
+.clue-result__credit {
+  margin-top: 8px !important;
+  font-size: 12px;
+  color: #5d6782;
+}
+
+/* --- Buttons ------------------------------------------------------------------------------ */
 
 .clue-result__btn {
   margin-top: 12px;
@@ -139,4 +393,25 @@
   margin-left: 6px;
   font-size: 11px;
   opacity: 0.7;
+}
+
+/* Phones: tighter padding so the charts keep their width */
+@media (max-width: 520px) {
+  .clue-result {
+    padding: 12px 12px 12px;
+    box-shadow: 5px 5px 0 #1a1423;
+    font-size: 14px;
+  }
+
+  .clue-result__title {
+    font-size: 22px;
+  }
+
+  .clue-result__chart {
+    font-size: 12px;
+  }
+
+  .clue-result__figure dd {
+    font-size: 17px;
+  }
 }

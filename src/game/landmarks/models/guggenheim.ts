@@ -167,6 +167,7 @@ function limestoneBlock(kit: Kit, w: number, h: number, d: number, slots: number
   for (let i = 0; i < slots; i++) {
     const x = -w / 2 + ((i + 0.5) * w) / slots
     g.add(kit.slab(1.2, h * 0.5, 0.4, SLOT, x, h * 0.3, d / 2))
+    if (i % 2 === 0) g.add(kit.lightPanel(0.8, h * 0.42, x, h * 0.34, d / 2 + 0.3)) // lit at night
   }
   return g
 }
@@ -256,6 +257,9 @@ export function buildGuggenheim(kit: Kit): THREE.Group {
 
   // ---- Glass atrium flower, the tallest point ----
   g.add(atrium(kit))
+  // Night: the glass flower glows, and soft floodlights wash the titanium on both sides
+  g.add(kit.lightHalo(8, 0, 10, 3, 0.55), kit.lightHalo(6, 0, 24, 0, 0.45))
+  for (const [x, z, r] of [[-26, -17, 8], [10, -18, 8], [44, -15, 8], [12, 14, 7]]) g.add(kit.lightHalo(r, x, 5, z, 0.32))
 
   // ---- The titanium "ship": long layered curves rising toward the atrium ----
   // [x, y, z, w, h, d, tip, back, front, bend, twist, bulge, turn]
@@ -284,6 +288,7 @@ export function buildGuggenheim(kit: Kit): THREE.Group {
   const TX = BRIDGE_X + DECK_W / 2 + 5.5
   g.add(wonk(kit.taper(10, 10, 7.5, 7.5, 32, LIMESTONE, TX, 0, -4), 61, 0.03))
   g.add(kit.slab(1.4, 18, 0.4, SLOT, TX, 8, 0.6)) // tall window slot
+  g.add(kit.lightPanel(1, 17, TX, 8.5, 0.95, 0, 0.8)) // lit at night
   g.add(kit.box(6, 2.4, 6, DECK, TX - 5, DECK_Y - 2.6, -4)) // collar tying the tower to the deck
   put(g, volume(kit, { w: 12, h: 11, d: 5, tip: 0.2, back: 1.8, front: 0.7, bend: 6, twist: 0.9, band: 1.6 }), TX, 31, -4, 0.6, 62, 0.08)
   return g
