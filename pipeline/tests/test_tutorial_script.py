@@ -121,6 +121,130 @@ def check_chart(step_id, chart, data):
     return used
 
 
+# --- evidence board (EvidenceBoard in src/shared/tutorial.ts, docs/evidence_board.md) -------
+
+BOARD_KINDS = {"chart", "clipping", "datacard"}
+BOARD_RELATIONS = {"supports", "contradicts", "neutral"}
+TASK_TYPES = {"click_point", "fit_line", "order_cards", "slider_window", "tally", "compare"}
+FIT_LINE_VIEWS = {"monthly", "anomaly", "annual", "same_month", "season"}  # views with a trend
+MIN_ITEMS, MAX_ITEMS = 4, 6
+
+
+def _yearly_values(chart, data):
+    """{"YYYY": value} of the yearly series a yearly chart draws (None if not yearly)."""
+    s = data["variables"][chart["variable"]]
+    ex = s.get("extras") or {}
+    view = chart["view"]
+    if view == "annual" or (view == "ranking" and "season" not in chart):
+        years, values = s["annual"]["years"], s["annual"]["values"]
+    elif view == "same_month":
+        sm = ex["same_month"][chart["month"] - 1]
+        years, values = sm["years"], sm["values"]
+    elif view in ("season", "ranking"):
+        se = ex["seasons"][chart["season"]]
+        years, values = se["years"], se["values"]
+    elif view == "threshold_count":
+        tc = next(t for t in ex["threshold_counts"] if t["id"] == chart["threshold_id"])
+        years, values = tc["years"], tc["counts"]
+    else:
+        return None
+    return {str(y): v for y, v in zip(years, values)}
+
+
+def _in_range(date, chart):
+    return "range" not in chart or chart["range"][0] <= date <= chart["range"][1]
+
+
+def _check_options(where, options):
+    assert len(options) >= 2, f"{where}: needs at least 2 options"
+    assert sum(o["correct"] is True for o in options) == 1, f"{where}: exactly one correct option"
+    for o in options:
+        assert o["text"].strip(), f"{where}: empty option"
+
+
+def check_board(board, data):
+    """Check an EvidenceBoard against TutorialData; returns the variables its charts use."""
+    for key in ("title", "instructions", "summary"):
+        assert board.get(key, "").strip(), f"board: missing {key}"
+    items = board["items"]
+    assert MIN_ITEMS <= len(items) <= MAX_ITEMS, f"board: {len(items)} items (need 4-6)"
+    ids = [it["id"] for it in items]
+    assert len(ids) == len(set(ids)), "board: item ids must be unique"
+
+    used = set()
+    for it in items:
+        w = f"board item {it['id']}"
+        for key in ("title", "teaser", "text", "relation_feedback", "clue"):
+            assert it.get(key, "").strip(), f"{w}: missing {key}"
+        assert it["kind"] in BOARD_KINDS, f"{w}: kind {it['kind']}"
+        assert it["relation"] in BOARD_RELATIONS, f"{w}: relation {it['relation']}"
+        assert len(it["text"].split()) <= MAX_WORDS, f"{w}: text too long"
+        assert len(it["clue"].split()) <= MAX_CLUE_WORDS, f"{w}: clue too long"
+        if it["kind"] == "clipping":
+            c = it.get("clipping")
+            assert c and c["headline"].strip() and c["body"].strip(), f"{w}: clipping needs text"
+        else:
+            assert it.get("chart"), f"{w}: kind {it['kind']} needs a chart"
+        chart = it.get("chart")
+        if chart:
+            used |= check_chart(it["id"], chart, data)
+
+        task = it["task"]
+        t = task["type"]
+        assert t in TASK_TYPES, f"{w}: task type {t}"
+        for key in ("prompt", "hint", "success"):
+            assert task.get(key, "").strip(), f"{w}: task needs {key}"
+        if t != "compare":
+            assert chart, f"{w}: task {t} needs a chart"
+        yearly = _yearly_values(chart, data) if chart else None
+
+        if t == "click_point":
+            ans = task["answer"]
+            if chart["view"] in MONTHLY_VIEWS:
+                s = data["variables"][chart["variable"]]["monthly"]
+                dates = {d for d, v in zip(s["dates"], s["values"]) if v is not None}
+            else:
+                assert yearly is not None, f"{w}: click_point on view {chart['view']}"
+                dates = set(yearly)
+            assert ans in dates, f"{w}: click_point answer {ans} not in the chart's series"
+            assert _in_range(ans, chart), f"{w}: click_point answer {ans} outside the chart range"
+        elif t == "fit_line":
+            assert chart["view"] in FIT_LINE_VIEWS, \
+                f"{w}: fit_line needs a view with a trend, not {chart['view']}"
+            if "tolerance" in task:
+                assert task["tolerance"] > 0, f"{w}: tolerance must be positive"
+        elif t == "order_cards":
+            assert yearly is not None, f"{w}: order_cards needs a yearly chart"
+            cards = task["cards"]
+            assert task["order"] in ("asc", "desc"), f"{w}: order {task['order']}"
+            assert len(cards) >= 3 and len(cards) == len(set(cards)), f"{w}: 3+ distinct cards"
+            for c in cards:
+                assert c in yearly, f"{w}: card {c} not in the chart's yearly series"
+            values = sorted(yearly[c] for c in cards)
+            assert all(b - a > 1e-9 for a, b in zip(values, values[1:])), \
+                f"{w}: two cards have the same value, the order is ambiguous"
+        elif t == "slider_window":
+            assert chart["view"] == "window_trends", f"{w}: slider_window needs window_trends"
+            assert task["question"].strip(), f"{w}: slider_window needs a question"
+            _check_options(w, task["options"])
+        elif t == "tally":
+            periods, answers = task["periods"], task["answers"]
+            assert task["rule"].strip(), f"{w}: tally needs a rule"
+            assert periods and len(periods) == len(answers), f"{w}: periods and answers"
+            for p, a in zip(periods, answers):
+                assert p["label"].strip() and p["from"] <= p["to"], f"{w}: period {p}"
+                assert isinstance(a, int) and a >= 0, f"{w}: answer {a}"
+                if chart["view"] == "threshold_count":
+                    # recount: total months in the period, or number of years with any
+                    counts = [v for y, v in yearly.items() if p["from"] <= y <= p["to"]]
+                    assert counts, f"{w}: period {p['label']} has no data"
+                    assert a in (sum(counts), sum(v > 0 for v in counts)), \
+                        f"{w}: tally {p['label']} = {a}, data give {sum(counts)} months"
+        else:  # compare
+            _check_options(w, task["options"])
+    return used
+
+
 def test_there_is_at_least_one_tutorial():
     assert TUTORIALS
 
@@ -139,9 +263,11 @@ def test_tutorial_script(path):
 
     ids = [step["id"] for step in s["steps"]]
     assert len(ids) == len(set(ids)), "step ids must be unique"
-    assert s["steps"], "no steps"
+    assert s["steps"] or s.get("board"), "no steps (steps may be empty only with a board)"
 
     used = set()
+    if s.get("board") is not None:
+        used |= check_board(s["board"], data)
     for step in s["steps"]:
         for key in ("id", "title", "text", "chart", "takeaway"):
             assert step.get(key), f"step {step.get('id')}: missing {key}"
@@ -240,3 +366,74 @@ def test_validator_accepts(chart, aneto):
 def test_validator_rejects(chart, aneto):
     with pytest.raises(AssertionError):
         check_chart("t", chart, aneto)
+
+
+# --- the board validator, on made-up items against the real Córdoba data ---------------------
+
+def _board(task, chart, kind="chart"):
+    item = {"id": "x", "kind": kind, "title": "t", "teaser": "t", "text": "t", "chart": chart,
+            "task": {"prompt": "p", "hint": "h", "success": "s", **task},
+            "relation": "supports", "relation_feedback": "f", "clue": "c"}
+    items = [dict(item, id=f"x{i}") for i in range(4)]
+    return {"title": "t", "instructions": "i", "summary": "s", "items": items}
+
+
+JJA = {"variable": "T2M", "view": "season", "season": "JJA"}
+HOT = {"variable": "T2M", "view": "threshold_count", "threshold_id": "above_28"}
+WIN = {"variable": "T2M", "view": "window_trends"}
+ONE_RIGHT = [{"text": "a", "correct": True}, {"text": "b", "correct": False}]
+TWO_RIGHT = [{"text": "a", "correct": True}, {"text": "b", "correct": True}]
+EIGHTIES = [{"label": "a", "from": "1980", "to": "1989"}]
+
+
+@pytest.fixture(scope="module")
+def cordoba():
+    return tutorial_data("cordoba_heat")
+
+
+@pytest.mark.parametrize("task,chart", [
+    ({"type": "click_point", "answer": "2018"}, dict(JJA, range=["2014", "2026"])),
+    ({"type": "click_point", "answer": "2021-08"}, {"variable": "T2M", "view": "monthly"}),
+    ({"type": "order_cards", "cards": ["2022", "1997", "2018"], "order": "desc"}, JJA),
+    ({"type": "tally", "rule": "r", "periods": EIGHTIES, "answers": [5]}, HOT),
+    ({"type": "fit_line", "tolerance": 0.3}, JJA),
+    ({"type": "slider_window", "question": "q", "options": ONE_RIGHT}, WIN),
+    ({"type": "compare", "options": ONE_RIGHT}, None),
+])
+def test_board_validator_accepts(task, chart, cordoba):
+    b = _board(task, chart)
+    if chart is None:  # a clipping without a chart
+        for it in b["items"]:
+            it["kind"] = "clipping"
+            it.pop("chart")
+            it["clipping"] = {"headline": "h", "body": "b"}
+    check_board(b, cordoba)
+
+
+@pytest.mark.parametrize("task,chart", [
+    ({"type": "click_point", "answer": "2010"}, dict(JJA, range=["2014", "2026"])),  # out of range
+    ({"type": "click_point", "answer": "2018-08"}, JJA),                            # yearly view
+    ({"type": "order_cards", "cards": ["2022", "1975", "2018"], "order": "desc"}, JJA),
+    ({"type": "order_cards", "cards": ["2022", "1997", "2018"], "order": "up"}, JJA),
+    ({"type": "tally", "rule": "r", "periods": EIGHTIES, "answers": [6]}, HOT),     # wrong count
+    ({"type": "tally", "rule": "r", "periods": EIGHTIES, "answers": [5, 1]}, HOT),
+    ({"type": "fit_line"}, {"variable": "T2M", "view": "climatology"}),
+    ({"type": "slider_window", "question": "q", "options": TWO_RIGHT}, WIN),
+    ({"type": "slider_window", "question": "q", "options": ONE_RIGHT}, JJA),
+    ({"type": "compare", "options": TWO_RIGHT}, JJA),
+    ({"type": "guess", "answer": "2018"}, JJA),
+])
+def test_board_validator_rejects(task, chart, cordoba):
+    with pytest.raises(AssertionError):
+        check_board(_board(task, chart), cordoba)
+
+
+def test_board_validator_rejects_long_clue_and_few_items(cordoba):
+    b = _board({"type": "fit_line"}, JJA)
+    b["items"][0]["clue"] = " ".join(["word"] * (MAX_CLUE_WORDS + 1))
+    with pytest.raises(AssertionError):
+        check_board(b, cordoba)
+    b = _board({"type": "fit_line"}, JJA)
+    b["items"] = b["items"][:3]
+    with pytest.raises(AssertionError):
+        check_board(b, cordoba)
