@@ -10,12 +10,17 @@ import MainMenu from './ui/menu/MainMenu'
 import VariablePicker from './ui/magnifier/VariablePicker'
 import PauseMenu from './ui/pause/PauseMenu'
 import Wardrobe from './ui/wardrobe/Wardrobe'
+import LoginScreen from './ui/auth/LoginScreen'
+import { isRecoveryLink } from './shared/auth'
 import DbTest from './ui/dbtest/DbTest'
 import DbStatus from './ui/status/DbStatus'
 import type { GameStatus, HudState, LensFocusState } from './shared/events'
 import { loadOutfit, type Outfit } from './shared/outfit'
 
-type Screen = 'menu' | 'wardrobe' | 'game'
+type Screen = 'menu' | 'wardrobe' | 'account' | 'game'
+
+// Opened from a password reset email: start on the Account screen to choose the new password.
+const RECOVERY = isRecoveryLink()
 
 // Temporary team page: open the site with ?dbtest to test the database connection.
 const DB_TEST = new URLSearchParams(window.location.search).has('dbtest')
@@ -37,7 +42,7 @@ export default function App() {
 }
 
 function Game() {
-  const [screen, setScreen] = useState<Screen>('menu')
+  const [screen, setScreen] = useState<Screen>(RECOVERY ? 'account' : 'menu')
   const [status, setStatus] = useState<GameStatus>('loading')
   const [hud, setHud] = useState<HudState | null>(null)
   const [loadProgress, setLoadProgress] = useState(0)
@@ -65,8 +70,18 @@ function Game() {
         <MainMenu
           onPlay={() => setScreen('game')}
           onWardrobe={() => setScreen('wardrobe')}
+          onAccount={() => setScreen('account')}
           character={<DetectiveShowcase outfit={outfit} />}
         />
+      </main>
+    )
+  }
+
+  // Optional login: Play never depends on it
+  if (screen === 'account') {
+    return (
+      <main className="app">
+        <LoginScreen onBack={() => setScreen('menu')} recovery={RECOVERY} />
       </main>
     )
   }
