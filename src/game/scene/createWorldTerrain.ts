@@ -8,7 +8,7 @@ import { rasterizeCountry } from '../map/rasterizeCountry'
 import { lonLatToWorld, metersToY, UNITS_PER_DEG_LAT, UNITS_PER_DEG_LON, WORLD_SEA_Y } from '../map/projection'
 
 /** Relieve del mundo gris: bastante menos exagerado que el del país explorado. */
-const WORLD_EXAGGERATION = 2 // halved with the 2x map so the grey world keeps its relief
+export const WORLD_EXAGGERATION = 2 // halved with the 2x map so the grey world keeps its relief
 
 /**
  * @param explored país explorado y zonas que cubren sus maquetas: ahí se aplana el mundo
