@@ -2,11 +2,13 @@
 // - SeasonalChart: the 12-month cycle of the first years against the last years of the record;
 // - AnnualChart: one bar per year, drawn from the average of all years (diverging colours).
 // Legends and captions are drawn by ClueResult. Animation: lines revealed left to right, bars
-// grow from the average line one after another (classes in ClueResult.css).
+// grow from the average line one after another (classes in ClueResult.css). Then they stay alive:
+// the gap between the two seasonal cycles fills with a hatch and the recent dots pulse in turn;
+// the highest and the lowest year get a star badge.
 import type { CSSProperties } from 'react'
 import { MONTH_NAMES, fmt, fmtSigned, fmtTick, mean, niceTicks, yearTicks, type AnnualMean, type SeasonalComparison } from './analysis'
 import ChartBox from './ChartBox'
-import { linePath, scale, type Frame } from './chartKit'
+import { extremes, linePath, scale, type Frame } from './chartKit'
 
 function YAxis({ frame, ticks, sy, units }: { frame: Frame; ticks: ReturnType<typeof niceTicks>; sy: (v: number) => number; units: string }) {
   const { W, H, l, r, t, b } = frame
@@ -55,13 +57,29 @@ export function SeasonalChart({ cmp, units, title }: { cmp: SeasonalComparison |
                 {wide ? name.slice(0, 3) : name[0]}
               </text>
             ))}
+            <defs>
+              <pattern id="clue-hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                <rect width="7" height="7" className="clue-result__hatch-bg" />
+                <line x1="0" y1="0" x2="0" y2="7" className="clue-result__hatch-line" />
+              </pattern>
+            </defs>
+            {gap(cmp, sx, sy) && <path d={gap(cmp, sx, sy) as string} className="clue-result__gap" fill="url(#clue-hatch)" />}
             <g className="clue-result__reveal">
               <path d={linePath(cmp.first.months, sx, sy)} className="clue-result__series-a" />
             </g>
             <g className="clue-result__reveal clue-result__reveal--late">
               <path d={linePath(cmp.last.months, sx, sy)} className="clue-result__series-b" />
               {cmp.last.months.map((v, m) =>
-                v == null ? null : <circle key={m} cx={sx(m)} cy={sy(v)} r={3.5} className="clue-result__series-b-dot" />,
+                v == null ? null : (
+                  <circle
+                    key={m}
+                    cx={sx(m)}
+                    cy={sy(v)}
+                    r={4}
+                    className="clue-result__series-b-dot"
+                    style={{ '--i': m } as CSSProperties}
+                  />
+                ),
               )}
             </g>
           </svg>
@@ -69,6 +87,15 @@ export function SeasonalChart({ cmp, units, title }: { cmp: SeasonalComparison |
       }}
     </ChartBox>
   )
+}
+
+/** Area between the first and the last seasonal cycle (only when both have all 12 months). */
+function gap(cmp: SeasonalComparison, sx: (m: number) => number, sy: (v: number) => number): string | null {
+  const a = cmp.first.months
+  const b = cmp.last.months
+  if (a.length !== 12 || b.length !== 12 || a.some((v) => v == null) || b.some((v) => v == null)) return null
+  const pts = [...a.map((v, m) => [sx(m), sy(v as number)]), ...b.map((v, m) => [sx(m), sy(v as number)]).reverse()]
+  return `M${pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join('L')}Z`
 }
 
 /** Average of all yearly means (the zero line of the bar chart), or null. */
@@ -122,6 +149,32 @@ export function AnnualChart({ annual, units, title }: { annual: AnnualMean[]; un
               )
             })}
             <line x1={l} x2={W - r} y1={base} y2={base} className="clue-result__mean" />
+            {(() => {
+              const ex = extremes(values)
+              if (!ex || ex.hi === ex.lo) return null
+              return [
+                { a: annual[ex.hi], word: 'Highest', up: true },
+                { a: annual[ex.lo], word: 'Lowest', up: false },
+              ].map(({ a, word, up }) => {
+                const x = sx(a.year)
+                const barEnd = sy(a.mean)
+                const y = up ? Math.max(barEnd - 20, t + 12) : Math.min(barEnd + 20, H - b - 12)
+                const anchor = x > W - r - 80 ? 'end' : x < l + 80 ? 'start' : 'middle'
+                return (
+                  <g key={word} className={`clue-result__badge clue-result__badge--${up ? 'hi' : 'lo'}`}>
+                    <g transform={`translate(${x.toFixed(1)},${y.toFixed(1)})`}>
+                      <path
+                        d="M0,-9 L2.6,-3 L9,-2.8 L4,1.4 L5.6,8 L0,4.4 L-5.6,8 L-4,1.4 L-9,-2.8 L-2.6,-3 Z"
+                        className="clue-result__badge-star"
+                      />
+                    </g>
+                    <text x={x} y={up ? y - 13 : y + 22} textAnchor={anchor} className="clue-result__record-label">
+                      {word}: {a.year}
+                    </text>
+                  </g>
+                )
+              })
+            })()}
           </svg>
         )
       }}
