@@ -40,6 +40,8 @@ const SIDE_MARGIN = 9
 const CANDIDATES: [number, number][] = [
   [0.1, 0.22], [-0.1, 0.22], [0.25, 0.25], [-0.25, 0.25], [0.1, 0.45], [-0.2, 0.45], [0.4, 0.5], [0, 0.75],
 ]
+/** The first LOW_VIEWS candidates are the good, low 3/4 views (the rest look down from higher up). */
+const LOW_VIEWS = 4
 /** Directions tried around the witness for where the detective stands (steps of 30 deg from his own side). */
 const STAND_TRIES = [0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6]
 /** Largest height difference between the detective's stand spot and the witness (world units). */
@@ -101,6 +103,8 @@ export function createDialogue(camera: THREE.PerspectiveCamera, world: DialogueW
   let lastAnchors: DialogueAnchors | null = null
   // A hypothetical pair, to test stand spots before the detective walks there
   const trial: DialogueScene = { detective: new THREE.Vector3(), witness: new THREE.Vector3(), detectiveTop: new THREE.Vector3(), witnessTop: new THREE.Vector3() }
+  // The pair as it will stand once the detective reaches his spot (framed during the walk)
+  const planned: DialogueScene = { detective: new THREE.Vector3(), witness: new THREE.Vector3(), detectiveTop: new THREE.Vector3(), witnessTop: new THREE.Vector3() }
   const raycaster = new THREE.Raycaster()
   const rayDir = new THREE.Vector3()
   const rayTarget = new THREE.Vector3()
@@ -187,6 +191,33 @@ export function createDialogue(camera: THREE.PerspectiveCamera, world: DialogueW
     },
 
     /**
+     * How well a talk with a witness standing at (x, y, z) could be framed: the number of stand
+     * spots round him (up to `enough`) from which one of the low 3/4 camera views sees both clearly.
+     * Used once at load time to place the witnesses (monument meshes must have their world matrices).
+     * tall: height of a character's head top above his feet (world units).
+     */
+    framingScore(x: number, y: number, z: number, tall: number, enough = 3) {
+      let n = 0
+      for (const k of STAND_TRIES) {
+        const a = (k * Math.PI) / 6
+        const sx = x + Math.sin(a) * STAND_DISTANCE, sz = z + Math.cos(a) * STAND_DISTANCE
+        const sy = world.surfaceAt(sx, sz)
+        if (!world.canStand(sx, sz) || Math.abs(sy - y) > STAND_MAX_STEP) continue
+        trial.detective.set(sx, sy, sz)
+        trial.detectiveTop.set(sx, sy + tall, sz)
+        trial.witness.set(x, y, z)
+        trial.witnessTop.set(x, y + tall, z)
+        for (let c = 0; c < LOW_VIEWS; c++) {
+          if (!pose(trial, c, pos, true)) continue
+          n++
+          break
+        }
+        if (n >= enough) break
+      }
+      return n
+    },
+
+    /**
      * Drive input for the detective while busy: walk up to the witness, then stand still.
      * Also turns him (sets car.heading directly, like turning on the spot).
      * s: the pair as last posed (witness feet and both head tops are used for the stand spot).
@@ -197,23 +228,27 @@ export function createDialogue(camera: THREE.PerspectiveCamera, world: DialogueW
       const w = s.witness
       if (!spot) {
         // Stand spot: STAND_DISTANCE from the witness, first on the detective's side, then round
-        // the witness, until one is standable and the camera sees both from there
+        // the witness, until one is standable and the camera sees both from there. First pass: only
+        // the low 3/4 views; second pass: any view (higher, looking down)
         const base = Math.atan2(car.x - w.x, car.z - w.z)
         const tall = Math.max(4, s.detectiveTop.y - car.y)
-        for (const k of STAND_TRIES) {
-          const a = base + (k * Math.PI) / 6
-          const x = w.x + Math.sin(a) * STAND_DISTANCE, z = w.z + Math.cos(a) * STAND_DISTANCE
-          const y = world.surfaceAt(x, z)
-          if (!world.canStand(x, z) || Math.abs(y - w.y) > STAND_MAX_STEP) continue
-          trial.detective.set(x, y, z)
-          trial.detectiveTop.set(x, y + tall, z)
-          trial.witness.copy(w)
-          trial.witnessTop.copy(s.witnessTop)
-          const free = CANDIDATES.findIndex((_, c) => pose(trial, c, pos, true))
-          if (free < 0) continue
-          spot = { x, z }
-          candidate = free
-          break
+        for (const views of [LOW_VIEWS, CANDIDATES.length]) {
+          for (const k of STAND_TRIES) {
+            const a = base + (k * Math.PI) / 6
+            const x = w.x + Math.sin(a) * STAND_DISTANCE, z = w.z + Math.cos(a) * STAND_DISTANCE
+            const y = world.surfaceAt(x, z)
+            if (!world.canStand(x, z) || Math.abs(y - w.y) > STAND_MAX_STEP) continue
+            trial.detective.set(x, y, z)
+            trial.detectiveTop.set(x, y + tall, z)
+            trial.witness.copy(w)
+            trial.witnessTop.copy(s.witnessTop)
+            const free = CANDIDATES.findIndex((_, c) => c < views && pose(trial, c, pos, true))
+            if (free < 0) continue
+            spot = { x, z }
+            candidate = free
+            break
+          }
+          if (spot) break
         }
         spot ??= { x: w.x + Math.sin(base) * STAND_DISTANCE, z: w.z + Math.cos(base) * STAND_DISTANCE }
         detectiveHeading = headingTo(spot.x, spot.z, w.x, w.z)
@@ -237,7 +272,19 @@ export function createDialogue(camera: THREE.PerspectiveCamera, world: DialogueW
      * Blends the camera from the chase pose (already set this frame) to the dialogue framing.
      * Also works out where each character faces (used by drive() and witnessHeading).
      */
-    applyCamera(s: DialogueScene) {
+    applyCamera(scene: DialogueScene) {
+      // While the detective still walks up, frame the pair as it will stand (detective on his stand
+      // spot): the view chosen for the stand spot stays valid, and he walks into the shot. (Framing
+      // the live pair let a building on his way push the camera to a high fallback view for good.)
+      let s = scene
+      if (!arrived && spot) {
+        const y = world.surfaceAt(spot.x, spot.z)
+        planned.detective.set(spot.x, y, spot.z)
+        planned.detectiveTop.set(spot.x, y + (scene.detectiveTop.y - scene.detective.y), spot.z)
+        planned.witness.copy(scene.witness)
+        planned.witnessTop.copy(scene.witnessTop)
+        s = planned
+      }
       // Keep the current candidate while it is free; otherwise take the first free one
       if (!pose(s, candidate, pos)) {
         candidate = 0
