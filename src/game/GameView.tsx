@@ -7,7 +7,7 @@ import { loadWorldData } from './map/worldData'
 import { buildToyMap } from './map/buildToyMap'
 import { buildWorldTexture } from './map/buildWorldTexture'
 import { addRelief, smoothHeights } from './map/terrace'
-import { lonLatToWorld, worldToLonLat, UNITS_PER_KM } from './map/projection'
+import { lonLatToWorld, worldToLonLat, UNITS_PER_KM, SEA_Y } from './map/projection'
 import { createScene } from './scene/createScene'
 import { createTerrain } from './scene/createTerrain'
 import { createWorldTerrain } from './scene/createWorldTerrain'
@@ -32,15 +32,20 @@ import { createTopViewCamera, wantsTopView } from './camera/topViewCamera'
 import { createKeyboard } from './input/keyboard'
 import { nearestPlace } from './location/nearestPlace'
 import { createLandmarks, loadLandmarks } from './landmarks/createLandmarks'
+import { createBulls } from './bulls/createBulls'
+import { BULL_SPOTS } from './bulls/bullSpots'
+import { EXTRA_HOUSES, placeExtraHouses } from './towns/extraHouses'
 import { bendRiversAround, prepareRivers } from './map/rivers'
 import { createRivers } from './scene/createRivers'
 import { loadRoads, roadsInBounds } from './roads/roadData'
 import { createRoads } from './roads/createRoads'
 import { createGuideBot } from './guide/createGuideBot'
 import { createCaseMarkers } from './cases/createCaseMarkers'
+import { createSeaLane } from './scene/createSeaLane'
+import { laneFordAtWorld } from './map/canarySeaLane'
+import { toDisplayLonLat } from './map/canaryInset'
 import { createWitnesses } from './witness/createWitnesses'
 import { createDialogue, type DialogueScene } from './witness/dialogueCamera'
-import { createCanaryPortal } from './portal/createCanaryPortal'
 import { CASES as ALL_CASES } from '../levels/data'
 import { isActiveCase } from '../shared/tutorial'
 import { WITNESSES } from '../shared/witness'
@@ -283,13 +288,21 @@ export default function GameView({
           const i = explored.zones.findIndex((zn) => lon >= zn.bounds.west && lon <= zn.bounds.east && lat >= zn.bounds.south && lat <= zn.bounds.north)
           return i >= 0 ? zones[i].terrain : null
         }
-        const houses = placeTowns(explored.places, {
-          heightAt: (x, z) => terrainAt(x, z)?.heightAt(x, z) ?? 0,
-          isLand: (x, z) => terrainAt(x, z)?.isExploredLand(x, z) ?? false,
-          landmarkDistance: landmarks.spacing,
-          nearRiver: (x, z, m) => terrainAt(x, z)?.nearRiver(x, z, m) ?? false,
+        // ---- Roadside bulls (bulls/): big black bull silhouettes on hills next to the main roads ----
+        // Built before the towns so houses and scenery keep off their footprints (like monuments)
+        const bulls = createBulls(BULL_SPOTS, main.heightAt)
+        scene.add(bulls.group)
+        const keepClear = (x: number, z: number) => Math.min(landmarks.spacing(x, z), bulls.spacing(x, z))
+        // ---- end of roadside bulls ----
+        const townGround = {
+          heightAt: (x: number, z: number) => terrainAt(x, z)?.heightAt(x, z) ?? 0,
+          isLand: (x: number, z: number) => terrainAt(x, z)?.isExploredLand(x, z) ?? false,
+          landmarkDistance: keepClear,
+          nearRiver: (x: number, z: number, m: number) => terrainAt(x, z)?.nearRiver(x, z, m) ?? false,
           nearRoad,
-        })
+        }
+        const houses = placeTowns(explored.places, townGround)
+        houses.push(...placeExtraHouses(EXTRA_HOUSES, townGround, houses)) // a few fixed houses (e.g. by Peñafiel Castle)
         const towns = createTowns(houses)
         scene.add(towns.group)
         // Night lights of houses and landmarks: their own scene, drawn after the ink pass
@@ -303,7 +316,7 @@ export default function GameView({
           metersAt: (x, z) => terrainAt(x, z)?.metersAt(x, z) ?? 0,
           isLand: (x, z) => terrainAt(x, z)?.isExploredLand(x, z) ?? false,
           nearHouse: towns.blocks,
-          landmarkDistance: landmarks.spacing,
+          landmarkDistance: keepClear,
           nearRiver: (x, z, m) => terrainAt(x, z)?.nearRiver(x, z, m) ?? false,
           nearRoad,
         })
@@ -311,24 +324,28 @@ export default function GameView({
         scene.add(scenery.group)
         await progress(0.96)
 
-        // Canary Islands portal (prototype): a glowing frame round the corner box and two gates
-        // (Cádiz <-> Tenerife) that take the detective from one to the other
-        const portal = createCanaryPortal()
-        portal.place({
-          heightAt: (x, z) => terrainAt(x, z)?.heightAt(x, z) ?? 0,
-          isFree: (x, z) =>
-            (terrainAt(x, z)?.isExploredLand(x, z) ?? false) && !towns.blocks(x, z, 15) && !scenery.blocks(x, z) && landmarks.distance(x, z) > 40 && !nearRoad(x, z, 4),
-        })
-        scene.add(portal.group)
+        // Sea lane to the Canary Islands (prototype): its water in the gap between the two zones
+        const seaLane = createSeaLane(
+          zoneBounds.map((b) => {
+            const sw = toDisplayLonLat(b.west, b.south), ne = toDisplayLonLat(b.east, b.north)
+            return { west: sw.lon, south: sw.lat, east: ne.lon, north: ne.lat }
+          }),
+        )
+        scene.add(seaLane.mesh)
 
         // El detective: empieza en Madrid, mirando hacia la Puerta de Alcalá
         // Ground under the detective: the terrain of the zone he is in (mainland or Canary Islands)
         // or, over a house or a monument, its roof. So he climbs houses and monuments like mountain steps (no collisions)
-        const zoneTerrain = (x: number, z: number) => terrainAt(x, z) ?? main
-        const surfaceAt = (x: number, z: number) => Math.max(zoneTerrain(x, z).heightAt(x, z), towns.surfaceAt(x, z), landmarks.surfaceAt(x, z), roadSurfaceAt(x, z))
+        // Between the zones, on the sea lane to the Canary Islands, the ground is the sea surface
+        const zoneHeightAt = (x: number, z: number) => {
+          const t = terrainAt(x, z)
+          return t ? t.heightAt(x, z) : laneFordAtWorld(x, z) ? SEA_Y : main.heightAt(x, z)
+        }
+        const surfaceAt = (x: number, z: number) => Math.max(zoneHeightAt(x, z), towns.surfaceAt(x, z), landmarks.surfaceAt(x, z), roadSurfaceAt(x, z))
         // For the camera: ground without monuments (it treats monuments as walls, see chaseCamera)
-        const groundNoLandmarks = (x: number, z: number) => Math.max(zoneTerrain(x, z).heightAt(x, z), towns.surfaceAt(x, z), roadSurfaceAt(x, z))
-        const isFord = (x: number, z: number) => terrainAt(x, z)?.isFord(x, z) ?? false
+        const groundNoLandmarks = (x: number, z: number) => Math.max(zoneHeightAt(x, z), towns.surfaceAt(x, z), roadSurfaceAt(x, z))
+        // Shallow sea of the zone, or of the sea lane to the Canary Islands in the gap between zones
+        const isFord = (x: number, z: number) => terrainAt(x, z)?.isFord(x, z) ?? laneFordAtWorld(x, z)
         // Witness trade props (kiosk, crates; set once the witnesses are placed, below) block the way too
         let witnessPropAt: (x: number, z: number, margin?: number) => boolean = () => false
         const ground: Ground = {
@@ -336,7 +353,8 @@ export default function GameView({
           // Land, or the shallow sea (by boat): along the coast and across to the islands
           isDrivable: (x, z) => {
             const t = terrainAt(x, z)
-            return !!t && (t.isExploredLand(x, z) || t.isFord(x, z)) && !scenery.blocks(x, z) && !witnessPropAt(x, z)
+            if (!t) return laneFordAtWorld(x, z) // open sea between the zones: only the lane
+            return (t.isExploredLand(x, z) || t.isFord(x, z)) && !scenery.blocks(x, z) && !witnessPropAt(x, z) && !bulls.blocks(x, z)
           },
         }
         const madrid = lonLatToWorld(-3.7038, 40.4168)
@@ -472,7 +490,7 @@ export default function GameView({
         if (import.meta.env.DEV) {
           Object.assign(window, {
             __game: {
-              carState, camera, chase, top, ground, detective, boat, renderer, scene, day, nightLights, towns, houses, scenery, sceneryItems, landmarks, caseMarkers, portal, main, witnesses, witnessSite, dialogue, devDialogue, guideBot,
+              carState, camera, chase, top, ground, detective, boat, renderer, scene, day, nightLights, towns, houses, scenery, sceneryItems, landmarks, caseMarkers, main, witnesses, witnessSite, dialogue, devDialogue, bulls, nearRoad, guideBot,
               setDialogue: (caseId: string | null, speaking: 'detective' | 'witness' | null = null, mood: LineMood | null = null) =>
                 Object.assign(devDialogue, { active: true, caseId, speaking, mood }),
             },
@@ -572,7 +590,6 @@ export default function GameView({
           }
           else {
             stepCar(carState, input, ground, dt)
-            if (portal.update(carState, dt)) carState.y = surfaceAt(carState.x, carState.z) // through a gate: land on the ground there
           }
           detective.setFocus(chase.stepFocus(wantLens, dt))
           detective.update(carState, dt)
@@ -724,6 +741,7 @@ export default function GameView({
           dust.dispose()
           footprints.dispose()
           landmarks.dispose()
+          bulls.dispose()
           towns.dispose()
           nightLights.dispose()
           scenery.dispose()
@@ -740,9 +758,9 @@ export default function GameView({
           lighting.dispose()
           clouds.dispose()
           caseMarkers.dispose()
+          seaLane.dispose()
           witnesses.dispose()
           guideBot.dispose()
-          portal.dispose()
           ink.dispose()
           dispose()
           if (import.meta.env.DEV) delete (window as { __game?: unknown }).__game
