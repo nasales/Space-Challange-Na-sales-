@@ -3,6 +3,7 @@
 // Only the cases active in the game (TUTORIAL_CASE_IDS) are listed, in that order.
 import casesIndex from '../../../data/cases_index.json'
 import { TUTORIAL_CASE_IDS } from '../../shared/tutorial'
+import { localCase } from '../../shared/casesEs'
 
 export interface FeaturedCase {
   id: string
@@ -15,5 +16,5 @@ const byId = new Map((casesIndex as FeaturedCase[]).map((item) => [item.id, item
 
 export const FEATURED: FeaturedCase[] = TUTORIAL_CASE_IDS.flatMap((id) => {
   const item = byId.get(id)
-  return item ? [{ id: item.id, title: item.title, place: item.place, question: item.question }] : []
+  return item ? [localCase({ id: item.id, title: item.title, place: item.place, question: item.question })] : []
 })

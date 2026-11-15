@@ -2,6 +2,7 @@
 // (data/tutorial_data/<case>.json), never from the script.
 import type { ChartSpec, TutorialSeries } from '../../../shared/tutorial'
 import { monthX } from '../chartKit'
+import { L, LANG } from '../../../shared/i18n'
 
 /** Yearly values behind a yearly chart view (season, same_month, annual, ranking), by year */
 export function yearlyValues(spec: ChartSpec, series: TutorialSeries): Map<number, number> {
@@ -65,8 +66,11 @@ export const TREND_VIEWS: ChartSpec['view'][] = ['monthly', 'anomaly', 'annual',
 export function keyLabel(key: string): string {
   const [y, m] = key.split('-')
   if (!m) return y
-  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-  return `${MONTHS[Number(m) - 1] ?? m} ${y}`
+  const MONTHS = LANG === 'es'
+    ? ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+    : ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+  const month = MONTHS[Number(m) - 1] ?? m
+  return L(`${month} ${y}`, `${month} de ${y}`)
 }
 
 /** Year of a period bound ("1980" or "1980-01") */

@@ -5,6 +5,7 @@
 import { useEffect, useLayoutEffect, useRef, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import SoundSliders from '../settings/SoundSliders'
 import './PauseMenu.css'
+import { L } from '../../shared/i18n'
 
 interface Props {
   open: boolean
@@ -82,9 +83,9 @@ export default function PauseMenu({ open, canOpen, onOpenChange, onMainMenu, onT
         aria-labelledby="pause-menu-title"
         onKeyDown={onPanelKey}
       >
-        <p className="pause-menu__label">Case on hold</p>
+        <p className="pause-menu__label">{L('Case on hold', 'Caso en espera')}</p>
         <h2 id="pause-menu-title" className="pause-menu__title">
-          Paused
+          {L('Paused', 'En pausa')}
         </h2>
         <div className="pause-menu__actions">
           <button
@@ -94,10 +95,10 @@ export default function PauseMenu({ open, canOpen, onOpenChange, onMainMenu, onT
             onClick={() => onOpenChange(false)}
             data-sfx="off" // the app shell plays the close sound for every way of resuming
           >
-            Resume
+            {L('Resume', 'Continuar')}
           </button>
           <button type="button" className="pause-menu__button pause-menu__button--menu" onClick={onMainMenu}>
-            Main menu
+            {L('Main menu', 'Menú principal')}
           </button>
           {onTutorial && (
             <button type="button" className="pause-menu__button pause-menu__button--menu" onClick={onTutorial}>
@@ -107,7 +108,7 @@ export default function PauseMenu({ open, canOpen, onOpenChange, onMainMenu, onT
         </div>
         <SoundSliders className="pause-menu__sound" />
         <p className="pause-menu__hint">
-          <kbd>Esc</kbd> to resume
+          <kbd>Esc</kbd> {L('to resume', 'para continuar')}
         </p>
       </div>
     </div>

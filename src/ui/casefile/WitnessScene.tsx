@@ -14,6 +14,7 @@ import Emote from './Emote'
 import { DetectiveFigure, WitnessFigure } from './Figure'
 import { listenerReaction, PLAIN_LOOK, prefersReducedMotion } from './sceneKit'
 import type { AnchorStore } from './anchors'
+import { L } from '../../shared/i18n'
 import './WitnessScene.css'
 
 export type Speaker = 'detective' | 'witness'
@@ -49,7 +50,7 @@ export default function WitnessScene({ scene, witness, outfit, anchors, onSpeaki
   // reduced motion: no typewriter, the whole line at once
   const typed = reduced ? full.length : typedRaw
   const typing = mode === 'talk' && typed < full.length
-  const witnessName = witness?.name ?? 'The witness'
+  const witnessName = witness?.name ?? L('The witness', 'El testigo')
 
   // Typewriter (instant with reduced motion)
   useEffect(() => {
@@ -120,8 +121,8 @@ export default function WitnessScene({ scene, witness, outfit, anchors, onSpeaki
   }, [mode])
 
   const standalone = !anchors
-  const name = line?.speaker === 'detective' ? 'Detective' : witnessName
-  const role = line?.speaker === 'detective' ? 'That is you' : witness?.role
+  const name = line?.speaker === 'detective' ? L('Detective', 'Detective') : witnessName
+  const role = line?.speaker === 'detective' ? L('That is you', 'Ese eres tú') : witness?.role
   const look = witness?.look ?? PLAIN_LOOK
 
   return (
@@ -161,7 +162,7 @@ export default function WitnessScene({ scene, witness, outfit, anchors, onSpeaki
         }}
         disabled={mode === 'pinning'}
       >
-        {mode === 'talk' ? 'Skip scene' : 'Skip'}
+        {mode === 'talk' ? L('Skip scene', 'Saltar escena') : L('Skip', 'Saltar')}
         <kbd>Esc</kbd>
       </button>
 
@@ -171,8 +172,8 @@ export default function WitnessScene({ scene, witness, outfit, anchors, onSpeaki
           className={`wscene__box wscene__box--${line.speaker}`}
           tabIndex={-1}
           role="group"
-          aria-roledescription="dialogue"
-          aria-label={`Conversation with ${witnessName}`}
+          aria-roledescription={L('dialogue', 'diálogo')}
+          aria-label={L(`Conversation with ${witnessName}`, `Conversación con ${witnessName}`)}
         >
           <div className="wscene__portrait" aria-hidden="true">
             {line.speaker === 'detective' ? (
@@ -202,7 +203,11 @@ export default function WitnessScene({ scene, witness, outfit, anchors, onSpeaki
             {idx < lines.length - 1 ? '▼' : '★'}
           </span>
           <p className="wscene__help">
-            {typing ? 'Click or press Enter to finish the line' : idx < lines.length - 1 ? 'Click or press Enter for the next line' : 'Click or press Enter to note the claim'}
+            {typing
+              ? L('Click or press Enter to finish the line', 'Haz clic o pulsa Intro para terminar la frase')
+              : idx < lines.length - 1
+                ? L('Click or press Enter for the next line', 'Haz clic o pulsa Intro para la siguiente frase')
+                : L('Click or press Enter to note the claim', 'Haz clic o pulsa Intro para anotar la afirmación')}
           </p>
         </div>
       )}
@@ -211,14 +216,14 @@ export default function WitnessScene({ scene, witness, outfit, anchors, onSpeaki
         <div className="wscene__claim-wrap">
           <figure className={`wscene__claim${mode === 'pinning' ? ' is-pinning' : ''}`} aria-live="polite">
             <span className="wscene__pin" aria-hidden="true" />
-            <p className="wscene__claim-label">Witness says</p>
+            <p className="wscene__claim-label">{L('Witness says', 'El testigo dice')}</p>
             <blockquote className="wscene__claim-text">&ldquo;{scene.claim}&rdquo;</blockquote>
             <figcaption className="wscene__claim-who">
               — {witnessName}
               {witness?.role ? `, ${witness.role}` : ''}
             </figcaption>
           </figure>
-          <p className="wscene__claim-help">A claim is not a fact. Test it with the data.</p>
+          <p className="wscene__claim-help">{L('A claim is not a fact. Test it with the data.', 'Una afirmación no es un hecho. Compruébala con los datos.')}</p>
           <button
             ref={pinRef}
             type="button"
@@ -226,7 +231,7 @@ export default function WitnessScene({ scene, witness, outfit, anchors, onSpeaki
             onClick={pin}
             disabled={mode === 'pinning'}
           >
-            Pin it to the notebook
+            {L('Pin it to the notebook', 'Clávala en la libreta')}
           </button>
         </div>
       )}

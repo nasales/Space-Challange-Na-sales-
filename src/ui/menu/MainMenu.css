@@ -1324,37 +1324,6 @@
   line-height: 1.35;
 }
 
-.case-file__credits {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: 8px 20px;
-  margin: 0 0 18px;
-}
-
-.case-file__credits dt {
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 0.85rem;
-  padding-top: 2px;
-}
-
-.case-file__credits dd {
-  margin: 0;
-}
-
-/* One credit line: name and text share the grid of the list. */
-.case-file__credit {
-  display: contents;
-}
-
-/* Small print under a credit: dataset version or license. */
-.case-file__credit-note {
-  display: block;
-  font-size: 0.85rem;
-  color: #3b4a6b;
-}
-
 /* ---- Right stage ---- */
 .main-menu__stage {
   position: relative;
@@ -1585,15 +1554,6 @@
 
   .board-sound::before {
     display: none;
-  }
-
-  .case-file__credits {
-    grid-template-columns: 1fr;
-    gap: 2px;
-  }
-
-  .case-file__credits dd {
-    margin-bottom: 10px;
   }
 }
 

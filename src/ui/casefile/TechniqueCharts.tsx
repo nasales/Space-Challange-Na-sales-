@@ -5,8 +5,11 @@ import type { ChartSpec, TutorialSeries } from '../../shared/tutorial'
 import { SEASON_LABEL, SEASON_NAME, frame, niceTicks, overlaps, placeLabels, textBox, yScale, type Anchor, type Box, type ChartGeom, type ViewResult } from './chartKit'
 import { Key, Marks, XAxis, YGrid } from './chartParts'
 import { baseUnits, formatDate, sig, signed } from './format'
+import { L } from '../../shared/i18n'
 
-const missing = (what: string): ViewResult => ({ empty: `The data for this chart (${what}) is not in the case file yet.` })
+const missing = (what: string): ViewResult => ({
+  empty: L(`The data for this chart (${what}) is not in the case file yet.`, `Los datos de esta gráfica (${what}) aún no están en el expediente.`),
+})
 
 /** Years named by point highlights ("YYYY" or "YYYY-MM") with their labels */
 const highlightYears = (spec: ChartSpec) =>
@@ -22,10 +25,10 @@ const yearRange = (spec: ChartSpec) => {
 
 export function rankingView(spec: ChartSpec, series: TutorialSeries, W: number): ViewResult {
   const ys = spec.season ? series.extras?.seasons?.[spec.season] : series.annual
-  if (!ys || ys.years.length === 0) return missing('ranking')
+  if (!ys || ys.years.length === 0) return missing(L('ranking', 'clasificación'))
   const keep = yearRange(spec)
   const all = ys.years.map((year, i) => ({ year, value: ys.values[i] })).filter((d) => d.value != null && keep(d.year))
-  if (all.length === 0) return { empty: 'No data to draw for this view.' }
+  if (all.length === 0) return { empty: L('No data to draw for this view.', 'No hay datos que dibujar en esta vista.') }
   const lastYear = Math.max(...all.map((d) => d.year))
   const nRecent = Math.max(0, Math.round(spec.recent_years ?? 0))
   const recentFrom = lastYear - nRecent + 1
@@ -51,7 +54,10 @@ export function rankingView(spec: ChartSpec, series: TutorialSeries, W: number):
   const x1 = Math.max(hi, ticks[ticks.length - 1])
   const sx = (v: number) => P.l + ((v - x0) / (x1 - x0 || 1)) * plotW
   const base = fromZero ? sx(0) : P.l
-  const title = `${spec.season ? SEASON_LABEL[spec.season] : 'Yearly averages'}, highest first`
+  const title = L(
+    `${spec.season ? SEASON_LABEL[spec.season] : 'Yearly averages'}, highest first`,
+    `${spec.season ? SEASON_LABEL[spec.season] : 'Medias anuales'}, de mayor a menor`,
+  )
 
   const body = (
     <>
@@ -105,19 +111,28 @@ export function rankingView(spec: ChartSpec, series: TutorialSeries, W: number):
 
   const recentRows = rows.filter((d) => nRecent > 0 && d.year >= recentFrom).length
   const summary =
-    `${series.name} in ${series.units}, ${title.replace(/^Every/, 'every')}: ${rows.length} years as bars, from ${rows[0].year} ` +
-    `(${sig(rows[0].value)}) down to ${rows[rows.length - 1].year} (${sig(rows[rows.length - 1].value)}).` +
-    (nRecent > 0 ? ` ${recentRows} of the bars are from the last ${nRecent} years (${recentFrom}-${lastYear}), drawn in another colour.` : '') +
-    [...marked].map(([yr, l]) => ` Marked: ${yr}, ${l}.`).join('')
+    L(
+      `${series.name} in ${series.units}, ${title.replace(/^Every/, 'every')}: ${rows.length} years as bars, from ${rows[0].year} ` +
+        `(${sig(rows[0].value)}) down to ${rows[rows.length - 1].year} (${sig(rows[rows.length - 1].value)}).`,
+      `${series.name} en ${series.units}, ${title.replace(/^Cada/, 'cada')}: ${rows.length} años en barras, desde ${rows[0].year} ` +
+        `(${sig(rows[0].value)}) hasta ${rows[rows.length - 1].year} (${sig(rows[rows.length - 1].value)}).`,
+    ) +
+    (nRecent > 0
+      ? L(
+          ` ${recentRows} of the bars are from the last ${nRecent} years (${recentFrom}-${lastYear}), drawn in another colour.`,
+          ` ${recentRows} de las barras son de los últimos ${nRecent} años (${recentFrom}-${lastYear}), en otro color.`,
+        )
+      : '') +
+    [...marked].map(([yr, l]) => L(` Marked: ${yr}, ${l}.`, ` Marcado: ${yr}, ${l}.`)).join('')
 
   const keys = (
     <>
       {nRecent > 0 && (
         <Key kind="recent">
-          Last {nRecent} years ({recentFrom}-{lastYear})
+          {L(`Last ${nRecent} years (${recentFrom}-${lastYear})`, `Últimos ${nRecent} años (${recentFrom}-${lastYear})`)}
         </Key>
       )}
-      <Key kind="bar">{nRecent > 0 ? 'Earlier years' : series.name}</Key>
+      <Key kind="bar">{nRecent > 0 ? L('Earlier years', 'Años anteriores') : series.name}</Key>
       {[...marked].map(([yr, l]) => (
         <span key={yr} className="casefile-chart__key casefile-chart__key--plain">
           ● {yr}: {l}
@@ -128,9 +143,14 @@ export function rankingView(spec: ChartSpec, series: TutorialSeries, W: number):
   return {
     H,
     body,
-    summary: fromZero ? summary : `${summary} The axis starts at ${sig(x0)}, not at zero.`,
+    summary: fromZero ? summary : L(`${summary} The axis starts at ${sig(x0)}, not at zero.`, `${summary} El eje empieza en ${sig(x0)}, no en cero.`),
     keys,
-    note: fromZero ? undefined : `The axis does not start at 0: it starts at ${sig(x0)} ${baseUnits(series.units)}, to show the differences.`,
+    note: fromZero
+      ? undefined
+      : L(
+          `The axis does not start at 0: it starts at ${sig(x0)} ${baseUnits(series.units)}, to show the differences.`,
+          `El eje no empieza en 0: empieza en ${sig(x0)} ${baseUnits(series.units)}, para que se vean las diferencias.`,
+        ),
   }
 }
 
@@ -138,7 +158,7 @@ export function rankingView(spec: ChartSpec, series: TutorialSeries, W: number):
 
 export function periodsView(_spec: ChartSpec, series: TutorialSeries, W: number): ViewResult {
   const p = series.extras?.periods
-  if (!p || !p.bin_edges?.length || p.bin_edges.length !== p.before_counts.length + 1) return missing('before and after')
+  if (!p || !p.bin_edges?.length || p.bin_edges.length !== p.before_counts.length + 1) return missing(L('before and after', 'antes y después'))
   const { narrow, H, P, plotW } = frame(W, { t: 6, b: 18 })
   const e = p.bin_edges
   const sx = (v: number) => P.l + ((v - e[0]) / (e[e.length - 1] - e[0] || 1)) * plotW
@@ -151,10 +171,10 @@ export function periodsView(_spec: ChartSpec, series: TutorialSeries, W: number)
   const unit = baseUnits(series.units)
 
   // mean markers: labels at the top, the second one moves down if they would overlap
-  const taken: Box[] = [textBox(4, 14, 'start', 'months')]
+  const taken: Box[] = [textBox(4, 14, 'start', L('months', 'meses'))]
   const meanLabels = [
-    { v: p.before.mean, cls: 'before', label: `average ${before}` },
-    { v: p.after.mean, cls: 'after', label: `average ${after}` },
+    { v: p.before.mean, cls: 'before', label: L(`average ${before}`, `media ${before}`) },
+    { v: p.after.mean, cls: 'after', label: L(`average ${after}`, `media ${after}`) },
   ].map((m) => {
     const x = sx(m.v)
     const anchor: Anchor = x < P.l + 70 ? 'start' : x > W - P.r - 70 ? 'end' : 'middle'
@@ -170,7 +190,7 @@ export function periodsView(_spec: ChartSpec, series: TutorialSeries, W: number)
     <>
       <YGrid ticks={yTicks} sy={sy} left={P.l} right={W - P.r} fmt={String} />
       <text x={4} y={14} textAnchor="start" className="casefile-chart__units">
-        months
+        {L('months', 'meses')}
       </text>
       {e[0] < 0 && e[e.length - 1] > 0 && <line x1={sx(0)} x2={sx(0)} y1={P.t} y2={H - P.b} className="casefile-chart__zero" />}
       {p.before_counts.map((c, i) => {
@@ -186,7 +206,7 @@ export function periodsView(_spec: ChartSpec, series: TutorialSeries, W: number)
       })}
       <XAxis ticks={xt.map((v) => ({ x: v, label: signed(v) }))} sx={sx} left={P.l} right={W - P.r} y={H - P.b} />
       <text x={P.l + plotW / 2} y={H - 4} textAnchor="middle" className="casefile-chart__axis-title">
-        difference from the usual month ({unit})
+        {L(`difference from the usual month (${unit})`, `diferencia con el mes habitual (${unit})`)}
       </text>
       {meanLabels.map((m) => (
         <g key={m.cls} className={`casefile-chart__mean casefile-chart__mean--${m.cls}`}>
@@ -200,20 +220,25 @@ export function periodsView(_spec: ChartSpec, series: TutorialSeries, W: number)
   )
 
   const summary =
-    `${series.name}: how often each difference from the usual month happened, as two sets of bars. ` +
-    `${before}: ${p.before.n} months, average ${signed(p.before.mean)} ${unit}. ` +
-    `${after}: ${p.after.n} months, average ${signed(p.after.mean)} ${unit}.`
+    L(
+      `${series.name}: how often each difference from the usual month happened, as two sets of bars. ` +
+        `${before}: ${p.before.n} months, average ${signed(p.before.mean)} ${unit}. ` +
+        `${after}: ${p.after.n} months, average ${signed(p.after.mean)} ${unit}.`,
+      `${series.name}: cuántas veces se dio cada diferencia con el mes habitual, en dos grupos de barras. ` +
+        `${before}: ${p.before.n} meses, media ${signed(p.before.mean)} ${unit}. ` +
+        `${after}: ${p.after.n} meses, media ${signed(p.after.mean)} ${unit}.`,
+    )
   const keys = (
     <>
       <Key kind="before">
-        {formatDate(p.before.from)} - {formatDate(p.before.to)} ({p.before.n} months)
+        {formatDate(p.before.from)} - {formatDate(p.before.to)} ({L(`${p.before.n} months`, `${p.before.n} meses`)})
       </Key>
       <Key kind="after">
-        {formatDate(p.after.from)} - {formatDate(p.after.to)} ({p.after.n} months)
+        {formatDate(p.after.from)} - {formatDate(p.after.to)} ({L(`${p.after.n} months`, `${p.after.n} meses`)})
       </Key>
     </>
   )
-  return { H, body, summary, keys, note: 'Dashed lines: the average of each period.' }
+  return { H, body, summary, keys, note: L('Dashed lines: the average of each period.', 'Líneas discontinuas: la media de cada periodo.') }
 }
 
 
@@ -226,13 +251,13 @@ export function seasonScatterView(spec: ChartSpec, series: TutorialSeries, varia
   const season = spec.season ?? 'JJA'
   const xa = sa?.extras?.seasons?.[season]
   const xb = sb?.extras?.seasons?.[season]
-  if (!sa || !sb || !xa || !xb) return missing('season scatter')
+  if (!sa || !sb || !xa || !xb) return missing(L('season scatter', 'dispersión por estación'))
   const keep = yearRange(spec)
   const byYear = new Map(xb.years.map((y, i) => [y, xb.values[i]]))
   const pts = xa.years
     .map((year, i) => ({ year, x: xa.values[i], y: byYear.get(year) }))
     .filter((d): d is { year: number; x: number; y: number } => d.y != null && d.x != null && keep(d.year))
-  if (pts.length === 0) return { empty: 'No data to draw for this view.' }
+  if (pts.length === 0) return { empty: L('No data to draw for this view.', 'No hay datos que dibujar en esta vista.') }
 
   const { narrow, H, P, plotW } = frame(W, { b: 18, l: 6 })
   const { ticks: yTicks, sy } = yScale(pts.map((d) => d.y), P.t, H - P.b, { ticks: narrow ? 4 : 5, pad: 0.12 })
@@ -296,18 +321,23 @@ export function seasonScatterView(spec: ChartSpec, series: TutorialSeries, varia
 
   const name = SEASON_NAME[season]
   const summary =
-    `Scatter plot, one dot per ${name} from ${Math.min(...pts.map((d) => d.year))} to ${lastYear}: ` +
-    `across, ${xTitle} (${sig(Math.min(...xs))} to ${sig(Math.max(...xs))}); up, ${yTitle} ` +
-    `(${sig(Math.min(...pts.map((d) => d.y)))} to ${sig(Math.max(...pts.map((d) => d.y)))}).` +
-    (nRecent > 0 ? ` The last ${nRecent} years are drawn in another colour and labelled.` : '') +
-    [...marked].map(([yr, l]) => ` Marked: ${yr}, ${l}.`).join('')
+    L(
+      `Scatter plot, one dot per ${name} from ${Math.min(...pts.map((d) => d.year))} to ${lastYear}: ` +
+        `across, ${xTitle} (${sig(Math.min(...xs))} to ${sig(Math.max(...xs))}); up, ${yTitle} ` +
+        `(${sig(Math.min(...pts.map((d) => d.y)))} to ${sig(Math.max(...pts.map((d) => d.y)))}).`,
+      `Gráfica de dispersión, un punto por año (${name}) de ${Math.min(...pts.map((d) => d.year))} a ${lastYear}: ` +
+        `en horizontal, ${xTitle} (${sig(Math.min(...xs))} a ${sig(Math.max(...xs))}); en vertical, ${yTitle} ` +
+        `(${sig(Math.min(...pts.map((d) => d.y)))} a ${sig(Math.max(...pts.map((d) => d.y)))}).`,
+    ) +
+    (nRecent > 0 ? L(` The last ${nRecent} years are drawn in another colour and labelled.`, ` Los últimos ${nRecent} años van en otro color y con etiqueta.`) : '') +
+    [...marked].map(([yr, l]) => L(` Marked: ${yr}, ${l}.`, ` Marcado: ${yr}, ${l}.`)).join('')
   const keys = (
     <>
-      {nRecent > 0 && <Key kind="dot-recent">Last {nRecent} years</Key>}
-      <Key kind="dot">{nRecent > 0 ? 'Earlier years' : 'One year'}</Key>
+      {nRecent > 0 && <Key kind="dot-recent">{L(`Last ${nRecent} years`, `Últimos ${nRecent} años`)}</Key>}
+      <Key kind="dot">{nRecent > 0 ? L('Earlier years', 'Años anteriores') : L('One year', 'Un año')}</Key>
     </>
   )
-  return { H, body, summary, keys, note: `Each dot is one ${name}.` }
+  return { H, body, summary, keys, note: L(`Each dot is one ${name}.`, `Cada punto es un año (${name}).`) }
 }
 
 // ---- window_trends ---------------------------------------------------------------------------
@@ -315,7 +345,7 @@ export function seasonScatterView(spec: ChartSpec, series: TutorialSeries, varia
 export function windowTrendsView(spec: ChartSpec, series: TutorialSeries, W: number): ViewResult {
   const keep = yearRange(spec)
   const wt = (series.extras?.window_trends ?? []).filter((w) => keep(w.start_year))
-  if (wt.length === 0) return missing('trend by start year')
+  if (wt.length === 0) return missing(L('trend by start year', 'tendencia por año de inicio'))
   const marked = highlightYears(spec)
   // room above the tallest whisker for up to two stacked labels
   const { narrow, H, P, plotW } = frame(W, { t: 4 + 16 * Math.min(2, marked.size) })
@@ -327,7 +357,7 @@ export function windowTrendsView(spec: ChartSpec, series: TutorialSeries, W: num
   const barW = Math.max(4, Math.min(34, band * 0.5))
   const long = band >= 64
   const every = band >= 34 ? 1 : Math.ceil(34 / band)
-  const unit = `${baseUnits(series.units)} per decade`
+  const unit = L(`${baseUnits(series.units)} per decade`, `${baseUnits(series.units)} por década`)
 
   const taken: Box[] = [textBox(4, 14, 'start', unit)]
   // labels must not cover any bar or whisker (QA: "About 47 years of data" on a phone)
@@ -365,7 +395,7 @@ export function windowTrendsView(spec: ChartSpec, series: TutorialSeries, W: num
             </g>
             {i % every === 0 && (
               <text x={cx(i)} y={H - P.b + 18} textAnchor="middle" className="casefile-chart__tick">
-                {long ? `from ${w.start_year}` : w.start_year}
+                {long ? L(`from ${w.start_year}`, `desde ${w.start_year}`) : w.start_year}
               </text>
             )}
           </g>
@@ -378,15 +408,20 @@ export function windowTrendsView(spec: ChartSpec, series: TutorialSeries, W: num
 
   const nSig = wt.filter((w) => w.significant).length
   const summary =
-    `${series.name}: trend per decade measured from ${wt.length} different start years (${wt[0].start_year} to ` +
-    `${wt[wt.length - 1].start_year}), each up to the end of the record, as bars with a 95% range whisker. ` +
-    `${nSig} of ${wt.length} bars are filled (significant, p below 0.05), the others are hollow (not significant).` +
-    placed.map((m) => ` Marked: ${m.label}.`).join('')
+    L(
+      `${series.name}: trend per decade measured from ${wt.length} different start years (${wt[0].start_year} to ` +
+        `${wt[wt.length - 1].start_year}), each up to the end of the record, as bars with a 95% range whisker. ` +
+        `${nSig} of ${wt.length} bars are filled (significant, p below 0.05), the others are hollow (not significant).`,
+      `${series.name}: tendencia por década medida desde ${wt.length} años de inicio distintos (de ${wt[0].start_year} a ` +
+        `${wt[wt.length - 1].start_year}), cada una hasta el final del registro, en barras con un bigote del rango del 95 %. ` +
+        `${nSig} de ${wt.length} barras están rellenas (significativas, p por debajo de 0,05) y las demás huecas (no significativas).`,
+    ) +
+    placed.map((m) => L(` Marked: ${m.label}.`, ` Marcado: ${m.label}.`)).join('')
   const keys = (
     <>
-      <Key kind="bar">Significant (p &lt; 0.05)</Key>
-      <Key kind="hollow">Not significant</Key>
-      <Key kind="whisker">95% range</Key>
+      <Key kind="bar">{L('Significant (p < 0.05)', 'Significativa (p < 0,05)')}</Key>
+      <Key kind="hollow">{L('Not significant', 'No significativa')}</Key>
+      <Key kind="whisker">{L('95% range', 'Rango del 95 %')}</Key>
     </>
   )
   // x in the geometry = bar index (0, 1, 2...); y = slope per decade
@@ -400,5 +435,5 @@ export function windowTrendsView(spec: ChartSpec, series: TutorialSeries, W: num
     ix: (px) => (px - P.l) / band - 0.5,
     iy: (py) => yMin + (1 - (py - P.t) / (H - P.b - P.t || 1)) * (yMax - yMin),
   }
-  return { H, body, summary, keys, note: long ? undefined : 'Labels: the year each trend starts from.', geom }
+  return { H, body, summary, keys, note: long ? undefined : L('Labels: the year each trend starts from.', 'Etiquetas: el año en que empieza cada tendencia.'), geom }
 }

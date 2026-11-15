@@ -10,6 +10,7 @@ import { useId, useRef, useState, type CSSProperties, type KeyboardEvent, type R
 import type { PointAnalysis } from '../../shared/pointAnalysis'
 import { CLIMATE_VARIABLES, type ClimateVariable, type VariableIcon } from '../../shared/variables'
 import './ClueRing.css'
+import { L } from '../../shared/i18n'
 
 /** Picker phases in which the clues are on screen; the entrance and exit animations follow them */
 export type ClueRingPhase = 'zooming' | 'open' | 'closing' | 'releasing'
@@ -49,10 +50,12 @@ interface Props {
 
 /** Short status lettered on the rim and stamped on clues that cannot be opened */
 function dataStatus(data: ClueData): { rim: string; stamp: string } {
-  if (data.state === 'loading') return { rim: 'Reading the evidence…', stamp: 'Wait' }
-  if (data.state === 'empty') return { rim: 'No data here: try on land', stamp: 'No data' }
-  if (data.state === 'error') return { rim: 'Evidence archive offline', stamp: 'Offline' }
-  return { rim: 'Pick a clue to read it', stamp: 'No data' }
+  if (data.state === 'loading') return { rim: L('Reading the evidence…', 'Leyendo las pruebas…'), stamp: L('Wait', 'Espera') }
+  if (data.state === 'empty')
+    return { rim: L('No data here: try on land', 'Aquí no hay datos: prueba en tierra'), stamp: L('No data', 'Sin datos') }
+  if (data.state === 'error')
+    return { rim: L('Evidence archive offline', 'Archivo de pruebas sin conexión'), stamp: L('Offline', 'Sin red') }
+  return { rim: L('Pick a clue to read it', 'Elige una pista para leerla'), stamp: L('No data', 'Sin datos') }
 }
 
 export default function ClueRing({ phase, data, onPick }: Props) {
@@ -96,10 +99,10 @@ export default function ClueRing({ phase, data, onPick }: Props) {
       <div className="clue-ring__centre">
         <div className="clue-ring__heading">
           <h2 id="variable-picker-title" className="clue-ring__title">
-            Something changed here
+            {L('Something changed here', 'Algo ha cambiado aquí')}
           </h2>
           <p id="variable-picker-lead" className="clue-ring__lead">
-            Pick a clue and hold it under the lens.
+            {L('Pick a clue and hold it under the lens.', 'Elige una pista y ponla bajo la lupa.')}
           </p>
         </div>
         {/* Remounted per clue so the slide-in replays when moving from one clue to the next */}
@@ -192,7 +195,7 @@ export default function ClueRing({ phase, data, onPick }: Props) {
         </text>
         <text className="clue-ring__rim-text" style={{ '--i': count + 1 } as CSSProperties}>
           <textPath href={`#${uid}-rim-right`} startOffset="50%" textAnchor="middle">
-            <tspan className="clue-ring__rim-key">Esc</tspan> Back to the map
+            <tspan className="clue-ring__rim-key">Esc</tspan> {L('Back to the map', 'Volver al mapa')}
           </textPath>
         </text>
       </svg>
@@ -201,7 +204,7 @@ export default function ClueRing({ phase, data, onPick }: Props) {
       <div className="clue-ring__footer" style={{ '--i': count + 1 } as CSSProperties}>
         <p className="clue-ring__soon">{status.rim}</p>
         <p className="clue-ring__back">
-          <kbd>Esc</kbd> Back to the map
+          <kbd>Esc</kbd> {L('Back to the map', 'Volver al mapa')}
         </p>
       </div>
     </div>

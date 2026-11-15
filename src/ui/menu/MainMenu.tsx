@@ -17,6 +17,8 @@ import { FEATURED } from './featuredCases'
 import HowItWorks from './how/HowItWorks'
 import { Credits, FeaturedCases } from './menuFiles'
 import './MainMenu.css'
+import { L, LANG } from '../../shared/i18n'
+import { LanguageSwitch } from '../language/LanguagePicker'
 
 interface MainMenuProps {
   onPlay: () => void
@@ -68,8 +70,12 @@ function pinStyle(id: PinId, rotate = 0): CSSProperties {
 
 // "How it works" is a full-screen walkthrough (./how/), not a case-file dialog.
 const FILES: Record<Exclude<FileId, 'how'>, { label: string; title: string; body: () => ReactNode }> = {
-  cases: { label: 'Case file: open cases', title: 'Featured cases', body: FeaturedCases },
-  credits: { label: 'Case file: credits', title: 'Credits', body: Credits },
+  cases: {
+    label: L('Case file: open cases', 'Expediente: casos abiertos'),
+    title: L('Featured cases', 'Casos destacados'),
+    body: FeaturedCases,
+  },
+  credits: { label: L('Case file: credits', 'Expediente: créditos'), title: L('Credits', 'Créditos'), body: Credits },
 }
 
 // Comic sound effect lettering. Decorative only: hidden from assistive technology.
@@ -99,17 +105,21 @@ function Lightbulb() {
 function AccountBadge({ onAccount }: { onAccount: () => void }) {
   const { user } = useSession()
   const [busy, setBusy] = useState(false)
-  const email = user?.email ?? 'detective'
+  const email = user?.email ?? L('detective', 'detective')
   return (
     <div className="menu-account">
       <button
         type="button"
         className="menu-account__open"
         onClick={onAccount}
-        aria-label={user ? `Account: signed in as ${email}` : 'Account: sign in or create an account (optional)'}
+        aria-label={
+          user
+            ? L(`Account: signed in as ${email}`, `Cuenta: has iniciado sesión como ${email}`)
+            : L('Account: sign in or create an account (optional)', 'Cuenta: inicia sesión o crea una cuenta (opcional)')
+        }
       >
-        <span className="menu-account__word">Account</span>
-        <span className="menu-account__who">{user ? email : 'Sign in (optional)'}</span>
+        <span className="menu-account__word">{L('Account', 'Cuenta')}</span>
+        <span className="menu-account__who">{user ? email : L('Sign in (optional)', 'Iniciar sesión (opcional)')}</span>
       </button>
       {user && (
         <button
@@ -122,9 +132,11 @@ function AccountBadge({ onAccount }: { onAccount: () => void }) {
             setBusy(false)
           }}
         >
-          Sign out
+          {L('Sign out', 'Cerrar sesión')}
         </button>
       )}
+      {/* EN / ES: changing it reloads the page in the new language (src/shared/i18n.ts) */}
+      <LanguageSwitch current={LANG} />
     </div>
   )
 }
@@ -166,7 +178,9 @@ export default function MainMenu({ onPlay, onWardrobe, onAccount, character }: M
               <span className="board__title-top">John</span>
               <span className="board__title-big">Datason</span>
             </h1>
-            <p className="board__tagline">Follow the clues. Read the data. Crack the climate case.</p>
+            <p className="board__tagline">
+              {L('Follow the clues. Read the data. Crack the climate case.', 'Sigue las pistas. Lee los datos. Resuelve el caso del clima.')}
+            </p>
           </header>
 
           <button
@@ -176,7 +190,7 @@ export default function MainMenu({ onPlay, onWardrobe, onAccount, character }: M
             onClick={onPlay}
             data-sfx="confirm"
             autoFocus
-            aria-label="Play: open the case"
+            aria-label={L('Play: open the case', 'Jugar: abre el caso')}
           >
             <span className="board-play__speed" aria-hidden="true" />
             <span className="sheet board-play__body">
@@ -185,15 +199,15 @@ export default function MainMenu({ onPlay, onWardrobe, onAccount, character }: M
                 <span className="board-play__flash" aria-hidden="true" />
               </span>
               <span className="board-play__word" aria-hidden="true">
-                Play
+                {L('Play', 'Jugar')}
               </span>
-              <span className="board-play__caption">Open the case</span>
+              <span className="board-play__caption">{L('Open the case', 'Abre el caso')}</span>
             </span>
             <Sfx kind="click" burst>
-              Click!
+              {L('Click!', '¡Clic!')}
             </Sfx>
             <Sfx kind="pow" burst>
-              Pow!
+              {L('Pow!', '¡Pum!')}
             </Sfx>
           </button>
 
@@ -203,19 +217,19 @@ export default function MainMenu({ onPlay, onWardrobe, onAccount, character }: M
             style={pinStyle('wardrobe', 3)}
             onClick={onWardrobe}
             data-sfx="open"
-            aria-label="Wardrobe: dress your detective"
+            aria-label={L('Wardrobe: dress your detective', 'Vestuario: viste a tu detective')}
           >
             <span className="sheet board-card__body">
               <svg className="board-card__hanger" viewBox="0 0 100 34" aria-hidden="true">
                 <path d="M50 2c-6 0-8 7-3 9l3 3L6 30h88L50 14" />
               </svg>
               <Art className="board-card__art sheet__art" src={wardrobeArt} />
-              <span className="board-card__title sheet__title">Wardrobe</span>
-              <span className="board-card__note sheet__note">Dress your detective</span>
+              <span className="board-card__title sheet__title">{L('Wardrobe', 'Vestuario')}</span>
+              <span className="board-card__note sheet__note">{L('Dress your detective', 'Viste a tu detective')}</span>
             </span>
-            <Sfx kind="swish">Swish</Sfx>
+            <Sfx kind="swish">{L('Swish', '¡Fiu!')}</Sfx>
             <Sfx kind="pow" burst>
-              Pow!
+              {L('Pow!', '¡Pum!')}
             </Sfx>
           </button>
 
@@ -229,23 +243,26 @@ export default function MainMenu({ onPlay, onWardrobe, onAccount, character }: M
               triggers.current.cases = el
             }}
             aria-haspopup="dialog"
-            aria-label={`Featured cases: ${FEATURED.length} open questions across Spain`}
+            aria-label={L(
+              `Featured cases: ${FEATURED.length} open questions across Spain`,
+              `Casos destacados: ${FEATURED.length} preguntas abiertas por toda España`,
+            )}
           >
             <span className="sheet board-folder__body">
               <span className="board-folder__tab" aria-hidden="true">
-                {FEATURED.length} files
+                {FEATURED.length} {L('files', 'expedientes')}
               </span>
               <span className="board-folder__paper board-folder__paper--back" aria-hidden="true" />
               <span className="board-folder__paper board-folder__paper--front" aria-hidden="true" />
               <span className="board-folder__front">
                 <Art className="board-folder__art sheet__art" src={casesArt} />
-                <span className="board-folder__title sheet__title">Featured cases</span>
-                <span className="board-folder__note sheet__note">Open questions across Spain</span>
+                <span className="board-folder__title sheet__title">{L('Featured cases', 'Casos destacados')}</span>
+                <span className="board-folder__note sheet__note">{L('Open questions across Spain', 'Preguntas abiertas por toda España')}</span>
               </span>
             </span>
-            <Sfx kind="files">Case files!</Sfx>
+            <Sfx kind="files">{L('Case files!', '¡Expedientes!')}</Sfx>
             <Sfx kind="pow" burst>
-              Pow!
+              {L('Pow!', '¡Pum!')}
             </Sfx>
           </button>
 
@@ -259,20 +276,20 @@ export default function MainMenu({ onPlay, onWardrobe, onAccount, character }: M
               triggers.current.how = el
             }}
             aria-haspopup="dialog"
-            aria-label="How it works: how we read the clues"
+            aria-label={L('How it works: how we read the clues', 'Cómo funciona: cómo leemos las pistas')}
           >
             <span className="sheet board-note__body">
               <Art className="board-note__art sheet__art" src={howArt} />
-              <span className="board-note__title sheet__title">How it works</span>
-              <span className="board-note__note sheet__note">How we read the clues</span>
+              <span className="board-note__title sheet__title">{L('How it works', 'Cómo funciona')}</span>
+              <span className="board-note__note sheet__note">{L('How we read the clues', 'Cómo leemos las pistas')}</span>
             </span>
             <span className="board-note__bulb" aria-hidden="true">
               <span className="board-note__rays" />
               <Lightbulb />
             </span>
-            <Sfx kind="aha">Aha!</Sfx>
+            <Sfx kind="aha">{L('Aha!', '¡Ajá!')}</Sfx>
             <Sfx kind="pow" burst>
-              Pow!
+              {L('Pow!', '¡Pum!')}
             </Sfx>
           </button>
 
@@ -286,18 +303,18 @@ export default function MainMenu({ onPlay, onWardrobe, onAccount, character }: M
               triggers.current.credits = el
             }}
             aria-haspopup="dialog"
-            aria-label="Credits"
+            aria-label={L('Credits', 'Créditos')}
           >
             <span className="sheet board-tag__body">
               <span className="board-tag__eyelet" aria-hidden="true" />
               <Art className="board-tag__art sheet__art" src={creditsArt} />
-              <span className="board-tag__title">Credits</span>
+              <span className="board-tag__title">{L('Credits', 'Créditos')}</span>
             </span>
             <span className="board-tag__stamp" aria-hidden="true">
-              Roll credits
+              {L('Roll credits', 'Rueden créditos')}
             </span>
             <Sfx kind="pow" burst>
-              Pow!
+              {L('Pow!', '¡Pum!')}
             </Sfx>
           </button>
 
@@ -314,7 +331,7 @@ export default function MainMenu({ onPlay, onWardrobe, onAccount, character }: M
             <span key={id} className={`board__pin board__pin--${id}`} style={pinStyle(id)} aria-hidden="true" />
           ))}
 
-          <p className="board__credit">Data: NASA MERRA-2</p>
+          <p className="board__credit">{L('Data: NASA MERRA-2', 'Datos: NASA MERRA-2')}</p>
         </div>
         {/* Volume sliders: a taped note in the wall's top-left corner (below the wall on phones) */}
         <SoundSliders className="board-sound" />

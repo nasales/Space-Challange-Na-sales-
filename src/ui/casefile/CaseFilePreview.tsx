@@ -7,6 +7,7 @@ import { useState } from 'react'
 import CaseFlow from './CaseFlow'
 import CaseHint from './CaseHint'
 import { hasTutorial, listTutorials } from './loader'
+import { L } from '../../shared/i18n'
 import './CaseFile.css'
 
 const PARAMS = new URLSearchParams(window.location.search)
@@ -32,10 +33,10 @@ export default function CaseFilePreview() {
               setOpen(true)
             }}
           >
-            Open the case again
+            {L('Open the case again', 'Abrir el caso otra vez')}
           </button>
           <a className="casefile-preview__all" href="?casefile">
-            All case files
+            {L('All case files', 'Todos los expedientes')}
           </a>
         </>
       )}
@@ -48,10 +49,14 @@ function CaseList({ unknown }: { unknown: string | null }) {
   return (
     <div className="casefile-preview casefile-preview--list">
       <section className="casefile-list">
-        <h1 className="casefile-list__title">Case files (preview)</h1>
-        {unknown && <p className="casefile-list__msg">No case file called &ldquo;{unknown}&rdquo; is ready. Pick one below.</p>}
+        <h1 className="casefile-list__title">{L('Case files (preview)', 'Expedientes (vista previa)')}</h1>
+        {unknown && (
+          <p className="casefile-list__msg">
+            {L(`No case file called “${unknown}” is ready. Pick one below.`, `No hay ningún expediente “${unknown}” listo. Elige uno de abajo.`)}
+          </p>
+        )}
         {cases.length === 0 ? (
-          <p className="casefile-list__msg">No case has a story script yet (data/tutorials/).</p>
+          <p className="casefile-list__msg">{L('No case has a story script yet (data/tutorials/).', 'Ningún caso tiene guion todavía (data/tutorials/).')}</p>
         ) : (
           <ul className="casefile-list__items">
             {cases.map((c) => (
@@ -62,7 +67,7 @@ function CaseList({ unknown }: { unknown: string | null }) {
                   <span>{c.title}</span>
                 )}{' '}
                 <code>{c.id}</code>
-                {!c.hasData && <em> (chart data not ready)</em>}
+                {!c.hasData && <em> {L('(chart data not ready)', '(datos de la gráfica sin preparar)')}</em>}
               </li>
             ))}
           </ul>

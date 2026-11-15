@@ -3,6 +3,7 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import type { SeasonId } from '../../shared/tutorial'
 import { MONTH_LONG } from './format'
+import { L } from '../../shared/i18n'
 
 /** What one chart view draws: the SVG body, its height, the accessible summary and the legend */
 export interface ViewOut {
@@ -104,22 +105,23 @@ export function yearTicks(firstYear: number, lastYear: number, plotW: number, na
 export const monthX = (date: string) => Number(date.slice(0, 4)) + (Number(date.slice(5, 7)) - 0.5) / 12
 
 export const SEASON_LABEL: Record<SeasonId, string> = {
-  DJF: 'Every winter (Dec-Feb)',
-  MAM: 'Every spring (Mar-May)',
-  JJA: 'Every summer (Jun-Aug)',
-  SON: 'Every autumn (Sep-Nov)',
-  JJAS: 'Every fire season (Jun-Sep)',
+  DJF: L('Every winter (Dec-Feb)', 'Cada invierno (dic-feb)'),
+  MAM: L('Every spring (Mar-May)', 'Cada primavera (mar-may)'),
+  JJA: L('Every summer (Jun-Aug)', 'Cada verano (jun-ago)'),
+  SON: L('Every autumn (Sep-Nov)', 'Cada otoño (sep-nov)'),
+  JJAS: L('Every fire season (Jun-Sep)', 'Cada temporada de incendios (jun-sep)'),
 }
 
 export const SEASON_NAME: Record<SeasonId, string> = {
-  DJF: 'winter (Dec-Feb)',
-  MAM: 'spring (Mar-May)',
-  JJA: 'summer (Jun-Aug)',
-  SON: 'autumn (Sep-Nov)',
-  JJAS: 'fire season (Jun-Sep)',
+  DJF: L('winter (Dec-Feb)', 'invierno (dic-feb)'),
+  MAM: L('spring (Mar-May)', 'primavera (mar-may)'),
+  JJA: L('summer (Jun-Aug)', 'verano (jun-ago)'),
+  SON: L('autumn (Sep-Nov)', 'otoño (sep-nov)'),
+  JJAS: L('fire season (Jun-Sep)', 'temporada de incendios (jun-sep)'),
 }
 
-export const monthLabel = (month: number) => `Every ${MONTH_LONG[month - 1] ?? 'month'}`
+export const monthLabel = (month: number) =>
+  L(`Every ${MONTH_LONG[month - 1] ?? 'month'}`, `Cada ${MONTH_LONG[month - 1] ?? 'mes'}`)
 
 // ---- label placement -------------------------------------------------------------------------
 

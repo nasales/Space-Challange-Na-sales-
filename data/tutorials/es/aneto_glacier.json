@@ -1,0 +1,289 @@
+{
+  "case_id": "aneto_glacier",
+  "title": "Glaciar del Aneto",
+  "place": "Aneto (Pirineos)",
+  "intro": {
+    "headline": "El último gran hielo de los Pirineos",
+    "paragraphs": [
+      "El Aneto es la montaña más alta de los Pirineos, la cordillera entre España y Francia. En su cara norte está el glaciar más grande de toda la cordillera. Desde los años 80 ha perdido la mayor parte de su hielo, y los científicos esperan que desaparezca en pocas décadas.",
+      "Un glaciar funciona como una cuenta bancaria. En invierno cae nieve y se acumula: son los ingresos. En verano, el sol y el aire cálido derriten el hielo: son los gastos. Si los gastos superan a los ingresos año tras año, el glaciar encoge.",
+      "Así que hay dos sospechosos: veranos que derriten más, o inviernos que traen menos nieve. En la sala de interrogatorios interrogarás a los dos con datos de la NASA de la zona del Aneto, estación por estación, y luego decidirás a quién acusar."
+    ],
+    "question": "El glaciar más grande de los Pirineos está encogiendo. ¿Es el calor, o que cae menos nieve y lluvia?"
+  },
+  "scene": {
+    "lines": [
+      {
+        "speaker": "witness",
+        "text": "¡Bon dia, detective! Bienvenido al refugio. Deja las botas junto a la estufa, que hay sopa caliente si la subida ha sido larga.",
+        "mood": "happy"
+      },
+      {
+        "speaker": "detective",
+        "text": "Gracias, Jordi. Estoy investigando el glaciar del Aneto, el más grande de los Pirineos. Dicen que desde aquí lo ves todos los veranos.",
+        "mood": "curious"
+      },
+      {
+        "speaker": "witness",
+        "text": "Todos los veranos desde hace treinta años. Desde la terraza se ve la cara norte del Aneto, el pico más alto del Pirineo, con el glaciar debajo.",
+        "mood": "proud"
+      },
+      {
+        "speaker": "witness",
+        "text": "Cuando empecé, el hielo era una gran lengua blanca ladera abajo. Los montañeros iban encordados durante horas para cruzarlo.",
+        "mood": "explaining"
+      },
+      {
+        "speaker": "witness",
+        "text": "Ahora es una mancha gris rota en trozos, con roca pelada alrededor. Cada verano veo más roca y menos hielo.",
+        "mood": "sad"
+      },
+      {
+        "speaker": "detective",
+        "text": "Los científicos dicen que el glaciar ha perdido la mayor parte de su hielo desde los años 80. ¿Qué crees que está pasando?",
+        "mood": "curious"
+      },
+      {
+        "speaker": "witness",
+        "text": "Ai, detective... Cuando era joven, algunos inviernos enterraban este refugio hasta las ventanas. Teníamos que cavar un camino hasta la puerta.",
+        "mood": "doubtful"
+      },
+      {
+        "speaker": "witness",
+        "text": "Hoy casi no necesito la pala. Sin nieve, no hay glaciar. Es pura aritmética.",
+        "mood": "insistent"
+      },
+      {
+        "speaker": "witness",
+        "text": "El glaciar se muere porque ya no nieva como antes. Apúntalo en tu libreta.",
+        "mood": "confident"
+      },
+      {
+        "speaker": "detective",
+        "text": "Lo apunto. Pero un glaciar tiene dos lados: la nieve del invierno le trae hielo y el calor del verano se lo lleva.",
+        "mood": "explaining"
+      },
+      {
+        "speaker": "detective",
+        "text": "Así que tengo dos sospechosos: el calor del verano y la nieve que falta. Y los dos dicen que son inocentes.",
+        "mood": "determined"
+      },
+      {
+        "speaker": "witness",
+        "text": "¿Dos sospechosos? ¿Y cómo vas a hacerles hablar?",
+        "mood": "curious"
+      },
+      {
+        "speaker": "detective",
+        "text": "Con pruebas. Datos de la NASA para este cuadrado de montaña: temperatura desde 1980, lluvia y nieve desde 1998. Vamos a interrogarlos.",
+        "mood": "determined"
+      },
+      {
+        "speaker": "witness",
+        "text": "Venga, adelante. ¡Pregúntale a la nieve adónde se ha ido!",
+        "mood": "confident"
+      }
+    ],
+    "claim": "El glaciar se muere porque ya no nieva como antes."
+  },
+  "steps": [],
+  "interrogation": {
+    "title": "¿Quién está derritiendo el glaciar?",
+    "instructions": "Abre cada carpeta de la mesa y resuélvela, y luego plantéasela al sospechoso de su pestaña: ¿rompe su coartada, la respalda o deja una duda razonable?",
+    "suspects": [
+      {
+        "id": "heat",
+        "name": "Calor de Verano",
+        "look": "heat",
+        "record": "Trabaja de junio a agosto. Se gana la vida derritiendo hielo.",
+        "alibi": "La media anual apenas se ha movido: unos 0,4 °C por década. ¡Mira qué poco es!",
+        "guilty": true,
+        "decision_text": "Acusado. Los veranos en el cuadrado del Aneto se calientan unos +0,46 °C por década (p = 0,00035), unos 2 °C desde 1980, justo en la temporada de deshielo. La cifra anual, tan pequeña, lo estaba tapando.",
+        "wrong_hint": "Vuelve a mirar tus carpetas: dos de ellas rompieron la coartada de Calor de Verano más allá de toda duda razonable (p < 0,05). ¿Vas a dejar libre a ese sospechoso?"
+      },
+      {
+        "id": "snow",
+        "name": "Nieve Perdida",
+        "look": "snow",
+        "record": "Llega de diciembre a febrero. Alimenta el glaciar.",
+        "alibi": "Sigo cayendo como siempre. Mira los pluviómetros, detective.",
+        "guilty": false,
+        "decision_text": "En libertad. La precipitación no muestra tendencia (p = 0,72 con todos los meses; invierno p = 0,53, verano p = 0,58). Los inviernos más cálidos y los meses con menos helada siembran dudas, pero ninguno cruza la línea de p < 0,05.",
+        "wrong_hint": "La coartada de Nieve Perdida se sostuvo: el pluviómetro no muestra una tendencia clara, y las otras dos carpetas solo dejaron una duda razonable. La duda no basta para acusar."
+      }
+    ],
+    "evidence": [
+      {
+        "id": "split_year",
+        "title": "El año, partido en cuatro",
+        "teaser": "Una media, cuatro estaciones",
+        "text": "Calor de Verano se esconde detrás de un número: la tendencia de todos los meses juntos, unos +0,39 °C por década. Pero una media anual mezcla cuatro estaciones, y el glaciar nota cada una de forma distinta: la nieve del invierno lo construye, el calor del verano lo derrite. Cambia la gráfica entre el año completo y cada estación y lee cada tendencia. Data: NASA MERRA-2.",
+        "task": {
+          "type": "season_switch",
+          "variable": "T2M",
+          "seasons": [
+            "DJF",
+            "MAM",
+            "JJA",
+            "SON"
+          ],
+          "rule": "faster_than_year",
+          "question": "¿Qué estaciones se calientan más rápido que el año completo?",
+          "prompt": "Pasa por las pestañas y compara la tendencia de cada estación con la del año completo.",
+          "hint": "Lee el número \"por década\" bajo cada pestaña y compáralo con la pestaña del año completo. Puede haber más de una estación más rápida.",
+          "success": "Correcto: la primavera (+0,47 °C por década) y el verano (+0,46) se calientan más rápido que el año completo (+0,39); el invierno (+0,36) y el otoño (+0,20), más despacio. La media escondía la temporada de deshielo."
+        },
+        "suspect": "heat",
+        "verdict": "breaks",
+        "verdict_feedback": "Rompe la coartada. La cifra anual, tan pequeña, es una media: el verano, la temporada de deshielo, se calienta más rápido que el año en conjunto, unos +0,46 °C por década, p = 0,00035.",
+        "clue": "El verano se calienta más que la media anual: +0,46 frente a +0,39 °C/década."
+      },
+      {
+        "id": "summer_ruler",
+        "title": "Todos los veranos desde 1980",
+        "teaser": "47 veranos en una regla",
+        "text": "Cada punto es un verano: la media de junio, julio y agosto en el cuadrado del Aneto, de 1980 a 2026. Los veranos suben y bajan de un año a otro, así que no sigas puntos sueltos: busca la inclinación de toda la nube. Luego compara tu regla con la línea de tendencia real. Data: NASA MERRA-2.",
+        "chart": {
+          "variable": "T2M",
+          "view": "season",
+          "season": "JJA"
+        },
+        "task": {
+          "type": "fit_line",
+          "tolerance": 0.3,
+          "prompt": "Arrastra los dos extremos de la regla para que siga la dirección general de los veranos.",
+          "hint": "No persigas un solo punto. Compara el centro de la nube en los años 80 con el centro de la nube en los años 2020.",
+          "success": "Bien: la línea sube. La tendencia real es de unos +0,46 °C por década, unos 2 °C de 1980 a 2026, y su intervalo del 95% (+0,20 a +0,74) queda entero por encima de cero."
+        },
+        "suspect": "heat",
+        "verdict": "breaks",
+        "verdict_feedback": "Rompe la coartada. Los veranos se calientan claramente: +0,46 °C por década con p = 0,00035, menos de 1 posibilidad entre 1.000 de una pendiente así solo por azar. Eso está más allá de toda duda razonable.",
+        "clue": "Veranos: +0,46 °C por década, p = 0,00035. Más allá de toda duda razonable."
+      },
+      {
+        "id": "precip_gauge",
+        "title": "El pluviómetro de lluvia y nieve",
+        "teaser": "Agua del cielo, estación por estación",
+        "text": "Nieve Perdida dice que cae como siempre. Este pluviómetro cuenta toda el agua que cae del cielo, lluvia y nieve juntas, medida como agua derretida, de 1998 a 2025. No distingue la nieve de la lluvia, pero muestra si los ingresos del glaciar están bajando. Pasa por el año y las estaciones y lee cada valor p. Data: NASA GPM IMERG.",
+        "task": {
+          "type": "season_switch",
+          "variable": "PRECIP",
+          "seasons": [
+            "DJF",
+            "MAM",
+            "JJA",
+            "SON"
+          ],
+          "rule": "significant",
+          "question": "¿En qué estaciones es significativa la tendencia de la precipitación (p < 0,05)?",
+          "prompt": "Pasa por las pestañas y lee cada tendencia y su valor p.",
+          "hint": "Una tendencia solo es significativa cuando p está por debajo de 0,05. Lee la p de cada pestaña antes de marcar.",
+          "success": "Correcto: ninguna. Todos los meses juntos: p = 0,72; invierno p = 0,53, primavera 0,55, verano 0,58, otoño 0,82. Los años húmedos y secos van y vienen sin una tendencia clara."
+        },
+        "suspect": "snow",
+        "verdict": "backs",
+        "verdict_feedback": "Respalda la coartada. El agua que cae en el cuadrado del Aneto no muestra un cambio claro en ninguna estación. Un límite: el pluviómetro cuenta lluvia y nieve juntas, así que no puede decir qué parte cayó como nieve.",
+        "clue": "Precipitación: sin tendencia en ninguna estación (todos los meses p = 0,72)."
+      },
+      {
+        "id": "standard_of_proof",
+        "title": "El nivel de prueba",
+        "teaser": "¿Dónde está la línea del 0,05?",
+        "text": "Un tribunal necesita pruebas más allá de toda duda razonable; un detective usa el valor p: la probabilidad de una tendencia así de fuerte si en realidad nada estuviera cambiando. Por debajo de 0,05 (1 entre 20) decimos que una tendencia es significativa. Aquí los inviernos se calientan unos +0,36 °C por década, con p = 0,051. Unos inviernos más cálidos podrían convertir parte de la nieve en lluvia. ¿Es eso una prueba? Data: NASA MERRA-2, NASA GPM IMERG.",
+        "chart": {
+          "variable": "T2M",
+          "view": "season",
+          "season": "DJF",
+          "show_trend": true
+        },
+        "task": {
+          "type": "proof_line",
+          "exhibits": [
+            {
+              "label": "Temperatura de verano",
+              "variable": "T2M",
+              "season": "JJA"
+            },
+            {
+              "label": "Temperatura de invierno",
+              "variable": "T2M",
+              "season": "DJF"
+            },
+            {
+              "label": "Temperatura, todos los meses",
+              "variable": "T2M"
+            },
+            {
+              "label": "Precipitación de invierno",
+              "variable": "PRECIP",
+              "season": "DJF"
+            }
+          ],
+          "prompt": "Pon cada tendencia en su lado de la línea: más allá de toda duda razonable (p < 0,05) o duda razonable.",
+          "hint": "Compara cada valor p con 0,05, cifra a cifra. 0,051 está muy cerca, pero ¿está por debajo de 0,05?",
+          "success": "Correcto: la temperatura de verano (p = 0,00035) y la de todos los meses (p < 0,001) quedan probadas. La temperatura de invierno, p = 0,051, se queda a un pelo de la línea; la precipitación de invierno (p = 0,53) está muy lejos."
+        },
+        "suspect": "snow",
+        "verdict": "doubt",
+        "verdict_feedback": "Duda razonable. Unos inviernos más cálidos convertirían parte de la nieve en lluvia y romperían la coartada de Nieve Perdida, y la pendiente sí sube. Pero p = 0,051 está justo por encima de 0,05, y el intervalo del 95% (de unos 0,00 a +0,65 °C por década) toca el cero. Estar cerca no es una prueba.",
+        "clue": "Inviernos: +0,36 °C por década, p = 0,051. Cerca de la línea, sin probar."
+      },
+      {
+        "id": "freezing_months",
+        "title": "Contando meses de helada",
+        "teaser": "Meses por debajo de 0 °C, década a década",
+        "text": "Un umbral convierte la temperatura en algo que el glaciar nota. Cada barra es un año: cuántos de sus meses tuvieron una media por debajo de 0 °C en este cuadrado. Los recuentos son números enteros pequeños que saltan mucho, así que compara dos periodos de diez años, no barras sueltas. Data: NASA MERRA-2.",
+        "chart": {
+          "variable": "T2M",
+          "view": "threshold_count",
+          "threshold_id": "below_0"
+        },
+        "task": {
+          "type": "tally",
+          "rule": "Suma las barras (meses por debajo de 0 °C) de todos los años del periodo.",
+          "periods": [
+            {
+              "label": "1980-1989",
+              "from": "1980",
+              "to": "1989"
+            },
+            {
+              "label": "2016-2025",
+              "from": "2016",
+              "to": "2025"
+            }
+          ],
+          "answers": [
+            20,
+            8
+          ],
+          "prompt": "Cuenta los meses de helada en cada periodo y escribe los dos totales.",
+          "hint": "Suma la altura de cada barra del periodo: una barra de 3 cuenta como 3 meses, y un año sin barra cuenta como 0.",
+          "success": "Correcto: 20 meses de helada en 1980-1989 (2,0 al año) y 8 en 2016-2025 (0,8 al año). Cuatro de los últimos diez años no tuvieron ninguno."
+        },
+        "suspect": "snow",
+        "verdict": "doubt",
+        "verdict_feedback": "Duda razonable. Menos meses de helada podrían significar que se queda menos nieve en la montaña, lo que dañaría la coartada de Nieve Perdida. Pero los recuentos anuales saltan mucho: su tendencia tiene p = 0,082, por encima de la línea de 0,05. Sugerente, pero no es una prueba.",
+        "clue": "Meses de helada: 2,0 al año en los 80, 0,8 en 2016-2025; p = 0,082."
+      }
+    ],
+    "finale": {
+      "prompt": "Todas las carpetas están sobre la mesa. ¿A quién acusas de derretir el glaciar, y quién sale libre?"
+    },
+    "summary": "Separado por estaciones, el cambio más claro está en verano, cuando el glaciar se derrite: unos +0,46 °C por década, más allá de toda duda razonable. Los ingresos de lluvia y nieve del glaciar no muestran una tendencia clara. Los inviernos más cálidos y los menos meses de helada apuntan en la misma dirección que el calor, pero ninguno queda probado por sí solo."
+  },
+  "conclusion": {
+    "prompt": "El glaciar más grande de los Pirineos está encogiendo. ¿Es el calor, o que cae menos nieve y lluvia? Escribe tu conclusión usando lo que te han mostrado las gráficas.",
+    "variable": "T2M",
+    "placeholder": "Mirando cada estación por separado en el Aneto, creo que..."
+  },
+  "reveal": {
+    "by_variable": {
+      "T2M": "La temperatura del aire en el cuadrado del Aneto (enero de 1980 a septiembre de 2026) sube claramente: unos +0,39 °C por década (intervalo del 95%: +0,27 a +0,52 °C por década), p < 0,001, unos 1,8 °C en todo el periodo. Los veranos se calientan claramente (+0,46 °C por década, p = 0,00035); los inviernos se calientan menos y de forma no significativa (+0,36 °C por década, p = 0,051). Los meses por debajo de 0 °C bajaron de 2,0 al año en los 80 a 0,8 en 2016-2025, pero esa caída no es significativa por sí sola (p = 0,082).",
+      "PRECIP": "La precipitación en el cuadrado del Aneto (enero de 1998 a septiembre de 2025) no muestra una tendencia significativa: unos +0,04 mm/día por década, p = 0,72, y el intervalo de confianza del 95% (-0,14 a +0,22 mm/día por década) incluye el cero. El invierno (p = 0,53) y el verano (p = 0,58) tampoco muestran una tendencia clara."
+    },
+    "lesson": "Una media anual esconde lo que hace cada estación. Separado por estaciones, el cambio más claro está en verano, cuando el glaciar se derrite, mientras que sus ingresos de nieve y lluvia en invierno no cambian de forma clara. Los datos señalan al calor como principal sospechoso, no a la falta de precipitación. Recuerda los límites: estos valores describen un cuadrado grande del mapa, mucho más bajo y cálido que el hielo; el pluviómetro no distingue la nieve de la lluvia; y un resultado justo por encima de p = 0,05 es una duda razonable, no una prueba en ningún sentido.",
+    "claim_verdict": "wrong",
+    "claim_text": "Jordi, tus ojos no te engañan: el glaciar se muere. Pero los datos no culpan a la nieve: la precipitación no muestra tendencia (p = 0,72, su intervalo del 95% incluye el cero; invierno p = 0,53, verano p = 0,58), mientras que los veranos se calientan claramente, unos +0,46 °C por década (p = 0,00035). Es el calor."
+  }
+}

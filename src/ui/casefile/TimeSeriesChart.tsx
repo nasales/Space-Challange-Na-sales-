@@ -23,6 +23,7 @@ import {
 import { Key, Marks, XAxis, YGrid } from './chartParts'
 import { MONTH_SHORT, baseUnits, credit, formatDate, sig } from './format'
 import { periodsView, rankingView, seasonScatterView, windowTrendsView } from './TechniqueCharts'
+import { L } from '../../shared/i18n'
 
 interface Pt {
   x: number
@@ -95,7 +96,7 @@ function lineChart(a: LineArgs): ViewResult {
   const main = layers[0]
   const all = layers.flatMap((l) => l.pts)
   const nums = all.filter((p): p is Pt & { y: number } => p.y != null)
-  if (!main || main.pts.length === 0 || nums.length === 0) return { empty: 'No data to draw for this view.' }
+  if (!main || main.pts.length === 0 || nums.length === 0) return { empty: L('No data to draw for this view.', 'No hay datos que dibujar en esta vista.') }
 
   const step = yearly || a.climatology ? 1 : 1 / 12
   // ---- x domain (all layers)
@@ -201,11 +202,16 @@ function lineChart(a: LineArgs): ViewResult {
   const last = main.pts[main.pts.length - 1].key
   const summary =
     `${a.what}` +
-    (a.climatology ? ', January to December' : `, from ${formatDate(first)} to ${formatDate(last)}`) +
-    `. Values range from ${sig(Math.min(...nums.map((p) => p.y)))} to ${sig(Math.max(...nums.map((p) => p.y)))} ${a.valueUnits}.` +
-    (trend ? ' A straight trend line is drawn over the data.' : '') +
-    placed.map((m) => ` Marked: ${m.label}.`).join('') +
-    bands.map((b) => ` Shaded: ${b.label}.`).join('')
+    (a.climatology
+      ? L(', January to December', ', de enero a diciembre')
+      : L(`, from ${formatDate(first)} to ${formatDate(last)}`, `, de ${formatDate(first)} a ${formatDate(last)}`)) +
+    L(
+      `. Values range from ${sig(Math.min(...nums.map((p) => p.y)))} to ${sig(Math.max(...nums.map((p) => p.y)))} ${a.valueUnits}.`,
+      `. Los valores van de ${sig(Math.min(...nums.map((p) => p.y)))} a ${sig(Math.max(...nums.map((p) => p.y)))} ${a.valueUnits}.`,
+    ) +
+    (trend ? L(' A straight trend line is drawn over the data.', ' Sobre los datos se dibuja una línea de tendencia recta.') : '') +
+    placed.map((m) => L(` Marked: ${m.label}.`, ` Marcado: ${m.label}.`)).join('') +
+    bands.map((b) => L(` Shaded: ${b.label}.`, ` Sombreado: ${b.label}.`)).join('')
 
   const barW = Math.max(2, Math.min(18, (plotW / Math.max(1, main.pts.length)) * 0.7))
   const clipUp = `${a.uid}-up`
@@ -294,16 +300,16 @@ function lineChart(a: LineArgs): ViewResult {
     ix: (px) => x0 + ((px - P.l) / (plotW || 1)) * (x1 - x0),
     iy: (py) => yMin + (1 - (py - P.t) / (plotH || 1)) * (yMax - yMin),
   }
-  return { H, body, summary, keys: trend ? <Key kind="trend">Trend line</Key> : null, geom }
+  return { H, body, summary, keys: trend ? <Key kind="trend">{L('Trend line', 'Línea de tendencia')}</Key> : null, geom }
 }
 
 // ---- views -----------------------------------------------------------------------------------
 
 const VIEW_LABEL: Partial<Record<ChartSpec['view'], string>> = {
-  monthly: 'monthly values',
-  climatology: 'average for each month of the year',
-  anomaly: 'difference from the usual value of each month',
-  annual: 'yearly averages',
+  monthly: L('monthly values', 'valores mensuales'),
+  climatology: L('average for each month of the year', 'media de cada mes del año'),
+  anomaly: L('difference from the usual value of each month', 'diferencia con el valor habitual de cada mes'),
+  annual: L('yearly averages', 'medias anuales'),
 }
 
 function renderView(spec: ChartSpec, series: TutorialSeries, variables: Record<string, TutorialSeries>, W: number, uid: string): ViewResult {
@@ -313,7 +319,12 @@ function renderView(spec: ChartSpec, series: TutorialSeries, variables: Record<s
   const name = series.name
   const units = series.units
   const range = (pts: Pt[]) => inRange(pts, spec.range, yearly)
-  const noExtras: ViewResult = { empty: `The data for this chart (${view.replace('_', ' ')}) is not in the case file yet.` }
+  const noExtras: ViewResult = {
+    empty: L(
+      `The data for this chart (${view.replace('_', ' ')}) is not in the case file yet.`,
+      `Los datos de esta gráfica (${view.replace('_', ' ')}) aún no están en el expediente.`,
+    ),
+  }
   const seriesKey = (label: ReactNode = name, kind = 'series') => <Key kind={kind}>{label}</Key>
 
   const common = { W, uid, yearly, highlights: spec.highlights, unitsLabel: units, valueUnits: units }
@@ -345,7 +356,7 @@ function renderView(spec: ChartSpec, series: TutorialSeries, variables: Record<s
       }
       const extraMarks =
         spec.highlight_max && (view === 'monthly' || view === 'anomaly') && series.max
-          ? [{ date: series.max.date, label: `Highest month: ${formatDate(series.max.date)}` }]
+          ? [{ date: series.max.date, label: L(`Highest month: ${formatDate(series.max.date)}`, `Mes más alto: ${formatDate(series.max.date)}`) }]
           : []
       const r = lineChart({
         ...common,
@@ -354,7 +365,7 @@ function renderView(spec: ChartSpec, series: TutorialSeries, variables: Record<s
         zero: view === 'anomaly',
         trendEnds,
         extraMarks,
-        what: `${name} in ${units}, ${VIEW_LABEL[view]}`,
+        what: L(`${name} in ${units}, ${VIEW_LABEL[view]}`, `${name} en ${units}, ${VIEW_LABEL[view]}`),
       })
       return withKeys(r, seriesKey())
     }
@@ -372,9 +383,12 @@ function renderView(spec: ChartSpec, series: TutorialSeries, variables: Record<s
         layers: [{ pts: range(yearlyPts(ys.years, ys.values)), kind: 'main', dots: true }],
         title,
         trendEnds: spec.show_trend ? yearlyTrend(ys) : null,
-        what: `${name} in ${units}, ${title.replace(/^Every/, 'every')}: one point per year`,
+        what: L(
+          `${name} in ${units}, ${title.replace(/^Every/, 'every')}: one point per year`,
+          `${name} en ${units}, ${title.replace(/^Cada/, 'cada')}: un punto por año`,
+        ),
       })
-      return withKeys(r, seriesKey(`${name}, ${title.replace(/^Every/, 'every')}`))
+      return withKeys(r, seriesKey(`${name}, ${title.replace(/^Every/, 'every').replace(/^Cada/, 'cada')}`))
     }
 
     case 'threshold_count': {
@@ -385,13 +399,13 @@ function renderView(spec: ChartSpec, series: TutorialSeries, variables: Record<s
         ...common,
         layers: [{ pts: range(yearlyPts(tc.years, tc.counts)), kind: 'main' }],
         bars: true,
-        unitsLabel: 'months per year',
-        valueUnits: 'months',
+        unitsLabel: L('months per year', 'meses por año'),
+        valueUnits: L('months', 'meses'),
         trendEnds:
           spec.show_trend && tc.years.length > 1 ? [tc.years[0], tc.trend.line[0], tc.years[tc.years.length - 1], tc.trend.line[1]] : null,
-        what: `${tc.label}: number of months in each year, as bars`,
+        what: L(`${tc.label}: number of months in each year, as bars`, `${tc.label}: número de meses de cada año, en barras`),
       })
-      return withKeys(r, seriesKey(`${tc.label}, per year`, 'bar'))
+      return withKeys(r, seriesKey(L(`${tc.label}, per year`, `${tc.label}, por año`), 'bar'))
     }
 
     case 'zscore_pair': {
@@ -406,15 +420,18 @@ function renderView(spec: ChartSpec, series: TutorialSeries, variables: Record<s
           { pts: range(monthlyPts(sb.extras.zscore_smooth12)), kind: 'second' },
         ],
         zero: true,
-        unitsLabel: 'standard deviations',
-        valueUnits: 'standard deviations',
-        title: narrow(W) ? undefined : '12-month average',
-        what: `${sa.name} and ${sb.name}, both as standardised differences from the usual month (12-month average)`,
+        unitsLabel: L('standard deviations', 'desviaciones típicas'),
+        valueUnits: L('standard deviations', 'desviaciones típicas'),
+        title: narrow(W) ? undefined : L('12-month average', 'media de 12 meses'),
+        what: L(
+          `${sa.name} and ${sb.name}, both as standardised differences from the usual month (12-month average)`,
+          `${sa.name} y ${sb.name}, ambas como diferencias estandarizadas respecto al mes habitual (media de 12 meses)`,
+        ),
       })
       return withKeys(
         r,
         <>{seriesKey(sa.name)}<Key kind="second">{sb.name}</Key></>,
-        'Both shown in the same units: how unusual each month is (0 = usual).',
+        L('Both shown in the same units: how unusual each month is (0 = usual).', 'Ambas en las mismas unidades: lo inusual que es cada mes (0 = lo habitual).'),
       )
     }
 
@@ -425,13 +442,17 @@ function renderView(spec: ChartSpec, series: TutorialSeries, variables: Record<s
         layers: [{ pts: range(monthlyPts(ex.cumulative_anomaly)), kind: 'main' }],
         zero: true,
         area: true,
-        unitsLabel: `running total, ${baseUnits(units)}`,
-        what: `${name}: running total of the monthly differences from the usual month`,
+        unitsLabel: L(`running total, ${baseUnits(units)}`, `total acumulado, ${baseUnits(units)}`),
+        what: L(`${name}: running total of the monthly differences from the usual month`, `${name}: total acumulado de las diferencias mensuales respecto al mes habitual`),
       })
       return withKeys(
         r,
-        <>{seriesKey(`${name}, running total`)}<Key kind="up">Total above zero</Key><Key kind="down">Total below zero</Key></>,
-        'Rises while months are above usual, falls while they are below.',
+        <>
+          {seriesKey(L(`${name}, running total`, `${name}, total acumulado`))}
+          <Key kind="up">{L('Total above zero', 'Total por encima de cero')}</Key>
+          <Key kind="down">{L('Total below zero', 'Total por debajo de cero')}</Key>
+        </>,
+        L('Rises while months are above usual, falls while they are below.', 'Sube mientras los meses están por encima de lo habitual y baja mientras están por debajo.'),
       )
     }
 
@@ -439,16 +460,16 @@ function renderView(spec: ChartSpec, series: TutorialSeries, variables: Record<s
       const w = spec.window === 60 ? 60 : 12
       const rm = ex?.running_mean?.[String(w) as '12' | '60']
       if (!rm) return noExtras
-      const label = w === 60 ? '5-year average' : '12-month average'
+      const label = w === 60 ? L('5-year average', 'media de 5 años') : L('12-month average', 'media de 12 meses')
       const r = lineChart({
         ...common,
         layers: [
           { pts: range(monthlyPts(series.monthly)), kind: 'raw' },
           { pts: range(monthlyPts({ dates: series.monthly.dates, values: rm })), kind: 'thick' },
         ],
-        what: `${name} in ${units}, monthly values with a ${label}`,
+        what: L(`${name} in ${units}, monthly values with a ${label}`, `${name} en ${units}, valores mensuales con una ${label}`),
       })
-      return withKeys(r, <><Key kind="raw">Monthly values</Key><Key kind="thick">{label}</Key></>)
+      return withKeys(r, <><Key kind="raw">{L('Monthly values', 'Valores mensuales')}</Key><Key kind="thick">{label}</Key></>)
     }
 
     case 'ranking':
@@ -460,7 +481,7 @@ function renderView(spec: ChartSpec, series: TutorialSeries, variables: Record<s
     case 'window_trends':
       return windowTrendsView(spec, series, W)
     default:
-      return { empty: `This chart type (${String(view)}) is not supported yet.` }
+      return { empty: L(`This chart type (${String(view)}) is not supported yet.`, `Este tipo de gráfica (${String(view)}) aún no está disponible.`) }
   }
 }
 

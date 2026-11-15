@@ -10,6 +10,7 @@ import { Burst } from '../board/tasks'
 import { Lawyer } from './art'
 import { RULING_BUTTON, RULING_STAMP, RULINGS, SIDE_LABEL } from './labels'
 import { TrialTaskView } from './tasks'
+import { L } from '../../../shared/i18n'
 
 interface Props {
   exhibit: TrialExhibit
@@ -54,13 +55,13 @@ export default function ExhibitView({ exhibit, letter, data, claim, solved, ente
     <div className={`trexhibit trexhibit--${exhibit.side}`} role="dialog" aria-modal="true" aria-labelledby={`trexhibit-${exhibit.id}`}>
       <div className="trexhibit__card">
         <button type="button" className="evfocus__close" onClick={onClose}>
-          Back to the court <kbd>Esc</kbd>
+          {L('Back to the court', 'Volver a la sala')} <kbd>Esc</kbd>
         </button>
 
         <div className="trexhibit__item">
           <p className={`trtag trtag--${exhibit.side}`}>
             <span className="trtag__hole" aria-hidden="true" />
-            Exhibit {letter}
+            {L(`Exhibit ${letter}`, `Prueba ${letter}`)}
             <small>{SIDE_LABEL[exhibit.side]}</small>
           </p>
           <h2 id={`trexhibit-${exhibit.id}`} className="evfocus__title" ref={headingRef} tabIndex={-1}>
@@ -83,10 +84,19 @@ export default function ExhibitView({ exhibit, letter, data, claim, solved, ente
 
           {solved && (
             <div className="trruling" ref={rulingRef}>
-              <h3 className="trruling__title">Your ruling, Your Honour</h3>
-              {claim && <p className="evlink__claim">The charge: &ldquo;{claim}&rdquo;</p>}
-              <p className="evlink__ask">Does Exhibit {letter} show what the {SIDE_LABEL[exhibit.side].toLowerCase()} says?</p>
-              <div className="trruling__choices" role="group" aria-label="Your ruling">
+              <h3 className="trruling__title">{L('Your ruling, Your Honour', 'Su decisión, señoría')}</h3>
+              {claim && (
+                <p className="evlink__claim">
+                  {L('The charge:', 'La acusación:')} &ldquo;{claim}&rdquo;
+                </p>
+              )}
+              <p className="evlink__ask">
+                {L(
+                  `Does Exhibit ${letter} show what the ${SIDE_LABEL[exhibit.side].toLowerCase()} says?`,
+                  `¿La prueba ${letter} demuestra lo que dice la ${SIDE_LABEL[exhibit.side].toLowerCase()}?`,
+                )}
+              </p>
+              <div className="trruling__choices" role="group" aria-label={L('Your ruling', 'Tu decisión')}>
                 {RULINGS.map((r) => (
                   <button
                     key={r}
@@ -105,7 +115,7 @@ export default function ExhibitView({ exhibit, letter, data, claim, solved, ente
                 {pick && !right && (
                   <div key={pick.n} className={`trobjection trobjection--${other}`}>
                     <span className="trobjection__burst" aria-hidden="true">
-                      Objection!
+                      {L('Objection!', '¡Protesto!')}
                     </span>
                     <p>{fixText(exhibit.objection)}</p>
                   </div>
@@ -144,7 +154,7 @@ export default function ExhibitView({ exhibit, letter, data, claim, solved, ente
                   <div aria-live="polite">
                     {fuPick && !fuDone && (
                       <p key={fuPick.n} className="evtask__feedback evtask__feedback--wrong">
-                        <b>Think again.</b> {fixText(fu.hint)}
+                        <b>{L('Think again.', 'Piénsalo otra vez.')}</b> {fixText(fu.hint)}
                       </p>
                     )}
                     {fuDone && <p className="evtask__feedback evtask__feedback--right">{fixText(fu.feedback)}</p>}
@@ -154,10 +164,10 @@ export default function ExhibitView({ exhibit, letter, data, claim, solved, ente
               {right && fuDone && (
                 <div className="evlink__done">
                   <p className="evlink__clue">
-                    <span>Into the record</span> {fixText(exhibit.clue)}
+                    <span>{L('Into the record', 'Al acta')}</span> {fixText(exhibit.clue)}
                   </p>
                   <button type="button" className="evbtn evbtn--primary evbtn--big" onClick={entered ? onClose : onEnter} autoFocus>
-                    {entered ? 'Back to the court' : 'Enter it into the record'}
+                    {entered ? L('Back to the court', 'Volver a la sala') : L('Enter it into the record', 'Que conste en acta')}
                   </button>
                 </div>
               )}

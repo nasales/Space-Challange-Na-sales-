@@ -1,6 +1,7 @@
 // Detective outfit: the colors the player picks in the Wardrobe.
 // Shared by the UI (Wardrobe screen) and the game (detective model), so neither imports the other.
 // Changing this file needs agreement from both areas.
+import { L } from './i18n'
 
 export type OutfitPart = 'coat' | 'hat' | 'scarf' | 'trousers'
 
@@ -8,10 +9,10 @@ export type OutfitPart = 'coat' | 'hat' | 'scarf' | 'trousers'
 export type Outfit = Record<OutfitPart, string>
 
 export const OUTFIT_PARTS: { part: OutfitPart; label: string }[] = [
-  { part: 'coat', label: 'Trench coat' },
-  { part: 'hat', label: 'Fedora' },
-  { part: 'scarf', label: 'Scarf' },
-  { part: 'trousers', label: 'Trousers' },
+  { part: 'coat', label: L('Trench coat', 'Gabardina') },
+  { part: 'hat', label: L('Fedora', 'Sombrero') },
+  { part: 'scarf', label: L('Scarf', 'Bufanda') },
+  { part: 'trousers', label: L('Trousers', 'Pantalones') },
 ]
 
 /** The original look of the detective. */
@@ -25,36 +26,36 @@ export const DEFAULT_OUTFIT: Outfit = {
 /** Preset colors per part (the first one is the default). */
 export const OUTFIT_PRESETS: Record<OutfitPart, { name: string; color: string }[]> = {
   coat: [
-    { name: 'Classic tan', color: '#d2a868' },
-    { name: 'Rain grey', color: '#8d939b' },
-    { name: 'Olive', color: '#7d8550' },
-    { name: 'Midnight', color: '#3f4a6e' },
-    { name: 'Burgundy', color: '#7e3341' },
-    { name: 'Cream', color: '#efe3c4' },
+    { name: L('Classic tan', 'Tostado clásico'), color: '#d2a868' },
+    { name: L('Rain grey', 'Gris lluvia'), color: '#8d939b' },
+    { name: L('Olive', 'Oliva'), color: '#7d8550' },
+    { name: L('Midnight', 'Medianoche'), color: '#3f4a6e' },
+    { name: L('Burgundy', 'Burdeos'), color: '#7e3341' },
+    { name: L('Cream', 'Crema'), color: '#efe3c4' },
   ],
   hat: [
-    { name: 'Brown felt', color: '#7a5235' },
-    { name: 'Charcoal', color: '#3b3a40' },
-    { name: 'Camel', color: '#b98a52' },
-    { name: 'Navy', color: '#2f3d63' },
-    { name: 'Forest', color: '#3d5a40' },
-    { name: 'Plum', color: '#5b3654' },
+    { name: L('Brown felt', 'Fieltro marrón'), color: '#7a5235' },
+    { name: L('Charcoal', 'Carbón'), color: '#3b3a40' },
+    { name: L('Camel', 'Camel'), color: '#b98a52' },
+    { name: L('Navy', 'Azul marino'), color: '#2f3d63' },
+    { name: L('Forest', 'Bosque'), color: '#3d5a40' },
+    { name: L('Plum', 'Ciruela'), color: '#5b3654' },
   ],
   scarf: [
-    { name: 'Red', color: '#e5322d' },
-    { name: 'Mustard', color: '#f2c14e' },
-    { name: 'Teal', color: '#2f9a94' },
-    { name: 'Violet', color: '#7a4fb5' },
-    { name: 'Orange', color: '#f07a2b' },
-    { name: 'Sky', color: '#5ea8c2' },
+    { name: L('Red', 'Rojo'), color: '#e5322d' },
+    { name: L('Mustard', 'Mostaza'), color: '#f2c14e' },
+    { name: L('Teal', 'Verde azulado'), color: '#2f9a94' },
+    { name: L('Violet', 'Violeta'), color: '#7a4fb5' },
+    { name: L('Orange', 'Naranja'), color: '#f07a2b' },
+    { name: L('Sky', 'Cielo'), color: '#5ea8c2' },
   ],
   trousers: [
-    { name: 'Ink', color: '#3a3f58' },
-    { name: 'Black', color: '#25242b' },
-    { name: 'Brown', color: '#5a3d2b' },
-    { name: 'Stone', color: '#9a9184' },
-    { name: 'Moss', color: '#4b5a3a' },
-    { name: 'Wine', color: '#5c2834' },
+    { name: L('Ink', 'Tinta'), color: '#3a3f58' },
+    { name: L('Black', 'Negro'), color: '#25242b' },
+    { name: L('Brown', 'Marrón'), color: '#5a3d2b' },
+    { name: L('Stone', 'Piedra'), color: '#9a9184' },
+    { name: L('Moss', 'Musgo'), color: '#4b5a3a' },
+    { name: L('Wine', 'Vino'), color: '#5c2834' },
   ],
 }
 

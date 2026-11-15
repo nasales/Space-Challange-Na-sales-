@@ -46,6 +46,7 @@
 // visible; drag with the mouse (or a finger) to turn him by hand. He winks now and then.
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
+import { L } from '../../shared/i18n'
 import { createDetective } from './createDetective'
 import { createRocketIntro, FRAME, INTRO } from './introRocket'
 import { PAL, burstWordTexture, comicPuffTexture, stepPop, swishWordTexture } from './comicArt'
@@ -368,14 +369,14 @@ export default function DetectiveShowcase({ outfit, mode = 'investigate' }: Dete
     // Comic pops
     const exclaim = spriteOf(exclaimTexture())
     const question = spriteOf(questionTexture())
-    const skrrt = spriteOf(wordTexture('SKRRT!', '#f2c14e', 64))
+    const skrrt = spriteOf(wordTexture(L('SKRRT!', '¡ÑIIIC!'), '#f2c14e', 64))
     const sparkle = spriteOf(sparkleTexture())
 
     // Rocket entrance (space panel, Earth, map, rocket): only when the story plays
     const intro = story ? createRocketIntro(scene, camera, keep, renderer) : null
-    const boom = story ? spriteOf(burstWordTexture('Boom!')) : null
-    const pop = story ? spriteOf(burstWordTexture('Pop!', PAL.paper)) : null
-    const whoosh = story ? spriteOf(swishWordTexture('Whoosh!')) : null
+    const boom = story ? spriteOf(burstWordTexture(L('Boom!', '¡Bum!'))) : null
+    const pop = story ? spriteOf(burstWordTexture(L('Pop!', '¡Pop!'), PAL.paper)) : null
+    const whoosh = story ? spriteOf(swishWordTexture(L('Whoosh!', '¡Fiuuu!'))) : null
     const hopFrom = new THREE.Vector3() // porthole position when he pops out
     const nozzle = new THREE.Vector3()
     if (story) rig.visible = false // he is inside the rocket until the hatch opens

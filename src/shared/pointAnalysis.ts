@@ -5,6 +5,27 @@
 // same code for featured cases and for any point.
 import type { CaseData } from './contract'
 import { fetchCell, type CellVariable } from './supabase'
+import { LANG } from './i18n'
+
+/** Spanish name and definition of each database variable (the database only has English) */
+const VARIABLE_TEXT_ES: Record<string, { name: string; definition: string }> = {
+  tair: { name: 'Temperatura del aire (cerca del suelo)', definition: 'Lo cálido que está el aire cerca del suelo, en promedio del mes.' },
+  wind: { name: 'Velocidad del viento (cerca del suelo)', definition: 'Lo rápido que sopla el viento cerca del suelo, en promedio del mes.' },
+  soilmoist: {
+    name: 'Humedad del suelo superficial (0-10 cm)',
+    definition: 'Cuánta agua hay en los 10 cm superiores del suelo (1 kg/m² = 1 mm de agua).',
+  },
+  evap: { name: 'Evapotranspiración', definition: 'Agua que vuelve al aire desde el suelo, las masas de agua y las plantas.' },
+  precip: {
+    name: 'Precipitación',
+    definition: 'Lluvia y nieve que llegan al suelo, medidas por satélites calibrados con pluviómetros.',
+  },
+  t2m_long: {
+    name: 'Temperatura del aire a 2 m (serie larga, menos detalle)',
+    definition:
+      'Temperatura del aire a 2 m del suelo según el reanálisis MERRA-2 de la NASA (un modelo del tiempo ajustado con observaciones). Rejilla más gruesa, pero empieza en 1980.',
+  },
+}
 
 /** Test used by pipeline/trend.py (TEST_NAME) to fill the `trends` table. */
 export const GENERIC_TEST = 'mann-kendall-prewhitening-yue-wang-2002'
@@ -113,8 +134,8 @@ export async function fetchPointAnalysis(
     cell: { id: first.cell_id, lat: first.lat, lon: first.lon, distanceKm: first.distance_km },
     variables: rows.map((row) => ({
       id: row.var_id,
-      name: row.name_en,
-      definition: row.definition_en,
+      name: (LANG === 'es' && VARIABLE_TEXT_ES[row.var_id]?.name) || row.name_en,
+      definition: (LANG === 'es' && VARIABLE_TEXT_ES[row.var_id]?.definition) || row.definition_en,
       units: row.unit,
       climatology: row.climatology,
       data: cellToCaseData(row, place),

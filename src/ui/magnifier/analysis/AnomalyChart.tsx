@@ -8,6 +8,7 @@
 // the record months are marked.
 import type { CiBand, TrendLine } from './analysis'
 import MonthlyPlot from './MonthlyPlot'
+import { L } from '../../../shared/i18n'
 
 interface Props {
   dates: string[]
@@ -35,7 +36,8 @@ export default function AnomalyChart({ dates, anoms, units, label, line, band, s
       reference={{ value: 0, className: 'clue-result__zero' }}
       include={include}
       signed
-      readoutNote="compared with a normal month"
+      readoutNote={L('compared with a normal month', 'frente a un mes normal')}
+
       scan
       markers
       under={(sx, sy) => {

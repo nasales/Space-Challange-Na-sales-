@@ -24,6 +24,7 @@ import {
   toMapLonLat,
   type Glyph,
 } from './travelConfig'
+import { L } from '../../shared/i18n'
 import './TravelMap.css'
 
 /** Extra wait after the closing animation before the map is removed anyway (ms). */
@@ -206,8 +207,8 @@ export default function TravelMap({ open, canOpen, onOpenChange, onTravel, posit
         tabIndex={-1}
       >
         <header className="travel-map__header">
-          <span className="travel-map__tag">Travel map</span>
-          <h2 id="travel-map-title" className="travel-map__title">Where to, detective?</h2>
+          <span className="travel-map__tag">{L('Travel map', 'Mapa de viaje')}</span>
+          <h2 id="travel-map-title" className="travel-map__title">{L('Where to, detective?', '¿Adónde, detective?')}</h2>
         </header>
 
         <div className="travel-map__frame" style={{ aspectRatio: `${MAP_WIDTH} / ${MAP_HEIGHT}` }}>
@@ -242,7 +243,7 @@ export default function TravelMap({ open, canOpen, onOpenChange, onTravel, posit
               type="button"
               className={`travel-map__pin${hovered === l.id ? ' is-hot' : ''}`}
               style={place(l.lon, l.lat)}
-              aria-label={`Fly to ${l.name}, ${l.city}`}
+              aria-label={L(`Fly to ${l.name}, ${l.city}`, `Volar a ${l.name}, ${l.city}`)}
               disabled={closing}
               onMouseEnter={() => setHovered(l.id)}
               onMouseLeave={() => setHovered((h) => (h === l.id ? null : h))}
@@ -264,20 +265,20 @@ export default function TravelMap({ open, canOpen, onOpenChange, onTravel, posit
           )}
 
           {position && (
-            <div className="travel-map__you" style={place(position.lon, position.lat)} aria-label="You are here" role="img">
+            <div className="travel-map__you" style={place(position.lon, position.lat)} aria-label={L('You are here', 'Estás aquí')} role="img">
               <span className="travel-map__you-dot" />
-              <span className="travel-map__you-text">You</span>
+              <span className="travel-map__you-text">{L('You', 'Tú')}</span>
             </div>
           )}
 
-          {!shapes && <p className="travel-map__loading">{error ? 'The map could not be loaded.' : 'Unfolding the map…'}</p>}
+          {!shapes && <p className="travel-map__loading">{error ? L('The map could not be loaded.', 'No se ha podido cargar el mapa.') : L('Unfolding the map…', 'Desplegando el mapa…')}</p>}
         </div>
 
         <footer className="travel-map__footer">
           <span>
-            Click a badge to fly there · <kbd>M</kbd> or <kbd>Esc</kbd> to close
+            {L('Click a badge to fly there · ', 'Pulsa una chapa para volar allí · ')}<kbd>M</kbd>{L(' or ', ' o ')}<kbd>Esc</kbd>{L(' to close', ' para cerrar')}
           </span>
-          <span className="travel-map__credit">Map: Natural Earth</span>
+          <span className="travel-map__credit">{L('Map: Natural Earth', 'Mapa: Natural Earth')}</span>
         </footer>
       </div>
     </div>

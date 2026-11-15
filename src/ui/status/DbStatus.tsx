@@ -4,14 +4,15 @@ import { useEffect, useState } from 'react'
 import { pingSupabase, supabaseConfigured } from '../../shared/supabase'
 import { VERSION_LABEL } from '../../shared/version'
 import './DbStatus.css'
+import { L } from '../../shared/i18n'
 
 type State = 'checking' | 'connected' | 'offline' | 'not_configured'
 
 const LABEL: Record<State, string> = {
-  checking: 'Database: checking…',
-  connected: 'Database: connected',
-  offline: 'Database: offline',
-  not_configured: 'Database: not configured',
+  checking: L('Database: checking…', 'Base de datos: comprobando…'),
+  connected: L('Database: connected', 'Base de datos: conectada'),
+  offline: L('Database: offline', 'Base de datos: sin conexión'),
+  not_configured: L('Database: not configured', 'Base de datos: sin configurar'),
 }
 
 /** hidden: fade the badge out (while a featured case is open) */

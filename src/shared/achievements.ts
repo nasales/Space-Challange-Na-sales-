@@ -9,6 +9,7 @@ import { BULL_SPOTS } from '../game/bulls/bullSpots'
 import { lonLatToWorld } from '../game/map/projection'
 import { loadCompleted } from './progress'
 import { TUTORIAL_CASE_IDS } from './tutorial'
+import { L } from './i18n'
 
 /** localStorage key: { [achievementId]: string[] of the steps already found }. */
 const STORAGE_KEY = 'esd.achievements'
@@ -48,35 +49,40 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
   {
     id: 'cases',
     icon: '🔎',
-    title: 'Case closer',
+    title: L('Case closer', 'Cierracasos'),
     total: CASE_COUNT,
     toastAt: Array.from({ length: CASE_COUNT }, (_, i) => i + 1),
-    message: (done, total) => (done < total ? `${done}/${total} case levels solved` : `All ${total} case levels solved`),
+    message: (done, total) =>
+      done < total
+        ? L(`${done}/${total} case levels solved`, `${done}/${total} casos resueltos`)
+        : L(`All ${total} case levels solved`, `¡Los ${total} casos resueltos!`),
   },
   {
     id: 'communities',
     icon: '🧭',
-    title: 'Community explorer',
+    title: L('Community explorer', 'Trotamundos autonómico'),
     total: COMMUNITY_COUNT,
     toastAt: [COMMUNITY_HALF, COMMUNITY_COUNT],
     message: (done, total) =>
-      done < total ? `Milestone 1/2: ${done} of ${total} communities visited` : `Milestone 2/2: all ${total} communities visited`,
+      done < total
+        ? L(`Milestone 1/2: ${done} of ${total} communities visited`, `Hito 1/2: ${done} de ${total} comunidades visitadas`)
+        : L(`Milestone 2/2: all ${total} communities visited`, `Hito 2/2: ¡las ${total} comunidades visitadas!`),
   },
   {
     id: 'sea-legs',
     icon: '🚣',
-    title: 'Sea legs',
+    title: L('Sea legs', 'Lobo de mar'),
     total: 1,
     toastAt: [1],
-    message: () => 'First time rowing out to sea',
+    message: () => L('First time rowing out to sea', 'Primera vez remando mar adentro'),
   },
   {
     id: 'bulls',
     icon: '🐂',
-    title: 'Bull hunter',
+    title: L('Bull hunter', 'Cazatoros'),
     total: BULL_COUNT,
     toastAt: [BULL_COUNT],
-    message: (_done, total) => `You found all ${total} roadside bulls`,
+    message: (_done, total) => L(`You found all ${total} roadside bulls`, `¡Has encontrado los ${total} toros de carretera!`),
   },
 ]
 

@@ -9,6 +9,7 @@
 import { useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react'
 import { fmt, fmtSigned, fmtTick, monthLabel, niceTicks, yearOf, yearTicks } from './analysis'
 import ChartBox from './ChartBox'
+import { L } from '../../../shared/i18n'
 import { extremes, linePath, reducedMotion, rollingMean, scale, type Frame } from './chartKit'
 
 interface Props {
@@ -41,7 +42,7 @@ export default function MonthlyPlot(props: Props) {
   const { dates, values, units, signed = false, readoutNote = '' } = props
   const n = values.length
   const hasData = values.some((v) => v != null && Number.isFinite(v)) && dates.length >= n
-  if (!hasData) return <p className="clue-result__empty">No values to draw for this place.</p>
+  if (!hasData) return <p className="clue-result__empty">{L('No values to draw for this place.', 'No hay valores que dibujar para este lugar.')}</p>
 
   const clamp = (i: number) => Math.min(Math.max(i, 0), n - 1)
   const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -64,7 +65,7 @@ export default function MonthlyPlot(props: Props) {
     active == null
       ? null
       : value == null
-        ? `${monthLabel(dates[active])}: no data`
+        ? `${monthLabel(dates[active])}: ${L('no data', 'sin datos')}`
         : `${monthLabel(dates[active])}: ${show(value)} ${units}${readoutNote && ` ${readoutNote}`}`
 
   return (
@@ -72,12 +73,15 @@ export default function MonthlyPlot(props: Props) {
       className="clue-result__plot"
       role="group"
       tabIndex={0}
-      aria-label="Chart. Use the left and right arrow keys to read each month."
+      aria-label={L(
+        'Chart. Use the left and right arrow keys to read each month.',
+        'Gráfico. Usa las flechas izquierda y derecha para leer cada mes.',
+      )}
       onKeyDown={onKey}
     >
       <ChartBox>{(frame) => <Plot {...props} frame={frame} active={active} setActive={setActive} clamp={clamp} />}</ChartBox>
       <p className={`clue-result__readout${readout ? '' : ' clue-result__readout--hint'}`} aria-live="polite">
-        {readout ?? 'Point at the chart (or focus it and press ← →) to read a month.'}
+        {readout ?? L('Point at the chart (or focus it and press ← →) to read a month.', 'Apunta al gráfico (o selecciónalo y pulsa ← →) para leer un mes.')}
       </p>
     </div>
   )
@@ -206,8 +210,9 @@ function Records({
   if (!ex || ex.hi === ex.lo) return null
   const show = signed ? fmtSigned : fmt
   const marks = [
-    { i: ex.hi, word: 'Highest', up: true },
-    { i: ex.lo, word: 'Lowest', up: false },
+    { i: ex.hi, word: L('Highest', 'Máximo'), up: true },
+    { i: ex.lo, word: L('Lowest', 'Mínimo'), up: false },
+
   ]
   return (
     <g className="clue-result__records">
