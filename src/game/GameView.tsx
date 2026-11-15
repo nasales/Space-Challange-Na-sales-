@@ -32,6 +32,9 @@ import { createTopViewCamera, wantsTopView } from './camera/topViewCamera'
 import { createKeyboard } from './input/keyboard'
 import { nearestPlace } from './location/nearestPlace'
 import { createLandmarks, loadLandmarks } from './landmarks/createLandmarks'
+import { createBulls } from './bulls/createBulls'
+import { BULL_SPOTS } from './bulls/bullSpots'
+import { EXTRA_HOUSES, placeExtraHouses } from './towns/extraHouses'
 import { bendRiversAround, prepareRivers } from './map/rivers'
 import { createRivers } from './scene/createRivers'
 import { loadRoads, roadsInBounds } from './roads/roadData'
@@ -271,13 +274,21 @@ export default function GameView({
           const i = explored.zones.findIndex((zn) => lon >= zn.bounds.west && lon <= zn.bounds.east && lat >= zn.bounds.south && lat <= zn.bounds.north)
           return i >= 0 ? zones[i].terrain : null
         }
-        const houses = placeTowns(explored.places, {
-          heightAt: (x, z) => terrainAt(x, z)?.heightAt(x, z) ?? 0,
-          isLand: (x, z) => terrainAt(x, z)?.isExploredLand(x, z) ?? false,
-          landmarkDistance: landmarks.spacing,
-          nearRiver: (x, z, m) => terrainAt(x, z)?.nearRiver(x, z, m) ?? false,
+        // ---- Roadside bulls (bulls/): big black bull silhouettes on hills next to the main roads ----
+        // Built before the towns so houses and scenery keep off their footprints (like monuments)
+        const bulls = createBulls(BULL_SPOTS, main.heightAt)
+        scene.add(bulls.group)
+        const keepClear = (x: number, z: number) => Math.min(landmarks.spacing(x, z), bulls.spacing(x, z))
+        // ---- end of roadside bulls ----
+        const townGround = {
+          heightAt: (x: number, z: number) => terrainAt(x, z)?.heightAt(x, z) ?? 0,
+          isLand: (x: number, z: number) => terrainAt(x, z)?.isExploredLand(x, z) ?? false,
+          landmarkDistance: keepClear,
+          nearRiver: (x: number, z: number, m: number) => terrainAt(x, z)?.nearRiver(x, z, m) ?? false,
           nearRoad,
-        })
+        }
+        const houses = placeTowns(explored.places, townGround)
+        houses.push(...placeExtraHouses(EXTRA_HOUSES, townGround, houses)) // a few fixed houses (e.g. by Peñafiel Castle)
         const towns = createTowns(houses)
         scene.add(towns.group)
         // Night lights of houses and landmarks: their own scene, drawn after the ink pass
@@ -291,7 +302,7 @@ export default function GameView({
           metersAt: (x, z) => terrainAt(x, z)?.metersAt(x, z) ?? 0,
           isLand: (x, z) => terrainAt(x, z)?.isExploredLand(x, z) ?? false,
           nearHouse: towns.blocks,
-          landmarkDistance: landmarks.spacing,
+          landmarkDistance: keepClear,
           nearRiver: (x, z, m) => terrainAt(x, z)?.nearRiver(x, z, m) ?? false,
           nearRoad,
         })
@@ -329,7 +340,7 @@ export default function GameView({
           isDrivable: (x, z) => {
             const t = terrainAt(x, z)
             if (!t) return laneFordAtWorld(x, z) // open sea between the zones: only the lane
-            return (t.isExploredLand(x, z) || t.isFord(x, z)) && !scenery.blocks(x, z) && !witnessPropAt(x, z)
+            return (t.isExploredLand(x, z) || t.isFord(x, z)) && !scenery.blocks(x, z) && !witnessPropAt(x, z) && !bulls.blocks(x, z)
           },
         }
         const madrid = lonLatToWorld(-3.7038, 40.4168)
@@ -423,7 +434,7 @@ export default function GameView({
         if (import.meta.env.DEV) {
           Object.assign(window, {
             __game: {
-              carState, camera, chase, top, ground, detective, boat, renderer, scene, day, nightLights, towns, houses, scenery, sceneryItems, landmarks, caseMarkers, main, witnesses, witnessSite, dialogue, devDialogue,
+              carState, camera, chase, top, ground, detective, boat, renderer, scene, day, nightLights, towns, houses, scenery, sceneryItems, landmarks, caseMarkers, main, witnesses, witnessSite, dialogue, devDialogue, bulls, nearRoad,
               setDialogue: (caseId: string | null, speaking: 'detective' | 'witness' | null = null, mood: LineMood | null = null) =>
                 Object.assign(devDialogue, { active: true, caseId, speaking, mood }),
             },
@@ -634,6 +645,7 @@ export default function GameView({
           dust.dispose()
           footprints.dispose()
           landmarks.dispose()
+          bulls.dispose()
           towns.dispose()
           nightLights.dispose()
           scenery.dispose()
