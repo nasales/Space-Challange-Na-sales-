@@ -1,6 +1,8 @@
 // Fast travel map (M key): tuning, map frame and the landmarks you can fly to.
 // Self-contained on purpose: the Interface can later replace this overlay with an expanded minimap.
 
+import { canaryBox } from '../../shared/canaryBox'
+
 // ---- Timing and feel ----
 /** Fade + zoom when the map opens and closes (ms). */
 export const OPEN_MS = 260
@@ -13,7 +15,7 @@ export const HOVER_SCALE = 1.2
 export const TOGGLE_KEY = 'KeyM'
 
 // ---- Map frame (degrees): the mainland and the Balearic Islands, plus room for the Canary box ----
-export const MAP_BOUNDS = { west: -9.9, east: 4.75, south: 34.75, north: 44.05 } // south was 35.55
+export const MAP_BOUNDS = { west: -11.2, east: 4.75, south: 34.75, north: 44.05 } // was west -9.9, south 35.55
 /** Same equirectangular projection as the game (src/game/map/projection.ts): longitude measured at 40 N. */
 const LON_SCALE = Math.cos((40 * Math.PI) / 180)
 /** Countries drawn around Spain, grey like the unexplored world in the game. */
@@ -29,24 +31,12 @@ export const MAP_WIDTH = (MAP_BOUNDS.east - MAP_BOUNDS.west) * LON_SCALE
 export const MAP_HEIGHT = MAP_BOUNDS.north - MAP_BOUNDS.south
 
 // ---- Canary Islands box: drawn smaller in the south-west corner, like the classic maps of Spain ----
-/** Real area (degrees) that goes into the box. */
-const CANARY_REAL = { west: -18.4, east: -13.2, south: 27.45, north: 29.55 }
-/** South-west corner of the box on the map (degrees) and its scale. */
-const CANARY_BOX = { west: -9.7, south: 34.9, scale: 0.8 }
+/** West of Portugal and south of the Algarve, so it never covers the peninsula (shared/canaryBox.ts). */
+const CANARY_BOX = canaryBox(-11.0, 34.9, 0.75)
 /** The box on the map (degrees), for its frame line. */
-export const CANARY_FRAME = {
-  west: CANARY_BOX.west,
-  south: CANARY_BOX.south,
-  east: CANARY_BOX.west + (CANARY_REAL.east - CANARY_REAL.west) * CANARY_BOX.scale,
-  north: CANARY_BOX.south + (CANARY_REAL.north - CANARY_REAL.south) * CANARY_BOX.scale,
-}
-
+export const CANARY_FRAME = CANARY_BOX.frame
 /** Real lon/lat of a point of Spain -> lon/lat where the map draws it (only the Canary Islands move). */
-export function toMapLonLat(lon: number, lat: number): [number, number] {
-  const b = CANARY_REAL
-  if (lon < b.west || lon > b.east || lat < b.south || lat > b.north) return [lon, lat]
-  return [CANARY_BOX.west + (lon - b.west) * CANARY_BOX.scale, CANARY_BOX.south + (lat - b.south) * CANARY_BOX.scale]
-}
+export const toMapLonLat = CANARY_BOX.toMap
 
 /** Like project(), for Spain's own outline, places and the detective: the Canary Islands go in their box. */
 export function projectSpain(lon: number, lat: number) {
