@@ -39,6 +39,13 @@ const COLORS = {
 const LOOKUP_CELL = 24
 /** Junction patches sit this far over the two levelled decks (plus a stronger polygon offset). */
 const PATCH_LIFT = 0.03
+/**
+ * Seen from far away, a road is drawn at least this many pixels wide (a light core with a dark
+ * ink casing, like a comic map), so the network still reads in the overview and the top view.
+ * MAX_WIDEN caps how far (world units) each edge may move out.
+ */
+const MIN_PX = 5
+const MAX_WIDEN = 90
 
 export interface Roads {
   group: THREE.Group
@@ -60,11 +67,14 @@ const vertexShader = /* glsl */ `
   attribute float aRank;
   attribute float aSkirt;
   attribute float aBridge;
+  attribute vec2 aOut;
+  uniform float uPxWorld;
   varying float vAcross;
   varying float vAlong;
   varying float vRank;
   varying float vSkirt;
   varying float vBridge;
+  varying float vWide;
   varying vec3 vWorld;
   #include <common>
   #include <fog_pars_vertex>
@@ -75,6 +85,15 @@ const vertexShader = /* glsl */ `
     vSkirt = aSkirt;
     vBridge = aBridge;
     vec4 world = modelMatrix * vec4(position, 1.0);
+    // Seen from far away (high overview, top view) the road never gets thinner than MIN_PX
+    // pixels: its edges move outward (aOut) and lift a little so they stay over the terrain.
+    // Up close nothing moves (the deck keeps its real width for walking and placement).
+    float hw = aRank < 1.5 ? ${ROAD_HALF_WIDTH[1].toFixed(2)} : ${ROAD_HALF_WIDTH[2].toFixed(2)};
+    float depth = max(-(viewMatrix * world).z, 0.0);
+    float extra = clamp(${(MIN_PX / 2).toFixed(2)} * uPxWorld * depth - hw, 0.0, ${MAX_WIDEN.toFixed(1)});
+    world.xz += aOut * extra;
+    world.y += extra * 0.35;
+    vWide = extra / hw;
     vWorld = world.xyz;
     vec4 mvPosition = viewMatrix * world;
     gl_Position = projectionMatrix * mvPosition;
@@ -93,11 +112,13 @@ const fragmentShader = /* glsl */ `
   uniform vec3 uBankDark;
   uniform vec3 uStone;
   uniform vec3 uStoneDark;
+  uniform vec3 uMapRoad;
   varying float vAcross;
   varying float vAlong;
   varying float vRank;
   varying float vSkirt;
   varying float vBridge;
+  varying float vWide;
   varying vec3 vWorld;
   #include <common>
   #include <fog_pars_fragment>
@@ -168,10 +189,15 @@ const fragmentShader = /* glsl */ `
         col = mix(col, uMedian * 0.7, stripe(aa, 0.12, 0.012) * (1.0 - far));
       }
 
-      // 5) Kerb: a dark crisp band along both edges (reads as the road outline)
-      col = mix(col, uKerb, band(0.93, aa));
+      // 5) Far away (widened, see the vertex shader) the deck turns into a comic map road: a light
+      //    core, so the network reads over any terrain colour
+      col = mix(col, uMapRoad, smoothstep(0.0, 0.6, vWide));
 
-      // 6) Speed glints (motorways only): rare short white comic streaks sliding along the lanes,
+      // 6) Kerb: a dark crisp band along both edges (reads as the road outline), never thinner
+      //    than about a pixel, so the road keeps its ink casing at any distance
+      col = mix(col, uKerb, band(min(0.93, 1.0 - 1.4 * fwidth(a)), aa));
+
+      // 7) Speed glints (motorways only): rare short white comic streaks sliding along the lanes,
       //    each carriageway in its own direction, stepped on twos by uTime
       if (motorway) {
         float dir = sign(a);
@@ -205,13 +231,14 @@ function buildRibbon(run: RoadRun, s: number, e: number, out: RibbonBuffers) {
   const { pts, y, bottom, bridge, hw } = run
   const rank = run.rank
   let vc = out.pos.length / 3
-  const vertex = (x: number, yy: number, z: number, across: number, along: number, skirt: number, br: number) => {
+  const vertex = (x: number, yy: number, z: number, across: number, along: number, skirt: number, br: number, ox: number, oz: number) => {
     out.pos.push(x, yy, z)
     out.across.push(across)
     out.along.push(along)
     out.rank.push(rank)
     out.skirt.push(skirt)
     out.bridge.push(br)
+    out.out.push(ox, oz)
     return vc++
   }
   // distance along the run (so dashes stay continuous across pieces)
@@ -230,12 +257,12 @@ function buildRibbon(run: RoadRun, s: number, e: number, out: RibbonBuffers) {
     const rx = x - nx * hw, rz = z - nz * hw
     const al = dist(i)
     const ids = [
-      vertex(lx, yi, lz, -1, al, 0, br), // 0 deck left
-      vertex(rx, yi, rz, 1, al, 0, br), // 1 deck right
-      vertex(lx, yi, lz, 0, al, 1, br), // 2 skirt left top
-      vertex(lx + nx * lean, bottom[i], lz + nz * lean, 1, al, 1, br), // 3 skirt left bottom
-      vertex(rx, yi, rz, 0, al, 1, br), // 4 skirt right top
-      vertex(rx - nx * lean, bottom[i], rz - nz * lean, 1, al, 1, br), // 5 skirt right bottom
+      vertex(lx, yi, lz, -1, al, 0, br, nx, nz), // 0 deck left
+      vertex(rx, yi, rz, 1, al, 0, br, -nx, -nz), // 1 deck right
+      vertex(lx, yi, lz, 0, al, 1, br, nx, nz), // 2 skirt left top
+      vertex(lx + nx * lean, bottom[i], lz + nz * lean, 1, al, 1, br, nx, nz), // 3 skirt left bottom
+      vertex(rx, yi, rz, 0, al, 1, br, -nx, -nz), // 4 skirt right top
+      vertex(rx - nx * lean, bottom[i], rz - nz * lean, 1, al, 1, br, -nx, -nz), // 5 skirt right bottom
     ]
     if (prev) {
       const p = prev
@@ -252,10 +279,10 @@ function buildRibbon(run: RoadRun, s: number, e: number, out: RibbonBuffers) {
     const [tx, tz] = tangent(pts, end)
     const nx = -tz, nz = tx
     const al = dist(end)
-    const a = vertex(x + nx * hw, y[end], z + nz * hw, 0, al, 1, bridge[end])
-    const b = vertex(x - nx * hw, y[end], z - nz * hw, 0, al, 1, bridge[end])
-    const c = vertex(x - nx * hw, bottom[end], z - nz * hw, 1, al, 1, bridge[end])
-    const d = vertex(x + nx * hw, bottom[end], z + nz * hw, 1, al, 1, bridge[end])
+    const a = vertex(x + nx * hw, y[end], z + nz * hw, 0, al, 1, bridge[end], nx, nz)
+    const b = vertex(x - nx * hw, y[end], z - nz * hw, 0, al, 1, bridge[end], -nx, -nz)
+    const c = vertex(x - nx * hw, bottom[end], z - nz * hw, 1, al, 1, bridge[end], -nx, -nz)
+    const d = vertex(x + nx * hw, bottom[end], z + nz * hw, 1, al, 1, bridge[end], nx, nz)
     out.index.push(a, b, c, a, c, d)
   }
 }
@@ -269,6 +296,7 @@ function buildRibbon(run: RoadRun, s: number, e: number, out: RibbonBuffers) {
 function buildJunction(j: RoadJunction, heightAt: (x: number, z: number) => number, out: RibbonBuffers) {
   const y = j.y + PATCH_LIFT
   const acrossIn = 1 - KERB_STRIP / ROAD_HALF_WIDTH[2]
+  const hwJ = ROAD_HALF_WIDTH[2]
   let vc = out.pos.length / 3
   const vertex = (x: number, yy: number, z: number, across: number, along: number, skirt: number) => {
     out.pos.push(x, yy, z)
@@ -277,6 +305,7 @@ function buildJunction(j: RoadJunction, heightAt: (x: number, z: number) => numb
     out.rank.push(2)
     out.skirt.push(skirt)
     out.bridge.push(0)
+    out.out.push((x - j.x) / hwJ, (z - j.z) / hwJ) // scales the patch with the widened roads
     return vc++
   }
   // Middle: the inner outline, triangulated
@@ -311,10 +340,12 @@ interface RibbonBuffers {
   rank: number[]
   skirt: number[]
   bridge: number[]
+  /** Horizontal direction (times share) in which the vertex moves when the road is widened. */
+  out: number[]
   index: number[]
 }
 
-const newBuffers = (): RibbonBuffers => ({ pos: [], across: [], along: [], rank: [], skirt: [], bridge: [], index: [] })
+const newBuffers = (): RibbonBuffers => ({ pos: [], across: [], along: [], rank: [], skirt: [], bridge: [], out: [], index: [] })
 
 /** Flat-shaded boxes and strips with vertex colours, for the bridge parts (one merged mesh). */
 function createSolidBuilder() {
@@ -434,6 +465,8 @@ export function createRoads(roads: Road[], ground: RoadGround): Roads {
         uBankDark: { value: rgbHex('#C69A5C') },
         uStone: { value: rgbHex('#EFE6CF') }, // bridge fascia
         uStoneDark: { value: rgbHex('#C9BB98') },
+        uMapRoad: { value: rgbHex('#FFF3D6') }, // light core of a far road (comic map look)
+        uPxWorld: { value: 0 }, // world units per pixel at distance 1 (set before each draw)
       },
     ]),
     vertexShader,
@@ -455,6 +488,19 @@ export function createRoads(roads: Road[], ground: RoadGround): Roads {
       buildRibbon(run, s, e, buf)
     }
   }
+  // World units per pixel at distance 1 for the far-road widening, from the camera that draws
+  const pxWorld = material.uniforms.uPxWorld
+  const drawSize = new THREE.Vector2()
+  const setPxWorld = (renderer: THREE.WebGLRenderer, _scene: THREE.Scene, camera: THREE.Camera) => {
+    const cam = camera as THREE.PerspectiveCamera
+    if (!cam.isPerspectiveCamera) return
+    pxWorld.value = (2 * Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2)) / Math.max(1, renderer.getDrawingBufferSize(drawSize).y)
+  }
+  /** Bounding sphere grown by the widest widening, so a widened edge is never culled. */
+  const growBounds = (g: THREE.BufferGeometry) => {
+    g.computeBoundingSphere()
+    g.boundingSphere!.radius += MAX_WIDEN
+  }
   const geometries: THREE.BufferGeometry[] = []
   for (const buf of tiles.values()) {
     const g = new THREE.BufferGeometry()
@@ -464,17 +510,20 @@ export function createRoads(roads: Road[], ground: RoadGround): Roads {
     g.setAttribute('aRank', new THREE.Float32BufferAttribute(buf.rank, 1))
     g.setAttribute('aSkirt', new THREE.Float32BufferAttribute(buf.skirt, 1))
     g.setAttribute('aBridge', new THREE.Float32BufferAttribute(buf.bridge, 1))
+    g.setAttribute('aOut', new THREE.Float32BufferAttribute(buf.out, 2))
     g.setIndex(buf.index)
-    g.computeBoundingSphere()
+    growBounds(g)
     geometries.push(g)
     const mesh = new THREE.Mesh(g, material)
     mesh.renderOrder = 1
+    mesh.onBeforeRender = setPxWorld
     group.add(mesh)
   }
 
   // Junction patches: same shader, drawn after the ribbons and pulled a little more towards the
   // camera, so they always cover the two crossing decks (no z-fighting, no lines across)
   const junctionMaterial = material.clone()
+  junctionMaterial.uniforms.uPxWorld = pxWorld // shared: widened together with the ribbons
   junctionMaterial.polygonOffsetFactor = -2
   junctionMaterial.polygonOffsetUnits = -4
   if (junctions.length) {
@@ -487,11 +536,13 @@ export function createRoads(roads: Road[], ground: RoadGround): Roads {
     g.setAttribute('aRank', new THREE.Float32BufferAttribute(buf.rank, 1))
     g.setAttribute('aSkirt', new THREE.Float32BufferAttribute(buf.skirt, 1))
     g.setAttribute('aBridge', new THREE.Float32BufferAttribute(buf.bridge, 1))
+    g.setAttribute('aOut', new THREE.Float32BufferAttribute(buf.out, 2))
     g.setIndex(buf.index)
-    g.computeBoundingSphere()
+    growBounds(g)
     geometries.push(g)
     const mesh = new THREE.Mesh(g, junctionMaterial)
     mesh.renderOrder = 2
+    mesh.onBeforeRender = setPxWorld
     group.add(mesh)
   }
 
