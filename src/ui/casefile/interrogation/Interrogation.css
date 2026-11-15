@@ -1,0 +1,1901 @@
+/* Interrogation room: a dim police room seen from the detective's side. Concrete wall, a one-way
+   mirror with the line-up height chart and two suspects behind it, a hanging lamp and its cone of
+   light, a brushed-metal table with manila case folders. Same ink + paper palette and fonts as the
+   case file and the evidence board (--cf-* tokens); task widgets come from board/EvidenceBoard.css.
+   Desktop layout (1280x720 and up). */
+.interro {
+  --cf-ink: #161b2e;
+  --cf-ink-soft: #3b4a6b;
+  --cf-paper: #fff8e7;
+  --cf-gold: #f2c14e;
+  --cf-red: #e5322d;
+  --cf-sea: #5ea8c2;
+  --cf-blue: #2457a6;
+  --cf-green: #2f7d4f;
+  --cf-display: var(--font-display, 'Big Shoulders Display', 'Arial Narrow', sans-serif);
+  --cf-type: var(--font-type, 'Courier Prime', 'Courier New', monospace);
+  --cf-hand: var(--font-hand, 'Kalam', 'Segoe Print', cursive);
+  --ix-wall: #2a2e33;
+  --ix-glass: #10232a;
+  --ix-steel: #8d949c;
+  --ix-manila: #e6c98a;
+  --ix-lamp: #ffe7a3;
+  --ix-breaks: #c8141b;
+  --ix-backs: #2f7d4f;
+  --ix-doubt: #6b7280;
+
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: none;
+  overflow: hidden;
+  color: var(--cf-ink);
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 62%, rgba(255, 231, 163, 0.1), transparent 70%),
+    radial-gradient(circle, rgba(255, 255, 255, 0.035) 1px, transparent 1.6px) 0 0 / 7px 7px,
+    linear-gradient(180deg, #23272c, #15171b);
+}
+
+.interro::backdrop {
+  background: rgba(10, 12, 16, 0.85);
+}
+
+.interro[open] {
+  animation: ix-in 0.5s ease-out;
+}
+
+@keyframes ix-in {
+  from {
+    opacity: 0;
+    filter: brightness(0.2);
+  }
+}
+
+.interro button:focus-visible,
+.interro input:focus-visible,
+.interro [tabindex]:focus-visible,
+.interro label:has(input:focus-visible) {
+  outline: 3px solid var(--cf-gold);
+  outline-offset: 3px;
+}
+
+.interro__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(250px, 21vw, 320px);
+  gap: 18px;
+  height: 100%;
+  padding: 14px 18px 18px;
+}
+
+.interro__layout > .notebook {
+  height: 100%;
+  min-height: 0;
+  padding-top: 14px;
+}
+
+.interro__main {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* ---- header (same build as the evidence board's) ---- */
+.interro__head {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.interro__titles {
+  flex: none;
+  max-width: 34%;
+}
+
+.interro__label {
+  display: inline-block;
+  margin: 0 0 4px;
+  padding: 3px 10px;
+  border: 2px solid var(--cf-ink);
+  background: var(--cf-gold);
+  font-family: var(--cf-type);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transform: rotate(-1.5deg);
+}
+
+.interro__title {
+  margin: 0;
+  color: var(--cf-paper);
+  font-family: var(--cf-display);
+  font-size: clamp(1.5rem, 2.4vw, 2.4rem);
+  font-weight: 900;
+  line-height: 0.95;
+  text-transform: uppercase;
+  text-wrap: balance;
+  text-shadow: 3px 3px 0 var(--cf-ink);
+}
+
+.interro__instructions {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  color: rgba(255, 248, 231, 0.86);
+  font-family: var(--cf-hand);
+  font-size: 1.05rem;
+  line-height: 1.3;
+}
+
+.interro__instructions--done {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--cf-gold);
+  font-size: 1.15rem;
+}
+
+.interro__tools {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 14px;
+}
+
+.interro__progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--cf-paper);
+  font-family: var(--cf-type);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.interro__progress-bar {
+  display: flex;
+  gap: 4px;
+}
+
+.interro__progress-bar i {
+  width: 16px;
+  height: 20px;
+  border: 2px solid var(--cf-paper);
+  border-radius: 2px 6px 2px 2px;
+  background: transparent;
+}
+
+.interro__progress-bar i.is-half {
+  background: linear-gradient(to top, var(--ix-manila) 50%, transparent 50%);
+}
+
+.interro__progress-bar i.is-on {
+  background: var(--ix-manila);
+}
+
+.interro__progress.is-done {
+  color: var(--cf-gold);
+}
+
+/* ---- the room ---- */
+.ixroom {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1.7fr) minmax(0, 1fr);
+  border: 4px solid #0c0e11;
+  background:
+    /* concrete blocks */
+    repeating-linear-gradient(0deg, transparent 0 58px, rgba(0, 0, 0, 0.28) 58px 60px),
+    repeating-linear-gradient(90deg, transparent 0 118px, rgba(0, 0, 0, 0.2) 118px 120px),
+    radial-gradient(circle, rgba(255, 255, 255, 0.03) 1px, transparent 1.5px) 0 0 / 5px 5px,
+    linear-gradient(180deg, #3a3f45, var(--ix-wall) 60%, #1f2226);
+  box-shadow:
+    inset 0 0 120px rgba(0, 0, 0, 0.75),
+    0 0 0 2px #3b4047;
+  overflow: hidden;
+}
+
+/* ---- one-way mirror ---- */
+.ixmirror {
+  position: relative;
+  margin: 18px 4% 0;
+  border: 12px solid #4a5058;
+  border-bottom-width: 16px;
+  background:
+    radial-gradient(ellipse 70% 80% at 50% 30%, rgba(94, 168, 194, 0.16), transparent 70%),
+    linear-gradient(180deg, #17323b, var(--ix-glass));
+  box-shadow:
+    inset 0 0 0 2px #0c0e11,
+    inset 0 0 60px rgba(0, 0, 0, 0.7),
+    0 0 0 2px #0c0e11,
+    0 10px 24px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+
+/* metal frame with rivets */
+.ixmirror::before {
+  content: '';
+  position: absolute;
+  inset: -12px;
+  z-index: 4;
+  border: 12px solid transparent;
+  background:
+    radial-gradient(circle, #9aa1aa 2.5px, #2a2e33 3.2px, transparent 3.6px) 0 0 / 40px 40px;
+  -webkit-mask: linear-gradient(#000 0 0) padding-box exclude, linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) padding-box exclude,
+    linear-gradient(#000 0 0);
+  pointer-events: none;
+}
+
+.ixmirror__glare {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background:
+    linear-gradient(112deg, transparent 18%, rgba(255, 255, 255, 0.07) 22%, transparent 27%),
+    linear-gradient(112deg, transparent 60%, rgba(255, 255, 255, 0.05) 63%, rgba(255, 255, 255, 0.02) 70%, transparent 71%);
+  pointer-events: none;
+}
+
+.ixmirror__sign {
+  position: absolute;
+  top: 8px;
+  left: 44px;
+  z-index: 3;
+  padding: 2px 10px;
+  border: 2px solid rgba(255, 248, 231, 0.35);
+  color: rgba(255, 248, 231, 0.55);
+  font-family: var(--cf-type);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+/* line-up height chart on the far wall */
+.ixheight {
+  position: absolute;
+  inset: 8% 0 4%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.ixheight__mark {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 0;
+  border-top: 2px solid rgba(255, 248, 231, 0.16);
+  padding: 0 10px;
+}
+
+.ixheight__mark i {
+  margin-top: 12px;
+  color: rgba(255, 248, 231, 0.26);
+  font-family: var(--cf-display);
+  font-size: 0.95rem;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.ixmirror__lineup {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: clamp(60px, 8vw, 140px);
+  height: 100%;
+  padding: 26px 3% 0;
+}
+
+/* ---- a suspect behind the glass ---- */
+.ixsuspect {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 270px;
+  height: 100%;
+  min-height: 0;
+  padding-bottom: 12px;
+}
+
+.ixsuspect__figure {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.ixsuspect-art {
+  display: block;
+  height: 100%;
+  width: auto;
+  overflow: visible;
+  filter: drop-shadow(0 0 18px rgba(0, 0, 0, 0.5));
+}
+
+.ixsuspect-art__plate {
+  fill: var(--cf-ink);
+  font-family: var(--cf-display);
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.ixsuspect-art__plate-small {
+  fill: var(--cf-ink-soft);
+  font-family: var(--cf-type);
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.ixsuspect-art__waves {
+  animation: ix-shimmer 2.4s ease-in-out infinite;
+}
+
+.ixsuspect-art__rays {
+  transform-origin: 80px 62px;
+  animation: ix-spin 40s linear infinite;
+}
+
+.ixsuspect-art__flakes {
+  animation: ix-drift 5s ease-in-out infinite;
+}
+
+.ixsuspect-art__sweat {
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.ixsuspect.is-broken .ixsuspect-art__sweat,
+.ixdecide .ixsuspect-art__sweat {
+  opacity: 1;
+  animation: ix-drip 1.6s ease-in infinite;
+}
+
+.ixdecide.is-released .ixsuspect-art__sweat,
+.ixdecide:not(.is-charged) .ixsuspect-art__sweat {
+  opacity: 0;
+  animation: none;
+}
+
+@keyframes ix-shimmer {
+  50% {
+    transform: translateY(-4px);
+    opacity: 0.55;
+  }
+}
+
+@keyframes ix-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ix-drift {
+  50% {
+    transform: translate(3px, 6px);
+  }
+}
+
+@keyframes ix-drip {
+  0% {
+    transform: translateY(0);
+  }
+  80% {
+    transform: translateY(6px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+}
+
+/* alibi speech bubble */
+.ixbubble {
+  position: absolute;
+  top: 4px;
+  z-index: 2;
+  width: clamp(170px, 14vw, 220px);
+  margin: 0;
+  padding: 10px 14px;
+  border: 3px solid var(--cf-ink);
+  border-radius: 14px;
+  background: var(--cf-paper);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.55);
+  font-family: var(--cf-hand);
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.ixbubble p {
+  margin: 0;
+}
+
+.ixbubble::after {
+  content: '';
+  position: absolute;
+  top: 34px;
+  width: 22px;
+  height: 18px;
+  background: var(--cf-paper);
+  border: 3px solid var(--cf-ink);
+  border-top: none;
+}
+
+.ixsuspect--left .ixbubble {
+  right: calc(100% - 64px);
+}
+
+.ixsuspect--left .ixbubble::after {
+  right: -16px;
+  border-left: none;
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+  transform: skewY(20deg);
+}
+
+.ixsuspect--right .ixbubble {
+  left: calc(100% - 64px);
+}
+
+.ixsuspect--right .ixbubble::after {
+  left: -16px;
+  border-right: none;
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+  transform: skewY(-20deg);
+}
+
+.ixsuspect.is-broken .ixbubble p {
+  text-decoration: line-through;
+  text-decoration-color: rgba(200, 20, 27, 0.75);
+  text-decoration-thickness: 2px;
+}
+
+.ixbubble__stamp {
+  position: absolute;
+  right: 8px;
+  bottom: -14px;
+  padding: 2px 8px;
+  border: 3px solid currentColor;
+  background: rgba(255, 248, 231, 0.92);
+  font-family: var(--cf-display);
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transform: rotate(-7deg);
+}
+
+.ixbubble__stamp--breaks {
+  color: var(--ix-breaks);
+}
+
+.ixbubble__stamp--backs {
+  color: var(--ix-backs);
+}
+
+.ixsuspect.is-fresh .ixbubble__stamp {
+  animation: ix-stamp 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+}
+
+@keyframes ix-stamp {
+  from {
+    opacity: 0;
+    transform: rotate(-7deg) scale(2.4);
+  }
+}
+
+/* name plate under the suspect, with the verdicts collected so far */
+.ixsuspect__plate {
+  position: relative;
+  z-index: 2;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+  margin: -6px 0 0;
+  padding: 5px 10px 6px;
+  border: 3px solid var(--cf-ink);
+  background: #f1ead6;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.5);
+  text-align: center;
+}
+
+.ixsuspect__plate b {
+  font-family: var(--cf-display);
+  font-size: 1.35rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.ixsuspect__plate b {
+  line-height: 1;
+}
+
+.ixsuspect__plate small {
+  font-family: var(--cf-type);
+  font-size: 0.7rem;
+  line-height: 1.2;
+}
+
+.ixsuspect__marks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ixmark {
+  padding: 1px 7px;
+  border: 2px solid currentColor;
+  font-family: var(--cf-type);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ixmark--breaks {
+  color: var(--ix-breaks);
+}
+
+.ixmark--backs {
+  color: var(--ix-backs);
+}
+
+.ixmark--doubt {
+  color: var(--ix-doubt);
+  border-style: dashed;
+}
+
+.ixmark--none {
+  color: var(--cf-ink-soft);
+  border-color: transparent;
+  font-style: italic;
+  text-transform: none;
+}
+
+/* the fate stamp after the decision */
+.ixsuspect__fate,
+.ixdecide__stamp {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  padding: 4px 12px;
+  border: 4px solid currentColor;
+  background: rgba(255, 248, 231, 0.88);
+  font-family: var(--cf-display);
+  font-size: 1.7rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transform: translate(-50%, -50%) rotate(-12deg);
+  animation: ix-fate 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+}
+
+@keyframes ix-fate {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(-12deg) scale(2.6);
+  }
+}
+
+.ixsuspect.is-charged .ixsuspect__fate,
+.ixdecide.is-charged .ixdecide__stamp {
+  color: var(--ix-breaks);
+}
+
+.ixsuspect.is-released .ixsuspect__fate,
+.ixdecide.is-released .ixdecide__stamp {
+  color: var(--ix-backs);
+}
+
+.ixsuspect.is-released .ixsuspect-art {
+  opacity: 0.4;
+  transition: opacity 1.2s;
+}
+
+/* ---- hanging lamp ---- */
+.ixlamp {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 5;
+  width: 0;
+  height: 100%;
+  pointer-events: none;
+  --lamp-y: 54%;
+}
+
+.ixlamp__cord {
+  position: absolute;
+  top: 0;
+  left: -1px;
+  width: 3px;
+  height: var(--lamp-y);
+  background: #0c0e11;
+}
+
+.ixlamp__shade {
+  position: absolute;
+  top: var(--lamp-y);
+  left: -46px;
+  width: 92px;
+  height: 34px;
+  border: 3px solid #0c0e11;
+  border-bottom: none;
+  background: linear-gradient(90deg, #26452f, #3f6b4a 45%, #1d3524);
+  clip-path: polygon(30% 0, 70% 0, 100% 100%, 0 100%);
+}
+
+.ixlamp__bulb {
+  position: absolute;
+  top: calc(var(--lamp-y) + 28px);
+  left: -16px;
+  width: 32px;
+  height: 14px;
+  border-radius: 0 0 16px 16px;
+  background: #fff6cf;
+  box-shadow:
+    0 0 18px 6px rgba(255, 231, 163, 0.8),
+    0 0 60px 20px rgba(255, 231, 163, 0.25);
+  animation: ix-flicker 7s steps(1) infinite;
+}
+
+.ixlamp__cone {
+  position: absolute;
+  top: calc(var(--lamp-y) + 34px);
+  left: -380px;
+  width: 760px;
+  height: 60%;
+  background: radial-gradient(ellipse 50% 100% at 50% 0, rgba(255, 231, 163, 0.32), rgba(255, 231, 163, 0.1) 60%, transparent 85%);
+  clip-path: polygon(46% 0, 54% 0, 100% 100%, 0 100%);
+  mix-blend-mode: screen;
+  animation: ix-flicker 7s steps(1) infinite;
+}
+
+@keyframes ix-flicker {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  61% {
+    opacity: 0.7;
+  }
+  62% {
+    opacity: 1;
+  }
+  64% {
+    opacity: 0.82;
+  }
+  65% {
+    opacity: 1;
+  }
+}
+
+/* ---- metal table ---- */
+.ixtable {
+  position: relative;
+  z-index: 6;
+  align-self: end;
+  height: calc(100% - 10px);
+  margin: 0 2%;
+}
+
+.ixtable__top {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  height: calc(100% - 22px);
+  padding: 18px 4% 8px;
+  border: 3px solid #0c0e11;
+  border-bottom: none;
+  background:
+    radial-gradient(ellipse 45% 70% at 50% 10%, rgba(255, 231, 163, 0.32), transparent 75%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.035) 0 2px, transparent 2px 5px),
+    linear-gradient(180deg, #7d848c, #5e646b 70%, #4d5258);
+  clip-path: polygon(5% 0, 95% 0, 100% 100%, 0 100%);
+}
+
+.ixtable__edge {
+  display: block;
+  height: 22px;
+  border: 3px solid #0c0e11;
+  background: linear-gradient(180deg, #a3aab2, #6a7077);
+  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.6);
+}
+
+/* the witness's statement, clipped on the table */
+.ixstatement {
+  position: relative;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 128px;
+  margin: 0;
+  padding: 8px 8px 10px;
+  border: 2px solid var(--cf-ink);
+  background: var(--cf-paper);
+  box-shadow: 4px 5px 0 rgba(0, 0, 0, 0.45);
+  transform: rotate(-4deg);
+}
+
+.ixstatement__clip {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  width: 34px;
+  height: 18px;
+  border: 3px solid #2b2f33;
+  border-radius: 4px 4px 0 0;
+  background: #565c63;
+  transform: translateX(-50%);
+}
+
+.ixstatement__pic {
+  width: 74px;
+  height: 74px;
+  border: 2px solid var(--cf-ink);
+  background: #cfe0e8;
+}
+
+.ixstatement__pic svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.ixstatement figcaption {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 6px;
+  text-align: center;
+}
+
+.ixstatement b {
+  font-family: var(--cf-type);
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ixstatement span {
+  font-family: var(--cf-hand);
+  font-size: 0.8rem;
+  line-height: 1.15;
+}
+
+/* ---- manila folders ---- */
+.ixfolders {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ixfolder-card {
+  position: relative;
+  width: clamp(122px, 10.4vw, 156px);
+  animation: ix-deal 0.45s cubic-bezier(0.3, 1.3, 0.5, 1) both;
+  animation-delay: calc(var(--i) * 0.08s + 0.25s);
+}
+
+@keyframes ix-deal {
+  from {
+    opacity: 0;
+    transform: translateY(40px) rotate(8deg);
+  }
+}
+
+.ixfolder-card__btn {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--cf-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transform: rotate(var(--r, 0deg));
+  transition: transform 0.15s ease-out;
+}
+
+.ixfolder-card:nth-child(odd) .ixfolder-card__btn {
+  --r: -1.5deg;
+}
+
+.ixfolder-card:nth-child(even) .ixfolder-card__btn {
+  --r: 1.8deg;
+}
+
+.ixfolder-card__btn:hover {
+  transform: translateY(-6px) rotate(0deg);
+}
+
+.ixfolder-card__tab {
+  align-self: flex-start;
+  max-width: 88%;
+  margin-left: 8px;
+  padding: 3px 10px 2px;
+  border: 2px solid var(--cf-ink);
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  background: #d9b86e;
+  font-family: var(--cf-type);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ixfolder-card__body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 132px;
+  padding: 10px 10px 12px;
+  border: 2px solid var(--cf-ink);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.25), transparent 30%),
+    var(--ix-manila);
+  box-shadow: 4px 6px 0 rgba(0, 0, 0, 0.45);
+}
+
+/* a corner of paper sticking out of a solved folder */
+.ixfolder-card.is-solved .ixfolder-card__body::before,
+.ixfolder-card.is-filed .ixfolder-card__body::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  right: 10px;
+  width: 48%;
+  height: 14px;
+  border: 2px solid var(--cf-ink);
+  border-bottom: none;
+  background: var(--cf-paper);
+  z-index: -1;
+}
+
+.ixfolder-card__title {
+  font-family: var(--cf-display);
+  font-size: 1.12rem;
+  font-weight: 900;
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+
+.ixfolder-card__for {
+  font-family: var(--cf-type);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cf-ink-soft);
+}
+
+.ixfolder-card__teaser {
+  flex: 1;
+  font-family: var(--cf-hand);
+  font-size: 0.88rem;
+  line-height: 1.15;
+}
+
+.ixfolder-card__open {
+  align-self: flex-start;
+  padding: 1px 8px;
+  border: 2px solid var(--cf-ink);
+  background: var(--cf-paper);
+  font-family: var(--cf-display);
+  font-size: 0.85rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ixfolder-card__open.is-solved {
+  background: var(--cf-gold);
+  animation: ix-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes ix-pulse {
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+.ixfolder-card__stamp {
+  align-self: center;
+  padding: 2px 6px;
+  border: 3px solid currentColor;
+  background: rgba(255, 248, 231, 0.75);
+  font-family: var(--cf-display);
+  font-size: 0.85rem;
+  white-space: nowrap;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transform: rotate(-6deg);
+}
+
+.ixfolder-card.is-fresh .ixfolder-card__stamp {
+  animation: ix-stamp 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+}
+
+.ixfolder-card__stamp--breaks {
+  color: var(--ix-breaks);
+}
+
+.ixfolder-card__stamp--backs {
+  color: var(--ix-backs);
+}
+
+.ixfolder-card__stamp--doubt {
+  color: var(--ix-doubt);
+  border-style: dashed;
+}
+
+/* ---- overlays ---- */
+.interro__dim {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(8, 9, 12, 0.72);
+  backdrop-filter: blur(2px);
+  animation: ev-fade 0.2s ease-out;
+}
+
+.interro__dim--light {
+  background: rgba(8, 9, 12, 0.55);
+}
+
+/* the open folder: a manila folder spread open, paper sheet inside */
+.ixfolder {
+  width: min(1240px, 100%);
+  max-height: 100%;
+  display: flex;
+}
+
+.ixfolder__sheet {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(250px, 0.7fr) minmax(0, 1.6fr);
+  gap: 22px;
+  width: 100%;
+  max-height: calc(100dvh - 32px);
+  padding: 30px 24px 20px;
+  border: 4px solid var(--cf-ink);
+  background:
+    linear-gradient(90deg, transparent calc(30% - 2px), rgba(22, 27, 46, 0.12) 30%, transparent calc(30% + 2px)),
+    var(--cf-paper);
+  box-shadow:
+    0 0 0 10px var(--ix-manila),
+    0 0 0 13px var(--cf-ink),
+    0 24px 60px rgba(0, 0, 0, 0.7);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  font-family: var(--cf-type);
+  animation: ix-open 0.38s cubic-bezier(0.3, 1.2, 0.5, 1);
+}
+
+@keyframes ix-open {
+  from {
+    opacity: 0;
+    transform: translateY(60px) scale(0.6) rotate(3deg);
+  }
+}
+
+.ixfolder__tab {
+  position: absolute;
+  top: 0;
+  left: 26px;
+  padding: 2px 12px;
+  border: 2px solid var(--cf-ink);
+  border-top: none;
+  background: var(--ix-manila);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.ixfolder__close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  z-index: 2;
+  padding: 4px 10px;
+  border: 2px solid var(--cf-ink);
+  background: #fff;
+  color: var(--cf-ink);
+  font-family: var(--cf-display);
+  font-size: 0.95rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.ixfolder__close:hover {
+  background: var(--cf-ink);
+  color: var(--cf-gold);
+}
+
+.ixfolder__close kbd {
+  margin-left: 4px;
+  padding: 0 4px;
+  border: 1px solid currentColor;
+  font-family: var(--cf-type);
+  font-size: 0.7rem;
+}
+
+.ixfolder__side {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.ixfolder__kind {
+  margin: 0;
+  color: var(--cf-ink-soft);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.ixfolder__title {
+  margin: -6px 0 0;
+  font-family: var(--cf-display);
+  font-size: clamp(1.7rem, 2.4vw, 2.4rem);
+  font-weight: 900;
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+
+.ixfolder__title:focus {
+  outline: none;
+}
+
+.ixfolder__task {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding-top: 26px;
+}
+
+/* the suspect's mugshot next to the note */
+.ixmugshot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 0 0;
+  padding: 10px;
+  border: 3px solid var(--cf-ink);
+  background: var(--ix-glass);
+  color: var(--cf-paper);
+  box-shadow: 4px 4px 0 var(--cf-ink);
+  transform: rotate(0.8deg);
+}
+
+.ixmugshot__pic {
+  flex: none;
+  width: 84px;
+  height: 84px;
+  border: 2px solid var(--cf-paper);
+  background:
+    repeating-linear-gradient(0deg, transparent 0 13px, rgba(255, 248, 231, 0.18) 13px 14px),
+    #17323b;
+}
+
+.ixmugshot__pic svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.ixmugshot figcaption {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ixmugshot b {
+  font-family: var(--cf-display);
+  font-size: 1.3rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.ixmugshot span {
+  font-family: var(--cf-hand);
+  font-size: 0.95rem;
+  line-height: 1.2;
+}
+
+/* ---- confront the suspect ---- */
+.ixconfront {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px 16px;
+  border: 3px solid var(--cf-ink);
+  background:
+    radial-gradient(ellipse 60% 90% at 50% 0, rgba(255, 231, 163, 0.18), transparent 70%),
+    #20252b;
+  color: var(--cf-paper);
+  box-shadow: 5px 5px 0 var(--cf-ink);
+  animation: ix-open 0.3s ease-out;
+}
+
+.ixconfront__title {
+  margin: 0;
+  color: var(--cf-gold);
+  font-family: var(--cf-display);
+  font-size: 1.6rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.ixconfront__alibi {
+  margin: 0;
+  font-family: var(--cf-hand);
+  font-size: 1.05rem;
+}
+
+.ixconfront__alibi span {
+  color: rgba(255, 248, 231, 0.7);
+  font-family: var(--cf-type);
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ixconfront__ask {
+  margin: 0;
+  font-weight: 700;
+}
+
+.ixconfront__choices {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.ixconfront__choice {
+  min-height: 52px;
+  padding: 8px 10px;
+  border: 3px solid var(--cf-paper);
+  background: transparent;
+  color: var(--cf-paper);
+  font-family: var(--cf-display);
+  font-size: 1.1rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    transform 0.1s;
+}
+
+.ixconfront__choice:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.ixconfront__choice--breaks:hover:not(:disabled),
+.ixconfront__choice--breaks.is-right {
+  border-color: #ff6b6b;
+  background: var(--ix-breaks);
+}
+
+.ixconfront__choice--backs:hover:not(:disabled),
+.ixconfront__choice--backs.is-right {
+  border-color: #7fd39b;
+  background: var(--ix-backs);
+}
+
+.ixconfront__choice--doubt:hover:not(:disabled),
+.ixconfront__choice--doubt.is-right {
+  border-color: #c9ced6;
+  background: var(--ix-doubt);
+}
+
+.ixconfront__choice.is-wrong {
+  border-style: dashed;
+  opacity: 0.55;
+  animation: ix-shake 0.35s;
+}
+
+.ixconfront__choice:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+@keyframes ix-shake {
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+.ixconfront .evtask__feedback {
+  color: var(--cf-ink);
+}
+
+.ixconfront__done {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.ixconfront .evlink__clue {
+  color: var(--cf-paper);
+}
+
+/* ---- season switch ---- */
+.ixtabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: -14px;
+  padding-left: 6px;
+}
+
+.ixtabs__tab {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 92px;
+  padding: 6px 24px 8px 12px;
+  border: 3px solid var(--cf-ink);
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  background: #e8dfc6;
+  color: var(--cf-ink-soft);
+  font-family: var(--cf-display);
+  font-size: 1.05rem;
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.ixtabs__tab small {
+  font-family: var(--cf-type);
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: none;
+}
+
+.ixtabs__tab.is-seen::after {
+  content: '✓';
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  color: var(--cf-green);
+  font-size: 0.8rem;
+}
+
+.ixtabs__tab.is-on {
+  z-index: 1;
+  background: #fff;
+  color: var(--cf-ink);
+  transform: translateY(-3px);
+}
+
+.ixtabs__panel {
+  padding: 12px 12px 10px;
+  border: 3px solid var(--cf-ink);
+  background: #fff;
+}
+
+.ixreadout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 16px;
+  margin: 6px 0 0;
+  font-size: 0.9rem;
+}
+
+.ixreadout__slope {
+  font-family: var(--cf-display);
+  font-size: 1.5rem;
+  font-weight: 900;
+}
+
+.ixreadout__p {
+  padding: 1px 8px;
+  border: 2px dashed var(--ix-doubt);
+  color: var(--ix-doubt);
+  font-weight: 700;
+}
+
+.ixreadout__p.is-sig {
+  border-style: solid;
+  border-color: var(--cf-red);
+  color: var(--cf-red);
+}
+
+.ixbars {
+  margin: 0;
+  padding: 8px 10px 4px;
+  border: 2px solid var(--cf-ink);
+  background:
+    repeating-linear-gradient(0deg, transparent 0 15px, rgba(36, 87, 166, 0.1) 15px 16px),
+    #fbf7ea;
+}
+
+.ixbars__cap {
+  margin: 0 0 4px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.ixbars svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 150px;
+}
+
+.ixbars__zero {
+  stroke: var(--cf-ink);
+  stroke-width: 2;
+}
+
+.ixbars__ref {
+  stroke: var(--cf-red);
+  stroke-width: 2.5;
+  stroke-dasharray: 8 5;
+}
+
+.ixbars__hit {
+  fill: transparent;
+  cursor: pointer;
+}
+
+.ixbars__col.is-on .ixbars__hit {
+  fill: rgba(242, 193, 78, 0.28);
+}
+
+.ixbars__whisker {
+  stroke: var(--cf-ink);
+  stroke-width: 2;
+}
+
+.ixbars__bar {
+  fill: #fff;
+  stroke: var(--cf-ink);
+  stroke-width: 2.5;
+}
+
+.ixbars__bar.is-sig {
+  fill: var(--cf-blue);
+}
+
+.ixbars__val,
+.ixbars__label,
+.ixbars__axis,
+.ixpscale__label {
+  fill: var(--cf-ink);
+  font-family: var(--cf-type);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ixbars__label {
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.ixbars__axis {
+  font-size: 11px;
+  fill: var(--cf-ink-soft);
+}
+
+.ixbars__axis.is-alpha {
+  fill: var(--cf-red);
+}
+
+.ixbars__unknown {
+  fill: rgba(22, 27, 46, 0.35);
+  font-family: var(--cf-display);
+  font-size: 30px;
+  font-weight: 900;
+}
+
+.ixticks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.ixticks__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ixtick {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 14px 6px 10px;
+  border: 3px solid var(--cf-ink);
+  background: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ixtick input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--cf-ink);
+}
+
+.ixtick.is-on {
+  background: #fde58a;
+  box-shadow: 3px 3px 0 var(--cf-ink);
+}
+
+.ixtick--none {
+  border-style: dashed;
+}
+
+/* ---- proof line ---- */
+.ixtray {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  min-height: 64px;
+  margin: 0;
+  padding: 10px;
+  border: 2px dashed rgba(22, 27, 46, 0.4);
+  list-style: none;
+}
+
+.ixtray.is-over {
+  background: rgba(242, 193, 78, 0.18);
+}
+
+.ixproof {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  min-height: 170px;
+  border: 3px solid var(--cf-ink);
+  background: #fff;
+}
+
+.ixproof__zone {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  transition: background 0.15s;
+}
+
+.ixproof__zone h4 {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  font-family: var(--cf-display);
+  font-size: 1.15rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.ixproof__zone h4 small {
+  font-family: var(--cf-type);
+  font-size: 0.75rem;
+  text-transform: none;
+}
+
+.ixproof__zone ul {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ixproof__zone--proven {
+  background: rgba(229, 50, 45, 0.07);
+}
+
+.ixproof__zone--proven h4 {
+  color: var(--cf-red);
+}
+
+.ixproof__zone--doubt h4 {
+  color: var(--ix-doubt);
+}
+
+.ixproof__zone.is-over {
+  background: rgba(242, 193, 78, 0.3);
+}
+
+.ixproof__line {
+  position: relative;
+  width: 6px;
+  background: repeating-linear-gradient(180deg, var(--cf-red) 0 12px, transparent 12px 18px);
+}
+
+.ixproof__line span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  padding: 3px 6px;
+  border: 2px solid var(--cf-red);
+  background: #fff;
+  color: var(--cf-red);
+  font-weight: 700;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  transform: translate(-50%, -50%) rotate(-90deg);
+}
+
+.ixchip {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    'label moves'
+    'p moves';
+  align-items: center;
+  gap: 0 8px;
+  min-width: 200px;
+  padding: 6px 8px 6px 12px;
+  border: 2px solid var(--cf-ink);
+  background: var(--cf-paper);
+  box-shadow: 3px 3px 0 var(--cf-ink);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.ixchip.is-dragging {
+  z-index: 5;
+  cursor: grabbing;
+  box-shadow: 8px 10px 0 rgba(22, 27, 46, 0.4);
+}
+
+.ixchip.is-solved {
+  cursor: default;
+}
+
+.ixchip.is-ok {
+  border-color: var(--cf-green);
+  box-shadow: 3px 3px 0 var(--cf-green);
+}
+
+.ixchip.is-off {
+  border-color: var(--cf-red);
+  box-shadow: 3px 3px 0 var(--cf-red);
+  animation: ix-shake 0.35s;
+}
+
+.ixchip__label {
+  grid-area: label;
+  font-weight: 700;
+}
+
+.ixchip__p {
+  grid-area: p;
+  font-family: var(--cf-hand);
+  font-size: 1.05rem;
+}
+
+.ixchip__moves {
+  grid-area: moves;
+  display: flex;
+  gap: 4px;
+}
+
+.ixchip__moves button {
+  width: 30px;
+  height: 30px;
+  border: 2px solid var(--cf-ink);
+  background: #fff;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.ixchip__moves button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.ixchip__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.ixpscale {
+  margin: 0;
+  padding: 8px 10px 4px;
+  border: 2px solid var(--cf-ink);
+  background: #fbf7ea;
+}
+
+.ixpscale svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.ixpscale__proven {
+  fill: rgba(229, 50, 45, 0.1);
+}
+
+.ixpscale__tick {
+  stroke: rgba(22, 27, 46, 0.25);
+  stroke-width: 1;
+}
+
+.ixpscale__alpha {
+  stroke: var(--cf-red);
+  stroke-width: 3;
+  stroke-dasharray: 6 4;
+}
+
+.ixpscale__dot {
+  fill: #fff;
+  stroke: var(--cf-ink);
+  stroke-width: 2.5;
+}
+
+.ixpscale__dot.is-sig {
+  fill: var(--cf-red);
+}
+
+.ixpscale__label {
+  font-size: 12px;
+}
+
+/* ---- the decision ---- */
+.ixdecision {
+  position: relative;
+  width: min(980px, 100%);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  padding: 24px 28px 22px;
+  border: 4px solid var(--cf-ink);
+  background: var(--cf-paper);
+  box-shadow:
+    0 0 0 8px #20252b,
+    0 0 0 11px var(--cf-ink),
+    0 24px 60px rgba(0, 0, 0, 0.7);
+  font-family: var(--cf-type);
+  animation: ix-open 0.38s cubic-bezier(0.3, 1.2, 0.5, 1);
+}
+
+.ixdecision__label {
+  display: inline-block;
+  margin: 0 0 6px;
+  padding: 3px 10px;
+  border: 2px solid var(--cf-ink);
+  background: var(--cf-gold);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transform: rotate(-1.5deg);
+}
+
+.ixdecision__title {
+  margin: 0 0 6px;
+  font-family: var(--cf-display);
+  font-size: 2.6rem;
+  font-weight: 900;
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+
+.ixdecision__title:focus {
+  outline: none;
+}
+
+.ixdecision__prompt {
+  margin: 0 0 14px;
+  font-family: var(--cf-hand);
+  font-size: 1.2rem;
+}
+
+.ixdecision__suspects {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.ixdecide {
+  display: flex;
+  gap: 14px;
+  padding: 12px;
+  border: 3px solid var(--cf-ink);
+  background: #fff;
+  box-shadow: 4px 4px 0 var(--cf-ink);
+}
+
+.ixdecide.is-wrong {
+  border-color: var(--cf-red);
+  box-shadow: 4px 4px 0 var(--cf-red);
+}
+
+.ixdecide__pic {
+  position: relative;
+  flex: none;
+  width: 112px;
+  height: 112px;
+  border: 3px solid var(--cf-ink);
+  background:
+    repeating-linear-gradient(0deg, transparent 0 17px, rgba(255, 248, 231, 0.18) 17px 18px),
+    #17323b;
+}
+
+.ixdecide__pic svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.ixdecide__stamp {
+  font-size: 1.15rem;
+  padding: 2px 8px;
+  border-width: 3px;
+}
+
+.ixdecide.is-released .ixdecide__pic svg {
+  opacity: 0.45;
+}
+
+.ixdecide__info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ixdecide__info h3 {
+  margin: 0;
+  font-family: var(--cf-display);
+  font-size: 1.5rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.ixdecide__info .ixsuspect__marks {
+  justify-content: flex-start;
+}
+
+.ixdecide__text {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.ixdecide__choices {
+  display: flex;
+  gap: 8px;
+}
+
+.ixdecide__choice {
+  flex: 1;
+  min-height: 46px;
+  border: 3px solid var(--cf-ink);
+  background: #fff;
+  color: var(--cf-ink);
+  font-family: var(--cf-display);
+  font-size: 1.2rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.ixdecide__choice:hover {
+  box-shadow: 3px 3px 0 var(--cf-ink);
+}
+
+.ixdecide__choice--charge.is-on {
+  background: var(--ix-breaks);
+  color: #fff;
+}
+
+.ixdecide__choice--release.is-on {
+  background: var(--ix-backs);
+  color: #fff;
+}
+
+.ixdecision__summary {
+  position: relative;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 2px solid var(--cf-ink);
+  background: #fde58a;
+  font-family: var(--cf-hand);
+  font-size: 1.15rem;
+  line-height: 1.35;
+}
+
+.ixdecision .evsummary__nav {
+  justify-content: flex-end;
+}
+
+.ixdecision .evbtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .interro *,
+  .interro *::before,
+  .interro *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

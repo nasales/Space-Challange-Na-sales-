@@ -75,7 +75,7 @@ export default function CaseClosed({ tutorial, witness, clues, onClose }: Props)
               Case solved: its marker turns green on the map.
             </p>
 
-            {clues.length > 0 && <Notebook variant="closed" clues={clues} total={script.board?.items.length ?? script.steps.length} />}
+            {clues.length > 0 && <Notebook variant="closed" clues={clues} total={script.board?.items.length ?? script.interrogation?.evidence.length ?? script.steps.length} />}
 
             <h3 className="caseclosed__section">What the statistics say</h3>
             <StatsReveal script={script} data={data} />

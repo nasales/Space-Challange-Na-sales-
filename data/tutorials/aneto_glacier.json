@@ -7,239 +7,271 @@
     "paragraphs": [
       "Aneto is the highest mountain in the Pyrenees, the range between Spain and France. On its northern side lies the largest glacier of the whole range. Since the 1980s it has lost most of its ice, and scientists expect it to disappear within a few decades.",
       "A glacier works like a bank account. In winter, snow falls and piles up: that is the income. In summer, the sun and warm air melt ice: that is the spending. If the spending is bigger than the income year after year, the glacier shrinks.",
-      "So there are two suspects: summers that melt more, or winters that bring less snow. In this case file you will look at NASA data for the Aneto area season by season, and then decide for yourself."
+      "So there are two suspects: summers that melt more, or winters that bring less snow. In the interrogation room you will question both with NASA data for the Aneto area, season by season, and then decide who to charge."
     ],
     "question": "The largest glacier in the Pyrenees is shrinking. Is it the heat, or less snow and rain?"
   },
-  "steps": [
-    {
-      "id": "recap",
-      "title": "Quick recap: points and a line",
-      "text": "Each point is the average air temperature of one month, 2 metres above the ground, from January 1980 to September 2026, over the square of the map that contains Aneto. The zigzag is the seasons: cold winters, warm summers. The straight line is the trend: the best single slope through all the months. Data: NASA MERRA-2.",
-      "chart": {
-        "variable": "T2M",
-        "view": "monthly",
-        "show_trend": true
+  "scene": {
+    "lines": [
+      {
+        "speaker": "witness",
+        "text": "Bon dia, detective! Welcome to the hut. Leave your boots by the stove, there is hot soup if the climb was long.",
+        "mood": "happy"
       },
-      "question": {
-        "prompt": "What does the straight line on this chart show?",
-        "options": [
-          {
-            "text": "The overall direction of temperature over the decades",
-            "correct": true,
-            "feedback": "Right: the trend line sums up all the months in one slope."
-          },
-          {
-            "text": "The temperature of one single month",
-            "correct": false,
-            "feedback": "One month is one point on the zigzag. The straight line runs across the whole chart, from 1980 to 2026. What could it summarise?"
-          },
-          {
-            "text": "The coldest month of every year",
-            "correct": false,
-            "feedback": "The coldest months are the low tips of the zigzag. The straight line sits in the middle of the zigzag, not at its bottom."
-          }
-        ]
+      {
+        "speaker": "detective",
+        "text": "Thank you, Jordi. I am looking into the Aneto glacier, the largest in the Pyrenees. They say you see it every summer from here.",
+        "mood": "curious"
       },
-      "takeaway": "Points tell you about single months; the trend line tells you about the decades."
+      {
+        "speaker": "witness",
+        "text": "Every summer for thirty years. From the terrace you see the north face of Aneto, the highest peak of the Pyrenees, with the glacier below it.",
+        "mood": "proud"
+      },
+      {
+        "speaker": "witness",
+        "text": "When I started, the ice was a big white tongue down the slope. Climbers roped up for hours to cross it.",
+        "mood": "explaining"
+      },
+      {
+        "speaker": "witness",
+        "text": "Now it is a grey patch broken into pieces, with bare rock all around. Every summer I see more rock and less ice.",
+        "mood": "sad"
+      },
+      {
+        "speaker": "detective",
+        "text": "Scientists say the glacier has lost most of its ice since the 1980s. What do you think is happening?",
+        "mood": "curious"
+      },
+      {
+        "speaker": "witness",
+        "text": "Ai, detective... When I was young, some winters buried this hut up to the windows. We dug a path to the door.",
+        "mood": "doubtful"
+      },
+      {
+        "speaker": "witness",
+        "text": "These days I hardly need the shovel. No snow, no glacier. It is simple arithmetic.",
+        "mood": "insistent"
+      },
+      {
+        "speaker": "witness",
+        "text": "The glacier is dying because it does not snow like it used to. Write that in your notebook.",
+        "mood": "confident"
+      },
+      {
+        "speaker": "detective",
+        "text": "I will. But a glacier has two sides: winter snow brings ice in, summer heat takes it away.",
+        "mood": "explaining"
+      },
+      {
+        "speaker": "detective",
+        "text": "So I have two suspects: the summer heat and the missing snow. And both of them say they are innocent.",
+        "mood": "determined"
+      },
+      {
+        "speaker": "witness",
+        "text": "Two suspects? And how will you make them talk?",
+        "mood": "curious"
+      },
+      {
+        "speaker": "detective",
+        "text": "With evidence. NASA data for this square of the mountains: temperature since 1980, rain and snow since 1998. Let us question them.",
+        "mood": "determined"
+      },
+      {
+        "speaker": "witness",
+        "text": "Go on, then. Ask the snow where it went!",
+        "mood": "confident"
+      }
+    ],
+    "claim": "The glacier is dying because it does not snow like it used to."
+  },
+  "steps": [],
+  "interrogation": {
+    "title": "Who is melting the glacier?",
+    "instructions": "Open each folder on the table and solve it, then put it to the suspect on its tab: does it break the alibi, back it, or leave reasonable doubt?",
+    "suspects": [
+      {
+        "id": "heat",
+        "name": "Summer Heat",
+        "look": "heat",
+        "record": "Works June to August. Melts ice for a living.",
+        "alibi": "The yearly average barely moved: about 0.4 °C per decade. Look how small that is!",
+        "guilty": true,
+        "decision_text": "Charged. Summers at the Aneto square warm by about +0.46 °C per decade (p = 0.00035), about 2 °C since 1980, right in the melt season. The small yearly figure was hiding it.",
+        "wrong_hint": "Look at your folders again: two of them broke Summer Heat's alibi beyond reasonable doubt (p < 0.05). Can you let that suspect walk?"
+      },
+      {
+        "id": "snow",
+        "name": "Missing Snow",
+        "look": "snow",
+        "record": "Arrives December to February. Feeds the glacier.",
+        "alibi": "I have been falling just like always. Check the gauges, detective.",
+        "guilty": false,
+        "decision_text": "Released. Precipitation shows no trend (p = 0.72 for all months; winter p = 0.53, summer p = 0.58). Warmer winters and fewer freezing months raise doubts, but neither crosses the p < 0.05 line.",
+        "wrong_hint": "Missing Snow's alibi held: the gauge shows no clear trend, and the other two folders only left reasonable doubt. Doubt is not enough to charge."
+      }
+    ],
+    "evidence": [
+      {
+        "id": "split_year",
+        "title": "The year, split in four",
+        "teaser": "One average, four seasons",
+        "text": "Summer Heat hides behind one number: the trend of all months together, about +0.39 °C per decade. But a yearly average mixes four seasons, and the glacier feels each one differently: winter snow builds it, summer heat melts it. Flip the chart between the whole year and each season and read each trend. Data: NASA MERRA-2.",
+        "task": {
+          "type": "season_switch",
+          "variable": "T2M",
+          "seasons": [
+            "DJF",
+            "MAM",
+            "JJA",
+            "SON"
+          ],
+          "rule": "faster_than_year",
+          "question": "Which seasons warm faster than the whole year?",
+          "prompt": "Flip through the tabs and compare each season's trend with the whole year's.",
+          "hint": "Read the \"per decade\" number under each tab and compare it with the Whole year tab. More than one season can be faster.",
+          "success": "Right: spring (+0.47 °C per decade) and summer (+0.46) warm faster than the whole year (+0.39); winter (+0.36) and autumn (+0.20) warm slower. The average was hiding the melt season."
+        },
+        "suspect": "heat",
+        "verdict": "breaks",
+        "verdict_feedback": "It breaks the alibi. The small yearly figure is an average: summer, the melt season, warms faster than the year as a whole, about +0.46 °C per decade, p = 0.00035.",
+        "clue": "Summer warms faster than the yearly average: +0.46 vs +0.39 °C per decade."
+      },
+      {
+        "id": "summer_ruler",
+        "title": "Every summer since 1980",
+        "teaser": "47 summers on one ruler",
+        "text": "Each point is one summer: the average of June, July and August at the Aneto square, 1980 to 2026. Summers jump up and down from year to year, so do not follow single points: look for the tilt of the whole cloud. Then compare your ruler with the real trend line. Data: NASA MERRA-2.",
+        "chart": {
+          "variable": "T2M",
+          "view": "season",
+          "season": "JJA"
+        },
+        "task": {
+          "type": "fit_line",
+          "tolerance": 0.3,
+          "prompt": "Drag the two ends of the ruler so it follows the general direction of the summers.",
+          "hint": "Do not chase one point. Compare the middle of the cloud in the 1980s with the middle of the cloud in the 2020s.",
+          "success": "Good: the line climbs. The real trend is about +0.46 °C per decade, about 2 °C from 1980 to 2026, and its 95% range (+0.20 to +0.74) is all above zero."
+        },
+        "suspect": "heat",
+        "verdict": "breaks",
+        "verdict_feedback": "It breaks the alibi. Summers warm clearly: +0.46 °C per decade with p = 0.00035, less than 1 chance in 1,000 of a slope like this by chance alone. That is beyond reasonable doubt.",
+        "clue": "Summers: +0.46 °C per decade, p = 0.00035. Beyond reasonable doubt."
+      },
+      {
+        "id": "precip_gauge",
+        "title": "The rain and snow gauge",
+        "teaser": "Water from the sky, season by season",
+        "text": "Missing Snow says it falls as always. This gauge counts all the water from the sky, rain and snow together, measured as melted water, from 1998 to 2025. It cannot tell snow from rain, but it shows whether the glacier's income is shrinking. Flip through the year and the seasons and read each p-value. Data: NASA GPM IMERG.",
+        "task": {
+          "type": "season_switch",
+          "variable": "PRECIP",
+          "seasons": [
+            "DJF",
+            "MAM",
+            "JJA",
+            "SON"
+          ],
+          "rule": "significant",
+          "question": "In which seasons is the precipitation trend significant (p < 0.05)?",
+          "prompt": "Flip through the tabs and read each trend and its p-value.",
+          "hint": "A trend is significant only when p is below 0.05. Read the p under every tab before you tick.",
+          "success": "Right: none. All months together: p = 0.72; winter p = 0.53, spring 0.55, summer 0.58, autumn 0.82. Wet and dry years come and go with no clear trend."
+        },
+        "suspect": "snow",
+        "verdict": "backs",
+        "verdict_feedback": "It backs the alibi. The water falling on the Aneto square shows no clear change in any season. One limit: the gauge counts rain and snow together, so it cannot say what share fell as snow.",
+        "clue": "Precipitation: no trend in any season (all months p = 0.72)."
+      },
+      {
+        "id": "standard_of_proof",
+        "title": "The standard of proof",
+        "teaser": "Where is the 0.05 line?",
+        "text": "A court needs proof beyond reasonable doubt; a detective uses the p-value: the chance of a trend this strong if nothing were really changing. Below 0.05 (1 in 20) we call a trend significant. Winters here warm about +0.36 °C per decade, with p = 0.051. Warmer winters could turn some snow into rain. Is that proof? Data: NASA MERRA-2, NASA GPM IMERG.",
+        "chart": {
+          "variable": "T2M",
+          "view": "season",
+          "season": "DJF",
+          "show_trend": true
+        },
+        "task": {
+          "type": "proof_line",
+          "exhibits": [
+            {
+              "label": "Summer temperature",
+              "variable": "T2M",
+              "season": "JJA"
+            },
+            {
+              "label": "Winter temperature",
+              "variable": "T2M",
+              "season": "DJF"
+            },
+            {
+              "label": "Temperature, all months",
+              "variable": "T2M"
+            },
+            {
+              "label": "Winter precipitation",
+              "variable": "PRECIP",
+              "season": "DJF"
+            }
+          ],
+          "prompt": "Put each trend on its side of the line: beyond reasonable doubt (p < 0.05) or reasonable doubt.",
+          "hint": "Compare each p-value with 0.05, digit by digit. 0.051 is very close, but is it below 0.05?",
+          "success": "Right: summer temperature (p = 0.00035) and all months (p < 0.001) are proven. Winter temperature, p = 0.051, misses the line by a hair; winter precipitation (p = 0.53) is far from it."
+        },
+        "suspect": "snow",
+        "verdict": "doubt",
+        "verdict_feedback": "Reasonable doubt. Warmer winters would turn some snow into rain and break Missing Snow's alibi, and the slope does tilt up. But p = 0.051 is just above 0.05, and the 95% range (about 0.00 to +0.65 °C per decade) touches zero. Close is not proof.",
+        "clue": "Winters: +0.36 °C per decade, p = 0.051. Close to the line, not proven."
+      },
+      {
+        "id": "freezing_months",
+        "title": "Counting freezing months",
+        "teaser": "Months below 0 °C, decade by decade",
+        "text": "A threshold turns temperature into something the glacier feels. Each bar is one year: how many of its months averaged below 0 °C at this square. Counts are small whole numbers that jump around, so compare two periods of ten years, not single bars. Data: NASA MERRA-2.",
+        "chart": {
+          "variable": "T2M",
+          "view": "threshold_count",
+          "threshold_id": "below_0"
+        },
+        "task": {
+          "type": "tally",
+          "rule": "Add up the bars (months below 0 °C) of every year in the period.",
+          "periods": [
+            {
+              "label": "1980-1989",
+              "from": "1980",
+              "to": "1989"
+            },
+            {
+              "label": "2016-2025",
+              "from": "2016",
+              "to": "2025"
+            }
+          ],
+          "answers": [
+            20,
+            8
+          ],
+          "prompt": "Count the freezing months in each period and type the two totals.",
+          "hint": "Add the height of every bar in the period: a bar of 3 counts as 3 months, and a year with no bar counts as 0.",
+          "success": "Right: 20 freezing months in 1980-1989 (2.0 a year) and 8 in 2016-2025 (0.8 a year). Four of the last ten years had none."
+        },
+        "suspect": "snow",
+        "verdict": "doubt",
+        "verdict_feedback": "Reasonable doubt. Fewer freezing months could mean less snow staying on the mountain, which would hurt Missing Snow's alibi. But the yearly counts jump a lot: their trend has p = 0.082, above the 0.05 line. Suggestive, not proof.",
+        "clue": "Freezing months: 2.0 a year in the 1980s, 0.8 in 2016-2025; p = 0.082."
+      }
+    ],
+    "finale": {
+      "prompt": "Every folder is on the table. Who do you charge with melting the glacier, and who walks free?"
     },
-    {
-      "id": "two_seasons",
-      "title": "Two seasons, two jobs",
-      "text": "This is a normal year at this square: all Januaries averaged together, all Februaries, and so on. For the glacier, the year has two jobs. Winter is when snow can pile up: the months near or below 0 °C. Summer is when ice melts: the warmest months. A yearly average mixes both jobs together, so a detective looks at each season on its own.",
-      "chart": {
-        "variable": "T2M",
-        "view": "climatology"
-      },
-      "question": {
-        "prompt": "In a normal year, which months are at or below 0 °C at this square?",
-        "options": [
-          {
-            "text": "December, January and February",
-            "correct": true,
-            "feedback": "Yes: only the middle of winter is at or below freezing here."
-          },
-          {
-            "text": "June, July and August",
-            "correct": false,
-            "feedback": "Find June, July and August on the chart. Are they at the bottom of the curve, or at the top?"
-          },
-          {
-            "text": "Every month from October to April",
-            "correct": false,
-            "feedback": "Look at the 0 °C level and follow the curve. Which months are actually at or under it? October and April are well above."
-          }
-        ]
-      },
-      "takeaway": "Winter builds the glacier and summer melts it, so study each season separately."
-    },
-    {
-      "id": "summers",
-      "title": "Suspect one: the summers",
-      "text": "Each point is now one summer: the average of June, July and August, from 1980 to 2026. The trend is about +0.46 °C every 10 years, about 2 °C over the whole period. Here p = 0.00035: less than 1 in 1,000, so very unlikely to be chance. The 95% confidence range, +0.20 to +0.74 °C per decade, is all above zero.",
-      "chart": {
-        "variable": "T2M",
-        "view": "season",
-        "season": "JJA",
-        "show_trend": true,
-        "highlights": [
-          { "kind": "point", "date": "2003", "label": "Summer 2003" },
-          { "kind": "point", "date": "2022", "label": "Summer 2022" }
-        ]
-      },
-      "question": {
-        "prompt": "How do the most recent summers compare with the summers of the 1980s?",
-        "options": [
-          {
-            "text": "They are warmer",
-            "correct": true,
-            "feedback": "Yes: the last summers sit well above the 1980s."
-          },
-          {
-            "text": "About the same",
-            "correct": false,
-            "feedback": "Compare the points on the far left with the points on the far right. Are they at the same height?"
-          },
-          {
-            "text": "They are colder",
-            "correct": false,
-            "feedback": "Follow the trend line from left to right. Does it go down or up?"
-          }
-        ]
-      },
-      "takeaway": "The melt season is warming clearly and significantly."
-    },
-    {
-      "id": "winters",
-      "title": "Now the winters",
-      "text": "Same view for winter: December, January and February, each winter named after its January (1981 to 2026). The slope is smaller, about +0.36 °C every 10 years, and winters jump a lot from one year to the next. Here p = 0.051, just above the usual 0.05 limit. The 95% confidence range, about 0.00 to +0.65 °C per decade, only just touches zero.",
-      "chart": {
-        "variable": "T2M",
-        "view": "season",
-        "season": "DJF",
-        "show_trend": true
-      },
-      "question": {
-        "prompt": "With p = 0.051 for winters, what is the most honest thing to say?",
-        "options": [
-          {
-            "text": "Winters may be warming, but the evidence is not strong enough to call it significant",
-            "correct": true,
-            "feedback": "Well done: close to the limit is still not below it."
-          },
-          {
-            "text": "Winters are warming as clearly as summers",
-            "correct": false,
-            "feedback": "Compare this p-value (0.051) with the summer one (0.00035). A trend is called significant only when p is below 0.05. Is 0.051 below 0.05?"
-          },
-          {
-            "text": "This proves winters are not changing",
-            "correct": false,
-            "feedback": "Look at the trend line: it tilts up. Not having enough evidence is not the same as proving there is no change."
-          }
-        ]
-      },
-      "takeaway": "Split by season, the same place tells two stories: a clear summer warming, a weaker winter one."
-    },
-    {
-      "id": "snow_and_rain",
-      "title": "Suspect two: less snow?",
-      "text": "The other suspect is the glacier's income. This is winter precipitation (rain and snow together, measured as water), December to February, from 1999 to 2025. Data: NASA GPM IMERG. Wet and dry winters come and go, but the trend line is almost flat: p = 0.53, so it could easily be chance. Summer precipitation is the same story: p = 0.58.",
-      "chart": {
-        "variable": "PRECIP",
-        "view": "season",
-        "season": "DJF",
-        "show_trend": true
-      },
-      "question": {
-        "prompt": "Does this chart show winter precipitation clearly falling?",
-        "options": [
-          {
-            "text": "No: winters go up and down with no clear trend",
-            "correct": true,
-            "feedback": "Correct: no clear change in the glacier's winter income."
-          },
-          {
-            "text": "Yes: it falls steeply",
-            "correct": false,
-            "feedback": "Follow the trend line from the left edge to the right edge. Does it drop a lot, or stay nearly level?"
-          },
-          {
-            "text": "Yes: there is no precipitation in recent winters",
-            "correct": false,
-            "feedback": "Look at the last points on the right. Are they at zero, or at the same kind of height as earlier winters?"
-          }
-        ]
-      },
-      "takeaway": "Precipitation shows no clear trend in winter or in summer."
-    },
-    {
-      "id": "freezing_months",
-      "title": "Counting freezing months",
-      "text": "A threshold turns a series into a count. Each bar is the number of months in a year with an average below 0 °C at this square. In the 1980s there were 2.0 per year on average; in 2016-2025, only 0.8. Four of those ten years had none. But counts are small whole numbers that jump around: p = 0.082, so this drop alone is not significant.",
-      "chart": {
-        "variable": "T2M",
-        "view": "threshold_count",
-        "threshold_id": "below_0",
-        "highlights": [
-          { "kind": "band", "from": "1980", "to": "1989", "label": "1980s: 2.0 per year" },
-          { "kind": "band", "from": "2016", "to": "2025", "label": "2016-2025: 0.8 per year" }
-        ]
-      },
-      "question": {
-        "prompt": "What do you see in the years with zero freezing months?",
-        "options": [
-          {
-            "text": "Most of them are in the last ten years",
-            "correct": true,
-            "feedback": "Yes: 2016, 2022, 2024 and 2025 had no month below 0 °C."
-          },
-          {
-            "text": "They are all in the 1980s",
-            "correct": false,
-            "feedback": "Look for the empty spots (no bar) inside the 1980s band, then inside the 2016-2025 band. Which band has more?"
-          },
-          {
-            "text": "Every year has at least one freezing month",
-            "correct": false,
-            "feedback": "Scan the chart for years with no bar at all. There are several."
-          }
-        ]
-      },
-      "takeaway": "A physical threshold, like 0 °C, turns temperature into something the glacier feels."
-    },
-    {
-      "id": "pixel_vs_ice",
-      "title": "Where is this thermometer?",
-      "text": "These are yearly averages, between about 5.5 and 9.3 °C. The ice is far colder than that. Why? The data cover a square of about 50 km that includes lower, warmer valleys, so its average height is far below the glacier. The freezing months you counted are at this square, not on the ice. Use the square for the direction of change, not the exact temperature on the glacier.",
-      "chart": {
-        "variable": "T2M",
-        "view": "annual",
-        "show_trend": true
-      },
-      "question": {
-        "prompt": "What can this square of data tell the detective about the glacier?",
-        "options": [
-          {
-            "text": "How the climate around it is changing, not the exact temperature on the ice",
-            "correct": true,
-            "feedback": "Right: good for the direction of change, not for the ice itself."
-          },
-          {
-            "text": "The exact temperature on the ice",
-            "correct": false,
-            "feedback": "Read the values on the axis: most years average well above 0 °C. Could a glacier survive at that temperature all year?"
-          },
-          {
-            "text": "Nothing at all, so the data are useless",
-            "correct": false,
-            "feedback": "Look at the trend line: the area is warming, and that matters for the glacier too. A limitation is not the same as no information."
-          }
-        ]
-      },
-      "takeaway": "Always ask where the data were measured before you use them as evidence."
-    }
-  ],
+    "summary": "Split by season, the clearest change is in summer, when the glacier melts: about +0.46 °C per decade, beyond reasonable doubt. The glacier's income of rain and snow shows no clear trend. Warmer winters and fewer freezing months point the same way as the heat, but neither is proven on its own."
+  },
   "conclusion": {
     "prompt": "The largest glacier in the Pyrenees is shrinking. Is it the heat, or less snow and rain? Write your conclusion using what the charts showed you.",
     "variable": "T2M",
@@ -250,6 +282,8 @@
       "T2M": "Air temperature at the Aneto square (January 1980 to September 2026) rises clearly: about +0.39 °C per decade (95% range +0.27 to +0.52 °C per decade), p < 0.001, about 1.8 °C over the whole period. Summers warm clearly (+0.46 °C per decade, p = 0.00035); winters warm less and not significantly (+0.36 °C per decade, p = 0.051). Months below 0 °C fell from 2.0 per year in the 1980s to 0.8 in 2016-2025, but that drop is not significant on its own (p = 0.082).",
       "PRECIP": "Precipitation at the Aneto square (January 1998 to September 2025) shows no significant trend: about +0.04 mm/day per decade, p = 0.72, and the 95% confidence range (-0.14 to +0.22 mm/day per decade) includes zero. Winter (p = 0.53) and summer (p = 0.58) show no clear trend either."
     },
-    "lesson": "A yearly average hides what each season does. Split by season, the clearest change is in summer, when the glacier melts, while its winter income of snow and rain shows no clear change. The data point to the heat as the main suspect, not to less precipitation. Remember the limits: these values describe a large square of the map, much lower and warmer than the ice, and a result just above p = 0.05 is weak evidence, not proof either way."
+    "lesson": "A yearly average hides what each season does. Split by season, the clearest change is in summer, when the glacier melts, while its winter income of snow and rain shows no clear change. The data point to the heat as the main suspect, not to less precipitation. Remember the limits: these values describe a large square of the map, much lower and warmer than the ice; the gauge cannot tell snow from rain; and a result just above p = 0.05 is reasonable doubt, not proof either way.",
+    "claim_verdict": "wrong",
+    "claim_text": "Jordi, your eyes are right: the glacier is dying. But the data do not blame the snow: precipitation shows no trend (p = 0.72, its 95% range includes zero; winter p = 0.53, summer p = 0.58), while summers warm clearly, about +0.46 °C per decade (p = 0.00035). It is the heat."
   }
 }

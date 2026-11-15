@@ -1,9 +1,10 @@
 // Full flow of a featured case, opened with Space in a case zone:
 //   scene (witness dialogue, if the script has one) -> tutorial (case file + notebook, or the
-//   evidence board when the script has `board`, EvidenceBoard.tsx)
+//   evidence board when the script has `board`, EvidenceBoard.tsx, or the interrogation room when
+//   it has `interrogation`, Interrogation.tsx)
 //   -> case closed (stamp, verdict on the witness's claim, statistics) -> back to the map.
 // Finishing the tutorial solves the case (its marker turns green).
-// Escape: scene = skip the scene; case file / board = their own "close?" question;
+// Escape: scene = skip the scene; case file / board / interrogation = their own "close?" question;
 // case closed = back to the map. One handler per phase, so the keys never reach the game.
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { DEFAULT_OUTFIT, type Outfit } from '../../shared/outfit'
@@ -13,6 +14,7 @@ import type { AnchorStore } from './anchors'
 import CaseClosed from './CaseClosed'
 import CaseFile from './CaseFile'
 import EvidenceBoard from './EvidenceBoard'
+import Interrogation from './Interrogation'
 import { hasTutorial, loadTutorial, type LoadedTutorial } from './loader'
 import type { NotebookClue } from './Notebook'
 import WitnessScene, { type Speaker } from './WitnessScene'
@@ -118,6 +120,11 @@ export default function CaseFlow({ caseId, onClose, onSolved, onDialogue, anchor
     setClues(noted)
     onSolved?.(caseId)
     setPhase('closed')
+  }
+
+  // Cases with an interrogation room play it instead of the case-file steps
+  if ((phase === 'tutorial' || phase === 'scene') && tutorial?.script.interrogation) {
+    return <Interrogation tutorial={tutorial} witness={witness} onClose={onClose} onFinished={finished} />
   }
 
   // Cases with an evidence board play it instead of the case-file steps

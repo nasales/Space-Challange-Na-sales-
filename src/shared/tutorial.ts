@@ -63,6 +63,11 @@ export interface TutorialScript {
    * See docs/evidence_board.md.
    */
   board?: EvidenceBoard
+  /**
+   * Interrogation room (two suspects behind a one-way mirror): when present, the UI shows it
+   * instead of `steps` (and `steps` is empty). A case uses either `board` or `interrogation`.
+   */
+  interrogation?: Interrogation
   /** Last screen: the player writes their own conclusion (normal game loop) */
   conclusion: {
     prompt: string
@@ -160,6 +165,111 @@ export type EvidenceTask = { prompt: string; hint: string; success: string } & (
   | { type: 'tally'; rule: string; periods: { label: string; from: string; to: string }[]; answers: number[] }
   | { type: 'compare'; options: { text: string; correct: boolean }[] }
 )
+
+// ---- Interrogation room (Aneto format, src/ui/casefile/Interrogation.tsx) ----------------------
+
+/**
+ * Interrogation room: two suspects (causes, drawn as noir cartoon characters, never real people)
+ * stand behind a one-way mirror, each with an alibi. The player opens the evidence folders on the
+ * table; each one is a small hands-on task. Once solved, the player confronts the folder's suspect:
+ * does it break the alibi, back it, or leave reasonable doubt (not enough to charge)? At the end
+ * the player charges the guilty suspect and releases the other, then the summary closes the case.
+ */
+export interface Interrogation {
+  /** Short title in the room header, e.g. "Who is melting the glacier?" */
+  title: string
+  /** One sentence shown in the header before the first folder is opened (how to play) */
+  instructions: string
+  /** Exactly two suspects; exactly one has `guilty: true` */
+  suspects: Suspect[]
+  /** 4-6 evidence folders, in the suggested order (the player may open them in any order) */
+  evidence: InterrogationEvidence[]
+  /** The decision: charge one suspect, release the other */
+  finale: {
+    /** Question asked when every folder has been used, e.g. "Who do you charge?" */
+    prompt: string
+  }
+  /** Shown after the right decision: the overall picture in 1-3 sentences */
+  summary: string
+}
+
+/** Look of a suspect's drawing (original inline SVG art in the UI) */
+export type SuspectLook = 'heat' | 'snow'
+
+export interface Suspect {
+  id: string
+  /** e.g. "Summer Heat" */
+  name: string
+  look: SuspectLook
+  /** One line on the suspect's file card, e.g. "Works June to August. Melts ice." */
+  record: string
+  /** What the suspect claims, in quotes (shown in a speech bubble behind the glass) */
+  alibi: string
+  /** The suspect the data point to (exactly one per interrogation) */
+  guilty: boolean
+  /** Shown after the right decision about this suspect (charged or released) */
+  decision_text: string
+  /** Kind hint shown when the player decides wrongly about this suspect */
+  wrong_hint: string
+}
+
+/** What a piece of evidence does to the suspect's alibi */
+export type AlibiVerdict = 'breaks' | 'backs' | 'doubt'
+
+export interface InterrogationEvidence {
+  id: string
+  /** Label on the folder tab (open and closed) */
+  title: string
+  /** Hand-written note on the closed folder, e.g. "Every summer since 1980" */
+  teaser: string
+  /** What this evidence teaches about reading a time series (<= 80 words, plain English) */
+  text: string
+  /** Chart shown with the task (existing views); season_switch and proof_line draw their own */
+  chart?: ChartSpec
+  task: InterrogationTask
+  /** Id of the suspect this evidence is put to */
+  suspect: string
+  /** The right answer when the player confronts the suspect */
+  verdict: AlibiVerdict
+  /** Explanation shown after the confrontation (also the hint after a wrong pick) */
+  verdict_feedback: string
+  /** Notebook entry (<= 15 words) */
+  clue: string
+}
+
+/**
+ * Tasks of the interrogation: every evidence-board task (EvidenceTask) plus two of its own.
+ * - season_switch: tabs flip the chart between the whole year and each season of `variable`
+ *   (annual means with the whole-record trend, or one season with its own trend); the player
+ *   ticks the seasons that match `rule` ("faster_than_year": the seasonal slope is larger than the
+ *   whole-record slope; "significant": p < 0.05), or "none of them". The answer is computed from
+ *   the data, never written in the script.
+ * - proof_line: the standard of proof. Each exhibit is one trend from the data (whole record, a
+ *   season, or a threshold count); the player puts it on the side of the p = 0.05 line where it
+ *   belongs: "beyond reasonable doubt" (p < 0.05) or "reasonable doubt". Answers from the data.
+ */
+export type InterrogationTask =
+  | EvidenceTask
+  | ({ prompt: string; hint: string; success: string } & (
+      | {
+          type: 'season_switch'
+          variable: string
+          seasons: SeasonId[]
+          rule: 'faster_than_year' | 'significant'
+          /** Question above the tick boxes, e.g. "Which seasons warm faster than the year?" */
+          question: string
+        }
+      | { type: 'proof_line'; exhibits: ProofExhibit[] }
+    ))
+
+/** One trend put on the proof line: whole record (no season, no threshold), a season or a count */
+export interface ProofExhibit {
+  label: string
+  variable: string
+  season?: SeasonId
+  /** id in TutorialSeries.extras.threshold_counts */
+  threshold_id?: string
+}
 
 export interface TutorialStep {
   id: string
