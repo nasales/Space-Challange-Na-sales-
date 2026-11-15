@@ -6,8 +6,11 @@ import { expect, test, type Page } from '@playwright/test'
  * Opens the app, presses Play on the main menu and skips the intro camera (any key does it).
  * Headless Chromium renders without a GPU at ~1 frame per second, and the intro advances per frame
  * (dt capped at 0.1 s), so playing it in full takes over a minute there; with a GPU it takes ~5 s.
+ * The map tutorial offer (src/ui/guide) is marked as already seen, so the game starts as for a
+ * returning player; pass { tutorialOffer: true } to start as a new player.
  */
-async function startGame(page: Page) {
+async function startGame(page: Page, { tutorialOffer = false } = {}) {
+  if (!tutorialOffer) await page.addInitScript(() => localStorage.setItem('esd.guideSeen', '1'))
   await page.goto('/')
   await page.getByRole('button', { name: 'Play' }).click()
   type IntroWindow = { __game?: { chase?: { introActive?: boolean } } }
@@ -164,6 +167,58 @@ test('Esc pauses the game and Main menu goes back to the menu', async ({ page })
   await expect(page.locator('.game-view__canvas canvas')).toHaveCount(1, { timeout: 30_000 })
   await expect(page.locator('.speedometer')).toBeVisible({ timeout: 30_000 })
   expect(errors, `Page errors:\n${errors.join('\n')}`).toEqual([])
+})
+
+// Map tutorial (src/ui/guide/): offered to a new player once the map is ready; Start calls the
+// guide robot, whose steps wait for the player (Enter on reading steps, the action on the others).
+test('a new player is offered the tutorial and the guide robot walks through the first steps', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (err) => errors.push(err.message))
+
+  await startGame(page, { tutorialOffer: true })
+  const offer = page.getByRole('dialog', { name: 'Tutorial' })
+  await expect(offer).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByRole('button', { name: 'Start tutorial' })).toBeFocused()
+  await expect(page.getByRole('button', { name: 'Skip', exact: true })).toBeVisible()
+
+  // Start: the offer closes, the robot appears in the 3D scene and its first line shows
+  await page.keyboard.press('Enter')
+  await expect(offer).toBeHidden()
+  const tour = page.getByRole('region', { name: 'Tutorial' })
+  await expect(tour).toBeVisible()
+  await expect(tour.getByRole('heading', { name: 'Welcome, detective' })).toBeVisible()
+  type GuideWindow = { __game?: { guideBot?: { visible?: boolean } } }
+  await page.waitForFunction(() => (window as GuideWindow).__game?.guideBot?.visible === true, null, { timeout: 60_000 })
+
+  // Enter finishes the line, Enter again goes to the "Run" step, which waits for the player to move
+  await page.keyboard.press('Enter')
+  await page.keyboard.press('Enter')
+  await expect(tour.getByRole('heading', { name: 'Run' })).toBeVisible()
+  await page.keyboard.press('Enter')
+  await page.keyboard.press('Enter')
+  await expect(tour.getByRole('heading', { name: 'Run' })).toBeVisible() // Enter does not skip an action step
+  await page.keyboard.down('w')
+  await expect(tour.getByRole('heading', { name: 'Look from above' })).toBeVisible({ timeout: 60_000 })
+  await page.keyboard.up('w')
+
+  // Skip ends the tutorial; it is not offered again, but the pause panel can start it
+  await tour.getByRole('button', { name: 'Skip tutorial' }).click()
+  await expect(tour).toBeHidden()
+  expect(await page.evaluate(() => localStorage.getItem('esd.guideSeen'))).toBe('1')
+  await page.keyboard.press('Escape')
+  await page.getByRole('button', { name: 'Tutorial' }).click()
+  await expect(page.getByRole('region', { name: 'Tutorial' })).toBeVisible()
+  expect(errors, `Page errors:\n${errors.join('\n')}`).toEqual([])
+})
+
+test('Skip on the tutorial offer goes straight to the game', async ({ page }) => {
+  await startGame(page, { tutorialOffer: true })
+  const offer = page.getByRole('dialog', { name: 'Tutorial' })
+  await expect(offer).toBeVisible({ timeout: 30_000 })
+  await page.getByRole('button', { name: 'Skip', exact: true }).click()
+  await expect(offer).toBeHidden()
+  await expect(page.getByRole('region', { name: 'Tutorial' })).toHaveCount(0)
+  await expect(page.locator('.speedometer')).toBeVisible()
 })
 
 // Sound settings (src/ui/settings/SoundSliders.tsx): two sliders in the menu, saved in this browser.
